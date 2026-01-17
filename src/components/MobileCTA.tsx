@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Phone } from "lucide-react";
+import { MessageCircle, Phone, Calendar } from "lucide-react";
 
 const MobileCTA = () => {
   return (
@@ -9,15 +9,46 @@ const MobileCTA = () => {
       transition={{ delay: 1.5, duration: 0.5 }}
       className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
     >
-      <div className="bg-background/90 backdrop-blur-lg border-t border-border p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-        <a
-          href="#contact"
-          className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-primary text-primary-foreground 
-                   rounded-full font-semibold text-lg shadow-lg"
-        >
-          <Phone className="w-5 h-5" />
-          <span>Get a Quote</span>
-        </a>
+      {/* Instagram-style bottom action bar */}
+      <div className="bg-background/95 backdrop-blur-xl border-t border-border/50 
+                    px-4 py-3 shadow-[0_-4px_30px_rgba(0,0,0,0.1)]">
+        <div className="flex items-center justify-between gap-3">
+          {/* WhatsApp Button - Primary */}
+          <a
+            href="https://wa.me/1234567890?text=Hi! I'm interested in your event services."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
+                     bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white 
+                     rounded-2xl font-semibold text-sm shadow-lg shadow-[#25D366]/30
+                     active:scale-95 transition-transform duration-200"
+          >
+            <MessageCircle className="w-5 h-5 fill-current" />
+            <span>WhatsApp</span>
+          </a>
+
+          {/* Call Button */}
+          <a
+            href="tel:+1234567890"
+            className="flex items-center justify-center w-14 h-14 
+                     bg-muted rounded-2xl border border-border
+                     active:scale-95 transition-transform duration-200"
+          >
+            <Phone className="w-5 h-5 text-foreground" />
+          </a>
+
+          {/* Book Now Button */}
+          <a
+            href="#contact"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
+                     bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
+                     rounded-2xl font-semibold text-sm shadow-lg shadow-primary/30
+                     active:scale-95 transition-transform duration-200"
+          >
+            <Calendar className="w-5 h-5" />
+            <span>Book Now</span>
+          </a>
+        </div>
       </div>
     </motion.div>
   );

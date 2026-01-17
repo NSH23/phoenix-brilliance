@@ -83,35 +83,35 @@ const HeroSection = () => {
       <SparkleParticles />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 text-center pt-16 sm:pt-20">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 text-center pt-20 sm:pt-20 pb-24 sm:pb-0">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2 }}
           className="max-w-5xl mx-auto"
         >
-          {/* Badge */}
+          {/* Badge - Compact on mobile */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full 
-                     bg-primary/30 backdrop-blur-md border border-primary/40 mb-6 sm:mb-8
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 rounded-full 
+                     bg-primary/30 backdrop-blur-md border border-primary/40 mb-4 sm:mb-8
                      shadow-lg shadow-primary/10"
           >
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-xs sm:text-sm font-medium text-ivory tracking-wide">
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+            <span className="text-[11px] sm:text-sm font-medium text-ivory tracking-wide">
               Premium Event Management
             </span>
           </motion.div>
 
-          {/* Main Heading */}
+          {/* Main Heading - Instagram-style large text on mobile */}
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.8 }}
-            className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 
-                     font-bold text-ivory mb-4 sm:mb-6 leading-tight
+            className="font-serif text-[28px] leading-tight sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 
+                     font-bold text-ivory mb-3 sm:mb-6
                      drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]"
           >
             Turning Moments Into
@@ -119,38 +119,46 @@ const HeroSection = () => {
             <span className="text-gradient-gold drop-shadow-none">Unforgettable Celebrations</span>
           </motion.h1>
 
-          {/* Subtitle */}
-          <motion.p
+          {/* Subtitle - Compact pills on mobile */}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9, duration: 0.8 }}
-            className="text-base sm:text-lg md:text-xl lg:text-2xl text-ivory/90 mb-3 sm:mb-4 font-light"
+            className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4"
           >
-            Weddings • Corporate Events • Grand Celebrations
-          </motion.p>
+            {["Weddings", "Corporate", "Celebrations"].map((item, idx) => (
+              <span
+                key={item}
+                className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-sm 
+                         bg-ivory/10 backdrop-blur-sm border border-ivory/20 text-ivory/90"
+              >
+                {item}
+              </span>
+            ))}
+          </motion.div>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.8 }}
-            className="text-sm sm:text-base lg:text-lg text-ivory/70 mb-8 sm:mb-10 max-w-2xl mx-auto px-4"
+            className="text-[13px] sm:text-base lg:text-lg text-ivory/70 mb-6 sm:mb-10 max-w-xl sm:max-w-2xl mx-auto px-2"
           >
-            Where every detail matters and every moment becomes a cherished memory. 
-            We craft bespoke events that reflect your unique story.
+            Where every detail matters and every moment becomes a cherished memory.
           </motion.p>
 
-          {/* CTAs */}
+          {/* CTAs - Mobile optimized with WhatsApp */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2, duration: 0.8 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
           >
+            {/* Desktop: Plan Your Event */}
             <a
               href="#contact"
-              className="group relative w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 
+              className="hidden sm:inline-flex group relative w-auto px-8 py-4 
                        bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
-                       rounded-full font-semibold text-base sm:text-lg overflow-hidden 
+                       rounded-full font-semibold text-lg overflow-hidden 
                        transition-all duration-300 hover:shadow-2xl hover:scale-105
                        shadow-[0_4px_30px_rgba(212,175,55,0.4)]"
             >
@@ -159,17 +167,40 @@ const HeroSection = () => {
                             bg-[length:200%_100%] animate-shimmer opacity-0 group-hover:opacity-100 transition-opacity" />
             </a>
             
+            {/* Desktop: View Our Work */}
             <a
               href="#gallery"
-              className="group flex items-center justify-center gap-3 w-full sm:w-auto 
-                       px-6 sm:px-8 py-3.5 sm:py-4 
-                       bg-ivory/10 backdrop-blur-md border-2 border-ivory/40 text-ivory 
-                       rounded-full font-semibold text-base sm:text-lg 
+              className="hidden sm:flex group items-center justify-center gap-3 w-auto 
+                       px-8 py-4 bg-ivory/10 backdrop-blur-md border-2 border-ivory/40 text-ivory 
+                       rounded-full font-semibold text-lg 
                        hover:bg-ivory/20 hover:border-ivory/60 transition-all duration-300"
             >
               <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
               <span>View Our Work</span>
             </a>
+
+            {/* Mobile: Compact Action Buttons */}
+            <div className="flex sm:hidden items-center gap-3 w-full px-4">
+              <a
+                href="#gallery"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
+                         bg-ivory/10 backdrop-blur-md border border-ivory/30 text-ivory 
+                         rounded-2xl font-semibold text-sm
+                         active:scale-95 transition-transform duration-200"
+              >
+                <PlayCircle className="w-4 h-4" />
+                <span>Our Work</span>
+              </a>
+              <a
+                href="#contact"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
+                         bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
+                         rounded-2xl font-semibold text-sm shadow-lg shadow-primary/30
+                         active:scale-95 transition-transform duration-200"
+              >
+                <span>Get Started</span>
+              </a>
+            </div>
           </motion.div>
         </motion.div>
       </div>
