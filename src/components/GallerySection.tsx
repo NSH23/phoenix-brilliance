@@ -87,12 +87,12 @@ const GallerySection = () => {
   };
 
   return (
-    <section id="gallery" className="py-24 bg-background relative overflow-hidden">
+    <section id="gallery" className="py-16 sm:py-24 bg-background relative overflow-hidden">
       {/* Decorative Background */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] -translate-x-1/2" />
-        <div className="absolute bottom-1/4 right-0 w-[400px] h-[400px] bg-rose-gold/5 rounded-full blur-[80px] translate-x-1/2" />
-        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-champagne/5 rounded-full blur-[60px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute top-1/4 left-0 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-primary/5 rounded-full blur-[80px] sm:blur-[100px] -translate-x-1/2" />
+        <div className="absolute bottom-1/4 right-0 w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-rose-gold/5 rounded-full blur-[60px] sm:blur-[80px] translate-x-1/2" />
+        <div className="absolute top-1/2 left-1/2 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-champagne/5 rounded-full blur-[50px] sm:blur-[60px] -translate-x-1/2 -translate-y-1/2" />
       </div>
 
       <div className="container mx-auto px-4 relative">
@@ -102,37 +102,37 @@ const GallerySection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
           <motion.span 
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full 
+            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full 
                      bg-gradient-to-r from-primary/20 to-rose-gold/20 
-                     border border-primary/30 backdrop-blur-sm mb-6"
+                     border border-primary/30 backdrop-blur-sm mb-4 sm:mb-6"
           >
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-sm font-medium text-foreground">Our Portfolio</span>
+            <span className="text-xs sm:text-sm font-medium text-foreground">Our Portfolio</span>
           </motion.span>
           
-          <h2 className="section-title mb-6">
+          <h2 className="section-title mb-4 sm:mb-6">
             Moments We've <span className="text-gradient-gold">Captured</span>
           </h2>
-          <p className="section-subtitle max-w-2xl mx-auto">
-            Every frame tells a story of love, celebration, and unforgettable memories. 
-            Explore our collection of magical events.
+          <p className="section-subtitle max-w-2xl mx-auto text-sm sm:text-base">
+            Every frame tells a story of love, celebration, and unforgettable memories.
           </p>
         </motion.div>
 
-        {/* Category Filters - Enhanced */}
+        {/* Category Filters - Scrollable on mobile */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex flex-wrap justify-center gap-3 mb-14"
+          className="flex justify-start sm:justify-center gap-2 sm:gap-3 mb-8 sm:mb-14 
+                   overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
         >
           {categories.map((category, idx) => (
             <motion.button
@@ -142,156 +142,132 @@ const GallerySection = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.3, delay: 0.3 + idx * 0.05 }}
               onClick={() => setSelectedCategory(category)}
-              className={`relative px-7 py-3 rounded-full text-sm font-semibold 
-                        transition-all duration-400 overflow-hidden group ${
+              className={`relative px-4 sm:px-7 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-semibold 
+                        transition-all duration-400 overflow-hidden whitespace-nowrap flex-shrink-0 ${
                 selectedCategory === category
-                  ? "bg-primary text-primary-foreground shadow-xl shadow-primary/30"
-                  : "bg-muted/80 text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                  : "bg-muted/80 text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
-              {/* Hover effect background */}
-              <span className={`absolute inset-0 bg-gradient-to-r from-primary to-rose-gold 
-                             transition-transform duration-500 ${
-                selectedCategory === category ? "scale-100" : "scale-0"
-              } group-hover:scale-100 opacity-100`} />
               <span className="relative z-10">{category}</span>
-              
-              {/* Active indicator dot */}
-              {selectedCategory === category && (
-                <motion.span 
-                  layoutId="activeCategory"
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 
-                           rounded-full bg-primary-foreground"
-                />
-              )}
             </motion.button>
           ))}
         </motion.div>
 
-        {/* Grid Gallery - Improved Layout */}
+        {/* Grid Gallery - Better Mobile Layout */}
         <motion.div 
           layout
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 auto-rows-[200px] sm:auto-rows-[250px]"
+          className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5"
         >
           <AnimatePresence mode="popLayout">
             {filteredImages.map((image, index) => (
               <motion.div
                 key={`${image.title}-${selectedCategory}`}
                 layout
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ 
-                  duration: 0.4, 
-                  delay: index * 0.05,
-                  layout: { duration: 0.4 }
+                  duration: 0.3, 
+                  delay: index * 0.03,
+                  layout: { duration: 0.3 }
                 }}
-                className={`relative group cursor-pointer ${getGridClass(index)}`}
+                className={`relative group cursor-pointer ${
+                  // Featured items span 2 columns on larger screens only
+                  index === 0 ? 'sm:col-span-2 sm:row-span-2' : ''
+                }`}
                 onClick={() => setLightboxImage(index)}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >
-                {/* Card Container with Luxury Frame */}
-                <div className={`relative h-full w-full rounded-2xl overflow-hidden
-                              bg-gradient-to-br from-primary/10 via-card to-rose-gold/10 p-1
-                              shadow-lg transition-all duration-500 
-                              ${hoveredIndex === index ? 'shadow-2xl shadow-primary/20 scale-[1.02]' : ''}
-                              ${image.featured ? 'ring-2 ring-primary/30' : ''}`}
+                {/* Card Container */}
+                <div className={`relative h-full w-full rounded-xl sm:rounded-2xl overflow-hidden
+                              bg-gradient-to-br from-primary/10 via-card to-rose-gold/10 p-0.5 sm:p-1
+                              shadow-md sm:shadow-lg transition-all duration-500 
+                              ${hoveredIndex === index ? 'shadow-xl shadow-primary/20 scale-[1.02]' : ''}
+                              ${image.featured ? 'ring-1 sm:ring-2 ring-primary/30' : ''}`}
                 >
                   {/* Inner Image Container */}
-                  <div className="relative h-full w-full rounded-xl overflow-hidden">
+                  <div className="relative h-full w-full rounded-lg sm:rounded-xl overflow-hidden aspect-[3/4] sm:aspect-auto">
                     <img
                       src={image.src}
                       alt={image.title}
-                      className={`w-full h-full object-cover transition-all duration-700 
-                                ${hoveredIndex === index ? 'scale-110 brightness-90' : 'scale-100'} 
-                                ${getAspectClass(index)}`}
+                      className={`w-full h-full object-cover transition-all duration-500 
+                                ${hoveredIndex === index ? 'scale-110 brightness-90' : 'scale-100'}`}
                       loading="lazy"
                     />
                     
                     {/* Gradient Overlays */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/20 to-transparent 
-                                  opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/30 to-transparent 
+                                  opacity-70 group-hover:opacity-85 transition-opacity duration-500" />
                     
                     {/* Featured Badge */}
                     {image.featured && (
-                      <motion.div 
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="absolute top-3 right-3 px-3 py-1 rounded-full 
-                                 bg-primary/90 backdrop-blur-sm text-xs font-semibold text-primary-foreground
-                                 flex items-center gap-1.5"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground animate-pulse" />
-                        Featured
-                      </motion.div>
+                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full 
+                                   bg-primary/90 backdrop-blur-sm text-[10px] sm:text-xs font-semibold text-primary-foreground
+                                   flex items-center gap-1">
+                        <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-primary-foreground animate-pulse" />
+                        <span className="hidden sm:inline">Featured</span>
+                        <span className="sm:hidden">★</span>
+                      </div>
                     )}
 
-                    {/* Hover Actions */}
+                    {/* Like Button - Hidden on mobile for cleaner look */}
                     <motion.div 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: hoveredIndex === index ? 1 : 0 }}
-                      className="absolute top-3 left-3 flex gap-2"
+                      className="absolute top-2 left-2 sm:top-3 sm:left-3 hidden sm:flex gap-2"
                     >
                       <button
                         onClick={(e) => toggleLike(index, e)}
-                        className={`w-10 h-10 rounded-full backdrop-blur-md 
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full backdrop-blur-md 
                                   flex items-center justify-center transition-all duration-300
                                   ${likedImages.has(index) 
                                     ? 'bg-red-500 text-white' 
                                     : 'bg-charcoal/50 text-ivory hover:bg-red-500/80 hover:text-white'}`}
                       >
-                        <Heart className={`w-4 h-4 ${likedImages.has(index) ? 'fill-current' : ''}`} />
+                        <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${likedImages.has(index) ? 'fill-current' : ''}`} />
                       </button>
                     </motion.div>
 
-                    {/* View Icon */}
+                    {/* View Icon - Smaller on mobile */}
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.5 }}
                       animate={{ 
                         opacity: hoveredIndex === index ? 1 : 0,
                         scale: hoveredIndex === index ? 1 : 0.5
                       }}
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:block"
                     >
-                      <div className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/90 backdrop-blur-sm
                                     flex items-center justify-center shadow-xl">
-                        <ZoomIn className="w-6 h-6 text-primary-foreground" />
+                        <ZoomIn className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" />
                       </div>
                     </motion.div>
 
-                    {/* Bottom Caption */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <motion.div
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ 
-                          y: hoveredIndex === index ? 0 : 10, 
-                          opacity: hoveredIndex === index ? 1 : 0.8 
-                        }}
-                        className="space-y-1"
-                      >
-                        <p className="font-serif text-lg text-ivory font-medium line-clamp-1">
-                          {image.title}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-ivory/70 uppercase tracking-wider">
-                            {image.category}
-                          </span>
-                          <span className="w-1 h-1 rounded-full bg-primary" />
-                          <span className="text-xs text-primary">View Details</span>
-                        </div>
-                      </motion.div>
+                    {/* Bottom Caption - Compact on mobile */}
+                    <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-4">
+                      <p className="font-serif text-xs sm:text-base lg:text-lg text-ivory font-medium line-clamp-1">
+                        {image.title}
+                      </p>
+                      <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
+                        <span className="text-[10px] sm:text-xs text-ivory/70 uppercase tracking-wider">
+                          {image.category}
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-primary hidden sm:block" />
+                        <span className="text-[10px] sm:text-xs text-primary hidden sm:inline">View</span>
+                      </div>
                     </div>
 
-                    {/* Corner Accents */}
-                    <div className="absolute top-2 left-2 w-6 h-6 border-l-2 border-t-2 border-primary/40 rounded-tl-lg 
-                                  opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="absolute top-2 right-2 w-6 h-6 border-r-2 border-t-2 border-primary/40 rounded-tr-lg 
-                                  opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="absolute bottom-2 left-2 w-6 h-6 border-l-2 border-b-2 border-primary/40 rounded-bl-lg 
-                                  opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="absolute bottom-2 right-2 w-6 h-6 border-r-2 border-b-2 border-primary/40 rounded-br-lg 
-                                  opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    {/* Corner Accents - Hidden on mobile */}
+                    <div className="absolute top-1.5 left-1.5 w-4 h-4 sm:w-6 sm:h-6 border-l-2 border-t-2 border-primary/40 rounded-tl-lg 
+                                  opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden sm:block" />
+                    <div className="absolute top-1.5 right-1.5 w-4 h-4 sm:w-6 sm:h-6 border-r-2 border-t-2 border-primary/40 rounded-tr-lg 
+                                  opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden sm:block" />
+                    <div className="absolute bottom-1.5 left-1.5 w-4 h-4 sm:w-6 sm:h-6 border-l-2 border-b-2 border-primary/40 rounded-bl-lg 
+                                  opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden sm:block" />
+                    <div className="absolute bottom-1.5 right-1.5 w-4 h-4 sm:w-6 sm:h-6 border-r-2 border-b-2 border-primary/40 rounded-br-lg 
+                                  opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden sm:block" />
                   </div>
                 </div>
               </motion.div>
