@@ -1,21 +1,79 @@
 import { motion } from "framer-motion";
-import { ChevronDown, PlayCircle, Sparkles } from "lucide-react";
+import { ChevronDown, PlayCircle, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import heroImage from "@/assets/hero-wedding.jpg";
 import SparkleParticles from "./SparkleParticles";
 
 const HeroSection = () => {
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Video URL - a beautiful wedding highlight reel
+  const videoUrl = "https://videos.pexels.com/video-files/3327261/3327261-uhd_2560_1440_30fps.mp4";
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.85; // Slightly slower for cinematic effect
+    }
+  }, [isVideoLoaded]);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image with Overlay */}
+      {/* Fallback Background Image */}
       <div className="absolute inset-0">
         <img
           src={heroImage}
           alt="Luxury Wedding Venue"
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover transition-opacity duration-1000 ${
+            isVideoLoaded ? "opacity-0" : "opacity-100"
+          }`}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/40 via-charcoal/50 to-charcoal/80" />
-        <div className="absolute inset-0 bg-gradient-to-r from-charcoal/60 via-transparent to-charcoal/60" />
       </div>
+
+      {/* Video Background */}
+      <div className="absolute inset-0">
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted={isMuted}
+          playsInline
+          onLoadedData={() => setIsVideoLoaded(true)}
+          className={`w-full h-full object-cover transition-opacity duration-1000 ${
+            isVideoLoaded ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <source src={videoUrl} type="video/mp4" />
+        </video>
+        {/* Video Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/50 via-charcoal/40 to-charcoal/80" />
+        <div className="absolute inset-0 bg-gradient-to-r from-charcoal/50 via-transparent to-charcoal/50" />
+      </div>
+
+      {/* Mute Toggle Button */}
+      {isVideoLoaded && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 2, duration: 0.5 }}
+          onClick={toggleMute}
+          className="absolute bottom-24 right-6 z-20 w-12 h-12 rounded-full 
+                   bg-charcoal/40 backdrop-blur-sm border border-ivory/20
+                   flex items-center justify-center text-ivory/80 hover:text-ivory
+                   hover:bg-charcoal/60 transition-all duration-300"
+          aria-label={isMuted ? "Unmute video" : "Mute video"}
+        >
+          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </motion.button>
+      )}
 
       {/* Sparkle Particles */}
       <SparkleParticles />
