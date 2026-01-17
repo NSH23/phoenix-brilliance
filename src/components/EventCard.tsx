@@ -122,7 +122,7 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
                 {description}
               </p>
               <a
-                href="#contact"
+                href="/contact"
                 className="inline-flex mt-5 sm:mt-6 px-5 sm:px-6 py-2.5 sm:py-3 
                          bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                          rounded-full font-medium text-sm sm:text-base

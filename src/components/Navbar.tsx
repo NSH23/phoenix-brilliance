@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
-  { name: "Home", href: "#home" },
-  { name: "Events", href: "#events" },
-  { name: "Services", href: "#services" },
-  { name: "Gallery", href: "#gallery" },
-  { name: "Why Us", href: "#why-us" },
-  { name: "Contact", href: "#contact" },
+  { name: "Home", href: "/" },
+  { name: "Events", href: "/#events" },
+  { name: "Services", href: "/#services" },
+  { name: "Gallery", href: "/#gallery" },
+  { name: "Why Us", href: "/#why-us" },
+  { name: "Contact", href: "/contact" },
 ];
 
 const Navbar = () => {
@@ -49,14 +50,19 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <a href="#home" className="flex items-center gap-2 sm:gap-3 group">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
             <div className="relative">
               <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center
-                            transition-all duration-300 group-hover:scale-105
+                            transition-all duration-300 group-hover:scale-105 overflow-hidden
                             ${scrolled 
                               ? 'bg-gradient-to-br from-primary to-rose-gold shadow-lg shadow-primary/20' 
                               : 'bg-primary/90 backdrop-blur-sm'}`}>
-                <span className="font-serif font-bold text-primary-foreground text-lg sm:text-xl">P</span>
+                <img 
+                  src="/logo.jpg" 
+                  alt="Phoenix Events Logo" 
+                  className="w-full h-full object-cover scale-150"
+                  style={{ objectPosition: 'center' }}
+                />
               </div>
               <motion.div 
                 animate={{ scale: [1, 1.2, 1] }}
@@ -74,14 +80,14 @@ const Navbar = () => {
                 Events & Production
               </span>
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.name}
-                href={link.href}
+                to={link.href}
                 className={`relative px-4 py-2 rounded-full text-sm font-medium tracking-wide 
                           transition-all duration-300 group
                           ${scrolled 
@@ -92,7 +98,7 @@ const Navbar = () => {
                 <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full 
                                transition-all duration-300 opacity-0 group-hover:opacity-100
                                ${scrolled ? 'bg-primary' : 'bg-ivory'}`} />
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -101,7 +107,7 @@ const Navbar = () => {
             <ThemeToggle />
             
             <a
-              href="tel:+1234567890"
+              href="tel:+917066763276"
               className={`hidden md:flex items-center gap-2 px-4 lg:px-5 py-2.5 rounded-full 
                         font-medium text-sm transition-all duration-300 
                         hover:shadow-lg hover:scale-105 group
@@ -159,10 +165,11 @@ const Navbar = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="lg:hidden fixed inset-0 top-16 sm:top-20 z-40"
+            className="lg:hidden fixed inset-0 z-[9999]"
+            style={{ top: '0', paddingTop: '64px' }}
           >
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-background/98 backdrop-blur-xl" />
+            <div className="absolute inset-0 bg-background/98 backdrop-blur-xl" style={{ top: '64px' }} />
             
             {/* Menu Content */}
             <motion.div
@@ -170,7 +177,7 @@ const Navbar = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className="relative h-full flex flex-col px-6 py-8 overflow-y-auto"
+              className="relative h-full flex flex-col px-4 sm:px-6 py-6 sm:py-8 overflow-y-auto pb-20"
             >
               {/* Decorative Element */}
               <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
@@ -179,22 +186,25 @@ const Navbar = () => {
               {/* Navigation Links */}
               <nav className="flex flex-col gap-2 relative">
                 {navLinks.map((link, index) => (
-                  <motion.a
+                  <motion.div
                     key={link.name}
-                    href={link.href}
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center justify-between py-4 px-4 rounded-xl
-                             text-xl font-serif font-medium text-foreground 
-                             hover:bg-primary/10 hover:text-primary transition-all duration-300
-                             border-b border-border/30 group"
                   >
-                    <span>{link.name}</span>
-                    <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
-                                   transition-colors duration-300" />
-                  </motion.a>
+                    <Link
+                      to={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-between py-4 px-4 rounded-xl
+                               text-xl font-serif font-medium text-foreground 
+                               hover:bg-primary/10 hover:text-primary transition-all duration-300
+                               border-b border-border/30 group"
+                    >
+                      <span>{link.name}</span>
+                      <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
+                                     transition-colors duration-300" />
+                    </Link>
+                  </motion.div>
                 ))}
               </nav>
 
@@ -206,7 +216,7 @@ const Navbar = () => {
                 className="mt-8"
               >
                 <a
-                  href="tel:+1234567890"
+                  href="tel:+917066763276"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center gap-3 w-full px-6 py-4 
                            bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const WhatsAppButton = () => {
   const [isHovered, setIsHovered] = useState(false);
-  const phoneNumber = "919876543210"; // Replace with actual WhatsApp number
+  const phoneNumber = "917066763276"; // Phoenix Events WhatsApp number
   const message = "Hello! I'm interested in planning an event with Phoenix Events.";
 
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
@@ -24,7 +24,7 @@ const WhatsAppButton = () => {
               initial={{ opacity: 0, x: 10, scale: 0.9 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 10, scale: 0.9 }}
-              className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap
+              className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap z-50
                        bg-card text-foreground px-4 py-2 rounded-xl shadow-lg text-sm font-medium"
             >
               Chat with us!
@@ -34,22 +34,23 @@ const WhatsAppButton = () => {
           )}
         </AnimatePresence>
 
-        {/* Button */}
+        {/* Pulse Ring - Behind the button */}
+        <div className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-25 pointer-events-none" />
+
+        {/* Button - On top and clickable */}
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="flex items-center justify-center w-14 h-14 rounded-full
+          className="relative z-10 flex items-center justify-center w-14 h-14 rounded-full
                    bg-[#25D366] text-white shadow-lg hover:shadow-xl hover:scale-110
-                   transition-all duration-300"
+                   transition-all duration-300 cursor-pointer"
+          aria-label="Chat with us on WhatsApp"
         >
           <MessageCircle className="w-7 h-7" />
         </a>
-
-        {/* Pulse Ring */}
-        <div className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-25" />
       </div>
     </motion.div>
   );
