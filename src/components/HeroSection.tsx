@@ -14,7 +14,7 @@ const HeroSection = () => {
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.playbackRate = 0.85; // Slightly slower for cinematic effect
+      videoRef.current.playbackRate = 0.85;
     }
   }, [isVideoLoaded]);
 
@@ -53,9 +53,12 @@ const HeroSection = () => {
         >
           <source src={videoUrl} type="video/mp4" />
         </video>
-        {/* Video Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/50 via-charcoal/40 to-charcoal/80" />
-        <div className="absolute inset-0 bg-gradient-to-r from-charcoal/50 via-transparent to-charcoal/50" />
+        
+        {/* Adaptive Overlays - Better for light theme readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/50 to-charcoal/90" />
+        <div className="absolute inset-0 bg-gradient-to-r from-charcoal/40 via-transparent to-charcoal/40" />
+        {/* Extra overlay for better text contrast in light theme */}
+        <div className="absolute inset-0 bg-charcoal/20 dark:bg-transparent" />
       </div>
 
       {/* Mute Toggle Button */}
@@ -65,10 +68,11 @@ const HeroSection = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 2, duration: 0.5 }}
           onClick={toggleMute}
-          className="absolute bottom-24 right-6 z-20 w-12 h-12 rounded-full 
-                   bg-charcoal/40 backdrop-blur-sm border border-ivory/20
-                   flex items-center justify-center text-ivory/80 hover:text-ivory
-                   hover:bg-charcoal/60 transition-all duration-300"
+          className="absolute bottom-28 sm:bottom-24 right-4 sm:right-6 z-20 w-11 h-11 sm:w-12 sm:h-12 
+                   rounded-full bg-charcoal/50 backdrop-blur-md border border-ivory/30
+                   flex items-center justify-center text-ivory hover:text-primary
+                   hover:bg-charcoal/70 hover:border-primary/50 transition-all duration-300
+                   shadow-lg"
           aria-label={isMuted ? "Unmute video" : "Mute video"}
         >
           {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -79,7 +83,7 @@ const HeroSection = () => {
       <SparkleParticles />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 text-center">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 text-center pt-16 sm:pt-20">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -91,11 +95,14 @@ const HeroSection = () => {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary/20 backdrop-blur-sm 
-                     border border-primary/30 mb-8"
+            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full 
+                     bg-primary/30 backdrop-blur-md border border-primary/40 mb-6 sm:mb-8
+                     shadow-lg shadow-primary/10"
           >
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-ivory tracking-wide">Premium Event Management</span>
+            <span className="text-xs sm:text-sm font-medium text-ivory tracking-wide">
+              Premium Event Management
+            </span>
           </motion.div>
 
           {/* Main Heading */}
@@ -103,11 +110,13 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.8 }}
-            className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-ivory mb-6 leading-tight"
+            className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 
+                     font-bold text-ivory mb-4 sm:mb-6 leading-tight
+                     drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]"
           >
             Turning Moments Into
             <br />
-            <span className="text-gradient-gold">Unforgettable Celebrations</span>
+            <span className="text-gradient-gold drop-shadow-none">Unforgettable Celebrations</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -115,7 +124,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9, duration: 0.8 }}
-            className="text-lg sm:text-xl md:text-2xl text-ivory/80 mb-4 font-light"
+            className="text-base sm:text-lg md:text-xl lg:text-2xl text-ivory/90 mb-3 sm:mb-4 font-light"
           >
             Weddings • Corporate Events • Grand Celebrations
           </motion.p>
@@ -124,7 +133,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.8 }}
-            className="text-base sm:text-lg text-ivory/60 mb-10 max-w-2xl mx-auto"
+            className="text-sm sm:text-base lg:text-lg text-ivory/70 mb-8 sm:mb-10 max-w-2xl mx-auto px-4"
           >
             Where every detail matters and every moment becomes a cherished memory. 
             We craft bespoke events that reflect your unique story.
@@ -135,23 +144,28 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2, duration: 0.8 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
           >
             <a
               href="#contact"
-              className="group relative px-8 py-4 bg-primary text-primary-foreground rounded-full font-semibold
-                       text-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-105
+              className="group relative w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 
+                       bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
+                       rounded-full font-semibold text-base sm:text-lg overflow-hidden 
+                       transition-all duration-300 hover:shadow-2xl hover:scale-105
                        shadow-[0_4px_30px_rgba(212,175,55,0.4)]"
             >
               <span className="relative z-10">Plan Your Event</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-primary via-gold-light to-primary 
+              <div className="absolute inset-0 bg-gradient-to-r from-rose-gold via-primary to-rose-gold 
                             bg-[length:200%_100%] animate-shimmer opacity-0 group-hover:opacity-100 transition-opacity" />
             </a>
             
             <a
               href="#gallery"
-              className="group flex items-center gap-3 px-8 py-4 border-2 border-ivory/40 text-ivory rounded-full 
-                       font-semibold text-lg hover:bg-ivory/10 hover:border-ivory/60 transition-all duration-300"
+              className="group flex items-center justify-center gap-3 w-full sm:w-auto 
+                       px-6 sm:px-8 py-3.5 sm:py-4 
+                       bg-ivory/10 backdrop-blur-md border-2 border-ivory/40 text-ivory 
+                       rounded-full font-semibold text-base sm:text-lg 
+                       hover:bg-ivory/20 hover:border-ivory/60 transition-all duration-300"
             >
               <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
               <span>View Our Work</span>
@@ -165,22 +179,22 @@ const HeroSection = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 1 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2"
       >
-        <a href="#events" className="flex flex-col items-center gap-2 text-ivory/60 hover:text-ivory transition-colors">
-          <span className="text-sm tracking-widest uppercase">Explore</span>
+        <a href="#events" className="flex flex-col items-center gap-1.5 sm:gap-2 text-ivory/70 hover:text-ivory transition-colors">
+          <span className="text-xs sm:text-sm tracking-widest uppercase">Explore</span>
           <motion.div
-            animate={{ y: [0, 10, 0] }}
+            animate={{ y: [0, 8, 0] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           >
-            <ChevronDown className="w-6 h-6" />
+            <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
           </motion.div>
         </a>
       </motion.div>
 
       {/* Decorative Elements */}
-      <div className="absolute top-1/4 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-10 w-40 h-40 bg-rose-gold/10 rounded-full blur-3xl" />
+      <div className="absolute top-1/4 left-4 sm:left-10 w-20 sm:w-32 h-20 sm:h-32 bg-primary/15 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 right-4 sm:right-10 w-24 sm:w-40 h-24 sm:h-40 bg-rose-gold/15 rounded-full blur-3xl" />
     </section>
   );
 };
