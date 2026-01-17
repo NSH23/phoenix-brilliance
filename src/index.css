@@ -1,96 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Luxury Light Theme - Ivory & Gold */
+    --background: 45 33% 97%;
+    --foreground: 30 15% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 45 30% 99%;
+    --card-foreground: 30 15% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 45 30% 99%;
+    --popover-foreground: 30 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Royal Gold as Primary */
+    --primary: 43 74% 49%;
+    --primary-foreground: 45 33% 97%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Champagne / Rose Gold Secondary */
+    --secondary: 15 45% 90%;
+    --secondary-foreground: 30 15% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Soft Blush Muted */
+    --muted: 350 30% 95%;
+    --muted-foreground: 30 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Emerald Accent */
+    --accent: 152 40% 35%;
+    --accent-foreground: 45 33% 97%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 45 33% 97%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 40 20% 88%;
+    --input: 40 20% 88%;
+    --ring: 43 74% 49%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Custom Luxury Colors */
+    --gold: 43 74% 49%;
+    --gold-light: 43 74% 65%;
+    --gold-dark: 43 74% 35%;
+    --champagne: 35 50% 85%;
+    --rose-gold: 15 55% 75%;
+    --blush: 350 50% 92%;
+    --ivory: 45 33% 97%;
+    --charcoal: 30 15% 15%;
+    --emerald: 152 40% 35%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Glassmorphism */
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 0 0% 100% / 0.3;
+    --glass-shadow: 0 8px 32px 0 rgba(139, 109, 76, 0.15);
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(43 74% 49%), hsl(35 60% 65%));
+    --gradient-rose: linear-gradient(135deg, hsl(350 50% 92%), hsl(15 55% 85%));
+    --gradient-hero: linear-gradient(180deg, transparent 0%, hsl(30 15% 10% / 0.6) 100%);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 45 30% 96%;
+    --sidebar-foreground: 30 15% 25%;
+    --sidebar-primary: 43 74% 49%;
+    --sidebar-primary-foreground: 45 33% 97%;
+    --sidebar-accent: 40 25% 92%;
+    --sidebar-accent-foreground: 30 15% 20%;
+    --sidebar-border: 40 20% 88%;
+    --sidebar-ring: 43 74% 49%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Luxury Dark Theme - Charcoal & Gold */
+    --background: 30 20% 8%;
+    --foreground: 45 25% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 30 18% 12%;
+    --card-foreground: 45 25% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 30 18% 12%;
+    --popover-foreground: 45 25% 92%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Glowing Gold Primary */
+    --primary: 43 80% 55%;
+    --primary-foreground: 30 20% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Warm Champagne Secondary */
+    --secondary: 35 25% 20%;
+    --secondary-foreground: 45 25% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    /* Deep Muted */
+    --muted: 30 15% 18%;
+    --muted-foreground: 40 15% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent Emerald */
+    --accent: 152 45% 45%;
+    --accent-foreground: 30 20% 8%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 45 25% 92%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 30 15% 22%;
+    --input: 30 15% 22%;
+    --ring: 43 80% 55%;
+
+    /* Dark Theme Custom Colors */
+    --gold: 43 80% 55%;
+    --gold-light: 43 80% 70%;
+    --gold-dark: 43 70% 40%;
+    --champagne: 35 30% 30%;
+    --rose-gold: 15 40% 35%;
+    --blush: 350 25% 22%;
+    --ivory: 45 20% 85%;
+    --charcoal: 30 20% 8%;
+    --emerald: 152 45% 45%;
+
+    /* Dark Glassmorphism */
+    --glass-bg: 30 18% 15% / 0.8;
+    --glass-border: 43 80% 55% / 0.2;
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+
+    /* Dark Gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(43 80% 55%), hsl(35 50% 45%));
+    --gradient-rose: linear-gradient(135deg, hsl(350 25% 22%), hsl(15 35% 28%));
+    --gradient-hero: linear-gradient(180deg, transparent 0%, hsl(30 20% 5% / 0.8) 100%);
+
+    /* Sidebar Dark */
+    --sidebar-background: 30 18% 10%;
+    --sidebar-foreground: 45 20% 85%;
+    --sidebar-primary: 43 80% 55%;
+    --sidebar-primary-foreground: 30 20% 8%;
+    --sidebar-accent: 30 15% 18%;
+    --sidebar-accent-foreground: 45 20% 85%;
+    --sidebar-border: 30 15% 20%;
+    --sidebar-ring: 43 80% 55%;
   }
 }
 
@@ -99,7 +145,179 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer components {
+  /* Glass Card Effect */
+  .glass-card {
+    @apply relative overflow-hidden rounded-2xl border;
+    background: hsl(var(--glass-bg));
+    border-color: hsl(var(--glass-border));
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Gold Gradient Text */
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-gold);
+  }
+
+  /* Elegant Button Styles */
+  .btn-primary {
+    @apply relative overflow-hidden bg-primary text-primary-foreground px-8 py-4 rounded-full font-medium 
+           transition-all duration-300 hover:shadow-lg hover:scale-105;
+    box-shadow: 0 4px 20px hsl(var(--gold) / 0.3);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 8px 30px hsl(var(--gold) / 0.5);
+  }
+
+  .btn-secondary {
+    @apply relative overflow-hidden border-2 border-primary text-primary bg-transparent px-8 py-4 rounded-full font-medium
+           transition-all duration-300 hover:bg-primary hover:text-primary-foreground;
+  }
+
+  /* Photo Frame Effect */
+  .photo-frame {
+    @apply relative p-2 bg-gradient-to-br from-primary/20 to-rose-gold/20 rounded-lg;
+    box-shadow: 
+      inset 0 1px 0 hsl(var(--gold-light) / 0.3),
+      0 10px 40px hsl(var(--charcoal) / 0.15);
+  }
+
+  .photo-frame::before {
+    content: '';
+    @apply absolute inset-1 rounded-md;
+    background: linear-gradient(135deg, hsl(var(--gold-light) / 0.1), transparent);
+  }
+
+  /* Sparkle Animation */
+  @keyframes sparkle {
+    0%, 100% { opacity: 0; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  .sparkle {
+    animation: sparkle 2s ease-in-out infinite;
+  }
+
+  /* Floating Animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Fade In Up Animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+
+  /* Glow Effect */
+  .glow-gold {
+    box-shadow: 0 0 30px hsl(var(--gold) / 0.4), 0 0 60px hsl(var(--gold) / 0.2);
+  }
+
+  /* Section Title */
+  .section-title {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight;
+    font-family: 'Playfair Display', serif;
+  }
+
+  .section-subtitle {
+    @apply text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto;
+  }
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
+}
+
+@layer utilities {
+  .text-shadow-lg {
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .bg-rose-gold {
+    background-color: hsl(var(--rose-gold));
+  }
+
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+
+  .bg-gold {
+    background-color: hsl(var(--gold));
+  }
+
+  .border-gold {
+    border-color: hsl(var(--gold));
+  }
+
+  .bg-champagne {
+    background-color: hsl(var(--champagne));
+  }
+
+  .bg-blush {
+    background-color: hsl(var(--blush));
+  }
+
+  .bg-ivory {
+    background-color: hsl(var(--ivory));
+  }
+
+  .bg-charcoal {
+    background-color: hsl(var(--charcoal));
+  }
+
+  .text-emerald {
+    color: hsl(var(--emerald));
+  }
+
+  .bg-emerald {
+    background-color: hsl(var(--emerald));
   }
 }
