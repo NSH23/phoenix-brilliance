@@ -155,7 +155,7 @@ const HeroSection = () => {
           >
             {/* Desktop: Plan Your Event */}
             <a
-              href="/contact"
+              href="#contact"
               className="hidden sm:inline-flex group relative w-auto px-8 py-4 
                        bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                        rounded-full font-semibold text-lg overflow-hidden 
@@ -192,7 +192,7 @@ const HeroSection = () => {
                 <span>Our Work</span>
               </a>
               <a
-                href="/contact"
+                href="#contact"
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
                          bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                          rounded-2xl font-semibold text-sm shadow-lg shadow-primary/30

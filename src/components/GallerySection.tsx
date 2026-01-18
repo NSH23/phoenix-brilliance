@@ -2,17 +2,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { X, ChevronLeft, ChevronRight, Heart, Share2, Download, ZoomIn } from "lucide-react";
 
+import weddingImg from "@/assets/wedding-event.jpg";
+import birthdayImg from "@/assets/birthday-event.jpg";
+import engagementImg from "@/assets/engagement-event.jpg";
+import sangeetImg from "@/assets/sangeet-event.jpg";
+import haldiImg from "@/assets/haldi-event.jpg";
+import mehendiImg from "@/assets/mehendi-event.jpg";
+import anniversaryImg from "@/assets/anniversary-event.jpg";
+import corporateImg from "@/assets/corporate-event.jpg";
+import carOpeningImg from "@/assets/car-opening-event.jpg";
+import heroImg from "@/assets/hero-wedding.jpg";
+
 const galleryImages = [
-  { src: "/gallery wedding.jpg", category: "Wedding", title: "Royal Wedding Reception", featured: true },
-  { src: "/wedding.jpg", category: "Wedding", title: "Floral Mandap Setup", featured: true },
-  { src: "/engagement.jpg", category: "Wedding", title: "Romantic Engagement", featured: false },
-  { src: "/birthday.jpg", category: "Parties", title: "Elegant Birthday Celebration", featured: false },
-  { src: "/sangeet.jpg", category: "Traditional", title: "Vibrant Sangeet Night", featured: true },
-  { src: "/haldi.jpg", category: "Traditional", title: "Traditional Haldi Ceremony", featured: false },
-  { src: "/mehendi.jpg", category: "Traditional", title: "Colorful Mehendi Setup", featured: false },
-  { src: "/anniversary.jpg", category: "Parties", title: "Romantic Anniversary Dinner", featured: false },
-  { src: "/coprate.jpg", category: "Corporate", title: "Corporate Conference", featured: true },
-  { src: "/coprate.jpg", category: "Corporate", title: "Luxury Car Launch", featured: false },
+  { src: heroImg, category: "Wedding", title: "Royal Wedding Reception", featured: true },
+  { src: weddingImg, category: "Wedding", title: "Floral Mandap Setup", featured: true },
+  { src: engagementImg, category: "Wedding", title: "Romantic Engagement", featured: false },
+  { src: birthdayImg, category: "Parties", title: "Elegant Birthday Celebration", featured: false },
+  { src: sangeetImg, category: "Traditional", title: "Vibrant Sangeet Night", featured: true },
+  { src: haldiImg, category: "Traditional", title: "Traditional Haldi Ceremony", featured: false },
+  { src: mehendiImg, category: "Traditional", title: "Colorful Mehendi Setup", featured: false },
+  { src: anniversaryImg, category: "Parties", title: "Romantic Anniversary Dinner", featured: false },
+  { src: corporateImg, category: "Corporate", title: "Corporate Conference", featured: true },
+  { src: carOpeningImg, category: "Corporate", title: "Luxury Car Launch", featured: false },
 ];
 
 const categories = ["All", "Wedding", "Corporate", "Traditional", "Parties"];
@@ -273,7 +284,7 @@ const GallerySection = () => {
           className="text-center mt-14"
         >
           <a
-            href="/contact"
+            href="#contact"
             className="inline-flex items-center gap-3 px-8 py-4 rounded-full
                      bg-gradient-to-r from-primary/10 to-rose-gold/10 
                      border-2 border-primary/30 text-foreground font-semibold

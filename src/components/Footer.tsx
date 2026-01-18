@@ -14,9 +14,9 @@ const Footer = () => {
         <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-rose-gold rounded-full blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 relative">
+      <div className="container mx-auto px-4 relative">
         {/* Main Footer */}
-        <div className="py-8 sm:py-12 lg:py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
+        <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -33,10 +33,10 @@ const Footer = () => {
                 <span className="block text-xs text-ivory/60 tracking-widest uppercase">Events & Production</span>
               </div>
             </div>
-            <p className="text-ivory/70 leading-relaxed mb-4 sm:mb-6 text-sm sm:text-base">
+            <p className="text-ivory/70 leading-relaxed mb-6">
               Turning your dreams into magnificent celebrations. Where every moment becomes a cherished memory.
             </p>
-            <div className="flex gap-2 sm:gap-3">
+            <div className="flex gap-3">
               {[Instagram, Facebook, Twitter, Youtube].map((Icon, index) => (
                 <a
                   key={index}
@@ -57,8 +57,8 @@ const Footer = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <h4 className="font-serif text-base sm:text-lg font-semibold mb-4 sm:mb-6">Quick Links</h4>
-            <ul className="space-y-2 sm:space-y-3">
+            <h4 className="font-serif text-lg font-semibold mb-6">Quick Links</h4>
+            <ul className="space-y-3">
               {["Home", "Events", "Services", "Gallery", "Why Us", "Contact"].map((link) => (
                 <li key={link}>
                   <a
@@ -80,8 +80,8 @@ const Footer = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h4 className="font-serif text-base sm:text-lg font-semibold mb-4 sm:mb-6">Our Events</h4>
-            <ul className="space-y-2 sm:space-y-3">
+            <h4 className="font-serif text-lg font-semibold mb-6">Our Events</h4>
+            <ul className="space-y-3">
               {["Weddings", "Birthdays", "Engagements", "Corporate", "Sangeet", "Traditional"].map((event) => (
                 <li key={event}>
                   <a
@@ -103,38 +103,38 @@ const Footer = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <h4 className="font-serif text-base sm:text-lg font-semibold mb-4 sm:mb-6">Get In Touch</h4>
-            <ul className="space-y-3 sm:space-y-4 text-ivory/70">
+            <h4 className="font-serif text-lg font-semibold mb-6">Get In Touch</h4>
+            <ul className="space-y-4 text-ivory/70">
               <li>
-                <p className="font-medium text-ivory text-sm sm:text-base">Address</p>
-                <p className="text-xs sm:text-sm">Shop no 1, Phoenix Events and Production,<br />Kailas kondiba Dange Plot, Unit 4,<br />Dange Chowk Rd, Pune, Maharashtra 411033</p>
+                <p className="font-medium text-ivory">Address</p>
+                <p className="text-sm">123 Event Plaza, Creative District<br />Mumbai, Maharashtra 400001</p>
               </li>
               <li>
-                <p className="font-medium text-ivory text-sm sm:text-base">Phone</p>
-                <p className="text-xs sm:text-sm">+91 70667 63276</p>
+                <p className="font-medium text-ivory">Phone</p>
+                <p className="text-sm">+91 98765 43210</p>
               </li>
               <li>
-                <p className="font-medium text-ivory text-sm sm:text-base">Email</p>
-                <p className="text-xs sm:text-sm">hello@phoenixevents.com</p>
+                <p className="font-medium text-ivory">Email</p>
+                <p className="text-sm">hello@phoenixevents.com</p>
               </li>
             </ul>
           </motion.div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="py-4 sm:py-6 border-t border-ivory/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <p className="text-ivory/60 text-xs sm:text-sm flex items-center gap-2 text-center sm:text-left">
+        <div className="py-6 border-t border-ivory/10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-ivory/60 text-sm flex items-center gap-2">
             © 2024 Phoenix Events & Production. Made with 
-            <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-primary fill-primary" /> 
+            <Heart className="w-4 h-4 text-primary fill-primary" /> 
             in India
           </p>
           
           <button
             onClick={scrollToTop}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/20 hover:bg-primary flex items-center justify-center
+            className="w-12 h-12 rounded-full bg-primary/20 hover:bg-primary flex items-center justify-center
                      transition-all duration-300 hover:scale-110 group"
           >
-            <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-y-1 transition-transform" />
+            <ArrowUp className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
           </button>
         </div>
       </div>

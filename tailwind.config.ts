@@ -76,8 +76,6 @@ export default {
         ivory: "hsl(var(--ivory))",
         charcoal: "hsl(var(--charcoal))",
         emerald: "hsl(var(--emerald))",
-        sage: "hsl(var(--sage))",
-        lavender: "hsl(var(--lavender))",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -6,74 +6,71 @@
 
 @layer base {
   :root {
-    /* Light Theme - Sage Green & Soft Ivory */
-    --background: 40 30% 98%;
-    --foreground: 210 10% 25%;
+    /* Luxury Light Theme - Ivory & Gold */
+    --background: 45 33% 97%;
+    --foreground: 30 15% 15%;
 
-    --card: 40 25% 99%;
-    --card-foreground: 210 10% 25%;
+    --card: 45 30% 99%;
+    --card-foreground: 30 15% 15%;
 
-    --popover: 40 25% 99%;
-    --popover-foreground: 210 10% 25%;
+    --popover: 45 30% 99%;
+    --popover-foreground: 30 15% 15%;
 
-    /* Soft Sage Green as Primary */
-    --primary: 145 25% 45%;
-    --primary-foreground: 40 30% 98%;
+    /* Royal Gold as Primary */
+    --primary: 43 74% 49%;
+    --primary-foreground: 45 33% 97%;
 
-    /* Warm Off-White Secondary */
-    --secondary: 35 20% 95%;
-    --secondary-foreground: 210 10% 30%;
+    /* Champagne / Rose Gold Secondary */
+    --secondary: 15 45% 90%;
+    --secondary-foreground: 30 15% 20%;
 
-    /* Muted Blush Pink */
-    --muted: 350 25% 95%;
-    --muted-foreground: 210 8% 50%;
+    /* Soft Blush Muted */
+    --muted: 350 30% 95%;
+    --muted-foreground: 30 10% 45%;
 
-    /* Dusty Lavender Accent */
-    --accent: 270 20% 70%;
-    --accent-foreground: 210 10% 20%;
+    /* Emerald Accent */
+    --accent: 152 40% 35%;
+    --accent-foreground: 45 33% 97%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 40 30% 98%;
+    --destructive-foreground: 45 33% 97%;
 
-    /* Very Light Ash for borders/dividers */
-    --border: 220 10% 90%;
-    --input: 220 10% 90%;
-    --ring: 145 25% 45%;
+    --border: 40 20% 88%;
+    --input: 40 20% 88%;
+    --ring: 43 74% 49%;
 
     --radius: 0.75rem;
 
-    /* Custom Theme Colors */
-    --gold: 145 25% 45%;
-    --gold-light: 145 25% 60%;
-    --gold-dark: 145 30% 35%;
-    --champagne: 35 20% 92%;
-    --rose-gold: 350 30% 80%;
-    --blush: 350 25% 94%;
-    --ivory: 40 30% 98%;
-    --charcoal: 210 10% 25%;
-    --emerald: 145 25% 45%;
-    --sage: 145 25% 45%;
-    --lavender: 270 20% 70%;
+    /* Custom Luxury Colors */
+    --gold: 43 74% 49%;
+    --gold-light: 43 74% 65%;
+    --gold-dark: 43 74% 35%;
+    --champagne: 35 50% 85%;
+    --rose-gold: 15 55% 75%;
+    --blush: 350 50% 92%;
+    --ivory: 45 33% 97%;
+    --charcoal: 30 15% 15%;
+    --emerald: 152 40% 35%;
 
     /* Glassmorphism */
-    --glass-bg: 0 0% 100% / 0.8;
-    --glass-border: 145 25% 45% / 0.15;
-    --glass-shadow: 0 8px 32px 0 rgba(100, 130, 110, 0.1);
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 0 0% 100% / 0.3;
+    --glass-shadow: 0 8px 32px 0 rgba(139, 109, 76, 0.15);
 
     /* Gradients */
-    --gradient-gold: linear-gradient(135deg, hsl(145 25% 45%), hsl(145 20% 55%));
-    --gradient-rose: linear-gradient(135deg, hsl(350 25% 94%), hsl(350 30% 88%));
-    --gradient-hero: linear-gradient(180deg, transparent 0%, hsl(210 10% 15% / 0.5) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(43 74% 49%), hsl(35 60% 65%));
+    --gradient-rose: linear-gradient(135deg, hsl(350 50% 92%), hsl(15 55% 85%));
+    --gradient-hero: linear-gradient(180deg, transparent 0%, hsl(30 15% 10% / 0.6) 100%);
 
     /* Sidebar */
-    --sidebar-background: 40 25% 97%;
-    --sidebar-foreground: 210 10% 30%;
-    --sidebar-primary: 145 25% 45%;
-    --sidebar-primary-foreground: 40 30% 98%;
-    --sidebar-accent: 35 20% 94%;
-    --sidebar-accent-foreground: 210 10% 25%;
-    --sidebar-border: 220 10% 90%;
-    --sidebar-ring: 145 25% 45%;
+    --sidebar-background: 45 30% 96%;
+    --sidebar-foreground: 30 15% 25%;
+    --sidebar-primary: 43 74% 49%;
+    --sidebar-primary-foreground: 45 33% 97%;
+    --sidebar-accent: 40 25% 92%;
+    --sidebar-accent-foreground: 30 15% 20%;
+    --sidebar-border: 40 20% 88%;
+    --sidebar-ring: 43 74% 49%;
   }
 
   .dark {
@@ -277,17 +274,6 @@
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary));
   }
-
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Hide scrollbar for IE, Edge and Firefox */
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
 }
 
 @layer utilities {
@@ -333,21 +319,5 @@
 
   .bg-emerald {
     background-color: hsl(var(--emerald));
-  }
-
-  .text-sage {
-    color: hsl(var(--sage));
-  }
-
-  .bg-sage {
-    background-color: hsl(var(--sage));
-  }
-
-  .text-lavender {
-    color: hsl(var(--lavender));
-  }
-
-  .bg-lavender {
-    background-color: hsl(var(--lavender));
   }
 }
