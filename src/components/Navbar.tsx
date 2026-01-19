@@ -53,7 +53,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
             <div className="relative">
               <img 
-                src="/logo.png" 
+                src="/logo.jpg" 
                 alt="Phoenix Events & Production Logo" 
                 className={`w-9 h-9 sm:w-11 sm:h-11 object-contain transition-all duration-300 group-hover:scale-105
                           ${scrolled ? 'opacity-100' : 'opacity-100'}`}
@@ -75,13 +75,30 @@ const Navbar = () => {
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
               const isExternal = link.href.startsWith('#');
-              const LinkComponent = isExternal ? 'a' : Link;
-              const linkProps = isExternal ? { href: link.href } : { to: link.href };
+              
+              if (isExternal) {
+                return (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className={`relative px-4 py-2 rounded-full text-sm font-medium tracking-wide 
+                              transition-all duration-300 group
+                              ${scrolled 
+                                ? 'text-foreground/80 hover:text-primary hover:bg-primary/5' 
+                                : 'text-ivory/90 hover:text-ivory hover:bg-ivory/10'}`}
+                  >
+                    {link.name}
+                    <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full 
+                                   transition-all duration-300 opacity-0 group-hover:opacity-100
+                                   ${scrolled ? 'bg-primary' : 'bg-ivory'}`} />
+                  </a>
+                );
+              }
               
               return (
-                <LinkComponent
+                <Link
                   key={link.name}
-                  {...linkProps}
+                  to={link.href}
                   className={`relative px-4 py-2 rounded-full text-sm font-medium tracking-wide 
                             transition-all duration-300 group
                             ${scrolled 
@@ -92,7 +109,7 @@ const Navbar = () => {
                   <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full 
                                  transition-all duration-300 opacity-0 group-hover:opacity-100
                                  ${scrolled ? 'bg-primary' : 'bg-ivory'}`} />
-                </LinkComponent>
+                </Link>
               );
             })}
           </div>
@@ -181,26 +198,48 @@ const Navbar = () => {
               <nav className="flex flex-col gap-2 relative">
                 {navLinks.map((link, index) => {
                   const isExternal = link.href.startsWith('#');
-                  const LinkComponent = isExternal ? motion.a : motion(Link);
-                  const linkProps = isExternal ? { href: link.href } : { to: link.href };
+                  
+                  if (isExternal) {
+                    return (
+                      <motion.a
+                        key={link.name}
+                        href={link.href}
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center justify-between py-4 px-4 rounded-xl
+                                 text-xl font-serif font-medium text-foreground 
+                                 hover:bg-primary/10 hover:text-primary transition-all duration-300
+                                 border-b border-border/30 group"
+                      >
+                        <span>{link.name}</span>
+                        <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
+                                       transition-colors duration-300" />
+                      </motion.a>
+                    );
+                  }
                   
                   return (
-                    <LinkComponent
+                    <motion.div
                       key={link.name}
-                      {...linkProps}
                       initial={{ opacity: 0, x: -30 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-between py-4 px-4 rounded-xl
-                               text-xl font-serif font-medium text-foreground 
-                               hover:bg-primary/10 hover:text-primary transition-all duration-300
-                               border-b border-border/30 group"
                     >
-                      <span>{link.name}</span>
-                      <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
-                                     transition-colors duration-300" />
-                    </LinkComponent>
+                      <Link
+                        to={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center justify-between py-4 px-4 rounded-xl
+                                 text-xl font-serif font-medium text-foreground 
+                                 hover:bg-primary/10 hover:text-primary transition-all duration-300
+                                 border-b border-border/30 group"
+                      >
+                        <span>{link.name}</span>
+                        <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
+                                       transition-colors duration-300" />
+                      </Link>
+                    </motion.div>
                   );
                 })}
               </nav>
