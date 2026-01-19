@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
-  { name: "Home", href: "#home" },
+  { name: "Home", href: "/" },
   { name: "Events", href: "#events" },
   { name: "Services", href: "#services" },
   { name: "Gallery", href: "#gallery" },
   { name: "Why Us", href: "#why-us" },
-  { name: "Contact", href: "#contact" },
+  { name: "Contact", href: "/contact" },
 ];
 
 const Navbar = () => {
@@ -49,19 +50,13 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <a href="#home" className="flex items-center gap-2 sm:gap-3 group">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
             <div className="relative">
-              <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center
-                            transition-all duration-300 group-hover:scale-105
-                            ${scrolled 
-                              ? 'bg-gradient-to-br from-primary to-rose-gold shadow-lg shadow-primary/20' 
-                              : 'bg-primary/90 backdrop-blur-sm'}`}>
-                <span className="font-serif font-bold text-primary-foreground text-lg sm:text-xl">P</span>
-              </div>
-              <motion.div 
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-rose-gold rounded-full" 
+              <img 
+                src="/logo.png" 
+                alt="Phoenix Events & Production Logo" 
+                className={`w-9 h-9 sm:w-11 sm:h-11 object-contain transition-all duration-300 group-hover:scale-105
+                          ${scrolled ? 'opacity-100' : 'opacity-100'}`}
               />
             </div>
             <div className="flex flex-col">
@@ -74,26 +69,32 @@ const Navbar = () => {
                 Events & Production
               </span>
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className={`relative px-4 py-2 rounded-full text-sm font-medium tracking-wide 
-                          transition-all duration-300 group
-                          ${scrolled 
-                            ? 'text-foreground/80 hover:text-primary hover:bg-primary/5' 
-                            : 'text-ivory/90 hover:text-ivory hover:bg-ivory/10'}`}
-              >
-                {link.name}
-                <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full 
-                               transition-all duration-300 opacity-0 group-hover:opacity-100
-                               ${scrolled ? 'bg-primary' : 'bg-ivory'}`} />
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const isExternal = link.href.startsWith('#');
+              const LinkComponent = isExternal ? 'a' : Link;
+              const linkProps = isExternal ? { href: link.href } : { to: link.href };
+              
+              return (
+                <LinkComponent
+                  key={link.name}
+                  {...linkProps}
+                  className={`relative px-4 py-2 rounded-full text-sm font-medium tracking-wide 
+                            transition-all duration-300 group
+                            ${scrolled 
+                              ? 'text-foreground/80 hover:text-primary hover:bg-primary/5' 
+                              : 'text-ivory/90 hover:text-ivory hover:bg-ivory/10'}`}
+                >
+                  {link.name}
+                  <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full 
+                                 transition-all duration-300 opacity-0 group-hover:opacity-100
+                                 ${scrolled ? 'bg-primary' : 'bg-ivory'}`} />
+                </LinkComponent>
+              );
+            })}
           </div>
 
           {/* Right Actions */}
@@ -101,7 +102,7 @@ const Navbar = () => {
             <ThemeToggle />
             
             <a
-              href="tel:+1234567890"
+              href="tel:+917066763276"
               className={`hidden md:flex items-center gap-2 px-4 lg:px-5 py-2.5 rounded-full 
                         font-medium text-sm transition-all duration-300 
                         hover:shadow-lg hover:scale-105 group
@@ -178,24 +179,30 @@ const Navbar = () => {
               
               {/* Navigation Links */}
               <nav className="flex flex-col gap-2 relative">
-                {navLinks.map((link, index) => (
-                  <motion.a
-                    key={link.name}
-                    href={link.href}
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center justify-between py-4 px-4 rounded-xl
-                             text-xl font-serif font-medium text-foreground 
-                             hover:bg-primary/10 hover:text-primary transition-all duration-300
-                             border-b border-border/30 group"
-                  >
-                    <span>{link.name}</span>
-                    <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
-                                   transition-colors duration-300" />
-                  </motion.a>
-                ))}
+                {navLinks.map((link, index) => {
+                  const isExternal = link.href.startsWith('#');
+                  const LinkComponent = isExternal ? motion.a : motion(Link);
+                  const linkProps = isExternal ? { href: link.href } : { to: link.href };
+                  
+                  return (
+                    <LinkComponent
+                      key={link.name}
+                      {...linkProps}
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-between py-4 px-4 rounded-xl
+                               text-xl font-serif font-medium text-foreground 
+                               hover:bg-primary/10 hover:text-primary transition-all duration-300
+                               border-b border-border/30 group"
+                    >
+                      <span>{link.name}</span>
+                      <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
+                                     transition-colors duration-300" />
+                    </LinkComponent>
+                  );
+                })}
               </nav>
 
               {/* CTA Button */}
@@ -206,7 +213,7 @@ const Navbar = () => {
                 className="mt-8"
               >
                 <a
-                  href="tel:+1234567890"
+                  href="tel:+917066763276"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center gap-3 w-full px-6 py-4 
                            bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 

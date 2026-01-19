@@ -106,8 +106,8 @@ const ContactSection = () => {
             className="lg:col-span-2 space-y-4 sm:space-y-6"
           >
             {/* Mobile: Horizontal scroll contact cards */}
-            <div className="sm:hidden">
-              <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
+            <div className="sm:hidden mb-4">
+              <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory">
                 {[
                   { icon: MapPin, title: "Visit Us", info: "Mumbai, Maharashtra" },
                   { icon: Phone, title: "Call Us", info: "+91 98765 43210" },
@@ -117,7 +117,7 @@ const ContactSection = () => {
                   <div
                     key={item.title}
                     className="flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-2xl 
-                             bg-card border border-border/50 min-w-[140px] text-center"
+                             bg-card border border-border/50 min-w-[140px] max-w-[140px] text-center snap-start"
                   >
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
                       <item.icon className="w-5 h-5 text-primary" />
@@ -127,6 +127,20 @@ const ContactSection = () => {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Mobile: Map with square size */}
+            <div className="sm:hidden glass-card overflow-hidden rounded-2xl aspect-square w-full">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241316.6433282176!2d72.74109978826069!3d19.082502009547596!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c6306644edc1%3A0x5da4ed8f8d648c69!2sMumbai%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1699999999999!5m2!1sen!2sin"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Location Map"
+              />
             </div>
 
             {/* Desktop: Full contact card */}
@@ -199,8 +213,8 @@ const ContactSection = () => {
             transition={{ duration: 0.8 }}
             className="lg:col-span-3"
           >
-            <div className="glass-card p-5 sm:p-6 lg:p-8">
-              <h3 className="font-serif text-lg sm:text-xl lg:text-2xl font-bold text-foreground mb-4 sm:mb-6">
+            <div className="glass-card p-3 sm:p-6 lg:p-8">
+              <h3 className="font-serif text-base sm:text-xl lg:text-2xl font-bold text-foreground mb-3 sm:mb-6">
                 Request a Quote
               </h3>
               
@@ -217,64 +231,64 @@ const ContactSection = () => {
                   <p className="text-muted-foreground text-sm sm:text-base">We'll get back to you within 24 hours.</p>
                 </motion.div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-5">
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Your Name *</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Your Name *</label>
                       <input
                         type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
                         required
-                        className="w-full px-3.5 sm:px-4 py-3 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-background border border-border 
                                  focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
-                                 transition-all duration-300 text-sm sm:text-base"
+                                 transition-all duration-300 text-xs sm:text-base"
                         placeholder="John Doe"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Phone Number *</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Phone Number *</label>
                       <input
                         type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
                         required
-                        className="w-full px-3.5 sm:px-4 py-3 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-background border border-border 
                                  focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
-                                 transition-all duration-300 text-sm sm:text-base"
+                                 transition-all duration-300 text-xs sm:text-base"
                         placeholder="+91 98765 43210"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Email Address *</label>
+                    <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Email Address *</label>
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-3.5 sm:px-4 py-3 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-background border border-border 
                                focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
-                               transition-all duration-300 text-sm sm:text-base"
+                               transition-all duration-300 text-xs sm:text-base"
                       placeholder="you@example.com"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-5">
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Event Type *</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Event Type *</label>
                       <select
                         name="eventType"
                         value={formData.eventType}
                         onChange={handleChange}
                         required
-                        className="w-full px-3.5 sm:px-4 py-3 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-background border border-border 
                                  focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
-                                 transition-all duration-300 text-sm sm:text-base"
+                                 transition-all duration-300 text-xs sm:text-base"
                       >
                         <option value="">Select Event Type</option>
                         {eventTypes.map((type) => (
@@ -283,43 +297,43 @@ const ContactSection = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Event Date *</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Event Date *</label>
                       <input
                         type="date"
                         name="eventDate"
                         value={formData.eventDate}
                         onChange={handleChange}
                         required
-                        className="w-full px-3.5 sm:px-4 py-3 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-background border border-border 
                                  focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
-                                 transition-all duration-300 text-sm sm:text-base"
+                                 transition-all duration-300 text-xs sm:text-base"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Tell Us About Your Vision</label>
+                    <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Tell Us About Your Vision</label>
                     <textarea
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
-                      rows={3}
-                      className="w-full px-3.5 sm:px-4 py-3 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
+                      rows={2}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-background border border-border 
                                focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
-                               transition-all duration-300 resize-none text-sm sm:text-base"
+                               transition-all duration-300 resize-none text-xs sm:text-base"
                       placeholder="Share your ideas, theme preferences..."
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 
+                    className="w-full flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 
                              bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
-                             rounded-2xl sm:rounded-full font-semibold text-sm sm:text-lg 
+                             rounded-xl sm:rounded-full font-semibold text-xs sm:text-lg 
                              hover:shadow-lg hover:scale-[1.02] transition-all duration-300
                              shadow-lg shadow-primary/30 active:scale-95"
                   >
-                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Send className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                     <span>Get a Custom Quote</span>
                   </button>
                 </form>

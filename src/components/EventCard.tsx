@@ -23,15 +23,15 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
         className="group relative cursor-pointer"
       >
         {/* Photo Frame Effect - Optimized for Mobile */}
-        <div className="relative p-1.5 sm:p-2 md:p-3 bg-gradient-to-br from-primary/10 via-rose-gold/10 to-champagne/20 
-                      rounded-xl sm:rounded-2xl transition-all duration-500 
+        <div className="relative p-1 sm:p-1.5 md:p-2 bg-gradient-to-br from-primary/10 via-rose-gold/10 to-champagne/20 
+                      rounded-lg sm:rounded-xl transition-all duration-500 
                       group-hover:shadow-luxury-lg group-hover:from-primary/20 group-hover:to-rose-gold/20
                       dark:from-primary/5 dark:via-card dark:to-rose-gold/5">
           {/* Inner Frame Border */}
-          <div className="absolute inset-1.5 sm:inset-2 border border-primary/20 rounded-lg sm:rounded-xl pointer-events-none" />
+          <div className="absolute inset-1 sm:inset-1.5 md:inset-2 border border-primary/20 rounded-md sm:rounded-lg pointer-events-none" />
           
           {/* Image Container - Consistent aspect ratio for mobile grid */}
-          <div className="relative overflow-hidden rounded-lg sm:rounded-xl aspect-[3/4] sm:aspect-[4/5]">
+          <div className="relative overflow-hidden rounded-md sm:rounded-lg aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4]">
             <img
               src={image}
               alt={title}
@@ -49,13 +49,13 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
                           bg-gradient-to-t from-primary/30 via-transparent to-transparent" />
 
             {/* Content - Compact for mobile */}
-            <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-6">
-              <h3 className="font-serif text-sm sm:text-lg md:text-xl lg:text-2xl font-bold text-ivory mb-0.5 sm:mb-2 
+            <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 md:p-4">
+              <h3 className="font-serif text-xs sm:text-base md:text-lg font-bold text-ivory mb-0.5 sm:mb-1.5 
                            transform translate-y-1 sm:translate-y-2 group-hover:translate-y-0 
                            transition-transform duration-500 line-clamp-1">
                 {title}
               </h3>
-              <p className="hidden sm:block text-ivory/80 text-xs sm:text-sm line-clamp-2 opacity-0 
+              <p className="hidden md:block text-ivory/80 text-[10px] sm:text-xs line-clamp-2 opacity-0 
                           transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 
                           transition-all duration-500 delay-100">
                 {description}
@@ -63,22 +63,22 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
             </div>
 
             {/* View More Indicator */}
-            <div className="absolute top-2 sm:top-4 right-2 sm:right-4 w-7 h-7 sm:w-10 sm:h-10 
+            <div className="absolute top-1.5 sm:top-2 md:top-3 right-1.5 sm:right-2 md:right-3 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 
                           rounded-full bg-primary/90 backdrop-blur-sm
                           flex items-center justify-center opacity-0 scale-75 
                           group-hover:opacity-100 group-hover:scale-100 transition-all duration-500
                           shadow-lg">
-              <span className="text-primary-foreground text-[10px] sm:text-xs font-medium">View</span>
+              <span className="text-primary-foreground text-[9px] sm:text-[10px] md:text-xs font-medium">View</span>
             </div>
           </div>
         </div>
 
         {/* Decorative Corners - Smaller on mobile */}
-        <div className="absolute -top-1 -left-1 sm:-top-2 sm:-left-2 w-4 h-4 sm:w-6 sm:h-6 
-                      border-l-2 border-t-2 border-primary/40 rounded-tl-lg 
+        <div className="absolute -top-0.5 -left-0.5 sm:-top-1 sm:-left-1 md:-top-1.5 md:-left-1.5 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 
+                      border-l-2 border-t-2 border-primary/40 rounded-tl-md 
                       opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <div className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 
-                      border-r-2 border-b-2 border-primary/40 rounded-br-lg
+        <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 md:-bottom-1.5 md:-right-1.5 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 
+                      border-r-2 border-b-2 border-primary/40 rounded-br-md
                       opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </motion.div>
 
@@ -122,7 +122,7 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
                 {description}
               </p>
               <a
-                href="#contact"
+                href="/contact"
                 className="inline-flex mt-5 sm:mt-6 px-5 sm:px-6 py-2.5 sm:py-3 
                          bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                          rounded-full font-medium text-sm sm:text-base

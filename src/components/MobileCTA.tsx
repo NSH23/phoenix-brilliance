@@ -15,7 +15,7 @@ const MobileCTA = () => {
         <div className="flex items-center justify-between gap-3">
           {/* WhatsApp Button - Primary */}
           <a
-            href="https://wa.me/1234567890?text=Hi! I'm interested in your event services."
+            href="https://wa.me/917066763276?text=Hi! I'm interested in your event services."
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
@@ -29,7 +29,7 @@ const MobileCTA = () => {
 
           {/* Call Button */}
           <a
-            href="tel:+1234567890"
+            href="tel:+917066763276"
             className="flex items-center justify-center w-14 h-14 
                      bg-muted rounded-2xl border border-border
                      active:scale-95 transition-transform duration-200"
@@ -39,7 +39,7 @@ const MobileCTA = () => {
 
           {/* Book Now Button */}
           <a
-            href="#contact"
+            href="/contact"
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
                      bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                      rounded-2xl font-semibold text-sm shadow-lg shadow-primary/30

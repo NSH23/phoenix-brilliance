@@ -1,61 +1,46 @@
 import { motion } from "framer-motion";
 import EventCard from "./EventCard";
 
-import weddingImg from "@/assets/wedding-event.jpg";
-import birthdayImg from "@/assets/birthday-event.jpg";
-import engagementImg from "@/assets/engagement-event.jpg";
-import sangeetImg from "@/assets/sangeet-event.jpg";
-import haldiImg from "@/assets/haldi-event.jpg";
-import mehendiImg from "@/assets/mehendi-event.jpg";
-import anniversaryImg from "@/assets/anniversary-event.jpg";
-import corporateImg from "@/assets/corporate-event.jpg";
-import carOpeningImg from "@/assets/car-opening-event.jpg";
-
 const events = [
   {
     title: "Wedding",
     description: "Transform your dream wedding into reality with our exquisite planning and flawless execution. From intimate ceremonies to grand celebrations, we create magical moments.",
-    image: weddingImg,
+    image: "/wedding 1.jpg",
   },
   {
     title: "Birthday",
     description: "Celebrate another year of life with style! Our birthday events range from elegant soirées to vibrant themed parties that leave lasting impressions.",
-    image: birthdayImg,
+    image: "/birthday.jpg",
   },
   {
     title: "Engagement",
     description: "Mark the beginning of your forever with an enchanting engagement ceremony. We create romantic settings that capture the essence of your love story.",
-    image: engagementImg,
+    image: "/engagement.jpg",
   },
   {
     title: "Sangeet",
     description: "Experience the joy of dance and music with our spectacular Sangeet nights. We blend traditional charm with modern entertainment for unforgettable celebrations.",
-    image: sangeetImg,
+    image: "/sangeet.jpg",
   },
   {
     title: "Haldi",
     description: "Embrace tradition with our beautifully curated Haldi ceremonies. Vibrant décor, traditional elements, and joyful ambiance create the perfect blessing.",
-    image: haldiImg,
+    image: "/haldi.jpg",
   },
   {
     title: "Mehendi",
     description: "Celebrate the art of Mehendi with our colorful and culturally rich setups. Traditional cushions, ambient lighting, and artistic décor set the perfect scene.",
-    image: mehendiImg,
+    image: "/mehendi.jpg",
   },
   {
     title: "Anniversary",
     description: "Rekindle romance and celebrate milestones with our intimate anniversary celebrations. From candlelit dinners to grand parties, we make memories.",
-    image: anniversaryImg,
+    image: "/anniversary.jpg",
   },
   {
     title: "Corporate Events",
     description: "Elevate your brand with our professional corporate event management. Product launches, conferences, and gala dinners executed with precision.",
-    image: corporateImg,
-  },
-  {
-    title: "Car Opening",
-    description: "Launch your automotive showcase with glamour and sophistication. Red carpet events, VIP experiences, and stunning presentations that captivate.",
-    image: carOpeningImg,
+    image: "/coprate.jpg",
   },
 ];
 
@@ -87,8 +72,8 @@ const EventsSection = () => {
           </p>
         </motion.div>
 
-        {/* Events Grid - Improved Mobile Layout */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
+        {/* Events Grid - 4 cards per row on desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-4 lg:gap-5">
           {events.map((event, index) => (
             <EventCard
               key={event.title}
