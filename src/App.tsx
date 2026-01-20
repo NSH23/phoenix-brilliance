@@ -14,6 +14,12 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminEvents from "./pages/admin/Events";
 import AdminAlbums from "./pages/admin/Albums";
 import AdminGallery from "./pages/admin/Gallery";
+import AdminServices from "./pages/admin/Services";
+import AdminCollaborations from "./pages/admin/Collaborations";
+import AdminTestimonials from "./pages/admin/Testimonials";
+import AdminInquiries from "./pages/admin/Inquiries";
+import AdminContent from "./pages/admin/Content";
+import AdminSettings from "./pages/admin/Settings";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -32,26 +38,16 @@ const App = () => (
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/events" element={
-              <ProtectedRoute>
-                <AdminEvents />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/albums" element={
-              <ProtectedRoute>
-                <AdminAlbums />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/gallery" element={
-              <ProtectedRoute>
-                <AdminGallery />
-              </ProtectedRoute>
-            } />
+            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/events" element={<ProtectedRoute><AdminEvents /></ProtectedRoute>} />
+            <Route path="/admin/albums" element={<ProtectedRoute><AdminAlbums /></ProtectedRoute>} />
+            <Route path="/admin/gallery" element={<ProtectedRoute><AdminGallery /></ProtectedRoute>} />
+            <Route path="/admin/services" element={<ProtectedRoute><AdminServices /></ProtectedRoute>} />
+            <Route path="/admin/collaborations" element={<ProtectedRoute><AdminCollaborations /></ProtectedRoute>} />
+            <Route path="/admin/testimonials" element={<ProtectedRoute><AdminTestimonials /></ProtectedRoute>} />
+            <Route path="/admin/inquiries" element={<ProtectedRoute><AdminInquiries /></ProtectedRoute>} />
+            <Route path="/admin/content" element={<ProtectedRoute><AdminContent /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
