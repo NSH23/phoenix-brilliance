@@ -8,6 +8,11 @@ import Index from "./pages/Index";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
+// Public Gallery Pages
+import Gallery from "./pages/Gallery";
+import GalleryEventType from "./pages/GalleryEventType";
+import GalleryAlbum from "./pages/GalleryAlbum";
+
 // Admin Pages
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -35,6 +40,9 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/gallery/:eventType" element={<GalleryEventType />} />
+            <Route path="/gallery/:eventType/:albumId" element={<GalleryAlbum />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
