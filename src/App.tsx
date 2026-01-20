@@ -17,6 +17,10 @@ import GalleryAlbum from "./pages/GalleryAlbum";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 
+// Public Collaborations Pages
+import Collaborations from "./pages/Collaborations";
+import CollaborationDetail from "./pages/CollaborationDetail";
+
 // Admin Pages
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -49,6 +53,8 @@ const App = () => (
             <Route path="/gallery/:eventType/:albumId" element={<GalleryAlbum />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:eventType" element={<EventDetail />} />
+            <Route path="/collaborations" element={<Collaborations />} />
+            <Route path="/collaborations/:partnerId" element={<CollaborationDetail />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
