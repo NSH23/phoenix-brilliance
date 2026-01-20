@@ -13,6 +13,10 @@ import Gallery from "./pages/Gallery";
 import GalleryEventType from "./pages/GalleryEventType";
 import GalleryAlbum from "./pages/GalleryAlbum";
 
+// Public Events Pages
+import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
+
 // Admin Pages
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -43,6 +47,8 @@ const App = () => (
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/gallery/:eventType" element={<GalleryEventType />} />
             <Route path="/gallery/:eventType/:albumId" element={<GalleryAlbum />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/events/:eventType" element={<EventDetail />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
