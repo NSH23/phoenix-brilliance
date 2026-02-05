@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, Bell, Search, Moon, Sun } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
-import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from '@/components/ui/command';
+import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -13,23 +22,37 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle('dark');
   };
 
+  // Cmd+K / Ctrl+K to open search
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Sidebar */}
-      <AdminSidebar />
+      <AdminSidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
 
       {/* Main Content */}
       <motion.div
         initial={false}
-        animate={{ marginLeft: sidebarOpen ? 280 : 80 }}
+        animate={{ marginLeft: sidebarCollapsed ? 80 : 280 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className="min-h-screen"
       >
@@ -37,19 +60,52 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-lg border-b border-border flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="hidden md:flex items-center gap-2 bg-muted/50 rounded-xl px-4 py-2 w-80">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search..."
-                className="border-0 bg-transparent focus-visible:ring-0 p-0 h-auto"
-              />
-            </div>
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 md:px-4 py-2 w-auto md:w-80 text-left hover:bg-muted/70 transition-colors min-w-[44px] md:min-w-0"
+                >
+                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground text-sm hidden md:inline">Search...</span>
+                  <kbd className="ml-auto pointer-events-none hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                    <span>⌘</span>K
+                  </kbd>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search pages..." />
+                  <CommandList>
+                    <CommandEmpty>No results.</CommandEmpty>
+                    <CommandGroup heading="Admin">
+                      {ADMIN_MENU_ITEMS.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <CommandItem
+                            key={item.href}
+                            value={`${item.name} ${item.keywords ?? ''}`}
+                            onSelect={() => {
+                              navigate(item.href);
+                              setSearchOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Icon className="mr-2 h-4 w-4" />
+                            {item.name}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="flex items-center gap-3">

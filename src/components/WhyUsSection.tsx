@@ -1,34 +1,19 @@
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { Trophy, Heart, Users, Shield, Star } from "lucide-react";
+import { getWhyChooseUsStats, getWhyChooseUsReasons } from "@/services/whyChooseUs";
+import { getSiteContentByKey } from "@/services/siteContent";
 
-const stats = [
-  {
-    icon: Trophy,
-    value: "100+",
-    label: "Successful Events",
-    description: "Flawlessly executed celebrations",
-  },
-  {
-    icon: Heart,
-    value: "50+",
-    label: "Happy Couples",
-    description: "Dream weddings brought to life",
-  },
-  {
-    icon: Users,
-    value: "25+",
-    label: "Trusted Vendors",
-    description: "Premium partner network",
-  },
-  {
-    icon: Shield,
-    value: "100%",
-    label: "Quality Assurance",
-    description: "Commitment to excellence",
-  },
+const ICON_MAP: Record<string, typeof Trophy> = { trophy: Trophy, heart: Heart, users: Users, shield: Shield };
+
+const DEFAULT_STATS = [
+  { icon: Trophy, value: "100+", label: "Successful Events", description: "Flawlessly executed celebrations" },
+  { icon: Heart, value: "50+", label: "Happy Couples", description: "Dream weddings brought to life" },
+  { icon: Users, value: "25+", label: "Trusted Vendors", description: "Premium partner network" },
+  { icon: Shield, value: "100%", label: "Quality Assurance", description: "Commitment to excellence" },
 ];
 
-const reasons = [
+const DEFAULT_REASONS = [
   "Custom Themes Tailored to Your Vision",
   "End-to-End Event Execution",
   "Premium Vendor Network",
@@ -38,6 +23,20 @@ const reasons = [
 ];
 
 const WhyUsSection = () => {
+  const [stats, setStats] = useState(DEFAULT_STATS);
+  const [reasons, setReasons] = useState<string[]>(DEFAULT_REASONS);
+  const [header, setHeader] = useState({ title: "Why Phoenix Events?", subtitle: "Why Choose Us", description: "We create experiences that become cherished memories." });
+
+  useEffect(() => {
+    Promise.all([getWhyChooseUsStats(), getWhyChooseUsReasons(), getSiteContentByKey("why-us").catch(() => null)])
+      .then(([s, r, h]) => {
+        if (s?.length) setStats(s.map((x) => ({ icon: ICON_MAP[x.icon_key] || Trophy, value: x.stat_value, label: x.stat_label, description: x.stat_description || "" })));
+        if (r?.length) setReasons(r.map((x) => x.text));
+        if (h) setHeader({ title: h.title || header.title, subtitle: h.subtitle || header.subtitle, description: h.description || header.description });
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section id="why-us" className="py-16 sm:py-24 bg-muted/30 relative overflow-hidden">
       {/* Background Elements */}
@@ -56,13 +55,13 @@ const WhyUsSection = () => {
           className="text-center mb-8 sm:mb-16"
         >
           <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-            Why Choose Us
+            {header.subtitle}
           </span>
           <h2 className="section-title mb-3 sm:mb-4 text-2xl sm:text-3xl md:text-4xl">
-            Why <span className="text-gradient-gold">Phoenix Events?</span>
+            {header.title}
           </h2>
           <p className="section-subtitle text-sm sm:text-base max-w-lg mx-auto">
-            We create experiences that become cherished memories.
+            {header.description}
           </p>
         </motion.div>
 

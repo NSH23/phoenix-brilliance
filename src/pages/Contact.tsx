@@ -1,24 +1,27 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle, Instagram } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-
-const eventTypes = [
-  "Wedding",
-  "Birthday",
-  "Engagement",
-  "Sangeet",
-  "Haldi",
-  "Mehendi",
-  "Anniversary",
-  "Corporate Event",
-  "Car Opening",
-  "Other",
-];
+import { SEO } from "@/components/SEO";
+import { createInquiry } from "@/services/inquiries";
+import { getActiveEvents } from "@/services/events";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { toast } from "sonner";
 
 const Contact = () => {
+  const { contact } = useSiteConfig();
+  const [eventTypes, setEventTypes] = useState<string[]>(["Wedding", "Birthday", "Engagement", "Other"]);
+
+  useEffect(() => {
+    getActiveEvents()
+      .then((events) => {
+        const titles = events.map((e) => e.title);
+        if (titles.length > 0) setEventTypes([...titles, "Other"]);
+      })
+      .catch(() => {});
+  }, []);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -29,27 +32,39 @@ const Contact = () => {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Format the WhatsApp message
-    const whatsappMessage = `Hello! I have to inquire about ${formData.eventType || 'an event'}.
+
+    const messageWithDate = [formData.message, formData.eventDate ? `Event Date: ${formData.eventDate}` : ""].filter(Boolean).join("\n\n");
+
+    try {
+      await createInquiry({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        event_type: formData.eventType || null,
+        message: messageWithDate || (formData.eventType ? `Inquiry for ${formData.eventType}` : "Inquiry"),
+      });
+    } catch (err) {
+      toast.error("Failed to save your inquiry", {
+        description: err instanceof Error ? err.message : "Please try again or contact us via WhatsApp.",
+      });
+      return;
+    }
+
+    const whatsappMessage = `Hello! I have to inquire about ${formData.eventType || "an event"}.
 
 Name: ${formData.name}
 Phone: ${formData.phone}
 Email: ${formData.email}
 Event Type: ${formData.eventType}
 Event Date: ${formData.eventDate}
-${formData.message ? `Message: ${formData.message}` : ''}`;
+${formData.message ? `Message: ${formData.message}` : ""}`;
 
-    // Encode the message for URL
     const encodedMessage = encodeURIComponent(whatsappMessage);
-    
-    // Open WhatsApp with the message
-    const whatsappUrl = `https://wa.me/917066763276?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
-    
-    // Show success message
+    const whatsappUrl = `https://wa.me/${contact.whatsapp}?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+
     setIsSubmitted(true);
     setTimeout(() => {
       setIsSubmitted(false);
@@ -62,8 +77,15 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <>
+      <SEO 
+        title="Contact Us"
+        description="Get in touch with Phoenix Events & Production for your event planning needs in Pune, Maharashtra. Call, email, or visit us today."
+        keywords="contact event planners Pune, event planning inquiry, book event services Maharashtra, event consultation"
+        url="/contact"
+      />
+      <div className="min-h-screen bg-background">
+        <Navbar />
       <section className="py-12 sm:py-16 lg:py-24 bg-muted/30 relative overflow-hidden pt-24 sm:pt-28 lg:pt-24 pb-20 sm:pb-24">
         {/* Background */}
         <div className="absolute inset-0">
@@ -95,7 +117,7 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
           <div className="sm:hidden mb-6">
             <div className="grid grid-cols-2 gap-3">
               <a
-                href="https://wa.me/917066763276?text=Hi! I'm interested in your event services."
+                href={`https://wa.me/${contact.whatsapp}?text=Hi! I'm interested in your event services.`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 p-4 rounded-2xl 
@@ -108,7 +130,7 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
                 <span>WhatsApp</span>
               </a>
               <a
-                href="tel:+917066763276"
+                href={`tel:${contact.phone.replace(/\s/g, '')}`}
                 className="flex items-center justify-center gap-2 p-4 rounded-2xl 
                          bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                          font-semibold text-sm shadow-lg active:scale-95 transition-transform"
@@ -146,9 +168,9 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
               <div className="sm:hidden">
                 <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
                   {[
-                    { icon: MapPin, title: "Visit Us", info: "Pune, Maharashtra" },
-                    { icon: Phone, title: "Call Us", info: "+91 70667 63276" },
-                    { icon: Mail, title: "Email Us", info: "hello@phoenixevents.com" },
+                    { icon: MapPin, title: "Visit Us", info: contact.address || "Pune, Maharashtra" },
+                    { icon: Phone, title: "Call Us", info: contact.phone },
+                    { icon: Mail, title: "Email Us", info: contact.email },
                     { icon: Clock, title: "Business Hours", info: "Open 24 Hours" },
                   ].map((item, idx) => (
                     <div
@@ -177,12 +199,8 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
                     </div>
                     <div>
                       <p className="font-medium text-foreground text-sm lg:text-base">Visit Us</p>
-                      <p className="text-muted-foreground text-xs lg:text-sm">
-                        Shop no 1, Phoenix Events and Production,<br />
-                        Kailas kondiba Dange Plot, Unit 4,<br />
-                        Dange Chowk Rd, nr. CBI Crime Branch,<br />
-                        nr. Maruti Suzuki Showroom,<br />
-                        Pune, Maharashtra 411033
+                      <p className="text-muted-foreground text-xs lg:text-sm whitespace-pre-line">
+                        {contact.address || "Pune, Maharashtra"}
                       </p>
                     </div>
                   </div>
@@ -193,7 +211,7 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
                     </div>
                     <div>
                       <p className="font-medium text-foreground text-sm lg:text-base">Call Us</p>
-                      <p className="text-muted-foreground text-xs lg:text-sm">+91 70667 63276</p>
+                      <p className="text-muted-foreground text-xs lg:text-sm">{contact.phone}</p>
                     </div>
                   </div>
 
@@ -203,7 +221,7 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
                     </div>
                     <div>
                       <p className="font-medium text-foreground text-sm lg:text-base">Email Us</p>
-                      <p className="text-muted-foreground text-xs lg:text-sm">hello@phoenixevents.com</p>
+                      <p className="text-muted-foreground text-xs lg:text-sm">{contact.email}</p>
                     </div>
                   </div>
 
@@ -261,7 +279,7 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
                       <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-emerald" />
                     </div>
                     <h4 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-2">Thank You!</h4>
-                    <p className="text-muted-foreground text-sm sm:text-base">Your message has been sent to WhatsApp. We'll get back to you soon!</p>
+                    <p className="text-muted-foreground text-sm sm:text-base">Your inquiry has been saved. We&apos;ve opened WhatsApp so you can reach us directly. We&apos;ll get back to you soon!</p>
                   </motion.div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
@@ -379,7 +397,8 @@ ${formData.message ? `Message: ${formData.message}` : ''}`;
       </section>
       <Footer />
       <WhatsAppButton />
-    </div>
+      </div>
+    </>
   );
 };
 

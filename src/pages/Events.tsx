@@ -1,228 +1,551 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Calendar, ArrowRight, Sparkles, Users, Star } from "lucide-react";
+import { ArrowRight, Loader2, Camera } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { mockEvents, mockAlbums, mockTestimonials } from "@/data/mockData";
+import CountUp from "@/components/CountUp";
+import { SEO } from "@/components/SEO";
+import { getActiveEvents, Event } from "@/services/events";
+import { getEventSteps } from "@/services/events";
+import { getAlbumsByEventId } from "@/services/albums";
+import { getPageHeroContent } from "@/services/pageHeroContent";
+
+// Fallback images by slug when event has no cover_image
+const SLUG_TO_IMAGE: Record<string, string> = {
+  wedding: "/wedding 1.jpg",
+  birthday: "/birthday.jpg",
+  engagement: "/engagement.jpg",
+  sangeet: "/sangeet.jpg",
+  haldi: "/haldi.jpg",
+  mehendi: "/mehendi.jpg",
+  anniversary: "/anniversary.jpg",
+  corporate: "/corporate.jpg",
+  "corporate-events": "/corporate.jpg",
+  "car-opening": "/corporate.jpg",
+};
+
+function getEventImage(event: Event): string {
+  if (event.cover_image) return event.cover_image;
+  const key = event.slug.toLowerCase().replace(/\s+/g, "-");
+  return SLUG_TO_IMAGE[key] || "/placeholder.svg";
+}
 
 const Events = () => {
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [eventAlbumsCount, setEventAlbumsCount] = useState<Record<string, number>>({});
+  const [eventStepsCount, setEventStepsCount] = useState<Record<string, number>>({});
+  const [heroContent, setHeroContent] = useState<Awaited<ReturnType<typeof getPageHeroContent>> | null>(null);
+  const [isDark, setIsDark] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
-  // Get active events
-  const activeEvents = mockEvents.filter(event => event.isActive);
+  useEffect(() => {
+    loadEvents();
+    getPageHeroContent("events").then(setHeroContent).catch(() => setHeroContent(null));
+  }, []);
 
-  // Stats
-  const totalEvents = activeEvents.length;
-  const totalAlbums = mockAlbums.length;
-  const happyClients = mockTestimonials.length * 50; // Mock number
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const loadEvents = async () => {
+    try {
+      setIsLoading(true);
+      const activeEvents = await getActiveEvents();
+      setEvents(activeEvents);
+
+      const albumsCounts: Record<string, number> = {};
+      const stepsCounts: Record<string, number> = {};
+
+      await Promise.all(
+        activeEvents.map(async (event) => {
+          try {
+            const albums = await getAlbumsByEventId(event.id);
+            albumsCounts[event.id] = albums.length;
+            const steps = await getEventSteps(event.id);
+            stepsCounts[event.id] = steps.length;
+          } catch {
+            albumsCounts[event.id] = 0;
+            stepsCounts[event.id] = 0;
+          }
+        })
+      );
+
+      setEventAlbumsCount(albumsCounts);
+      setEventStepsCount(stepsCounts);
+    } catch {
+      // silent
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const totalEvents = events.length;
+  const totalAlbums = Object.values(eventAlbumsCount).reduce((a, b) => a + b, 0);
+  const happyClients = totalAlbums * 50;
+
+  const stats = (heroContent?.stats && heroContent.stats.length >= 3)
+    ? heroContent.stats.slice(0, 3)
+    : [
+        { value: totalEvents, label: "Event Types", suffix: "+" },
+        { value: totalAlbums, label: "Events Completed", suffix: "+" },
+        { value: happyClients, label: "Happy Clients", suffix: "+" },
+      ];
+
+  const isStatFromHero = heroContent?.stats && heroContent.stats.length >= 3;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[150px]" />
-          <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-rose-gold/10 rounded-full blur-[120px]" />
-        </div>
+    <>
+      <SEO 
+        title="Events"
+        description="Explore our premium event planning services including weddings, birthdays, corporate events, and celebrations in Pune, Maharashtra."
+        keywords="event planning Pune, wedding planning, birthday parties, corporate events Maharashtra, event management"
+        url="/events"
+      />
+      <div className="min-h-screen bg-background">
+        <Navbar />
 
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <motion.span 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full 
-                       bg-gradient-to-r from-primary/20 to-rose-gold/20 
-                       border border-primary/30 backdrop-blur-sm mb-6"
-            >
-              <Calendar className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground">Our Events</span>
-            </motion.span>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold mb-6">
-              Events We <span className="text-gradient-gold">Celebrate</span>
-            </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-              From intimate gatherings to grand celebrations, we bring your vision to life with meticulous planning and flawless execution.
-            </p>
-
-            {/* Stats */}
+      {/* Hero Section - elegant abstract gradient mesh */}
+      <section
+        className="relative min-h-[60vh] flex items-center justify-center overflow-hidden"
+        aria-label="Events hero"
+      >
+        {/* Abstract gradient mesh background */}
+        <div className="absolute inset-0 events-page-mesh-bg" aria-hidden />
+        {!prefersReducedMotion && (
+          <>
+            {/* Purple gradient mesh for light theme - smooth elegant movement */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex justify-center gap-8 sm:gap-16"
-            >
-              {[
-                { value: `${totalEvents}+`, label: "Event Types", icon: Calendar },
-                { value: `${totalAlbums}+`, label: "Events Completed", icon: Sparkles },
-                { value: `${happyClients}+`, label: "Happy Clients", icon: Users },
-              ].map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <stat.icon className="w-5 h-5 text-primary" />
-                    <span className="text-3xl sm:text-4xl font-serif font-bold text-primary">{stat.value}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
+              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-60" : "opacity-70"}`}
+              aria-hidden
+              animate={{
+                background: isDark
+                  ? [
+                      "radial-gradient(circle at 25% 35%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
+                      "radial-gradient(circle at 65% 25%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
+                      "radial-gradient(circle at 75% 55%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
+                      "radial-gradient(circle at 45% 75%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
+                      "radial-gradient(circle at 20% 60%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
+                      "radial-gradient(circle at 25% 35%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
+                    ]
+                  : [
+                      "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 115% 105% at 30% 35%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 105% 115% at 60% 60%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 100% 120% at 90% 80%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 110% 110% at 70% 50%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 115% 105% at 40% 25%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
+                    ],
+              }}
+              transition={{ duration: 20, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1] }}
+            />
+            {/* Indigo blue layer */}
+            <motion.div
+              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-50" : "opacity-65"}`}
+              aria-hidden
+              animate={{
+                background: isDark
+                  ? [
+                      "radial-gradient(circle at 70% 25%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
+                      "radial-gradient(circle at 35% 70%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
+                      "radial-gradient(circle at 15% 45%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
+                      "radial-gradient(circle at 55% 15%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
+                      "radial-gradient(circle at 80% 65%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
+                      "radial-gradient(circle at 70% 25%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
+                    ]
+                  : [
+                      "radial-gradient(ellipse 100% 130% at 80% 15%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 115% 120% at 60% 30%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 130% 100% at 20% 85%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 120% 115% at 45% 70%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 110% 120% at 55% 45%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 105% 125% at 75% 20%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 100% 130% at 80% 15%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
+                    ],
+              }}
+              transition={{ duration: 24, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 3 }}
+            />
+            {/* Purple layer */}
+            <motion.div
+              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-35" : "opacity-60"}`}
+              aria-hidden
+              animate={{
+                background: isDark
+                  ? [
+                      "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(183, 110, 121, 0.15) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 100% 80% at 50% 50%, rgba(247, 231, 206, 0.12) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(183, 110, 121, 0.15) 0%, transparent 60%)",
+                    ]
+                  : [
+                      "radial-gradient(ellipse 130% 110% at 35% 65%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
+                      "radial-gradient(ellipse 125% 115% at 50% 50%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
+                      "radial-gradient(ellipse 110% 130% at 65% 35%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
+                      "radial-gradient(ellipse 120% 120% at 85% 85%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
+                      "radial-gradient(ellipse 115% 125% at 25% 40%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
+                      "radial-gradient(ellipse 125% 115% at 70% 75%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
+                      "radial-gradient(ellipse 130% 110% at 35% 65%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
+                    ],
+              }}
+              transition={{ duration: 28, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 6 }}
+            />
+            {/* Cyan/blue accent for light theme - smooth elegant movement */}
+            {!isDark && (
+              <motion.div
+                className="absolute inset-0 pointer-events-none opacity-50"
+                aria-hidden
+                animate={{
+                  background: [
+                    "radial-gradient(ellipse 100% 120% at 25% 10%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                    "radial-gradient(ellipse 110% 115% at 40% 25%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                    "radial-gradient(ellipse 120% 100% at 75% 90%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                    "radial-gradient(ellipse 115% 105% at 60% 70%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                    "radial-gradient(ellipse 110% 110% at 45% 55%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                    "radial-gradient(ellipse 105% 115% at 30% 30%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                    "radial-gradient(ellipse 100% 120% at 25% 10%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                  ],
+                }}
+                transition={{ duration: 22, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 1.5 }}
+              />
+            )}
+            {/* Gold accent for light theme - smooth elegant movement */}
+            {!isDark && (
+              <motion.div
+                className="absolute inset-0 pointer-events-none opacity-35"
+                aria-hidden
+                animate={{
+                  background: [
+                    "radial-gradient(ellipse 90% 100% at 5% 45%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                    "radial-gradient(ellipse 95% 105% at 25% 35%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                    "radial-gradient(ellipse 100% 90% at 95% 55%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                    "radial-gradient(ellipse 105% 95% at 70% 70%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                    "radial-gradient(ellipse 110% 110% at 50% 5%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                    "radial-gradient(ellipse 100% 100% at 15% 60%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                    "radial-gradient(ellipse 90% 100% at 5% 45%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                  ],
+                }}
+                transition={{ duration: 26, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 4 }}
+              />
+            )}
+          </>
+        )}
+        <div className="relative z-10 max-w-[900px] mx-auto px-4 sm:px-6 text-center">
+          <motion.span
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="typography-eyebrow inline-block text-primary mb-4 tracking-label-wide"
+          >
+            {heroContent?.title || "Our Events"}
+          </motion.span>
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className={`typography-hero mb-6 ${isDark ? "text-white" : "text-foreground"}`}
+          >
+            Events We Celebrate
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className={`typography-body-lg max-w-3xl mx-auto ${isDark ? "text-white/90" : "text-muted-foreground"}`}
+          >
+            {heroContent?.description ||
+              "From intimate gatherings to grand celebrations, we bring your vision to life with meticulous planning and flawless execution."}
+          </motion.p>
         </div>
+        {/* Smooth merge: hero fades gently into background (theme-aware) */}
+        <div
+          className="absolute bottom-0 left-0 right-0 pointer-events-none z-[1] hero-merge-gradient"
+          style={{
+            height: "clamp(180px, 28vh, 280px)",
+          }}
+          aria-hidden
+        />
       </section>
 
-      {/* Events Grid */}
-      <section className="py-16 sm:py-24">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">
-              Choose Your <span className="text-gradient-gold">Celebration</span>
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Click on any event type to explore our process and see how we make magic happen
-            </p>
-          </motion.div>
+      {/* Stats Section - overlap hero, 3 columns, count-up */}
+      <section
+        className="relative z-20 -mt-[40px] max-w-[900px] mx-auto px-4 sm:px-6"
+        aria-label="Statistics"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
+          className="bg-card/90 dark:bg-card/95 backdrop-blur-xl rounded-2xl
+                     shadow-[0_8px_32px_rgba(26,26,46,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+                     border border-border/80 dark:border-border
+                     flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-border
+                     hover:border-primary/20 dark:hover:border-primary/30 transition-colors duration-300"
+        >
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className="flex-1 flex flex-col items-center justify-center py-5 sm:py-6 px-4"
+            >
+              <span className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary mb-1">
+                {isStatFromHero ? (
+                  stat.value
+                ) : (
+                  <CountUp
+                    end={typeof stat.value === "number" ? stat.value : parseInt(String(stat.value), 10) || 0}
+                    duration={2000}
+                    suffix={stat.suffix || ""}
+                    reducedMotion={!!prefersReducedMotion}
+                  />
+                )}
+              </span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{stat.label}</span>
+            </div>
+          ))}
+        </motion.div>
+      </section>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {activeEvents.map((event, index) => {
-              const albumCount = mockAlbums.filter(a => a.eventId === event.id).length;
-              
-              return (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  onMouseEnter={() => setHoveredEvent(event.id)}
-                  onMouseLeave={() => setHoveredEvent(null)}
-                >
-                  <Link
-                    to={`/events/${event.slug}`}
-                    className="group block relative rounded-2xl overflow-hidden aspect-[4/5]
-                             bg-card border border-border hover:border-primary/50
-                             transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10"
+      {/* Section Heading - Choose Your Celebration */}
+      <section className="py-16 sm:py-20 lg:py-24 bg-background">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-[800px] mx-auto px-4 text-center mb-14 sm:mb-16"
+        >
+          <h2 className="typography-section text-foreground mb-4">
+            Choose Your <span className="text-gradient-gold">Celebration</span>
+          </h2>
+          <p className="text-body-lg text-muted-foreground">
+            Click on any event type to explore our process and see how we make magic happen
+          </p>
+        </motion.div>
+
+        {/* Event Cards - Option A Interactive Hover */}
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            </div>
+          ) : events.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              No events available at the moment.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              {events.map((event, index) => {
+                const albumCount = eventAlbumsCount[event.id] || 0;
+                const stepsCount = eventStepsCount[event.id] || 0;
+                const isHovered = hoveredEvent === event.id;
+                const imageSrc = getEventImage(event);
+                const photoLabel =
+                  albumCount > 0 ? `${albumCount}+ Photos` : "View Gallery";
+
+                return (
+                  <motion.article
+                    key={event.id}
+                    initial={{ opacity: 0, y: 28 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-30px" }}
+                    transition={{
+                      delay: prefersReducedMotion ? 0 : index * 0.08,
+                      duration: 0.45,
+                    }}
+                    onMouseEnter={() => setHoveredEvent(event.id)}
+                    onMouseLeave={() => setHoveredEvent(null)}
+                    className="group"
                   >
-                    {/* Background Image */}
-                    <div className="absolute inset-0">
-                      <img
-                        src={event.coverImage}
-                        alt={event.title}
-                        className={`w-full h-full object-cover transition-all duration-700
-                                  ${hoveredEvent === event.id ? 'scale-110 brightness-75' : 'scale-100 brightness-90'}`}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/50 to-transparent" />
-                    </div>
+                    <Link
+                      to={`/events/${event.slug}`}
+                      className="events-premium-card block relative w-full rounded-[22px] overflow-hidden
+                                 cursor-pointer transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
+                                 shadow-lg
+                                 hover:shadow-[0_24px_56px_rgba(26,26,46,0.12)] dark:hover:shadow-[0_24px_56px_rgba(0,0,0,0.25)]
+                                 hover:-translate-y-2 hover:ring-2 hover:ring-primary/20
+                                 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      style={{
+                        aspectRatio: "3/4",
+                        willChange: isHovered ? "transform" : undefined,
+                      }}
+                      aria-label={`Explore ${event.title}`}
+                    >
+                      {/* Background Image */}
+                      <div className="absolute inset-0">
+                        <img
+                          src={imageSrc}
+                          alt=""
+                          className={`absolute inset-0 w-full h-full object-cover transition-all duration-[600ms] ease-out
+                                    ${isHovered ? "brightness-100 scale-105" : "brightness-[0.88] scale-100"}`}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/placeholder.svg";
+                          }}
+                          loading="lazy"
+                        />
+                        <div
+                          className={`absolute inset-0 transition-all duration-400
+                                    ${isHovered
+                              ? "bg-gradient-to-t from-black/65 via-black/25 to-black/20"
+                              : "bg-gradient-to-t from-black/75 via-black/15 to-transparent"
+                            }`}
+                        />
+                      </div>
 
-                    {/* Content */}
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                      {/* Badge */}
-                      {event.steps.length > 0 && (
-                        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5
-                                      bg-primary/90 rounded-full text-xs font-medium text-primary-foreground">
-                          <Star className="w-3.5 h-3.5" />
-                          {event.steps.length} Step Process
+                      {/* Step badge – top right */}
+                      {stepsCount > 0 && (
+                        <div
+                          className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded-full
+                                    bg-primary text-primary-foreground text-[10px] font-medium uppercase tracking-wide shadow-lg"
+                        >
+                          {stepsCount} Step Process
                         </div>
                       )}
 
-                      {/* Title & Description */}
-                      <motion.div
-                        initial={false}
-                        animate={{ y: hoveredEvent === event.id ? -10 : 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <h3 className="font-serif text-2xl sm:text-3xl font-bold text-ivory mb-2">
+                      {/* Content – bottom */}
+                      <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 z-10">
+                        <h3
+                          className="font-serif font-bold text-white text-lg sm:text-xl mb-2 tracking-tight"
+                          style={{
+                            textShadow: "0 2px 16px rgba(0,0,0,0.4)",
+                          }}
+                        >
                           {event.title}
                         </h3>
-                        <p className="text-ivory/80 text-sm mb-3 line-clamp-2">
-                          {event.shortDescription}
-                        </p>
-                        
-                        {/* Meta */}
-                        <div className="flex items-center gap-4 text-xs text-ivory/60">
-                          {albumCount > 0 && (
-                            <span>{albumCount} Albums</span>
-                          )}
-                          {event.steps.length > 0 && (
-                            <span>View Process →</span>
-                          )}
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                                  bg-white/15 backdrop-blur-md border border-white/25
+                                  text-white text-xs font-medium">
+                          <Camera className="w-3.5 h-3.5 text-primary shrink-0" />
+                          {photoLabel}
                         </div>
-                      </motion.div>
-
-                      {/* Hover Arrow */}
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ 
-                          opacity: hoveredEvent === event.id ? 1 : 0,
-                          x: hoveredEvent === event.id ? 0 : -20
-                        }}
-                        className="absolute bottom-6 right-6"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center
-                                      shadow-lg shadow-primary/30">
-                          <ArrowRight className="w-5 h-5 text-primary-foreground" />
-                        </div>
-                      </motion.div>
-                    </div>
-
-                    {/* Corner Decorations */}
-                    <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-primary/50 
-                                  rounded-tl-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-primary/50 
-                                  rounded-br-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </div>
+                        <motion.div
+                          initial={false}
+                          animate={{
+                            opacity: isHovered ? 1 : 0,
+                            y: isHovered ? 0 : 6,
+                          }}
+                          transition={{ duration: 0.25, delay: 0.05 }}
+                          className="mt-2 inline-flex items-center gap-1.5 text-primary text-xs font-semibold"
+                        >
+                          <span>View More</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </motion.div>
+                      </div>
+                    </Link>
+                  </motion.article>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 sm:py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-3xl mx-auto text-center"
+      {/* CTA Section – gradient mesh, echoes hero */}
+      <section
+        className="relative py-12 sm:py-14 lg:py-16 overflow-hidden"
+        aria-label="Plan your event"
+      >
+        <div className="absolute inset-0 events-cta-mesh-bg" aria-hidden />
+        {!prefersReducedMotion && (
+          <>
+            <motion.div
+              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-40" : "opacity-65"}`}
+              aria-hidden
+              animate={{
+                background: isDark
+                  ? [
+                      "radial-gradient(circle at 30% 40%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
+                      "radial-gradient(circle at 60% 70%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
+                      "radial-gradient(circle at 70% 30%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
+                      "radial-gradient(circle at 30% 40%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
+                    ]
+                  : [
+                      "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 120% 100% at 60% 70%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 110% 110% at 70% 30%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
+                      "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
+                    ],
+              }}
+              transition={{ duration: 12, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
+            />
+            <motion.div
+              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-30" : "opacity-55"}`}
+              aria-hidden
+              animate={{
+                background: isDark
+                  ? [
+                      "radial-gradient(circle at 70% 60%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
+                      "radial-gradient(circle at 40% 25%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
+                      "radial-gradient(circle at 25% 65%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
+                      "radial-gradient(circle at 70% 60%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
+                    ]
+                  : [
+                      "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 120% 110% at 40% 25%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 100% 130% at 25% 65%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
+                    ],
+              }}
+              transition={{ duration: 14, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 2 }}
+            />
+            {!isDark && (
+              <motion.div
+                className="absolute inset-0 pointer-events-none opacity-45"
+                aria-hidden
+                animate={{
+                  background: [
+                    "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
+                    "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 70%)",
+                    "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
+                  ],
+                }}
+                transition={{ duration: 16, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 4 }}
+              />
+            )}
+          </>
+        )}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative z-10 max-w-[640px] mx-auto px-4 text-center"
+        >
+          <h2 className={`text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 ${isDark ? "text-white" : "text-foreground"}`}>
+            Don&apos;t See Your Event? Let&apos;s Talk!
+          </h2>
+          <p className={`text-base sm:text-lg mb-6 ${isDark ? "text-white/90" : "text-muted-foreground"}`}>
+            We specialize in creating custom experiences for any occasion. Share your vision with us.
+          </p>
+          <Link
+            to="/contact"
+            className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-[28px]
+                     bg-primary text-primary-foreground font-semibold text-base
+                     hover:scale-105 hover:shadow-xl transition-all duration-300
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">
-              Don't See Your Event? <span className="text-gradient-gold">Let's Talk!</span>
-            </h2>
-            <p className="text-muted-foreground mb-8">
-              We specialize in creating custom experiences for any occasion. Share your vision with us.
-            </p>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-full
-                       bg-primary text-primary-foreground font-semibold
-                       hover:shadow-xl hover:shadow-primary/30 transition-all duration-300"
-            >
-              Get in Touch <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
-        </div>
+            Get in Touch
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+          <p className={`mt-4 text-sm ${isDark ? "text-white/70" : "text-muted-foreground"}`}>
+            Call us or send a message—we&apos;d love to hear from you
+          </p>
+        </motion.div>
       </section>
 
       <Footer />
       <WhatsAppButton />
-    </div>
+      </div>
+    </>
   );
 };
 

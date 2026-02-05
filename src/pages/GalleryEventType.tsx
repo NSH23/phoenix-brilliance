@@ -1,33 +1,139 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useParams, Navigate } from "react-router-dom";
-import { Camera, Play, ArrowLeft, ArrowRight, Calendar, Images, Sparkles } from "lucide-react";
+import { Camera, Play, ArrowLeft, ArrowRight, Calendar, Images, Sparkles, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { mockEvents, mockAlbums } from "@/data/mockData";
+import { getActiveEvents, getEventBySlug, Event } from "@/services/events";
+import { getAllAlbums, getAlbumsByEventId, getAlbumMedia, Album } from "@/services/albums";
+import { logger } from "@/utils/logger";
+
+interface AlbumWithCount extends Album {
+  mediaCount?: number;
+  eventTitle?: string;
+}
 
 const GalleryEventType = () => {
   const { eventType } = useParams<{ eventType: string }>();
   const [hoveredAlbum, setHoveredAlbum] = useState<string | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
+  const [albums, setAlbums] = useState<AlbumWithCount[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Handle "all" case - show all albums
   const isAllAlbums = eventType === "all";
-  
-  // Find the event
-  const event = isAllAlbums ? null : mockEvents.find(e => e.slug === eventType);
+
+  useEffect(() => {
+    loadData();
+  }, [eventType]);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (isAllAlbums) {
+        // Load all albums
+        const [albumsData, eventsData] = await Promise.all([
+          getAllAlbums(),
+          getActiveEvents()
+        ]);
+        
+        setAllEvents(eventsData);
+        
+        // Load media count and event titles
+        const albumsWithCounts = await Promise.all(
+          albumsData.map(async (album: any) => {
+            try {
+              const media = await getAlbumMedia(album.id);
+              const event = eventsData.find(e => e.id === album.event_id);
+              return {
+                ...album,
+                mediaCount: media.length,
+                eventTitle: event?.title || 'Unknown Event',
+              };
+            } catch (error) {
+              const event = eventsData.find(e => e.id === album.event_id);
+              return {
+                ...album,
+                mediaCount: 0,
+                eventTitle: event?.title || 'Unknown Event',
+              };
+            }
+          })
+        );
+        
+        setAlbums(albumsWithCounts);
+        setEvent(null);
+      } else {
+        // Load event and its albums
+        const [eventData, albumsData, eventsData] = await Promise.all([
+          getEventBySlug(eventType!),
+          getAllAlbums(),
+          getActiveEvents()
+        ]);
+        
+        if (!eventData) {
+          setIsLoading(false);
+          return;
+        }
+        
+        setEvent(eventData);
+        setAllEvents(eventsData);
+        
+        // Filter albums for this event
+        const eventAlbums = albumsData.filter((album: any) => album.event_id === eventData.id);
+        
+        // Load media count
+        const albumsWithCounts = await Promise.all(
+          eventAlbums.map(async (album: any) => {
+            try {
+              const media = await getAlbumMedia(album.id);
+              return {
+                ...album,
+                mediaCount: media.length,
+                eventTitle: eventData.title,
+              };
+            } catch (error) {
+              return {
+                ...album,
+                mediaCount: 0,
+                eventTitle: eventData.title,
+              };
+            }
+          })
+        );
+        
+        setAlbums(albumsWithCounts);
+      }
+    } catch (error: any) {
+      logger.error('Error loading gallery event type', error, { component: 'GalleryEventType', action: 'loadData', eventType });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const totalPhotos = albums.reduce((acc, album) => acc + (album.mediaCount || 0), 0);
+
+  // If loading, show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <Footer />
+        <WhatsAppButton />
+      </div>
+    );
+  }
 
   // If not "all" and event not found, redirect
   if (!isAllAlbums && !event) {
     return <Navigate to="/gallery" replace />;
   }
-
-  // Get albums for this event type or all albums
-  const albums = isAllAlbums 
-    ? mockAlbums 
-    : mockAlbums.filter(album => album.eventId === event?.id);
-
-  const totalPhotos = albums.reduce((acc, album) => acc + album.mediaCount, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,9 +146,12 @@ const GalleryEventType = () => {
           {!isAllAlbums && event && (
             <>
               <img
-                src={event.coverImage}
+                src={event.cover_image || '/placeholder.svg'}
                 alt={event.title}
                 className="w-full h-full object-cover opacity-20"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
             </>
@@ -98,7 +207,7 @@ const GalleryEventType = () => {
             <p className="text-lg text-muted-foreground max-w-2xl mb-6">
               {isAllAlbums 
                 ? 'Browse through our complete collection of event albums'
-                : event?.description}
+                : event?.description || event?.short_description || ''}
             </p>
 
             {/* Stats */}
@@ -142,7 +251,7 @@ const GalleryEventType = () => {
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {albums.map((album, index) => {
-                const albumEvent = mockEvents.find(e => e.id === album.eventId);
+                const albumEvent = allEvents.find(e => e.id === album.event_id);
                 
                 return (
                   <motion.div
@@ -155,7 +264,7 @@ const GalleryEventType = () => {
                     onMouseLeave={() => setHoveredAlbum(null)}
                   >
                     <Link
-                      to={`/gallery/${albumEvent?.slug}/${album.id}`}
+                      to={`/gallery/${albumEvent?.slug || 'all'}/${album.id}`}
                       className="group block bg-card rounded-2xl overflow-hidden border border-border
                                hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 
                                transition-all duration-500"
@@ -163,15 +272,18 @@ const GalleryEventType = () => {
                       {/* Cover Image */}
                       <div className="relative aspect-[4/3] overflow-hidden">
                         <img
-                          src={album.coverImage}
+                          src={album.cover_image || '/placeholder.svg'}
                           alt={album.title}
                           className={`w-full h-full object-cover transition-all duration-700
                                     ${hoveredAlbum === album.id ? 'scale-110' : 'scale-100'}`}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder.svg';
+                          }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent" />
                         
                         {/* Featured Badge */}
-                        {album.isFeatured && (
+                        {album.is_featured && (
                           <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 
                                         bg-primary/90 rounded-full text-xs font-medium text-primary-foreground">
                             <Sparkles className="w-3.5 h-3.5" />
@@ -190,7 +302,7 @@ const GalleryEventType = () => {
                         <div className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 
                                       bg-charcoal/60 backdrop-blur-sm rounded-full text-xs text-ivory">
                           <Camera className="w-3.5 h-3.5" />
-                          {album.mediaCount}
+                          {album.mediaCount || 0}
                         </div>
 
                         {/* View button on hover */}
@@ -211,7 +323,7 @@ const GalleryEventType = () => {
 
                       {/* Album Info */}
                       <div className="p-5 sm:p-6">
-                        {isAllAlbums && (
+                        {isAllAlbums && album.eventTitle && (
                           <div className="text-xs text-primary font-medium mb-2">{album.eventTitle}</div>
                         )}
                         <h3 className="font-serif text-lg sm:text-xl font-bold text-foreground mb-2 
@@ -219,16 +331,18 @@ const GalleryEventType = () => {
                           {album.title}
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                          {album.description}
+                          {album.description || 'No description'}
                         </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {new Date(album.eventDate).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </div>
+                        {album.event_date && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(album.event_date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </div>
+                        )}
                       </div>
                     </Link>
                   </motion.div>
@@ -240,15 +354,15 @@ const GalleryEventType = () => {
       </section>
 
       {/* Other Event Types */}
-      {!isAllAlbums && (
+      {!isAllAlbums && allEvents.length > 1 && (
         <section className="py-12 sm:py-16 bg-muted/30">
           <div className="container mx-auto px-4">
             <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-8 text-center">
               Explore Other <span className="text-gradient-gold">Categories</span>
             </h2>
             <div className="flex flex-wrap justify-center gap-3">
-              {mockEvents
-                .filter(e => e.id !== event?.id && e.isActive)
+              {allEvents
+                .filter(e => e.id !== event?.id)
                 .slice(0, 6)
                 .map(otherEvent => (
                   <Link

@@ -1,281 +1,257 @@
-import { motion, useMotionValue, useTransform, animate, PanInfo } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
-import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Star, Quote } from "lucide-react";
+import { getFeaturedTestimonials } from "@/services/testimonials";
 
-const testimonials = [
+/* Testimonials section: floating cards on desktop (6 cards), stacked grid on mobile.
+ */
+
+interface Testimonial {
+  name: string;
+  event: string;
+  rating: number;
+  quote: string;
+  image: string;
+}
+
+const DEFAULT_TESTIMONIALS: Testimonial[] = [
   {
+    rating: 5,
+    quote:
+      "The entire décor was perfect, exactly the way I wanted it. The whole team was extremely polite and professional. I am very happy with their work.",
+    name: "Vartika Srivastava",
+    event: "Celebration Event",
+    image: "",
+  },
+  {
+    rating: 5,
+    quote:
+      "Outstanding service from start to finish! They captured every moment beautifully and made our wedding day absolutely perfect.",
     name: "Priya & Rahul Sharma",
-    event: "Wedding Celebration",
-    rating: 5,
-    quote: "Phoenix Events turned our dream wedding into reality. Every detail was perfect, from the stunning mandap to the flawless coordination. Our guests are still talking about it!",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces",
+    event: "Wedding Ceremony",
+    image: "",
   },
   {
-    name: "Ananya Kapoor",
-    event: "50th Birthday Gala",
     rating: 5,
-    quote: "They exceeded all expectations! The attention to detail and personalized touches made my father's milestone birthday absolutely unforgettable. Truly world-class service.",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces",
+    quote:
+      "Professional, creative, and attentive to every detail. Our engagement photos exceeded all expectations!",
+    name: "Ananya Gupta",
+    event: "Engagement Shoot",
+    image: "",
   },
   {
-    name: "TechCorp India",
-    event: "Annual Conference",
     rating: 5,
-    quote: "Professional, creative, and incredibly organized. Phoenix Events managed our corporate conference flawlessly. The production quality was exceptional.",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=faces",
+    quote:
+      "The team's creativity and dedication made our corporate event a huge success. Highly recommended!",
+    name: "Vikram Mehta",
+    event: "Corporate Event",
+    image: "",
   },
   {
-    name: "Meera & Vikram",
-    event: "Engagement Ceremony",
     rating: 5,
-    quote: "From the romantic décor to the seamless flow of events, everything was magical. Phoenix Events understood our vision and brought it to life beautifully.",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=faces",
+    quote:
+      "From planning to execution, everything was flawless. They truly understand what makes events special.",
+    name: "Sneha Kapoor",
+    event: "Haldi Ceremony",
+    image: "",
+  },
+  {
+    rating: 5,
+    quote:
+      "Incredible attention to detail and exceptional customer service. They made our day unforgettable!",
+    name: "Rohan & Meera Patel",
+    event: "Reception Party",
+    image: "",
   },
 ];
 
-const TestimonialsSection = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+function getAvatarUrl(name: string, existingUrl?: string): string {
+  if (existingUrl) return existingUrl;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=80&background=random`;
+}
 
-  useEffect(() => {
-    if (!isAutoPlaying || isDragging) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [isAutoPlaying, isDragging]);
-
-  const navigate = (direction: "prev" | "next") => {
-    setIsAutoPlaying(false);
-    if (direction === "prev") {
-      setCurrentIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
-    } else {
-      setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    }
-  };
-
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    setIsDragging(false);
-    const threshold = 50;
-    if (info.offset.x > threshold) {
-      navigate("prev");
-    } else if (info.offset.x < -threshold) {
-      navigate("next");
-    }
-  };
-
+function StarRating({ rating }: { rating: number }) {
   return (
-    <section className="py-16 sm:py-24 bg-background relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] 
-                      bg-primary/5 rounded-full blur-3xl" />
+    <div className="flex gap-0.5 items-center" aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className={`w-3.5 h-3.5 ${
+            i <= rating ? "fill-[var(--testimonial-star-filled)] text-[var(--testimonial-star-filled)]" : "fill-[var(--testimonial-star-empty)] text-[var(--testimonial-star-empty)]"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+const FLOATING_POSITIONS = [
+  { top: "5%", left: "12%" },
+  { top: "18%", left: "58%" },
+  { top: "30%", left: "8%" },
+  { top: "24%", left: "72%" },
+  { top: "42%", left: "38%" },
+  { top: "52%", left: "18%" },
+] as const;
+
+const FLOATING_CLASSES = [
+  "testimonial-float-card-1",
+  "testimonial-float-card-2",
+  "testimonial-float-card-3",
+  "testimonial-float-card-4",
+  "testimonial-float-card-5",
+  "testimonial-float-card-6",
+] as const;
+
+function TestimonialCard({
+  testimonial,
+  floating = false,
+  floatClass,
+  position,
+}: {
+  testimonial: Testimonial;
+  floating?: boolean;
+  floatClass?: string;
+  position?: { top: string; left: string };
+}) {
+  const avatarUrl = getAvatarUrl(testimonial.name, testimonial.image);
+
+  const cardClass = "testimonial-card p-3 sm:p-4 h-full flex flex-col min-h-[180px] w-full";
+  const floatingWrapperClass = [
+    "absolute w-[260px] max-w-[90vw]",
+    floatClass,
+    floating && "testimonial-card-floating",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const cardContent = (
+    <article className={cardClass}>
+      <div className="mb-1.5">
+        <Quote
+          className="w-6 h-6 opacity-25"
+          style={{ color: "var(--testimonial-quote-color)" }}
+          aria-hidden
+        />
       </div>
 
-      <div className="container mx-auto px-4 relative">
-        {/* Section Header - Compact on mobile */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-8 sm:mb-16"
-        >
-          <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-            Testimonials
-          </span>
-          <h2 className="section-title mb-3 sm:mb-4 text-2xl sm:text-3xl md:text-4xl">
-            What Our <span className="text-gradient-gold">Clients Say</span>
-          </h2>
-          <p className="section-subtitle text-sm sm:text-base max-w-lg mx-auto">
+      <div className="mb-2">
+        <StarRating rating={testimonial.rating} />
+      </div>
+
+      <blockquote className="flex-1 text-sm leading-relaxed mb-3 line-clamp-4" style={{ color: "var(--testimonial-text)" }}>
+        <span className="italic">&quot;{testimonial.quote}&quot;</span>
+      </blockquote>
+
+      <div className="flex items-center gap-2.5 pt-2.5 border-t border-border">
+        <img
+          src={avatarUrl}
+          alt={testimonial.name}
+          className="w-8 h-8 rounded-full object-cover border-2 border-card shadow-sm flex-shrink-0"
+          loading="lazy"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = getAvatarUrl(testimonial.name);
+          }}
+        />
+        <div className="min-w-0">
+          <p className="font-semibold text-sm truncate" style={{ color: "var(--testimonial-name)" }}>
+            {testimonial.name}
+          </p>
+          <p className="text-xs truncate" style={{ color: "var(--testimonial-event)" }}>
+            {testimonial.event}
+          </p>
+        </div>
+      </div>
+    </article>
+  );
+
+  if (floating && position && floatClass) {
+    return (
+      <div className={floatingWrapperClass} style={{ top: position.top, left: position.left }}>
+        {cardContent}
+      </div>
+    );
+  }
+
+  return cardContent;
+}
+
+const TestimonialsSection = () => {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
+
+  useEffect(() => {
+    getFeaturedTestimonials(8)
+      .then((data) => {
+        if (data.length > 0) {
+          setTestimonials(
+            data.map((t) => ({
+              name: t.name,
+              event: t.event_type || t.role || "",
+              rating: t.rating ?? 5,
+              quote: t.content,
+              image: t.avatar || "",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const list = testimonials.length > 0 ? testimonials : DEFAULT_TESTIMONIALS;
+  const displayList = list.slice(0, 6);
+
+  return (
+    <section
+      id="testimonials"
+      className="relative py-10 sm:py-12 lg:py-16"
+      style={{ background: "var(--testimonial-floating-bg)" }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        aria-hidden
+      >
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="home-section-inner relative">
+        <header className="text-center mb-5 sm:mb-6">
+          <p className="section-eyebrow text-primary">Kind Words</p>
+          <h2 className="section-heading">Testimonials</h2>
+          <p className="section-description">
             Hear from those who trusted us with their special moments.
           </p>
-        </motion.div>
+        </header>
 
-        {/* Mobile: Swipeable Card Carousel */}
-        <div className="sm:hidden">
-          <div className="relative overflow-hidden" ref={containerRef}>
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.2}
-              onDragStart={() => setIsDragging(true)}
-              onDragEnd={handleDragEnd}
-              className="cursor-grab active:cursor-grabbing touch-pan-y"
-            >
-              {/* Compact Mobile Card */}
-              <div className="bg-gradient-to-br from-card via-card to-primary/5 rounded-3xl p-5 
-                            border border-border/50 shadow-lg relative overflow-hidden">
-                {/* Decorative quote */}
-                <div className="absolute -top-2 -right-2 opacity-5">
-                  <Quote className="w-20 h-20 text-primary" />
-                </div>
-
-                {/* Stars */}
-                <div className="flex gap-0.5 mb-3">
-                  {Array.from({ length: testimonials[currentIndex].rating }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-primary text-primary" />
-                  ))}
-                </div>
-
-                {/* Quote - Compact */}
-                <blockquote className="font-serif text-base text-foreground leading-relaxed mb-4 line-clamp-4">
-                  "{testimonials[currentIndex].quote}"
-                </blockquote>
-
-                {/* Author - Compact inline */}
-                <div className="flex items-center gap-3 pt-3 border-t border-border/30">
-                  <img
-                    src={testimonials[currentIndex].image}
-                    alt={testimonials[currentIndex].name}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/30"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground text-sm truncate">
-                      {testimonials[currentIndex].name}
-                    </p>
-                    <p className="text-xs text-primary truncate">
-                      {testimonials[currentIndex].event}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Swipe hint */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 
-                              text-[10px] text-muted-foreground opacity-50">
-                  <ChevronLeft className="w-3 h-3" />
-                  <span>Swipe</span>
-                  <ChevronRight className="w-3 h-3" />
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Mobile Dots - Instagram style */}
-            <div className="flex justify-center gap-1.5 mt-4">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => { setIsAutoPlaying(false); setCurrentIndex(index); }}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    index === currentIndex 
-                      ? "bg-primary w-6" 
-                      : "bg-muted w-1.5"
-                  }`}
-                />
-              ))}
-            </div>
+        <div className="flex flex-wrap justify-center gap-5 mb-5">
+          <div className="text-center">
+            <p className="text-xl font-bold text-primary">500+</p>
+            <p className="text-xs text-muted-foreground">Happy Clients</p>
           </div>
-
-          {/* Mobile: Quick nav thumbnails */}
-          <div className="flex justify-center gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
-            {testimonials.map((testimonial, index) => (
-              <button
-                key={index}
-                onClick={() => { setIsAutoPlaying(false); setCurrentIndex(index); }}
-                className={`flex-shrink-0 w-12 h-12 rounded-full overflow-hidden 
-                          transition-all duration-300 ${
-                  index === currentIndex 
-                    ? "ring-2 ring-primary scale-110" 
-                    : "opacity-50 hover:opacity-75"
-                }`}
-              >
-                <img
-                  src={testimonial.image}
-                  alt={testimonial.name}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
+          <div className="text-center">
+            <p className="text-xl font-bold text-primary">4.9/5.0</p>
+            <p className="text-xs text-muted-foreground">Average Rating</p>
           </div>
         </div>
 
-        {/* Desktop: Original Carousel */}
-        <div className="hidden sm:block max-w-4xl mx-auto relative">
-          {/* Navigation Buttons */}
-          <button
-            onClick={() => navigate("prev")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-16 z-10
-                     w-12 h-12 rounded-full bg-card border border-border shadow-lg
-                     flex items-center justify-center hover:bg-primary hover:text-primary-foreground 
-                     transition-colors duration-300"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => navigate("next")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-16 z-10
-                     w-12 h-12 rounded-full bg-card border border-border shadow-lg
-                     flex items-center justify-center hover:bg-primary hover:text-primary-foreground 
-                     transition-colors duration-300"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-
-          {/* Testimonial Card */}
-          <motion.div
-            key={currentIndex}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.5 }}
-            className="glass-card p-8 md:p-12"
-          >
-            {/* Quote Icon */}
-            <div className="absolute top-6 right-8 opacity-10">
-              <Quote className="w-24 h-24 text-primary" />
-            </div>
-
-            {/* Content */}
-            <div className="relative">
-              {/* Stars */}
-              <div className="flex gap-1 mb-6">
-                {Array.from({ length: testimonials[currentIndex].rating }).map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-primary text-primary" />
-                ))}
-              </div>
-
-              {/* Quote */}
-              <blockquote className="font-serif text-xl md:text-2xl text-foreground leading-relaxed mb-8 italic">
-                "{testimonials[currentIndex].quote}"
-              </blockquote>
-
-              {/* Author */}
-              <div className="flex items-center gap-4">
-                <img
-                  src={testimonials[currentIndex].image}
-                  alt={testimonials[currentIndex].name}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-primary"
-                />
-                <div>
-                  <p className="font-semibold text-foreground">{testimonials[currentIndex].name}</p>
-                  <p className="text-sm text-primary">{testimonials[currentIndex].event}</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Dots Indicator */}
-          <div className="flex justify-center gap-2 mt-8">
-            {testimonials.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => { setIsAutoPlaying(false); setCurrentIndex(index); }}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentIndex 
-                    ? "bg-primary w-8" 
-                    : "bg-muted hover:bg-primary/50"
-                }`}
-              />
-            ))}
-          </div>
+        {/* Mobile / Tablet: stacked grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 sm:gap-4">
+          {displayList.map((t, i) => (
+            <TestimonialCard key={t.name + t.event + i} testimonial={t} />
+          ))}
         </div>
+      </div>
+
+      {/* Desktop: full-width floating layout - overflow-visible so cards are never cut */}
+      <div className="hidden lg:block relative w-full min-h-[480px] overflow-visible px-6 lg:px-8 pb-8">
+        {displayList.map((t, i) => (
+          <TestimonialCard
+            key={t.name + t.event + i}
+            testimonial={t}
+            floating
+            floatClass={FLOATING_CLASSES[i]}
+            position={FLOATING_POSITIONS[i]}
+          />
+        ))}
       </div>
     </section>
   );

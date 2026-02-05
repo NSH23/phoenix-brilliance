@@ -1,231 +1,217 @@
 import { motion } from "framer-motion";
-import { ChevronDown, PlayCircle, Sparkles, Volume2, VolumeX } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import heroImage from "@/assets/hero-wedding.jpg";
-import SparkleParticles from "./SparkleParticles";
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import HeroStatsBlock from "./HeroStatsBlock";
 
 const HeroSection = () => {
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Video URL - a beautiful wedding highlight reel
-  const videoUrl = "https://videos.pexels.com/video-files/3327261/3327261-uhd_2560_1440_30fps.mp4";
-
+  const [isDark, setIsDark] = useState(false);
+  
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 0.85;
-    }
-  }, [isVideoLoaded]);
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
+    const checkTheme = () => {
+      const darkMode = document.documentElement.classList.contains('dark');
+      setIsDark(darkMode);
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Fallback Background Image */}
-      <div className="absolute inset-0">
-        <img
-          src={heroImage}
-          alt="Luxury Wedding Venue"
-          className={`w-full h-full object-cover transition-opacity duration-1000 ${
-            isVideoLoaded ? "opacity-0" : "opacity-100"
-          }`}
-        />
-      </div>
-
-      {/* Video Background */}
-      <div className="absolute inset-0">
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted={isMuted}
-          playsInline
-          onLoadedData={() => setIsVideoLoaded(true)}
-          className={`w-full h-full object-cover transition-opacity duration-1000 ${
-            isVideoLoaded ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <source src={videoUrl} type="video/mp4" />
-        </video>
+    <section
+      id="home"
+      className="relative min-h-[85vh] sm:min-h-[90vh] flex flex-col items-center justify-center overflow-hidden"
+    >
+      {/* Elegant abstract gradient mesh background */}
+      <div className="absolute inset-0" aria-hidden>
+        {/* Base gradient layer - adapts to theme (dark unchanged) */}
+        {isDark ? (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1a1f3a] to-[#2d1b3d]" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-champagne" />
+        )}
         
-        {/* Adaptive Overlays - Better for light theme readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/50 to-charcoal/90" />
-        <div className="absolute inset-0 bg-gradient-to-r from-charcoal/40 via-transparent to-charcoal/40" />
-        {/* Extra overlay for better text contrast in light theme */}
-        <div className="absolute inset-0 bg-charcoal/20 dark:bg-transparent" />
+        {/* Dark: rose/champagne mesh. Light: Heritage gold/champagne mesh only */}
+        <motion.div
+          className={`absolute inset-0 ${isDark ? 'opacity-60' : 'opacity-70'}`}
+          animate={{
+            background: isDark ? [
+              "radial-gradient(circle at 20% 30%, rgba(232, 180, 160, 0.4) 0%, transparent 50%)",
+              "radial-gradient(circle at 80% 70%, rgba(232, 180, 160, 0.4) 0%, transparent 50%)",
+              "radial-gradient(circle at 50% 50%, rgba(232, 180, 160, 0.4) 0%, transparent 50%)",
+              "radial-gradient(circle at 20% 30%, rgba(232, 180, 160, 0.4) 0%, transparent 50%)",
+            ] : [
+              "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(212, 175, 55, 0.12) 0%, transparent 65%)",
+              "radial-gradient(ellipse 115% 105% at 30% 35%, rgba(255, 248, 240, 0.5) 0%, transparent 65%)",
+              "radial-gradient(ellipse 105% 115% at 60% 60%, rgba(212, 175, 55, 0.1) 0%, transparent 65%)",
+              "radial-gradient(ellipse 100% 120% at 90% 80%, rgba(255, 244, 230, 0.5) 0%, transparent 65%)",
+              "radial-gradient(ellipse 110% 110% at 70% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 65%)",
+              "radial-gradient(ellipse 115% 105% at 40% 25%, rgba(255, 248, 240, 0.5) 0%, transparent 65%)",
+              "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(212, 175, 55, 0.12) 0%, transparent 65%)",
+            ],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: [0.25, 0.1, 0.25, 1],
+          }}
+        />
+        
+        <motion.div
+          className={`absolute inset-0 ${isDark ? 'opacity-50' : 'opacity-65'}`}
+          animate={{
+            background: isDark ? [
+              "radial-gradient(circle at 70% 20%, rgba(247, 231, 206, 0.3) 0%, transparent 50%)",
+              "radial-gradient(circle at 30% 80%, rgba(247, 231, 206, 0.3) 0%, transparent 50%)",
+              "radial-gradient(circle at 60% 40%, rgba(247, 231, 206, 0.3) 0%, transparent 50%)",
+              "radial-gradient(circle at 70% 20%, rgba(247, 231, 206, 0.3) 0%, transparent 50%)",
+            ] : [
+              "radial-gradient(ellipse 100% 130% at 80% 15%, rgba(255, 248, 240, 0.4) 0%, transparent 70%)",
+              "radial-gradient(ellipse 115% 120% at 60% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 70%)",
+              "radial-gradient(ellipse 130% 100% at 20% 85%, rgba(255, 244, 230, 0.4) 0%, transparent 70%)",
+              "radial-gradient(ellipse 120% 115% at 45% 70%, rgba(212, 175, 55, 0.06) 0%, transparent 70%)",
+              "radial-gradient(ellipse 110% 120% at 55% 45%, rgba(255, 248, 240, 0.35) 0%, transparent 70%)",
+              "radial-gradient(ellipse 105% 125% at 75% 20%, rgba(212, 175, 55, 0.07) 0%, transparent 70%)",
+              "radial-gradient(ellipse 100% 130% at 80% 15%, rgba(255, 248, 240, 0.4) 0%, transparent 70%)",
+            ],
+          }}
+          transition={{
+            duration: 24,
+            repeat: Infinity,
+            ease: [0.25, 0.1, 0.25, 1],
+            delay: 3,
+          }}
+        />
+        
+        <motion.div
+          className={`absolute inset-0 ${isDark ? 'opacity-40' : 'opacity-60'}`}
+          animate={{
+            background: isDark ? [
+              "radial-gradient(circle at 40% 60%, rgba(232, 180, 160, 0.25) 0%, transparent 60%)",
+              "radial-gradient(circle at 60% 40%, rgba(232, 180, 160, 0.25) 0%, transparent 60%)",
+              "radial-gradient(circle at 80% 80%, rgba(232, 180, 160, 0.25) 0%, transparent 60%)",
+              "radial-gradient(circle at 40% 60%, rgba(232, 180, 160, 0.25) 0%, transparent 60%)",
+            ] : [
+              "radial-gradient(ellipse 130% 110% at 35% 65%, rgba(212, 175, 55, 0.06) 0%, transparent 75%)",
+              "radial-gradient(ellipse 125% 115% at 50% 50%, rgba(255, 248, 240, 0.35) 0%, transparent 75%)",
+              "radial-gradient(ellipse 110% 130% at 65% 35%, rgba(212, 175, 55, 0.05) 0%, transparent 75%)",
+              "radial-gradient(ellipse 120% 120% at 85% 85%, rgba(255, 244, 230, 0.3) 0%, transparent 75%)",
+              "radial-gradient(ellipse 115% 125% at 25% 40%, rgba(255, 248, 240, 0.4) 0%, transparent 75%)",
+              "radial-gradient(ellipse 125% 115% at 70% 75%, rgba(212, 175, 55, 0.05) 0%, transparent 75%)",
+              "radial-gradient(ellipse 130% 110% at 35% 65%, rgba(212, 175, 55, 0.06) 0%, transparent 75%)",
+            ],
+          }}
+          transition={{
+            duration: 28,
+            repeat: Infinity,
+            ease: [0.25, 0.1, 0.25, 1],
+            delay: 6,
+          }}
+        />
+        
+        {/* Light theme only: extra gold accent layer (Heritage) - no cyan/purple */}
+        {!isDark && (
+          <motion.div
+            className="absolute inset-0 opacity-40"
+            animate={{
+              background: [
+                "radial-gradient(ellipse 90% 100% at 5% 45%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                "radial-gradient(ellipse 95% 105% at 25% 35%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                "radial-gradient(ellipse 100% 90% at 95% 55%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                "radial-gradient(ellipse 105% 95% at 70% 70%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                "radial-gradient(ellipse 110% 110% at 50% 5%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                "radial-gradient(ellipse 100% 100% at 15% 60%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+                "radial-gradient(ellipse 90% 100% at 5% 45%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
+              ],
+            }}
+            transition={{
+              duration: 26,
+              repeat: Infinity,
+              ease: [0.25, 0.1, 0.25, 1],
+              delay: 4,
+            }}
+          />
+        )}
+        
+        {/* Subtle overlay for depth - adapts to theme (dark unchanged) */}
+        {isDark ? (
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/40 via-transparent to-transparent" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-t from-[#FFFBF5]/20 via-transparent to-transparent" />
+        )}
       </div>
 
-      {/* Mute Toggle Button */}
-      {isVideoLoaded && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 2, duration: 0.5 }}
-          onClick={toggleMute}
-          className="absolute bottom-28 sm:bottom-24 right-4 sm:right-6 z-20 w-11 h-11 sm:w-12 sm:h-12 
-                   rounded-full bg-charcoal/50 backdrop-blur-md border border-ivory/30
-                   flex items-center justify-center text-ivory hover:text-primary
-                   hover:bg-charcoal/70 hover:border-primary/50 transition-all duration-300
-                   shadow-lg"
-          aria-label={isMuted ? "Unmute video" : "Mute video"}
-        >
-          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-        </motion.button>
-      )}
-
-      {/* Sparkle Particles */}
-      <SparkleParticles />
-
-      {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 text-center pt-20 sm:pt-20 pb-24 sm:pb-0">
+      {/* Content – centered, max-width 900px */}
+      <div className="relative z-10 w-full max-w-[900px] mx-auto px-4 sm:px-6 flex flex-col items-center justify-center text-center min-h-[90vh] py-20">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.2 }}
-          className="max-w-5xl mx-auto"
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="flex flex-col items-center"
         >
-          {/* Badge - Compact on mobile */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 rounded-full 
-                     bg-primary/30 backdrop-blur-md border border-primary/40 mb-4 sm:mb-8
-                     shadow-lg shadow-primary/10"
-          >
-            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-            <span className="text-[11px] sm:text-sm font-medium text-ivory tracking-wide">
-              Premium Event Management
-            </span>
-          </motion.div>
-
-          {/* Main Heading - Instagram-style large text on mobile */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.8 }}
-            className="font-serif text-[28px] leading-tight sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 
-                     font-bold text-ivory mb-3 sm:mb-6
-                     drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]"
-          >
-            Turning Moments Into
-            <br />
-            <span className="text-gradient-gold drop-shadow-none">Unforgettable Celebrations</span>
-          </motion.h1>
-
-          {/* Subtitle - Compact pills on mobile */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.8 }}
-            className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4"
-          >
-            {["Weddings", "Corporate", "Celebrations"].map((item, idx) => (
-              <span
-                key={item}
-                className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-sm 
-                         bg-ivory/10 backdrop-blur-sm border border-ivory/20 text-ivory/90"
-              >
-                {item}
-              </span>
-            ))}
-          </motion.div>
-
+          {/* 1. Eyebrow – 13px, uppercase, 2–3px letter-spacing */}
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1, duration: 0.8 }}
-            className="text-[13px] sm:text-base lg:text-lg text-ivory/70 mb-6 sm:mb-10 max-w-xl sm:max-w-2xl mx-auto px-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="typography-eyebrow text-primary mb-5"
           >
-            Where every detail matters and every moment becomes a cherished memory.
+            TURNING DREAMS INTO REALITY
           </motion.p>
 
-          {/* CTAs - Mobile optimized with WhatsApp */}
+          {/* 2. Brand name – Hero: 72–80px desktop, 40px mobile, extrabold */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            className="typography-hero text-hero mb-6"
+          >
+            Phoenix Brilliance
+          </motion.h1>
+
+          {/* 3. Tagline – body-lg 18px */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.6 }}
+            className="typography-body-lg text-hero-muted mb-10 max-w-xl mx-auto"
+          >
+            Luxury Event Management & Production
+          </motion.p>
+
+          {/* 4. CTA Buttons – side by side */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2, duration: 0.8 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
+            transition={{ delay: 0.9, duration: 0.6 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
           >
-            {/* Desktop: Plan Your Event */}
-            <a
-              href="/contact"
-              className="hidden sm:inline-flex group relative w-auto px-8 py-4 
-                       bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
-                       rounded-full font-semibold text-lg overflow-hidden 
-                       transition-all duration-300 hover:shadow-2xl hover:scale-105
-                       shadow-[0_4px_30px_rgba(212,175,55,0.4)]"
+            <Link
+              to="/services"
+              className="inline-flex items-center justify-center px-10 py-[18px] rounded-[30px] text-base font-semibold bg-primary text-primary-foreground transition-all duration-300 hover:scale-105 hover:bg-rose-gold hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent"
             >
-              <span className="relative z-10">Plan Your Event</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-rose-gold via-primary to-rose-gold 
-                            bg-[length:200%_100%] animate-shimmer opacity-0 group-hover:opacity-100 transition-opacity" />
-            </a>
-            
-            {/* Desktop: View Our Work */}
-            <a
-              href="#gallery"
-              className="hidden sm:flex group items-center justify-center gap-3 w-auto 
-                       px-8 py-4 bg-ivory/10 backdrop-blur-md border-2 border-ivory/40 text-ivory 
-                       rounded-full font-semibold text-lg 
-                       hover:bg-ivory/20 hover:border-ivory/60 transition-all duration-300"
+              Explore Our Services
+            </Link>
+            <Link
+              to="/gallery"
+              className="inline-flex items-center justify-center px-10 py-[18px] rounded-[30px] text-base font-semibold border-2 border-primary/30 text-foreground bg-transparent transition-all duration-300 hover:border-primary/50 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-transparent"
             >
-              <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              <span>View Our Work</span>
-            </a>
+              View Our Work
+            </Link>
+          </motion.div>
 
-            {/* Mobile: Compact Action Buttons */}
-            <div className="flex sm:hidden items-center gap-3 w-full px-4">
-              <a
-                href="#gallery"
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
-                         bg-ivory/10 backdrop-blur-md border border-ivory/30 text-ivory 
-                         rounded-2xl font-semibold text-sm
-                         active:scale-95 transition-transform duration-200"
-              >
-                <PlayCircle className="w-4 h-4" />
-                <span>Our Work</span>
-              </a>
-              <a
-                href="/contact"
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
-                         bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
-                         rounded-2xl font-semibold text-sm shadow-lg shadow-primary/30
-                         active:scale-95 transition-transform duration-200"
-              >
-                <span>Get Started</span>
-              </a>
-            </div>
+          {/* 5. Stats Block */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1, duration: 0.6 }}
+            className="w-full"
+          >
+            <HeroStatsBlock />
           </motion.div>
         </motion.div>
       </div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 1 }}
-        className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2"
-      >
-        <a href="#events" className="flex flex-col items-center gap-1.5 sm:gap-2 text-ivory/70 hover:text-ivory transition-colors">
-          <span className="text-xs sm:text-sm tracking-widest uppercase">Explore</span>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
-          </motion.div>
-        </a>
-      </motion.div>
-
-      {/* Decorative Elements */}
-      <div className="absolute top-1/4 left-4 sm:left-10 w-20 sm:w-32 h-20 sm:h-32 bg-primary/15 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-4 sm:right-10 w-24 sm:w-40 h-24 sm:h-40 bg-rose-gold/15 rounded-full blur-3xl" />
     </section>
   );
 };

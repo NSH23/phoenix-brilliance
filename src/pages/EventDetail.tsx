@@ -1,15 +1,18 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { 
   ArrowLeft, ArrowRight, Calendar, Camera, Play, Star, 
   MessageCircle, MapPin, Palette, Users, CheckCircle, Sparkles,
-  ClipboardList, PartyPopper, Cake, Target, FileText, Settings, Award
+  ClipboardList, PartyPopper, Cake, Target, FileText, Settings, Award, Loader2
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { mockEvents, mockAlbums, mockTestimonials } from "@/data/mockData";
+import { getEventWithSteps, Event, EventStep } from "@/services/events";
+import { getAlbumsByEventId, Album } from "@/services/albums";
+import { getAllTestimonials, Testimonial } from "@/services/testimonials";
+import { logger } from "@/utils/logger";
 
 // Icon mapping for steps
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -20,6 +23,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 const EventDetail = () => {
   const { eventType } = useParams<{ eventType: string }>();
   const [activeStep, setActiveStep] = useState(0);
+  const [event, setEvent] = useState<any | null>(null);
+  const [steps, setSteps] = useState<EventStep[]>([]);
+  const [relatedAlbums, setRelatedAlbums] = useState<Album[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const timelineRef = useRef<HTMLDivElement>(null);
 
   const { scrollYProgress } = useScroll({
@@ -27,20 +35,76 @@ const EventDetail = () => {
     offset: ["start center", "end center"]
   });
 
-  // Find the event
-  const event = mockEvents.find(e => e.slug === eventType);
+  useEffect(() => {
+    loadEventData();
+  }, [eventType]);
 
+  const loadEventData = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (!eventType) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Load event with steps
+      const eventData = await getEventWithSteps(eventType);
+      
+      if (!eventData) {
+        setIsLoading(false);
+        return;
+      }
+
+      setEvent(eventData);
+      setSteps(eventData.event_steps || []);
+
+      // Load related albums
+      try {
+        const albumsData = await getAlbumsByEventId(eventData.id);
+        setRelatedAlbums(albumsData.slice(0, 3));
+      } catch (error) {
+        logger.error('Error loading albums', error, { component: 'EventDetail', action: 'loadAlbums', eventId: eventData.id });
+        setRelatedAlbums([]);
+      }
+
+      // Load testimonials (if service exists)
+      try {
+        const testimonialsData = await getAllTestimonials();
+        // Filter testimonials that might be related to this event
+        const eventTestimonials = testimonialsData.filter(
+          (t: any) => t.event_type?.toLowerCase() === eventData.title.toLowerCase()
+        );
+        setTestimonials(eventTestimonials);
+      } catch (error) {
+        // Testimonials service might not exist, that's okay
+        setTestimonials([]);
+      }
+    } catch (error: any) {
+      logger.error('Error loading event', error, { component: 'EventDetail', action: 'loadEvent', eventType });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <Footer />
+        <WhatsAppButton />
+      </div>
+    );
+  }
+
+  // If event not found, redirect
   if (!event) {
     return <Navigate to="/events" replace />;
   }
-
-  // Get related albums
-  const relatedAlbums = mockAlbums.filter(album => album.eventId === event.id).slice(0, 3);
-
-  // Get testimonials for this event type
-  const eventTestimonials = mockTestimonials.filter(
-    t => t.eventType.toLowerCase() === event.title.toLowerCase()
-  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,9 +115,12 @@ const EventDetail = () => {
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
-            src={event.coverImage}
+            src={event.cover_image || '/placeholder.svg'}
             alt={event.title}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/placeholder.svg';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background/50 to-transparent" />
@@ -97,17 +164,17 @@ const EventDetail = () => {
               {event.title}
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl">
-              {event.description}
+              {event.description || event.short_description || ''}
             </p>
 
             {/* Quick Stats */}
             <div className="flex flex-wrap items-center gap-6 mt-8">
-              {event.steps.length > 0 && (
+              {steps.length > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-primary" />
                   </div>
-                  <span className="text-foreground">{event.steps.length}-Step Process</span>
+                  <span className="text-foreground">{steps.length}-Step Process</span>
                 </div>
               )}
               {relatedAlbums.length > 0 && (
@@ -132,7 +199,7 @@ const EventDetail = () => {
       </section>
 
       {/* Process/Roadmap Section */}
-      {event.steps.length > 0 && (
+      {steps.length > 0 && (
         <section ref={timelineRef} className="py-16 sm:py-24 relative overflow-hidden">
           {/* Background decoration */}
           <div className="absolute inset-0 pointer-events-none">
@@ -187,8 +254,8 @@ const EventDetail = () => {
 
               {/* Steps */}
               <div className="space-y-12 lg:space-y-24">
-                {event.steps.map((step, index) => {
-                  const IconComponent = iconMap[step.icon] || CheckCircle;
+                {steps.map((step, index) => {
+                  const IconComponent = iconMap[step.icon || 'CheckCircle'] || CheckCircle;
                   const isLeft = index % 2 === 0;
 
                   return (
@@ -238,15 +305,17 @@ const EventDetail = () => {
                                 <span className="inline-flex items-center justify-center w-7 h-7 
                                                rounded-full bg-primary text-primary-foreground 
                                                text-sm font-bold">
-                                  {step.stepNumber}
+                                  {step.step_number}
                                 </span>
                                 <h3 className="font-serif text-xl sm:text-2xl font-bold text-foreground">
                                   {step.title}
                                 </h3>
                               </div>
-                              <p className="text-muted-foreground leading-relaxed">
-                                {step.description}
-                              </p>
+                              {step.description && (
+                                <p className="text-muted-foreground leading-relaxed">
+                                  {step.description}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </motion.div>
@@ -335,15 +404,18 @@ const EventDetail = () => {
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
                       <img
-                        src={album.coverImage}
+                        src={album.cover_image || '/placeholder.svg'}
                         alt={album.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 to-transparent" />
                       <div className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 
                                     bg-charcoal/60 backdrop-blur-sm rounded-full text-xs text-ivory">
                         <Camera className="w-3.5 h-3.5" />
-                        {album.mediaCount}
+                        {album.id}
                       </div>
                     </div>
                     <div className="p-5">
@@ -352,7 +424,7 @@ const EventDetail = () => {
                         {album.title}
                       </h3>
                       <p className="text-sm text-muted-foreground line-clamp-1">
-                        {album.description}
+                        {album.description || 'No description'}
                       </p>
                     </div>
                   </Link>
@@ -374,7 +446,7 @@ const EventDetail = () => {
       )}
 
       {/* Testimonials */}
-      {eventTestimonials.length > 0 && (
+      {testimonials.length > 0 && (
         <section className="py-16 sm:py-24">
           <div className="container mx-auto px-4">
             <motion.div
@@ -389,7 +461,7 @@ const EventDetail = () => {
             </motion.div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {eventTestimonials.map((testimonial, index) => (
+              {testimonials.map((testimonial: any, index) => (
                 <motion.div
                   key={testimonial.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -399,20 +471,27 @@ const EventDetail = () => {
                   className="bg-card rounded-2xl p-6 border border-border"
                 >
                   <div className="flex items-center gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
+                    {[...Array(testimonial.rating || 5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 text-primary fill-primary" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-4 italic">"{testimonial.content}"</p>
+                  <p className="text-muted-foreground mb-4 italic">"{testimonial.content || testimonial.message}"</p>
                   <div className="flex items-center gap-3">
-                    <img
-                      src={testimonial.avatar}
-                      alt={testimonial.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+                    {testimonial.avatar_url && (
+                      <img
+                        src={testimonial.avatar_url}
+                        alt={testimonial.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    )}
                     <div>
                       <div className="font-medium text-foreground">{testimonial.name}</div>
-                      <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                      {testimonial.role && (
+                        <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                      )}
                     </div>
                   </div>
                 </motion.div>

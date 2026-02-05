@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Save, User, Shield, Bell, Palette, Globe, Database } from 'lucide-react';
+import { Save, User, Shield, Bell, Globe, Database, UserPlus, Mail, Lock, Loader2, ArrowLeft } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ImageUpload from '@/components/admin/ImageUpload';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAdmin } from '@/contexts/AdminContext';
+import { updateAdminUser } from '@/services/adminUsers';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function AdminSettings() {
@@ -24,6 +27,7 @@ export default function AdminSettings() {
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
     email: user?.email || '',
+    avatar: (user as { avatar_url?: string })?.avatar_url || '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -43,13 +47,207 @@ export default function AdminSettings() {
     maintenanceMode: false,
   });
 
-  const handleSaveProfile = () => {
-    if (profileData.newPassword && profileData.newPassword !== profileData.confirmPassword) {
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [addUserStep, setAddUserStep] = useState<1 | 2 | 3>(1);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserOtp, setNewUserOtp] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserConfirmPassword, setNewUserConfirmPassword] = useState('');
+  const [addUserLoading, setAddUserLoading] = useState(false);
+  const [otpResendCooldown, setOtpResendCooldown] = useState(0);
+  const oldSessionRef = useRef<{ access_token: string; refresh_token: string } | null>(null);
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserEmail?.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+    setAddUserLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: newUserEmail.trim(),
+        options: { shouldCreateUser: true },
+      });
+      if (error) {
+        const msg = error.message?.toLowerCase() || '';
+        if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
+          toast.error('An account with this email may already exist. Use a different email or have them sign in.');
+        } else {
+          toast.error(error.message || 'Failed to send OTP');
+        }
+        setAddUserLoading(false);
+        return;
+      }
+      setAddUserStep(2);
+      setNewUserOtp('');
+      setOtpResendCooldown(60);
+      const t = setInterval(() => setOtpResendCooldown((s) => (s <= 1 ? 0 : s - 1)), 1000);
+      setTimeout(() => clearInterval(t), 60000);
+      toast.success('OTP sent', { description: `A 6-digit code was sent to ${newUserEmail}. The new user should provide it to you.` });
+    } catch (err: unknown) {
+      toast.error('Failed to send OTP', { description: (err as Error)?.message });
+    } finally {
+      setAddUserLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const otp = newUserOtp.replace(/\D/g, '');
+    if (otp.length !== 6) {
+      toast.error('Please enter the 6-digit code from the email');
+      return;
+    }
+    setAddUserLoading(true);
+    try {
+      const { data: { session: cur } } = await supabase.auth.getSession();
+      if (cur) oldSessionRef.current = { access_token: cur.access_token, refresh_token: cur.refresh_token };
+      const { error } = await supabase.auth.verifyOtp({
+        email: newUserEmail.trim(),
+        token: otp,
+        type: 'email',
+      });
+      if (error) {
+        toast.error(error.message || 'Invalid or expired code. You can request a new one.');
+        setAddUserLoading(false);
+        return;
+      }
+      setAddUserStep(3);
+      setNewUserOtp('');
+      toast.success('Email verified', { description: 'Now set a password for the new admin.' });
+    } catch (err: unknown) {
+      toast.error('Verification failed', { description: (err as Error)?.message });
+    } finally {
+      setAddUserLoading(false);
+    }
+  };
+
+  const handleAddNewUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserPassword || !newUserConfirmPassword) {
+      toast.error('Please fill in password and confirm password');
+      return;
+    }
+    if (newUserPassword !== newUserConfirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    if (newUserPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setAddUserLoading(true);
+    try {
+      const { data: { user: u } } = await supabase.auth.getUser();
+      if (!u) {
+        toast.error('Session lost. Please start over.');
+        setAddUserStep(1);
+        setAddUserLoading(false);
+        return;
+      }
+      const { error: updateErr } = await supabase.auth.updateUser({ password: newUserPassword });
+      if (updateErr) {
+        toast.error(updateErr.message || 'Failed to set password');
+        setAddUserLoading(false);
+        return;
+      }
+      const { error: rpcError } = await supabase.rpc('create_admin_user', {
+        user_id: u.id,
+        user_email: newUserEmail.trim(),
+        user_name: newUserName?.trim() || newUserEmail.split('@')[0],
+        user_role: 'admin',
+      });
+      if (rpcError) {
+        toast.error('Failed to add to admin list. You may need to add them manually in the database.');
+      } else {
+        toast.success('New admin user created', { description: 'They can sign in with this email and password.' });
+        setAddUserStep(1);
+        setNewUserEmail('');
+        setNewUserName('');
+        setNewUserPassword('');
+        setNewUserConfirmPassword('');
+      }
+      await supabase.auth.signOut();
+      const old = oldSessionRef.current;
+      if (old) await supabase.auth.setSession({ access_token: old.access_token, refresh_token: old.refresh_token });
+      oldSessionRef.current = null;
+    } catch (err: unknown) {
+      toast.error('Failed to create user', { description: (err as Error)?.message });
+    } finally {
+      setAddUserLoading(false);
+    }
+  };
+
+  const handleAddUserCancel = () => {
+    const old = oldSessionRef.current;
+    if (old) {
+      supabase.auth.signOut().then(() => supabase.auth.setSession(old));
+      oldSessionRef.current = null;
+    }
+    setAddUserStep(1);
+    setNewUserEmail('');
+    setNewUserName('');
+    setNewUserOtp('');
+    setNewUserPassword('');
+    setNewUserConfirmPassword('');
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user?.id) return;
+    setProfileSaving(true);
+    try {
+      await updateAdminUser(user.id, {
+        name: profileData.name.trim() || user.name,
+        avatar_url: profileData.avatar || null,
+      });
+      toast.success('Profile updated successfully');
+    } catch (err) {
+      toast.error('Failed to update profile', { description: (err as Error)?.message });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!profileData.currentPassword || !profileData.newPassword || !profileData.confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+    if (profileData.newPassword !== profileData.confirmPassword) {
       toast.error('New passwords do not match');
       return;
     }
-    toast.success('Profile updated successfully');
-    setProfileData({ ...profileData, currentPassword: '', newPassword: '', confirmPassword: '' });
+    if (profileData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: profileData.currentPassword,
+      });
+      if (signInErr) {
+        toast.error('Current password is incorrect');
+        setPasswordSaving(false);
+        return;
+      }
+      const { error: updateErr } = await supabase.auth.updateUser({ password: profileData.newPassword });
+      if (updateErr) {
+        toast.error(updateErr.message || 'Failed to update password');
+        setPasswordSaving(false);
+        return;
+      }
+      toast.success('Password updated successfully');
+      setProfileData((p) => ({ ...p, currentPassword: '', newPassword: '', confirmPassword: '' }));
+    } catch (err) {
+      toast.error('Failed to update password', { description: (err as Error)?.message });
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   const handleSaveNotifications = () => {
@@ -63,7 +261,7 @@ export default function AdminSettings() {
   return (
     <AdminLayout title="Settings" subtitle="Manage your account and site settings">
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="profile" className="gap-2">
             <User className="w-4 h-4 hidden sm:inline" />
             Profile
@@ -71,6 +269,10 @@ export default function AdminSettings() {
           <TabsTrigger value="security" className="gap-2">
             <Shield className="w-4 h-4 hidden sm:inline" />
             Security
+          </TabsTrigger>
+          <TabsTrigger value="users" className="gap-2">
+            <UserPlus className="w-4 h-4 hidden sm:inline" />
+            Add User
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="w-4 h-4 hidden sm:inline" />
@@ -96,18 +298,22 @@ export default function AdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center gap-6">
-                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-primary font-bold text-2xl">
-                      {profileData.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div>
-                    <Button variant="outline" size="sm">Change Avatar</Button>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      JPG, GIF or PNG. Max size 2MB.
-                    </p>
-                  </div>
+                <div className="grid gap-2">
+                  <Label>Profile Avatar</Label>
+                  <ImageUpload
+                    value={profileData.avatar}
+                    onChange={v => setProfileData({ ...profileData, avatar: (v as string) || '' })}
+                    multiple={false}
+                    previewClassName="object-cover"
+                    bucket="admin-avatars"
+                    uploadOnSelect={true}
+                  />
+                  <p className="text-xs text-muted-foreground">Or paste URL:</p>
+                  <Input
+                    value={profileData.avatar}
+                    onChange={e => setProfileData({ ...profileData, avatar: e.target.value })}
+                    placeholder="https://..."
+                  />
                 </div>
 
                 <Separator />
@@ -128,8 +334,10 @@ export default function AdminSettings() {
                       id="email"
                       type="email"
                       value={profileData.email}
-                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                      disabled
+                      className="bg-muted"
                     />
+                    <p className="text-xs text-muted-foreground">Email cannot be changed from this panel.</p>
                   </div>
 
                   <div className="grid gap-2">
@@ -142,8 +350,8 @@ export default function AdminSettings() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveProfile}>
-                    <Save className="w-4 h-4 mr-2" />
+                  <Button onClick={handleSaveProfile} disabled={profileSaving}>
+                    {profileSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                     Save Profile
                   </Button>
                 </div>
@@ -197,8 +405,8 @@ export default function AdminSettings() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveProfile}>
-                    <Shield className="w-4 h-4 mr-2" />
+                  <Button onClick={handleUpdatePassword} disabled={passwordSaving}>
+                    {passwordSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Shield className="w-4 h-4 mr-2" />}
                     Update Password
                   </Button>
                 </div>
@@ -222,6 +430,174 @@ export default function AdminSettings() {
                   </div>
                   <Button variant="outline">Setup 2FA</Button>
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </TabsContent>
+
+        {/* Add New User Tab */}
+        <TabsContent value="users">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="w-5 h-5" />
+                  Add New Admin User
+                </CardTitle>
+                <CardDescription>
+                  Create a new admin account: verify their email with OTP, then set a password. They sign in with that email and password.
+                  Only admins can create new accounts; there is no public signup.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">{addUserStep}</span>
+                  <span>Step {addUserStep}: {addUserStep === 1 ? 'Email' : addUserStep === 2 ? 'Verify OTP' : 'Set password'}</span>
+                </div>
+
+                {addUserStep === 1 && (
+                  <form onSubmit={handleSendOtp} className="space-y-4 max-w-md">
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-user-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="new-user-email"
+                          type="email"
+                          value={newUserEmail}
+                          onChange={(e) => setNewUserEmail(e.target.value)}
+                          placeholder="newadmin@example.com"
+                          className="pl-9"
+                          required
+                          disabled={addUserLoading}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-user-name">Name (optional)</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="new-user-name"
+                          type="text"
+                          value={newUserName}
+                          onChange={(e) => setNewUserName(e.target.value)}
+                          placeholder="Defaults to email prefix"
+                          className="pl-9"
+                          disabled={addUserLoading}
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" disabled={addUserLoading}>
+                      {addUserLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Send OTP
+                    </Button>
+                  </form>
+                )}
+
+                {addUserStep === 2 && (
+                  <form onSubmit={handleVerifyOtp} className="space-y-4 max-w-md">
+                    <p className="text-sm text-muted-foreground">
+                      A 6-digit code was sent to <strong>{newUserEmail}</strong>. Ask the new user to provide it, or check your Supabase email template uses <code className="bg-muted px-1 rounded">{'{{ .Token }}'}</code> for OTP.
+                    </p>
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-user-otp">6-digit code</Label>
+                      <Input
+                        id="new-user-otp"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={newUserOtp}
+                        onChange={(e) => setNewUserOtp(e.target.value.replace(/\D/g, ''))}
+                        placeholder="000000"
+                        className="text-center text-lg tracking-[0.4em] font-mono"
+                        disabled={addUserLoading}
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="submit" disabled={addUserLoading || newUserOtp.replace(/\D/g, '').length !== 6}>
+                        {addUserLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                        Verify
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={addUserLoading || otpResendCooldown > 0}
+                        onClick={() => { setAddUserStep(1); setNewUserOtp(''); }}
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                      </Button>
+                      {otpResendCooldown > 0 ? (
+                        <span className="text-sm text-muted-foreground self-center">Resend in {otpResendCooldown}s</span>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={addUserLoading}
+                          onClick={() => handleSendOtp({ preventDefault: () => {} } as React.FormEvent)}
+                        >
+                          Resend code
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                )}
+
+                {addUserStep === 3 && (
+                  <form onSubmit={handleAddNewUser} className="space-y-4 max-w-md">
+                    <p className="text-sm text-muted-foreground">Set a password for <strong>{newUserEmail}</strong>.</p>
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-user-password">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="new-user-password"
+                          type="password"
+                          value={newUserPassword}
+                          onChange={(e) => setNewUserPassword(e.target.value)}
+                          placeholder="Min 6 characters"
+                          className="pl-9"
+                          required
+                          minLength={6}
+                          disabled={addUserLoading}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-user-confirm">Confirm Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="new-user-confirm"
+                          type="password"
+                          value={newUserConfirmPassword}
+                          onChange={(e) => setNewUserConfirmPassword(e.target.value)}
+                          placeholder="Repeat password"
+                          className="pl-9"
+                          required
+                          minLength={6}
+                          disabled={addUserLoading}
+                        />
+                      </div>
+                      {newUserPassword && newUserConfirmPassword && newUserPassword !== newUserConfirmPassword && (
+                        <p className="text-xs text-destructive">Passwords do not match</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={addUserLoading || (newUserPassword !== newUserConfirmPassword && !!newUserConfirmPassword)}>
+                        {addUserLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                        Create admin user
+                      </Button>
+                      <Button type="button" variant="outline" disabled={addUserLoading} onClick={handleAddUserCancel}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                )}
               </CardContent>
             </Card>
           </motion.div>

@@ -1,43 +1,101 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, Sparkles, Lock, Mail, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
 export default function AdminLogin() {
+  const navigate = useNavigate();
+  const { login, resendVerificationEmail, isAuthenticated } = useAdmin();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAdmin();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
 
-  const from = (location.state as any)?.from?.pathname || '/admin';
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle email verification callback from URL hash
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    const accessToken = hashParams.get('access_token');
+
+    if (type === 'signup' && accessToken) {
+      toast.success('Email verified!', {
+        description: 'Your account has been verified. Redirecting...',
+      });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
     setIsLoading(true);
+    setNeedsVerification(false);
 
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email, password);
+      
+      if (result.success) {
         toast.success('Welcome back!', {
           description: 'You have successfully logged in.',
         });
-        navigate(from, { replace: true });
+        // Navigation will happen via useEffect watching isAuthenticated
       } else {
+        if (result.needsVerification) {
+          setNeedsVerification(true);
+          setVerificationEmail(email);
+        }
         toast.error('Login failed', {
-          description: 'Invalid email or password. Please try again.',
+          description: result.message || 'Invalid email or password.',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Login error', {
-        description: 'Something went wrong. Please try again.',
+        description: error.message || 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+
+    setIsLoading(true);
+    try {
+      const result = await resendVerificationEmail(verificationEmail);
+      if (result.success) {
+        toast.success('Email sent!', {
+          description: result.message || 'Please check your inbox.',
+        });
+      } else {
+        toast.error('Failed to send email', {
+          description: result.message || 'Please try again later.',
+        });
+      }
+    } catch (error: any) {
+      toast.error('Error', {
+        description: error.message || 'Failed to resend verification email.',
       });
     } finally {
       setIsLoading(false);
@@ -67,83 +125,114 @@ export default function AdminLogin() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4"
+              className="inline-flex items-center justify-center mb-4"
             >
-              <Sparkles className="w-8 h-8 text-primary" />
+              <img src="/logo.png" alt="Phoenix" className="w-16 h-16 object-contain" />
             </motion.div>
             <h1 className="text-2xl font-serif font-bold text-foreground">Phoenix Admin</h1>
             <p className="text-muted-foreground mt-1">Sign in to your dashboard</p>
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@phoenix.com"
-                  className="pl-10 h-12 rounded-xl"
-                  required
-                />
-              </div>
-            </div>
+          {/* Email Verification Alert */}
+          <AnimatePresence>
+            {needsVerification && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mb-6"
+              >
+                <Alert className="border-primary/50 bg-primary/5">
+                  <AlertCircle className="h-4 w-4 text-primary" />
+                  <AlertDescription className="text-sm">
+                    <p className="font-medium mb-2">Email verification required</p>
+                    <p className="text-muted-foreground mb-3">
+                      Please check your email ({verificationEmail}) and click the verification link.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendVerification}
+                      disabled={isLoading}
+                      className="w-full"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        'Resend Verification Email'
+                      )}
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="pl-10 pr-10 h-12 rounded-xl"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          <form onSubmit={handleLogin} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                    <Input
+                      id="login-email"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@phoenix.com"
+                      className="pl-10 h-12 rounded-xl"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                    <Input
+                      id="login-password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pl-10 pr-10 h-12 rounded-xl"
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </Button>
-          </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-muted/50 rounded-xl">
-            <p className="text-xs text-muted-foreground text-center mb-2">Demo Credentials</p>
-            <div className="text-xs space-y-1">
-              <p className="text-muted-foreground">
-                <span className="text-foreground">Admin:</span> admin@phoenix.com / admin123
-              </p>
-              <p className="text-muted-foreground">
-                <span className="text-foreground">Moderator:</span> mod@phoenix.com / mod123
-              </p>
-            </div>
-          </div>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </Button>
+              </form>
         </div>
       </motion.div>
     </div>

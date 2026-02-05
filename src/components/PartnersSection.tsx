@@ -1,27 +1,21 @@
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
-
-const partners = [
-  { name: "Grand Hyatt", logo: "Grand Hyatt" },
-  { name: "The Leela Palace", logo: "The Leela" },
-  { name: "Taj Hotels", logo: "Taj Hotels" },
-  { name: "ITC Hotels", logo: "ITC Hotels" },
-  { name: "Oberoi Hotels", logo: "Oberoi" },
-  { name: "Canon Events", logo: "Canon" },
-  { name: "Sony Professional", logo: "Sony Pro" },
-  { name: "Bose Audio", logo: "Bose" },
-  { name: "Philips Lighting", logo: "Philips" },
-  { name: "Sennheiser", logo: "Sennheiser" },
-  { name: "Marriott Hotels", logo: "Marriott" },
-  { name: "Four Seasons", logo: "Four Seasons" },
-];
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { getActiveCollaborations } from "@/services/collaborations";
 
 const PartnersSection = () => {
+  const [partners, setPartners] = useState<{ name: string; logo_url: string | null }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    getActiveCollaborations()
+      .then((data) => setPartners(data.map((c) => ({ name: c.name, logo_url: c.logo_url }))))
+      .catch(() => setPartners([]));
+  }, []);
+
+  useEffect(() => {
     const scrollContainer = scrollRef.current;
-    if (!scrollContainer) return;
+    if (!scrollContainer || partners.length === 0) return;
 
     let animationId: number;
     let scrollPosition = 0;
@@ -51,7 +45,7 @@ const PartnersSection = () => {
       scrollContainer.removeEventListener("mouseenter", handleMouseEnter);
       scrollContainer.removeEventListener("mouseleave", handleMouseLeave);
     };
-  }, []);
+  }, [partners.length]);
 
   return (
     <section className="py-20 bg-muted/30 relative overflow-hidden">
@@ -98,10 +92,11 @@ const PartnersSection = () => {
                           bg-card/50 dark:bg-card/30 backdrop-blur-sm border border-border/50
                           hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10
                           transition-all duration-300 group">
-              <div className="text-center">
+              <div className="text-center p-2">
+                {/* Always show name only, never logo */}
                 <span className="font-serif text-lg font-semibold text-foreground/70 
                                group-hover:text-primary transition-colors duration-300">
-                  {partner.logo}
+                  {partner.name}
                 </span>
                 <div className="w-8 h-0.5 bg-primary/30 mx-auto mt-1 
                               group-hover:w-12 group-hover:bg-primary transition-all duration-300" />
@@ -114,6 +109,29 @@ const PartnersSection = () => {
       {/* Edge Fades */}
       <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-muted/30 to-transparent z-20 pointer-events-none" />
       <div className="absolute top-0 bottom-0 right-0 w-32 bg-gradient-to-l from-muted/30 to-transparent z-20 pointer-events-none" />
+
+      {/* View Collaborations CTA */}
+      <div className="container mx-auto px-4 mt-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="text-center"
+        >
+          <Link
+            to="/collaborations"
+            className="inline-flex items-center gap-3 px-8 py-4 rounded-full
+                     bg-gradient-to-r from-primary/10 to-rose-gold/10 
+                     border-2 border-primary/30 text-foreground font-semibold
+                     hover:border-primary hover:shadow-xl hover:shadow-primary/20
+                     transition-all duration-300 group"
+          >
+            <span>View All Collaborations</span>
+            <span className="text-primary group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
+        </motion.div>
+      </div>
     </section>
   );
 };

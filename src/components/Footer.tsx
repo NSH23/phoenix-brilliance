@@ -1,53 +1,71 @@
 import { motion } from "framer-motion";
-import { Heart, Instagram, Facebook, Twitter, Youtube, ArrowUp } from "lucide-react";
+import { Heart, Instagram, Facebook, Youtube, ArrowUp, MapPin, Phone, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
+
+const SOCIAL_ICONS: { key: string; Icon: typeof Instagram; label: string }[] = [
+  { key: "instagram", Icon: Instagram, label: "Instagram" },
+  { key: "facebook", Icon: Facebook, label: "Facebook" },
+  { key: "youtube", Icon: Youtube, label: "YouTube" },
+];
 
 const Footer = () => {
+  const { contact, socialLinks } = useSiteConfig();
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  const contactInfo = contact || {
+    phone: "+91 70667 63276",
+    email: "hello@phoenixevents.com",
+    address: "Pune, Maharashtra",
+    whatsapp: "917066763276",
+  };
 
   return (
-    <footer className="bg-charcoal text-ivory relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-rose-gold rounded-full blur-3xl" />
-      </div>
-
-      <div className="container mx-auto px-4 relative">
-        {/* Main Footer */}
-        <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-          {/* Brand */}
+    <footer className="relative overflow-hidden bg-footer">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+        {/* Main Footer - 80px top padding */}
+        <div className="pt-20 pb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-16">
+          {/* Brand Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                <span className="font-serif font-bold text-primary-foreground text-2xl">P</span>
-              </div>
-              <div>
-                <span className="font-serif text-xl font-bold">Phoenix</span>
-                <span className="block text-xs text-ivory/60 tracking-widest uppercase">Events & Production</span>
-              </div>
+            <div className="flex items-center gap-3 mb-5">
+              <img src="/logo.png" alt="Phoenix" className="w-12 h-12 object-contain" />
+              <span className="font-display text-subsection font-bold text-footer-heading">Phoenix</span>
             </div>
-            <p className="text-ivory/70 leading-relaxed mb-6">
+            <p className="text-small italic leading-body-relaxed mb-6 text-footer">
               Turning your dreams into magnificent celebrations. Where every moment becomes a cherished memory.
             </p>
             <div className="flex gap-3">
-              {[Instagram, Facebook, Twitter, Youtube].map((Icon, index) => (
-                <a
-                  key={index}
-                  href="#"
-                  className="w-10 h-10 rounded-full bg-ivory/10 flex items-center justify-center
-                           hover:bg-primary hover:scale-110 transition-all duration-300"
-                >
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
+              {SOCIAL_ICONS.map(({ key, Icon }) => {
+                const url = (socialLinks as Record<string, string>)[key];
+                return (
+                  <a
+                    key={key}
+                    href={url || "#"}
+                    target={url ? "_blank" : undefined}
+                    rel={url ? "noopener noreferrer" : undefined}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
+                             bg-[var(--footer-icon-bg)] text-[var(--footer-link)] hover:bg-primary hover:text-primary-foreground"
+                    aria-label={key}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </a>
+                );
+              })}
             </div>
+            <Link
+              to="/contact"
+              className="inline-flex items-center justify-center mt-6 px-8 py-3.5 rounded-full font-semibold
+                       bg-gradient-gold text-primary-foreground transition-all duration-300 hover:scale-105
+                       hover:shadow-lg hover:opacity-90"
+            >
+              Get Quote
+            </Link>
           </motion.div>
 
           {/* Quick Links */}
@@ -57,40 +75,49 @@ const Footer = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <h4 className="font-serif text-lg font-semibold mb-6">Quick Links</h4>
-            <ul className="space-y-3">
-              {["Home", "Events", "Services", "Gallery", "Why Us", "Contact"].map((link) => (
-                <li key={link}>
-                  <a
-                    href={`#${link.toLowerCase().replace(" ", "-")}`}
-                    className="text-ivory/70 hover:text-primary transition-colors duration-300 flex items-center gap-2 group"
+            <h4 className="text-body font-bold typography-eyebrow mb-6 text-primary">
+              Quick Links
+            </h4>
+            <ul className="space-y-1" style={{ lineHeight: 2.2 }}>
+              {[
+                { to: "/", label: "Home" },
+                { to: "/events", label: "Events" },
+                { to: "/services", label: "Services" },
+                { to: "/gallery", label: "Gallery" },
+                { to: "/#testimonials", label: "Testimonials" },
+                { to: "/contact", label: "Contact" },
+              ].map(({ to, label }) => (
+                <li key={label}>
+                  <Link
+                    to={to}
+                    className="text-small transition-colors duration-300 text-[var(--footer-link)] hover:text-primary"
                   >
-                    <span className="w-0 h-0.5 bg-primary group-hover:w-4 transition-all duration-300" />
-                    {link}
-                  </a>
+                    {label}
+                  </Link>
                 </li>
               ))}
             </ul>
           </motion.div>
 
-          {/* Events */}
+          {/* Our Events */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h4 className="font-serif text-lg font-semibold mb-6">Our Events</h4>
-            <ul className="space-y-3">
+            <h4 className="text-body font-bold typography-eyebrow mb-6 text-primary">
+              Our Events
+            </h4>
+            <ul className="space-y-1" style={{ lineHeight: 2.2 }}>
               {["Weddings", "Birthdays", "Engagements", "Corporate", "Sangeet", "Traditional"].map((event) => (
                 <li key={event}>
-                  <a
-                    href="#events"
-                    className="text-ivory/70 hover:text-primary transition-colors duration-300 flex items-center gap-2 group"
+                  <Link
+                    to="/events"
+                    className="text-small transition-colors duration-300 text-[var(--footer-link)] hover:text-primary"
                   >
-                    <span className="w-0 h-0.5 bg-primary group-hover:w-4 transition-all duration-300" />
                     {event}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -103,38 +130,58 @@ const Footer = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <h4 className="font-serif text-lg font-semibold mb-6">Get In Touch</h4>
-            <ul className="space-y-4 text-ivory/70">
-              <li>
-                <p className="font-medium text-ivory">Address</p>
-                <p className="text-sm">123 Event Plaza, Creative District<br />Mumbai, Maharashtra 400001</p>
-              </li>
-              <li>
-                <p className="font-medium text-ivory">Phone</p>
-                <p className="text-sm">+91 98765 43210</p>
-              </li>
-              <li>
-                <p className="font-medium text-ivory">Email</p>
-                <p className="text-sm">hello@phoenixevents.com</p>
-              </li>
+            <h4 className="text-body font-bold typography-eyebrow mb-6 text-primary">
+              Get In Touch
+            </h4>
+            <ul className="space-y-4">
+              {contactInfo.address && (
+                <li className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary" />
+                  <p className="text-small text-footer whitespace-pre-line">{contactInfo.address}</p>
+                </li>
+              )}
+              {contactInfo.phone && (
+                <li className="flex items-center gap-3">
+                  <Phone className="w-4 h-4 flex-shrink-0 text-primary" />
+                  <a
+                    href={`tel:${contactInfo.phone.replace(/\s/g, "")}`}
+                    className="text-small text-footer hover:text-primary transition-colors"
+                  >
+                    {contactInfo.phone}
+                  </a>
+                </li>
+              )}
+              {contactInfo.email && (
+                <li className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 flex-shrink-0 text-primary" />
+                  <a
+                    href={`mailto:${contactInfo.email}`}
+                    className="text-small text-footer hover:text-primary transition-colors"
+                  >
+                    {contactInfo.email}
+                  </a>
+                </li>
+              )}
             </ul>
           </motion.div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="py-6 border-t border-ivory/10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-ivory/60 text-sm flex items-center gap-2">
-            © 2024 Phoenix Events & Production. Made with 
-            <Heart className="w-4 h-4 text-primary fill-primary" /> 
+        <div
+          className="pt-[30px] mt-[60px] pb-8 relative flex flex-col items-center gap-6 pr-14 border-t border-footer"
+        >
+          <p className="text-small flex items-center justify-center gap-2 text-center text-footer">
+            © {new Date().getFullYear()} Phoenix Events & Production. Made with
+            <Heart className="w-4 h-4 text-primary fill-primary" aria-hidden />
             in India
           </p>
-          
           <button
             onClick={scrollToTop}
-            className="w-12 h-12 rounded-full bg-primary/20 hover:bg-primary flex items-center justify-center
-                     transition-all duration-300 hover:scale-110 group"
+            className="absolute right-0 top-[30px] w-12 h-12 rounded-full flex items-center justify-center
+                     bg-[var(--footer-icon-bg)] text-[var(--footer-link)] transition-all duration-300 hover:scale-110 group"
+            aria-label="Scroll to top"
           >
-            <ArrowUp className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
+            <ArrowUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
           </button>
         </div>
       </div>

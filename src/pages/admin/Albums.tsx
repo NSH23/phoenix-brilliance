@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, Eye, Image, Video, Star, MoreHorizontal, Calendar } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Image, Video, Star, MoreHorizontal, Calendar, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ImageUpload from '@/components/admin/ImageUpload';
+import { logger } from '@/utils/logger';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,86 +33,207 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { mockAlbums, mockEvents, Album } from '@/data/mockData';
+import { getAllAlbums, createAlbum, updateAlbum, deleteAlbum, Album } from '@/services/albums';
+import { getAllEvents, Event } from '@/services/events';
+import { getAlbumMedia } from '@/services/albums';
 import { toast } from 'sonner';
 
+interface AlbumWithMediaCount extends Album {
+  mediaCount?: number;
+  eventTitle?: string;
+}
+
 export default function AdminAlbums() {
-  const [albums, setAlbums] = useState<Album[]>(mockAlbums);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [albums, setAlbums] = useState<AlbumWithMediaCount[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterEvent, setFilterEvent] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
+  const [editingAlbum, setEditingAlbum] = useState<AlbumWithMediaCount | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    eventId: '',
+    event_id: '',
     title: '',
     description: '',
-    coverImage: '',
-    eventDate: '',
-    isFeatured: false,
+    cover_image: '',
+    event_date: '',
+    is_featured: false,
   });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Quick Action: open Create dialog when ?add=1
+  useEffect(() => {
+    if (searchParams.get('add') === '1') {
+      setSearchParams({}, { replace: true });
+      handleOpenDialog();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get('add')]);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [albumsData, eventsData] = await Promise.all([
+        getAllAlbums(),
+        getAllEvents()
+      ]);
+      
+      setEvents(eventsData);
+
+      // Load media count for each album
+      const albumsWithCounts = await Promise.all(
+        albumsData.map(async (album: any) => {
+          try {
+            const media = await getAlbumMedia(album.id);
+            const event = eventsData.find(e => e.id === album.event_id);
+            return {
+              ...album,
+              mediaCount: media.length,
+              eventTitle: event?.title || 'Unknown Event',
+            };
+          } catch (error) {
+            logger.error('Error loading media for album', error, { component: 'AdminAlbums', action: 'loadAlbumMedia', albumId: album.id });
+            const event = eventsData.find(e => e.id === album.event_id);
+            return {
+              ...album,
+              mediaCount: 0,
+              eventTitle: event?.title || 'Unknown Event',
+            };
+          }
+        })
+      );
+
+      setAlbums(albumsWithCounts);
+    } catch (error: any) {
+      logger.error('Error loading albums', error, { component: 'AdminAlbums', action: 'loadAlbums' });
+      toast.error('Failed to load albums', {
+        description: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredAlbums = albums.filter(album => {
     const matchesSearch = album.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesEvent = filterEvent === 'all' || album.eventId === filterEvent;
+    const matchesEvent = filterEvent === 'all' || album.event_id === filterEvent;
     return matchesSearch && matchesEvent;
   });
 
-  const handleOpenDialog = (album?: Album) => {
+  const handleOpenDialog = (album?: AlbumWithMediaCount) => {
     if (album) {
       setEditingAlbum(album);
       setFormData({
-        eventId: album.eventId,
+        event_id: album.event_id,
         title: album.title,
-        description: album.description,
-        coverImage: album.coverImage,
-        eventDate: album.eventDate,
-        isFeatured: album.isFeatured,
+        description: album.description || '',
+        cover_image: album.cover_image || '',
+        event_date: album.event_date || '',
+        is_featured: album.is_featured || false,
       });
     } else {
       setEditingAlbum(null);
       setFormData({
-        eventId: '',
+        event_id: '',
         title: '',
         description: '',
-        coverImage: '',
-        eventDate: '',
-        isFeatured: false,
+        cover_image: '',
+        event_date: '',
+        is_featured: false,
       });
     }
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    const event = mockEvents.find(e => e.id === formData.eventId);
-    if (editingAlbum) {
-      setAlbums(albums.map(a => 
-        a.id === editingAlbum.id 
-          ? { ...a, ...formData, eventTitle: event?.title || '' }
-          : a
-      ));
-      toast.success('Album updated successfully');
-    } else {
-      const newAlbum: Album = {
-        id: String(Date.now()),
-        ...formData,
-        eventTitle: event?.title || '',
-        mediaCount: 0,
-      };
-      setAlbums([...albums, newAlbum]);
-      toast.success('Album created successfully');
+  const handleSave = async () => {
+    if (!formData.title || !formData.event_id) {
+      toast.error('Please fill in required fields', {
+        description: 'Title and event type are required.',
+      });
+      return;
     }
-    setIsDialogOpen(false);
+
+    try {
+      setIsSaving(true);
+
+      if (editingAlbum) {
+        // Update existing album
+        const updated = await updateAlbum(editingAlbum.id, formData);
+        const event = events.find(e => e.id === updated.event_id);
+        const media = await getAlbumMedia(updated.id);
+        const updatedWithCount: AlbumWithMediaCount = {
+          ...updated,
+          mediaCount: media.length,
+          eventTitle: event?.title || 'Unknown Event',
+        };
+        setAlbums(albums.map(a => a.id === editingAlbum.id ? updatedWithCount : a));
+        toast.success('Album updated successfully');
+      } else {
+        // Create new album
+        const newAlbum = await createAlbum(formData);
+        const event = events.find(e => e.id === newAlbum.event_id);
+        const newAlbumWithCount: AlbumWithMediaCount = {
+          ...newAlbum,
+          mediaCount: 0,
+          eventTitle: event?.title || 'Unknown Event',
+        };
+        setAlbums([...albums, newAlbumWithCount]);
+        toast.success('Album created successfully');
+      }
+      
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      logger.error('Error saving album', error, { component: 'AdminAlbums', action: 'saveAlbum', editingAlbum: !!editingAlbum });
+      toast.error(editingAlbum ? 'Failed to update album' : 'Failed to create album', {
+        description: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setAlbums(albums.filter(a => a.id !== id));
-    toast.success('Album deleted successfully');
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this album? This will also delete all media in the album.')) {
+      return;
+    }
+
+    try {
+      await deleteAlbum(id);
+      setAlbums(albums.filter(a => a.id !== id));
+      toast.success('Album deleted successfully');
+    } catch (error: any) {
+      logger.error('Error deleting album', error, { component: 'AdminAlbums', action: 'deleteAlbum', albumId: id });
+      toast.error('Failed to delete album', {
+        description: error.message || 'Please try again.',
+      });
+    }
   };
 
-  const toggleFeatured = (id: string) => {
-    setAlbums(albums.map(a => 
-      a.id === id ? { ...a, isFeatured: !a.isFeatured } : a
-    ));
+  const toggleFeatured = async (id: string) => {
+    const album = albums.find(a => a.id === id);
+    if (!album) return;
+
+    try {
+      const updated = await updateAlbum(id, { is_featured: !album.is_featured });
+      const event = events.find(e => e.id === updated.event_id);
+      const updatedWithCount: AlbumWithMediaCount = {
+        ...updated,
+        mediaCount: album.mediaCount || 0,
+        eventTitle: event?.title || 'Unknown Event',
+      };
+      setAlbums(albums.map(a => a.id === id ? updatedWithCount : a));
+      toast.success(`Album ${updated.is_featured ? 'featured' : 'unfeatured'}`);
+    } catch (error: any) {
+      logger.error('Error toggling featured status', error, { component: 'AdminAlbums', action: 'toggleFeatured', albumId: id });
+      toast.error('Failed to update album', {
+        description: error.message || 'Please try again.',
+      });
+    }
   };
 
   return (
@@ -131,7 +255,7 @@ export default function AdminAlbums() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Events</SelectItem>
-            {mockEvents.map(event => (
+            {events.map(event => (
               <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
             ))}
           </SelectContent>
@@ -142,104 +266,118 @@ export default function AdminAlbums() {
         </Button>
       </div>
 
-      {/* Albums Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAlbums.map((album, index) => (
-          <motion.div
-            key={album.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
-              <div className="relative h-52 overflow-hidden">
-                <img
-                  src={album.coverImage}
-                  alt={album.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                
-                {/* Badges */}
-                <div className="absolute top-3 left-3 flex gap-2">
-                  <Badge variant="secondary" className="bg-black/50 text-white border-0">
-                    {album.eventTitle}
-                  </Badge>
-                  {album.isFeatured && (
-                    <Badge className="bg-primary text-primary-foreground gap-1">
-                      <Star className="w-3 h-3 fill-current" /> Featured
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="absolute top-3 right-3">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 border-0 text-white hover:bg-black/70">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleOpenDialog(album)}>
-                        <Edit className="w-4 h-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Image className="w-4 h-4 mr-2" /> Manage Media
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toggleFeatured(album.id)}>
-                        <Star className="w-4 h-4 mr-2" /> 
-                        {album.isFeatured ? 'Remove Featured' : 'Set Featured'}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDelete(album.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                {/* Info Overlay */}
-                <div className="absolute bottom-3 left-3 right-3">
-                  <h3 className="text-lg font-serif font-bold text-white line-clamp-1">{album.title}</h3>
-                  <div className="flex items-center gap-3 mt-1 text-white/80 text-xs">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(album.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Image className="w-3 h-3" />
-                      {album.mediaCount} items
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {album.description}
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-
-      {filteredAlbums.length === 0 && (
-        <div className="text-center py-12">
-          <Image className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No albums found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchQuery || filterEvent !== 'all' 
-              ? 'Try adjusting your search or filters' 
-              : 'Create your first album to get started'}
-          </p>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Album
-          </Button>
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
+      ) : (
+        <>
+          {/* Albums Grid */}
+          {filteredAlbums.length === 0 ? (
+            <div className="text-center py-12">
+              <Image className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No albums found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchQuery || filterEvent !== 'all' 
+                  ? 'Try adjusting your search or filters' 
+                  : 'Create your first album to get started'}
+              </p>
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Album
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredAlbums.map((album, index) => (
+                <motion.div
+                  key={album.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
+                    <div className="relative h-52 overflow-hidden">
+                      <img
+                        src={album.cover_image || '/placeholder.svg'}
+                        alt={album.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                      
+                      {/* Badges */}
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <Badge variant="secondary" className="bg-black/50 text-white border-0">
+                          {album.eventTitle}
+                        </Badge>
+                        {album.is_featured && (
+                          <Badge className="bg-primary text-primary-foreground gap-1">
+                            <Star className="w-3 h-3 fill-current" /> Featured
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="absolute top-3 right-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 border-0 text-white hover:bg-black/70">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenDialog(album)}>
+                              <Edit className="w-4 h-4 mr-2" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.location.href = `/admin/gallery?album=${album.id}`}>
+                              <Image className="w-4 h-4 mr-2" /> Manage Media
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toggleFeatured(album.id)}>
+                              <Star className="w-4 h-4 mr-2" /> 
+                              {album.is_featured ? 'Remove Featured' : 'Set Featured'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(album.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* Info Overlay */}
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <h3 className="text-lg font-serif font-bold text-white line-clamp-1">{album.title}</h3>
+                        <div className="flex items-center gap-3 mt-1 text-white/80 text-xs">
+                          {album.event_date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(album.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Image className="w-3 h-3" />
+                            {album.mediaCount || 0} items
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {album.description || 'No description'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Add/Edit Dialog */}
@@ -254,16 +392,16 @@ export default function AdminAlbums() {
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="eventId">Event Type</Label>
+              <Label htmlFor="eventId">Event Type *</Label>
               <Select 
-                value={formData.eventId} 
-                onValueChange={(value) => setFormData({ ...formData, eventId: value })}
+                value={formData.event_id} 
+                onValueChange={(value) => setFormData({ ...formData, event_id: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select event type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockEvents.map(event => (
+                  {events.map(event => (
                     <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
                   ))}
                 </SelectContent>
@@ -271,7 +409,7 @@ export default function AdminAlbums() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="title">Album Title</Label>
+              <Label htmlFor="title">Album Title *</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -291,33 +429,48 @@ export default function AdminAlbums() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="eventDate">Event Date</Label>
-                <Input
-                  id="eventDate"
-                  type="date"
-                  value={formData.eventDate}
-                  onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="coverImage">Cover Image URL</Label>
-                <Input
-                  id="coverImage"
-                  value={formData.coverImage}
-                  onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-                  placeholder="/path/to/image.jpg"
-                />
-              </div>
+            <div className="grid gap-2">
+              <ImageUpload
+                label="Cover Image"
+                value={formData.cover_image}
+                onChange={(value) => setFormData({ ...formData, cover_image: value as string })}
+                multiple={false}
+                previewClassName="object-cover"
+                bucket="album-images"
+                uploadOnSelect={true}
+              />
+              {formData.cover_image && (
+                <p className="text-xs text-muted-foreground">
+                  Or enter URL manually:
+                </p>
+              )}
+              <Input
+                id="coverImage"
+                value={formData.cover_image}
+                onChange={(e) => setFormData({ ...formData, cover_image: e.target.value })}
+                placeholder="/path/to/image.jpg or upload above"
+              />
             </div>
 
-            {formData.coverImage && (
+            <div className="grid gap-2">
+              <Label htmlFor="eventDate">Event Date</Label>
+              <Input
+                id="eventDate"
+                type="date"
+                value={formData.event_date}
+                onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+              />
+            </div>
+
+            {formData.cover_image && (
               <div className="relative h-40 rounded-lg overflow-hidden">
                 <img
-                  src={formData.coverImage}
+                  src={formData.cover_image}
                   alt="Preview"
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder.svg';
+                  }}
                 />
               </div>
             )}
@@ -326,18 +479,25 @@ export default function AdminAlbums() {
               <Label htmlFor="isFeatured">Featured Album</Label>
               <Switch
                 id="isFeatured"
-                checked={formData.isFeatured}
-                onCheckedChange={(checked) => setFormData({ ...formData, isFeatured: checked })}
+                checked={formData.is_featured}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSaving}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              {editingAlbum ? 'Save Changes' : 'Create Album'}
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                editingAlbum ? 'Save Changes' : 'Create Album'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

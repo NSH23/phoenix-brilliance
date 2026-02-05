@@ -1,29 +1,70 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone, Sparkles } from "lucide-react";
+import { Menu, X, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 const navLinks = [
   { name: "Home", href: "/" },
-  { name: "Events", href: "#events" },
-  { name: "Services", href: "#services" },
-  { name: "Gallery", href: "#gallery" },
-  { name: "Why Us", href: "#why-us" },
+  { name: "Events", href: "/events" },
+  { name: "Services", href: "/services" },
+  { name: "Gallery", href: "/gallery" },
   { name: "Contact", href: "/contact" },
 ];
 
-const Navbar = () => {
+export default function Navbar() {
+  const { contact } = useSiteConfig();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
+  const [isVisible, setIsVisible] = useState(true);
+  const [isDark, setIsDark] = useState(false);
+  const lastScrollY = useRef(0);
+  
+  // Detect dark theme
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+    const checkTheme = () => {
+      const darkMode = document.documentElement.classList.contains('dark');
+      setIsDark(darkMode);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
   }, []);
+
+  // Track scroll position for styling and hide/show behavior
+  useEffect(() => {
+    const SCROLL_THRESHOLD = 10; // Minimum scroll distance to trigger hide/show
+    const TOP_THRESHOLD = 100; // Show navbar when near top
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Update scrolled state for styling
+      setScrolled(currentScrollY > 50);
+
+      // Always show navbar when near top or menu is open
+      if (currentScrollY <= TOP_THRESHOLD || isOpen) {
+        setIsVisible(true);
+      } else {
+        // Determine scroll direction
+        if (currentScrollY > lastScrollY.current && currentScrollY - lastScrollY.current > SCROLL_THRESHOLD) {
+          // Scrolling down - hide navbar
+          setIsVisible(false);
+        } else if (currentScrollY < lastScrollY.current && lastScrollY.current - currentScrollY > SCROLL_THRESHOLD) {
+          // Scrolling up - show navbar
+          setIsVisible(true);
+        }
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isOpen]);
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -39,12 +80,17 @@ const Navbar = () => {
 
   return (
     <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
+      initial={{ y: 0 }}
+      animate={{ y: isVisible ? 0 : -100 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-background/95 backdrop-blur-xl shadow-lg shadow-charcoal/5 dark:shadow-charcoal/20 border-b border-primary/10"
-          : "bg-gradient-to-b from-charcoal/40 to-transparent"
+          ? isDark
+            ? "bg-[rgba(26,26,46,0.8)] backdrop-blur-[16px] backdrop-saturate-[180%] border-b border-[rgba(212,175,55,0.18)] shadow-[0_4px_24px_rgba(0,0,0,0.3),0_0_1px_rgba(212,175,55,0.2)]"
+            : "bg-[rgba(255,255,255,0.75)] backdrop-blur-[16px] backdrop-saturate-[180%] border-b border-[rgba(212,175,55,0.12)] shadow-[0_4px_20px_rgba(0,0,0,0.03),0_1px_3px_rgba(0,0,0,0.02)]"
+          : isDark
+            ? "bg-[rgba(26,26,46,0.6)] backdrop-blur-[12px] backdrop-saturate-[180%] border-b border-[rgba(212,175,55,0.15)] shadow-sm"
+            : "bg-[rgba(255,255,255,0.6)] backdrop-blur-[12px] backdrop-saturate-[180%] border-b border-[rgba(212,175,55,0.1)] shadow-sm"
       }`}
     >
       <div className="container mx-auto px-4">
@@ -53,19 +99,30 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
             <div className="relative">
               <img 
-                src="/logo.jpg" 
+                src="/logo.png" 
                 alt="Phoenix Events & Production Logo" 
-                className={`w-9 h-9 sm:w-11 sm:h-11 object-contain transition-all duration-300 group-hover:scale-105
-                          ${scrolled ? 'opacity-100' : 'opacity-100'}`}
+                className="w-9 h-9 sm:w-11 sm:h-11 object-contain transition-all duration-300 group-hover:scale-105 opacity-100"
               />
             </div>
             <div className="flex flex-col">
               <span className={`font-serif text-base sm:text-xl font-bold transition-colors duration-300
-                             ${scrolled ? 'text-foreground' : 'text-ivory'}`}>
+                             ${scrolled 
+                               ? isDark 
+                                 ? 'text-white' 
+                                 : 'text-[#1A1A2E]'
+                               : isDark 
+                                 ? 'text-white' 
+                                 : 'text-[#1A1A2E]'}`}>
                 Phoenix
               </span>
               <span className={`text-[10px] sm:text-xs tracking-widest uppercase transition-colors duration-300
-                             ${scrolled ? 'text-primary' : 'text-ivory/80'}`}>
+                             ${scrolled 
+                               ? isDark 
+                                 ? 'text-[#D4AF37]' 
+                                 : 'text-[#D4AF37]'
+                               : isDark 
+                                 ? 'text-[#D4AF37]' 
+                                 : 'text-[#D4AF37]'}`}>
                 Events & Production
               </span>
             </div>
@@ -73,45 +130,26 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => {
-              const isExternal = link.href.startsWith('#');
-              
-              if (isExternal) {
-                return (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    className={`relative px-4 py-2 rounded-full text-sm font-medium tracking-wide 
-                              transition-all duration-300 group
-                              ${scrolled 
-                                ? 'text-foreground/80 hover:text-primary hover:bg-primary/5' 
-                                : 'text-ivory/90 hover:text-ivory hover:bg-ivory/10'}`}
-                  >
-                    {link.name}
-                    <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full 
-                                   transition-all duration-300 opacity-0 group-hover:opacity-100
-                                   ${scrolled ? 'bg-primary' : 'bg-ivory'}`} />
-                  </a>
-                );
-              }
-              
-              return (
+            {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   to={link.href}
                   className={`relative px-4 py-2 rounded-full text-sm font-medium tracking-wide 
                             transition-all duration-300 group
                             ${scrolled 
-                              ? 'text-foreground/80 hover:text-primary hover:bg-primary/5' 
-                              : 'text-ivory/90 hover:text-ivory hover:bg-ivory/10'}`}
+                              ? isDark
+                                ? 'text-[rgba(255,255,255,0.75)] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.1)]'
+                                : 'text-[rgba(62,39,35,0.75)] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.05)]'
+                              : isDark
+                                ? 'text-[rgba(255,255,255,0.75)] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.1)]'
+                                : 'text-[rgba(62,39,35,0.75)] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.05)]'}`}
                 >
                   {link.name}
                   <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full 
                                  transition-all duration-300 opacity-0 group-hover:opacity-100
-                                 ${scrolled ? 'bg-primary' : 'bg-ivory'}`} />
+                                 ${scrolled ? 'bg-primary' : 'bg-primary dark:bg-ivory'}`} />
                 </Link>
-              );
-            })}
+            ))}
           </div>
 
           {/* Right Actions */}
@@ -119,13 +157,17 @@ const Navbar = () => {
             <ThemeToggle />
             
             <a
-              href="tel:+917066763276"
-              className={`hidden md:flex items-center gap-2 px-4 lg:px-5 py-2.5 rounded-full 
-                        font-medium text-sm transition-all duration-300 
-                        hover:shadow-lg hover:scale-105 group
+              href={`tel:${contact.phone.replace(/\s/g, '')}`}
+              className={`hidden md:flex items-center gap-2 px-7 py-3 rounded-[30px] 
+                        font-semibold text-sm tracking-[0.5px] transition-all duration-300 
+                        hover:scale-105 group
                         ${scrolled 
-                          ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-md shadow-primary/20' 
-                          : 'bg-ivory/20 backdrop-blur-sm text-ivory border border-ivory/30 hover:bg-ivory/30'}`}
+                          ? isDark
+                            ? 'bg-gradient-to-r from-[#D4AF37] to-[#C29D43] text-[#1A1A2E] shadow-[0_4px_16px_rgba(212,175,55,0.4),0_0_20px_rgba(212,175,55,0.2),inset_0_1px_0_rgba(255,255,255,0.3)] hover:shadow-[0_6px_24px_rgba(212,175,55,0.5),0_0_30px_rgba(212,175,55,0.3)]'
+                            : 'bg-gradient-to-r from-[#D4AF37] to-[#C29D43] text-[#1A1A2E] shadow-[0_4px_14px_rgba(212,175,55,0.25),inset_0_1px_0_rgba(255,255,255,0.3)] hover:shadow-[0_6px_20px_rgba(212,175,55,0.35)]'
+                          : isDark
+                            ? 'bg-gradient-to-r from-[#D4AF37] to-[#C29D43] text-[#1A1A2E] shadow-[0_4px_16px_rgba(212,175,55,0.4),0_0_20px_rgba(212,175,55,0.2),inset_0_1px_0_rgba(255,255,255,0.3)] hover:shadow-[0_6px_24px_rgba(212,175,55,0.5),0_0_30px_rgba(212,175,55,0.3)]'
+                            : 'bg-gradient-to-r from-[#D4AF37] to-[#C29D43] text-[#1A1A2E] shadow-[0_4px_14px_rgba(212,175,55,0.25),inset_0_1px_0_rgba(255,255,255,0.3)] hover:shadow-[0_6px_20px_rgba(212,175,55,0.35)]'}`}
             >
               <Phone className="w-4 h-4 group-hover:animate-pulse" />
               <span>Get Quote</span>
@@ -138,7 +180,7 @@ const Navbar = () => {
                         transition-all duration-300
                         ${scrolled 
                           ? 'bg-muted border border-border hover:bg-primary hover:text-primary-foreground' 
-                          : 'bg-ivory/20 backdrop-blur-sm border border-ivory/30 text-ivory'}`}
+                          : 'bg-primary/20 backdrop-blur-sm border border-primary/30 text-foreground dark:bg-ivory/20 dark:border-ivory/30 dark:text-ivory'}`}
               aria-label="Toggle menu"
             >
               <AnimatePresence mode="wait">
@@ -196,31 +238,7 @@ const Navbar = () => {
               
               {/* Navigation Links */}
               <nav className="flex flex-col gap-2 relative">
-                {navLinks.map((link, index) => {
-                  const isExternal = link.href.startsWith('#');
-                  
-                  if (isExternal) {
-                    return (
-                      <motion.a
-                        key={link.name}
-                        href={link.href}
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center justify-between py-4 px-4 rounded-xl
-                                 text-xl font-serif font-medium text-foreground 
-                                 hover:bg-primary/10 hover:text-primary transition-all duration-300
-                                 border-b border-border/30 group"
-                      >
-                        <span>{link.name}</span>
-                        <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
-                                       transition-colors duration-300" />
-                      </motion.a>
-                    );
-                  }
-                  
-                  return (
+                {navLinks.map((link, index) => (
                     <motion.div
                       key={link.name}
                       initial={{ opacity: 0, x: -30 }}
@@ -240,8 +258,7 @@ const Navbar = () => {
                                        transition-colors duration-300" />
                       </Link>
                     </motion.div>
-                  );
-                })}
+                ))}
               </nav>
 
               {/* CTA Button */}
@@ -252,7 +269,7 @@ const Navbar = () => {
                 className="mt-8"
               >
                 <a
-                  href="tel:+917066763276"
+                  href={`tel:${contact.phone.replace(/\s/g, '')}`}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center gap-3 w-full px-6 py-4 
                            bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
@@ -271,7 +288,7 @@ const Navbar = () => {
                 transition={{ delay: 0.5, duration: 0.3 }}
                 className="mt-auto pt-8 flex items-center justify-center gap-2 text-muted-foreground"
               >
-                <Sparkles className="w-4 h-4 text-primary" />
+                <img src="/logo.png" alt="Phoenix" className="w-6 h-6 object-contain" />
                 <span className="text-sm">Creating Magical Moments</span>
               </motion.div>
             </motion.div>
@@ -280,6 +297,4 @@ const Navbar = () => {
       </AnimatePresence>
     </motion.nav>
   );
-};
-
-export default Navbar;
+}

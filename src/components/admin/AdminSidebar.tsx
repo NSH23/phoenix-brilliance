@@ -1,39 +1,16 @@
-import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  LayoutDashboard,
-  Calendar,
-  Images,
-  FolderOpen,
-  Handshake,
-  MessageSquareQuote,
-  Mail,
-  FileText,
-  Settings,
-  LogOut,
-  ChevronLeft,
-  Sparkles,
-  Wrench,
-} from 'lucide-react';
+import { LogOut, ChevronLeft } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { cn } from '@/lib/utils';
+import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
 
-const menuItems = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Events', href: '/admin/events', icon: Calendar },
-  { name: 'Albums', href: '/admin/albums', icon: FolderOpen },
-  { name: 'Gallery', href: '/admin/gallery', icon: Images },
-  { name: 'Services', href: '/admin/services', icon: Wrench },
-  { name: 'Collaborations', href: '/admin/collaborations', icon: Handshake },
-  { name: 'Testimonials', href: '/admin/testimonials', icon: MessageSquareQuote },
-  { name: 'Inquiries', href: '/admin/inquiries', icon: Mail },
-  { name: 'Site Content', href: '/admin/content', icon: FileText },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
-];
+interface AdminSidebarProps {
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
+}
 
-export default function AdminSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+export default function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSidebarProps) {
   const location = useLocation();
   const { user, logout } = useAdmin();
 
@@ -61,13 +38,13 @@ export default function AdminSidebar() {
               exit={{ opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <Sparkles className="w-6 h-6 text-primary" />
+              <img src="/logo.png" alt="Phoenix" className="w-8 h-8 object-contain" />
               <span className="font-serif font-bold text-lg">Phoenix Admin</span>
             </motion.div>
           )}
         </AnimatePresence>
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => onCollapsedChange?.(!collapsed)}
           className={cn(
             "w-8 h-8 flex items-center justify-center rounded-lg transition-colors",
             "hover:bg-muted text-muted-foreground hover:text-foreground",
@@ -80,7 +57,7 @@ export default function AdminSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => (
+        {ADMIN_MENU_ITEMS.map((item) => (
           <Link
             key={item.name}
             to={item.href}

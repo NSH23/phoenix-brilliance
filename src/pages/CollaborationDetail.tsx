@@ -1,22 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   MapPin, ArrowLeft, ArrowRight, ExternalLink, Phone, X, ChevronLeft, ChevronRight,
-  CheckCircle, Circle, Building2, Camera, ClipboardList
+  CheckCircle, Building2, Camera, ClipboardList, Loader2
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { mockCollaborations } from "@/data/mockData";
+import { getCollaborationById } from "@/services/collaborations";
 import { Button } from "@/components/ui/button";
+
+type CollaborationDetail = Awaited<ReturnType<typeof getCollaborationById>>;
+type CollabImage = { id: string; image_url: string; caption: string | null };
+type CollabStep = { id: string; step_number: number; title: string; description: string | null };
 
 export default function CollaborationDetail() {
   const { partnerId } = useParams();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [collaboration, setCollaboration] = useState<CollaborationDetail | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const collaboration = mockCollaborations.find(c => c.id === partnerId);
+  useEffect(() => {
+    if (!partnerId) { setLoading(false); return; }
+    getCollaborationById(partnerId)
+      .then(setCollaboration)
+      .catch(() => setCollaboration(null))
+      .finally(() => setLoading(false));
+  }, [partnerId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!collaboration) {
     return (
@@ -31,6 +51,9 @@ export default function CollaborationDetail() {
     );
   }
 
+  const images: CollabImage[] = (collaboration as any)?.collaboration_images || [];
+  const steps: CollabStep[] = ((collaboration as any)?.collaboration_steps || []).sort((a: CollabStep, b: CollabStep) => a.step_number - b.step_number);
+
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setLightboxOpen(true);
@@ -40,9 +63,9 @@ export default function CollaborationDetail() {
 
   const navigateLightbox = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
-      setLightboxIndex(prev => (prev === 0 ? collaboration.images.length - 1 : prev - 1));
+      setLightboxIndex(prev => (prev === 0 ? images.length - 1 : prev - 1));
     } else {
-      setLightboxIndex(prev => (prev === collaboration.images.length - 1 ? 0 : prev + 1));
+      setLightboxIndex(prev => (prev === images.length - 1 ? 0 : prev + 1));
     }
   };
 
@@ -85,7 +108,7 @@ export default function CollaborationDetail() {
             >
               <div className="relative rounded-3xl overflow-hidden aspect-[4/3]">
                 <img
-                  src={collaboration.images[0]?.imageUrl || collaboration.logoUrl}
+                  src={images[0]?.image_url || collaboration.logo_url || "/placeholder.svg"}
                   alt={collaboration.name}
                   className="w-full h-full object-cover"
                 />
@@ -109,7 +132,7 @@ export default function CollaborationDetail() {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={collaboration.logoUrl}
+                  src={collaboration.logo_url || "/placeholder.svg"}
                   alt={`${collaboration.name} logo`}
                   className="w-16 h-16 rounded-2xl object-cover border-2 border-border"
                 />
@@ -127,12 +150,12 @@ export default function CollaborationDetail() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 rounded-2xl bg-card border border-border/50">
                   <Camera className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <div className="text-2xl font-bold">{collaboration.images.length}</div>
+                  <div className="text-2xl font-bold">{images.length}</div>
                   <div className="text-sm text-muted-foreground">Photos</div>
                 </div>
                 <div className="text-center p-4 rounded-2xl bg-card border border-border/50">
                   <ClipboardList className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <div className="text-2xl font-bold">{collaboration.steps.length}</div>
+                  <div className="text-2xl font-bold">{steps.length}</div>
                   <div className="text-sm text-muted-foreground">Booking Steps</div>
                 </div>
                 <div className="text-center p-4 rounded-2xl bg-card border border-border/50">
@@ -150,9 +173,9 @@ export default function CollaborationDetail() {
                     Book Through Us
                   </Button>
                 </Link>
-                {collaboration.mapUrl && (
+                {collaboration.map_url && (
                   <a
-                    href={collaboration.mapUrl}
+                    href={collaboration.map_url}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -169,7 +192,7 @@ export default function CollaborationDetail() {
       </section>
 
       {/* Booking Process Timeline */}
-      {collaboration.steps.length > 0 && (
+      {steps.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4">
             <motion.div
@@ -195,9 +218,7 @@ export default function CollaborationDetail() {
                 {/* Progress Line */}
                 <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-border md:-translate-x-0.5" />
                 
-                {collaboration.steps
-                  .sort((a, b) => a.stepNumber - b.stepNumber)
-                  .map((step, index) => (
+                {steps.map((step, index) => (
                     <motion.div
                       key={step.id}
                       initial={{ opacity: 0, y: 30 }}
@@ -218,7 +239,7 @@ export default function CollaborationDetail() {
                                    flex items-center justify-center shadow-lg shadow-primary/30"
                         >
                           <span className="text-2xl font-bold text-primary-foreground">
-                            {step.stepNumber}
+                            {step.step_number}
                           </span>
                         </motion.div>
                       </div>
@@ -234,7 +255,7 @@ export default function CollaborationDetail() {
                             <CheckCircle className="w-5 h-5 text-primary" />
                             <h3 className="text-xl font-serif font-bold">{step.title}</h3>
                           </div>
-                          <p className="text-muted-foreground">{step.description}</p>
+                          <p className="text-muted-foreground">{step.description || ""}</p>
                         </motion.div>
                       </div>
 
@@ -249,7 +270,7 @@ export default function CollaborationDetail() {
       )}
 
       {/* Venue Gallery */}
-      {collaboration.images.length > 0 && (
+      {images.length > 0 && (
         <section className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
@@ -271,7 +292,7 @@ export default function CollaborationDetail() {
 
             {/* Masonry Grid */}
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-              {collaboration.images.map((image, index) => (
+              {images.map((image, index) => (
                 <motion.div
                   key={image.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -285,15 +306,15 @@ export default function CollaborationDetail() {
                     onClick={() => openLightbox(index)}
                   >
                     <img
-                      src={image.imageUrl}
-                      alt={image.caption}
+                      src={image.image_url}
+                      alt={image.caption || ""}
                       className="w-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent 
                                   opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 
                                   transition-transform duration-300">
-                      <p className="text-foreground font-medium">{image.caption}</p>
+                      <p className="text-foreground font-medium">{image.caption || ""}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -335,7 +356,7 @@ export default function CollaborationDetail() {
 
       {/* Lightbox */}
       <AnimatePresence>
-        {lightboxOpen && collaboration.images.length > 0 && (
+        {lightboxOpen && images.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -376,15 +397,15 @@ export default function CollaborationDetail() {
               onClick={(e) => e.stopPropagation()}
             >
               <img
-                src={collaboration.images[lightboxIndex].imageUrl}
-                alt={collaboration.images[lightboxIndex].caption}
+                src={images[lightboxIndex].image_url}
+                alt={images[lightboxIndex].caption || ""}
                 className="max-w-full max-h-[80vh] object-contain rounded-lg"
               />
               <p className="text-center mt-4 text-foreground">
-                {collaboration.images[lightboxIndex].caption}
+                {images[lightboxIndex].caption || ""}
               </p>
               <p className="text-center text-sm text-muted-foreground">
-                {lightboxIndex + 1} / {collaboration.images.length}
+                {lightboxIndex + 1} / {images.length}
               </p>
             </motion.div>
           </motion.div>

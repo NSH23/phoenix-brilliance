@@ -2,53 +2,75 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { 
-  Camera, Play, ArrowLeft, ArrowRight, Calendar, X, Heart, Share2, 
-  Download, ChevronLeft, ChevronRight, Images, ExternalLink 
+  Camera, Play, ArrowLeft, ArrowRight, Calendar, X, Heart,
+  ChevronLeft, ChevronRight, Images, ExternalLink, Loader2 
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { mockEvents, mockAlbums, mockAlbumMedia, AlbumMedia } from "@/data/mockData";
-
-// Extended mock media for demo (since we have limited data)
-const generateExtendedMedia = (albumId: string): AlbumMedia[] => {
-  const baseMedia = mockAlbumMedia.filter(m => m.albumId === albumId);
-  const images = [
-    '/wedding 1.jpg', '/gallery wedding.jpg', '/engagement.jpg', 
-    '/birthday.jpg', '/sangeet.jpg', '/haldi.jpg', '/mehendi.jpg',
-    '/anniversary.jpg', '/coprate.jpg'
-  ];
-  
-  // Generate more media items for demo
-  const extended: AlbumMedia[] = [...baseMedia];
-  for (let i = 0; i < 12; i++) {
-    extended.push({
-      id: `generated-${albumId}-${i}`,
-      albumId,
-      type: 'image',
-      url: images[i % images.length],
-      caption: `Event moment ${i + 1}`,
-      isFeatured: i === 0,
-      displayOrder: baseMedia.length + i + 1,
-    });
-  }
-  return extended;
-};
+import { getEventBySlug, Event } from "@/services/events";
+import { getAlbumById, getAlbumWithMedia, AlbumMedia } from "@/services/albums";
+import { Album } from "@/services/albums";
+import { logger } from "@/utils/logger";
 
 const GalleryAlbum = () => {
   const { eventType, albumId } = useParams<{ eventType: string; albumId: string }>();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [likedImages, setLikedImages] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'photos' | 'videos'>('photos');
+  const [event, setEvent] = useState<Event | null>(null);
+  const [album, setAlbum] = useState<any | null>(null);
+  const [media, setMedia] = useState<AlbumMedia[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Find the event and album
-  const event = mockEvents.find(e => e.slug === eventType);
-  const album = mockAlbums.find(a => a.id === albumId);
+  useEffect(() => {
+    loadAlbum();
+  }, [eventType, albumId]);
 
-  // Get media for this album (use empty array if no album)
-  const allMedia = album ? generateExtendedMedia(album.id) : [];
-  const photos = allMedia.filter(m => m.type === 'image');
-  const videos = allMedia.filter(m => m.type === 'video');
+  const loadAlbum = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (!albumId) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Load album with media
+      const albumData = await getAlbumWithMedia(albumId);
+      
+      if (!albumData) {
+        setIsLoading(false);
+        return;
+      }
+
+      setAlbum(albumData);
+      setMedia(albumData.album_media || []);
+
+      // Load event if eventType is provided
+      if (eventType && eventType !== 'all') {
+        try {
+          const eventData = await getEventBySlug(eventType);
+          setEvent(eventData);
+        } catch (error) {
+          // If event not found by slug, try to get from album
+          if (albumData.events) {
+            setEvent(albumData.events);
+          }
+        }
+      } else if (albumData.events) {
+        setEvent(albumData.events);
+      }
+    } catch (error: any) {
+      logger.error('Error loading album', error, { component: 'GalleryAlbum', action: 'loadAlbum', eventType, albumId });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Get photos and videos
+  const photos = media.filter(m => m.type === 'image');
+  const videos = media.filter(m => m.type === 'video');
 
   // Lightbox navigation
   const navigateLightbox = useCallback((direction: "prev" | "next") => {
@@ -72,8 +94,22 @@ const GalleryAlbum = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lightboxIndex, navigateLightbox]);
 
-  // If not found, redirect (after all hooks)
-  if (!event || !album) {
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <Footer />
+        <WhatsAppButton />
+      </div>
+    );
+  }
+
+  // If not found, redirect
+  if (!album) {
     return <Navigate to="/gallery" replace />;
   }
 
@@ -91,10 +127,13 @@ const GalleryAlbum = () => {
   };
 
   // Extract YouTube video ID
-  const getYoutubeId = (url: string) => {
+  const getYoutubeId = (url: string | null) => {
+    if (!url) return null;
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
     return match ? match[1] : null;
   };
+
+  const eventSlug = event?.slug || eventType || 'all';
 
   return (
     <div className="min-h-screen bg-background">
@@ -105,9 +144,12 @@ const GalleryAlbum = () => {
         {/* Background */}
         <div className="absolute inset-0">
           <img
-            src={album.coverImage}
+            src={album.cover_image || '/placeholder.svg'}
             alt={album.title}
             className="w-full h-full object-cover opacity-15"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/placeholder.svg';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
         </div>
@@ -123,10 +165,14 @@ const GalleryAlbum = () => {
               Gallery
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <Link to={`/gallery/${event.slug}`} className="hover:text-primary transition-colors">
-              {event.title}
-            </Link>
-            <ChevronRight className="w-4 h-4" />
+            {event && (
+              <>
+                <Link to={`/gallery/${event.slug}`} className="hover:text-primary transition-colors">
+                  {event.title}
+                </Link>
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
             <span className="text-foreground">{album.title}</span>
           </motion.div>
 
@@ -137,33 +183,37 @@ const GalleryAlbum = () => {
           >
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
               <div className="max-w-3xl">
-                <motion.span 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full 
-                           bg-primary/20 text-primary text-sm font-medium mb-4"
-                >
-                  {event.title}
-                </motion.span>
+                {event && (
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full 
+                             bg-primary/20 text-primary text-sm font-medium mb-4"
+                  >
+                    {event.title}
+                  </motion.span>
+                )}
 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold mb-4">
                   {album.title}
                 </h1>
                 <p className="text-lg text-muted-foreground mb-4">
-                  {album.description}
+                  {album.description || 'No description'}
                 </p>
 
                 {/* Meta info */}
                 <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    {new Date(album.eventDate).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </span>
+                  {album.event_date && (
+                    <span className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      {new Date(album.event_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  )}
                   <span className="flex items-center gap-2">
                     <Camera className="w-4 h-4 text-primary" />
                     {photos.length} Photos
@@ -177,21 +227,6 @@ const GalleryAlbum = () => {
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-3">
-                <button className="flex items-center gap-2 px-4 py-2.5 rounded-full
-                                 bg-card border border-border hover:border-primary
-                                 transition-colors text-sm font-medium">
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2.5 rounded-full
-                                 bg-primary text-primary-foreground text-sm font-medium
-                                 hover:shadow-lg transition-shadow">
-                  <Download className="w-4 h-4" />
-                  Download All
-                </button>
-              </div>
             </div>
           </motion.div>
         </div>
@@ -243,108 +278,130 @@ const GalleryAlbum = () => {
       <section className="py-8 sm:py-12">
         <div className="container mx-auto px-4">
           {activeTab === 'photos' ? (
-            // Masonry Photo Grid
-            <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 sm:gap-4">
-              {photos.map((photo, index) => (
-                <motion.div
-                  key={photo.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                  className="mb-3 sm:mb-4 break-inside-avoid"
-                >
-                  <div
-                    onClick={() => setLightboxIndex(index)}
-                    className="group relative cursor-pointer rounded-xl overflow-hidden
-                             bg-muted aspect-auto"
-                  >
-                    <img
-                      src={photo.url}
-                      alt={photo.caption}
-                      className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    
-                    {/* Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal/70 via-transparent to-transparent
-                                  opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                    {/* Like button */}
-                    <button
-                      onClick={(e) => toggleLike(photo.id, e)}
-                      className={`absolute top-2 right-2 w-9 h-9 rounded-full backdrop-blur-sm
-                                flex items-center justify-center transition-all duration-300
-                                opacity-0 group-hover:opacity-100
-                                ${likedImages.has(photo.id) 
-                                  ? 'bg-red-500 text-white' 
-                                  : 'bg-charcoal/50 text-ivory hover:bg-red-500'}`}
-                    >
-                      <Heart className={`w-4 h-4 ${likedImages.has(photo.id) ? 'fill-current' : ''}`} />
-                    </button>
-
-                    {/* Caption */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3
-                                  opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-sm text-ivory line-clamp-1">{photo.caption}</p>
-                    </div>
-
-                    {/* Featured badge */}
-                    {photo.isFeatured && (
-                      <div className="absolute top-2 left-2 px-2 py-1 rounded-full
-                                    bg-primary text-primary-foreground text-xs font-medium">
-                        Featured
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            // Videos Grid
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {videos.map((video, index) => {
-                const youtubeId = video.youtubeUrl ? getYoutubeId(video.youtubeUrl) : null;
-                
-                return (
+            photos.length === 0 ? (
+              <div className="text-center py-16">
+                <Images className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+                <h3 className="text-xl font-serif font-bold mb-2">No Photos Yet</h3>
+                <p className="text-muted-foreground">Photos will appear here once they're added to this album.</p>
+              </div>
+            ) : (
+              // Masonry Photo Grid
+              <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 sm:gap-4">
+                {photos.map((photo, index) => (
                   <motion.div
-                    key={video.id}
+                    key={photo.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="group rounded-xl overflow-hidden bg-card border border-border"
+                    transition={{ delay: index * 0.03 }}
+                    className="mb-3 sm:mb-4 break-inside-avoid"
                   >
-                    {youtubeId ? (
-                      <div className="aspect-video">
-                        <iframe
-                          src={`https://www.youtube.com/embed/${youtubeId}`}
-                          title={video.caption}
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    ) : (
-                      <div className="aspect-video bg-muted flex items-center justify-center">
-                        <Play className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <h4 className="font-medium text-foreground mb-1">{video.caption}</h4>
-                      {youtubeId && (
-                        <a
-                          href={video.youtubeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                        >
-                          Watch on YouTube <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
+                    <div
+                      onClick={() => setLightboxIndex(index)}
+                      className="group relative cursor-pointer rounded-xl overflow-hidden
+                               bg-muted aspect-auto"
+                    >
+                      <img
+                        src={photo.url || '/placeholder.svg'}
+                        alt={photo.caption || 'Photo'}
+                        draggable={false}
+                        className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                      
+                      {/* Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/70 via-transparent to-transparent
+                                    opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      {/* Like button */}
+                      <button
+                        onClick={(e) => toggleLike(photo.id, e)}
+                        className={`absolute top-2 right-2 w-9 h-9 rounded-full backdrop-blur-sm
+                                  flex items-center justify-center transition-all duration-300
+                                  opacity-0 group-hover:opacity-100
+                                  ${likedImages.has(photo.id) 
+                                    ? 'bg-red-500 text-white' 
+                                    : 'bg-charcoal/50 text-ivory hover:bg-red-500'}`}
+                      >
+                        <Heart className={`w-4 h-4 ${likedImages.has(photo.id) ? 'fill-current' : ''}`} />
+                      </button>
+
+                      {/* Caption */}
+                      {photo.caption && (
+                        <div className="absolute bottom-0 left-0 right-0 p-3
+                                      opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-sm text-ivory line-clamp-1">{photo.caption}</p>
+                        </div>
+                      )}
+
+                      {/* Featured badge */}
+                      {photo.is_featured && (
+                        <div className="absolute top-2 left-2 px-2 py-1 rounded-full
+                                      bg-primary text-primary-foreground text-xs font-medium">
+                          Featured
+                        </div>
                       )}
                     </div>
                   </motion.div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )
+          ) : (
+            videos.length === 0 ? (
+              <div className="text-center py-16">
+                <Play className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+                <h3 className="text-xl font-serif font-bold mb-2">No Videos Yet</h3>
+                <p className="text-muted-foreground">Videos will appear here once they're added to this album.</p>
+              </div>
+            ) : (
+              // Videos Grid
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {videos.map((video, index) => {
+                  const youtubeId = video.youtube_url ? getYoutubeId(video.youtube_url) : null;
+                  
+                  return (
+                    <motion.div
+                      key={video.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="group rounded-xl overflow-hidden bg-card border border-border"
+                    >
+                      {youtubeId ? (
+                        <div className="aspect-video">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${youtubeId}`}
+                            title={video.caption || 'Video'}
+                            className="w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-video bg-muted flex items-center justify-center">
+                          <Play className="w-12 h-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <h4 className="font-medium text-foreground mb-1">{video.caption || 'Video'}</h4>
+                        {video.youtube_url && (
+                          <a
+                            href={video.youtube_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                          >
+                            Watch on YouTube <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )
           )}
         </div>
       </section>
@@ -353,11 +410,11 @@ const GalleryAlbum = () => {
       <section className="py-8 border-t border-border">
         <div className="container mx-auto px-4">
           <Link
-            to={`/gallery/${event.slug}`}
+            to={event ? `/gallery/${event.slug}` : '/gallery'}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to {event.title} Albums
+            {event ? `Back to ${event.title} Albums` : 'Back to Gallery'}
           </Link>
         </div>
       </section>
@@ -367,7 +424,7 @@ const GalleryAlbum = () => {
 
       {/* Lightbox */}
       <AnimatePresence>
-        {lightboxIndex !== null && (
+        {lightboxIndex !== null && photos.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -393,20 +450,6 @@ const GalleryAlbum = () => {
                   }`}
                 >
                   <Heart className={`w-5 h-5 ${likedImages.has(photos[lightboxIndex].id) ? 'fill-current' : ''}`} />
-                </button>
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-10 h-10 rounded-full bg-ivory/10 backdrop-blur-md
-                           flex items-center justify-center text-ivory hover:bg-ivory/20 transition-colors"
-                >
-                  <Share2 className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-10 h-10 rounded-full bg-ivory/10 backdrop-blur-md
-                           flex items-center justify-center text-ivory hover:bg-ivory/20 transition-colors"
-                >
-                  <Download className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setLightboxIndex(null)}
@@ -444,47 +487,59 @@ const GalleryAlbum = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                src={photos[lightboxIndex].url}
-                alt={photos[lightboxIndex].caption}
+                src={photos[lightboxIndex].url || '/placeholder.svg'}
+                alt={photos[lightboxIndex].caption || 'Photo'}
+                draggable={false}
                 className="max-w-full max-h-full object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
               />
             </div>
 
             {/* Caption */}
-            <div className="absolute bottom-20 left-0 right-0 text-center">
-              <p className="text-ivory text-lg">{photos[lightboxIndex].caption}</p>
-            </div>
+            {photos[lightboxIndex].caption && (
+              <div className="absolute bottom-20 left-0 right-0 text-center">
+                <p className="text-ivory text-lg">{photos[lightboxIndex].caption}</p>
+              </div>
+            )}
 
             {/* Thumbnail Strip */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-charcoal to-transparent">
-              <div className="flex justify-center gap-2 overflow-x-auto pb-2 max-w-4xl mx-auto">
-                {photos.slice(0, 10).map((photo, idx) => (
-                  <button
-                    key={photo.id}
-                    onClick={(e) => { e.stopPropagation(); setLightboxIndex(idx); }}
-                    className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden
-                              transition-all duration-200 ${
-                      idx === lightboxIndex 
-                        ? 'ring-2 ring-primary scale-110' 
-                        : 'opacity-50 hover:opacity-100'
-                    }`}
-                  >
-                    <img
-                      src={photo.url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-                {photos.length > 10 && (
-                  <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-ivory/10
-                                flex items-center justify-center text-ivory text-sm">
-                    +{photos.length - 10}
-                  </div>
-                )}
+            {photos.length > 1 && (
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-charcoal to-transparent">
+                <div className="flex justify-center gap-2 overflow-x-auto pb-2 max-w-4xl mx-auto">
+                  {photos.slice(0, 10).map((photo, idx) => (
+                    <button
+                      key={photo.id}
+                      onClick={(e) => { e.stopPropagation(); setLightboxIndex(idx); }}
+                      className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden
+                                transition-all duration-200 ${
+                        idx === lightboxIndex 
+                          ? 'ring-2 ring-primary scale-110' 
+                          : 'opacity-50 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={photo.url || '/placeholder.svg'}
+                        alt=""
+                        draggable={false}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    </button>
+                  ))}
+                  {photos.length > 10 && (
+                    <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-ivory/10
+                                  flex items-center justify-center text-ivory text-sm">
+                      +{photos.length - 10}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

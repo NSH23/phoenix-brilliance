@@ -1,138 +1,349 @@
-import { motion } from "framer-motion";
-import { 
-  CalendarCheck, 
-  Palette, 
-  Lightbulb, 
-  Music, 
-  Camera, 
-  Mic2, 
-  Building2, 
-  Sparkles 
+import { useState, useEffect, useRef } from "react";
+import { motion, useInView } from "framer-motion";
+import { Link } from "react-router-dom";
+import {
+  Calendar,
+  Palette,
+  Lightbulb,
+  Music,
+  Camera,
+  UtensilsCrossed,
+  Mic2,
+  Building2,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
+import { getActiveServices, Service } from "@/services/services";
+import { getServiceIcon } from "@/lib/serviceIcons";
+import { cn } from "@/lib/utils";
 
-const services = [
-  {
-    icon: CalendarCheck,
-    title: "Event Planning & Management",
-    description: "End-to-end event coordination from concept to execution, ensuring every detail is perfectly orchestrated.",
-  },
-  {
-    icon: Palette,
-    title: "Venue Decoration",
-    description: "Transform any space into a breathtaking venue with our creative décor solutions and thematic designs.",
-  },
-  {
-    icon: Lightbulb,
-    title: "Stage & Lighting",
-    description: "Stunning stage setups and professional lighting that create the perfect ambiance for your event.",
-  },
-  {
-    icon: Music,
-    title: "Sound & DJ",
-    description: "Premium sound systems and talented DJs to keep your guests entertained throughout the celebration.",
-  },
-  {
-    icon: Camera,
-    title: "Photography & Videography",
-    description: "Capture every precious moment with our professional photographers and cinematographers.",
-  },
-  {
-    icon: Mic2,
-    title: "Artist & Anchor Management",
-    description: "Access to top performers, anchors, and entertainers to add star power to your events.",
-  },
-  {
-    icon: Building2,
-    title: "Corporate Branding Setup",
-    description: "Professional branding solutions for corporate events, product launches, and exhibitions.",
-  },
-  {
-    icon: Sparkles,
-    title: "Custom Theme Events",
-    description: "Unique themed experiences crafted to your imagination – from vintage elegance to modern chic.",
-  },
+/* Flip cards: front = icon, title, brief; back = full details, pricing, CTA.
+ * 3D flip on hover, compact card size.
+ */
+
+interface ServiceCard {
+  id: string;
+  title: string;
+  description: string;
+  brief: string;
+  icon: string;
+  accentColor: string;
+  features: string[];
+  priceFrom?: string;
+  slug?: string;
+}
+
+/* Brand-aligned accents: gold, rose-gold, copper (hex for gradient/shadow alpha) */
+const ACCENT_COLORS = [
+  "#C9A227", /* primary gold */
+  "#B76E79", /* rose-gold */
+  "#B8860B", /* dark gold */
+  "#A67C52", /* warm copper */
+  "#D4AF37", /* gold */
+  "#C4956A", /* champagne */
+  "#C9A227", /* gold */
+  "#A67C52", /* copper */
 ];
 
-const ServicesSection = () => {
+const ICONS = [
+  Calendar, Palette, Lightbulb, Music,
+  Camera, UtensilsCrossed, Mic2, Building2,
+];
+
+const DEFAULT_SERVICES: ServiceCard[] = [
+  { id: "1", title: "Event Planning & Management", description: "End-to-end event planning and execution, ensuring a seamless and stress-free experience from concept to completion.", brief: "Full planning & execution from concept to completion.", icon: "Calendar", accentColor: "#667eea", features: ["Venue Selection", "Budget Management", "Timeline Planning"], priceFrom: "₹25,000" },
+  { id: "2", title: "Decoration & Design", description: "Stunning décor solutions that transform any venue into a magical and memorable space.", brief: "Transform your venue with stunning décor.", icon: "Palette", accentColor: "#f093fb", features: ["Theme Design", "Floral Arrangements", "Lighting"], priceFrom: "₹20,000" },
+  { id: "3", title: "Stage & Lighting", description: "Professionally designed stages and lighting setups that create the perfect ambiance.", brief: "Custom stages and professional lighting.", icon: "Lightbulb", accentColor: "#FFD93D", features: ["Custom Stage", "Ambient Lighting", "Spotlights"], priceFrom: "₹15,000" },
+  { id: "4", title: "Sound & DJ", description: "Premium sound systems and talented DJs to keep your celebration lively and engaging.", brief: "Professional sound and DJ services.", icon: "Music", accentColor: "#FF6B9D", features: ["Sound Systems", "DJ Services", "Audio Setup"], priceFrom: "₹18,000" },
+  { id: "5", title: "Photography & Videography", description: "Capture every precious moment with cinematic visuals and professional storytelling.", brief: "Cinematic coverage of your special day.", icon: "Camera", accentColor: "#4ECDC4", features: ["Pre-Event Shoots", "Full Coverage", "Drone"], priceFrom: "₹30,000" },
+  { id: "6", title: "Catering Services", description: "Exquisite culinary experiences tailored to your taste, style, and event requirements.", brief: "Exquisite cuisine for your event.", icon: "UtensilsCrossed", accentColor: "#95E1D3", features: ["Menu Planning", "Live Stations", "Multi-Cuisine"], priceFrom: "₹150/plate" },
+  { id: "7", title: "Entertainment & Artists", description: "Top-tier entertainment that keeps your guests engaged and energized.", brief: "Top entertainment for your guests.", icon: "Mic2", accentColor: "#F38181", features: ["DJ", "Live Bands", "Performers"], priceFrom: "₹20,000" },
+  { id: "8", title: "Corporate Branding", description: "Professional branding for corporate events, exhibitions, and product launches.", brief: "Branding for corporate events.", icon: "Building2", accentColor: "#6C5CE7", features: ["Stage Branding", "Digital Assets", "Launches"], priceFrom: "₹22,000" },
+];
+
+function slugify(text: string): string {
+  return text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
+}
+
+function getBrief(desc: string, maxLen = 60): string {
+  if (desc.length <= maxLen) return desc;
+  const cut = desc.slice(0, maxLen).lastIndexOf(" ");
+  return (cut > 0 ? desc.slice(0, cut) : desc.slice(0, maxLen)) + "…";
+}
+
+const DUPLICATE_COPIES = 6;
+
+function ServicesRow({
+  services,
+  direction,
+  speed,
+  isInView,
+  prefersReducedMotion,
+}: {
+  services: ServiceCard[];
+  direction: "left" | "right";
+  speed: number;
+  isInView: boolean;
+  prefersReducedMotion: boolean;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const posRef = useRef(0);
+  const unitWidthRef = useRef(0);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || services.length === 0) return;
+
+    const updateWidth = () => {
+      unitWidthRef.current = track.scrollWidth / DUPLICATE_COPIES;
+    };
+    updateWidth();
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(track);
+
+    if (direction === "right" && posRef.current === 0 && unitWidthRef.current > 0) {
+      posRef.current = unitWidthRef.current;
+      track.style.transform = `translateX(${-posRef.current}px)`;
+    }
+
+    let rafId: number;
+    const tick = () => {
+      if (track && unitWidthRef.current > 0 && !pausedRef.current) {
+        const step = direction === "left" ? speed : -speed;
+        posRef.current += step;
+        const unit = unitWidthRef.current;
+        if (posRef.current >= unit) posRef.current -= unit;
+        if (posRef.current < 0) posRef.current += unit;
+        track.style.transform = `translateX(${-posRef.current}px)`;
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      ro.disconnect();
+    };
+  }, [services.length, direction, speed]);
+
+  const duplicated = Array.from({ length: DUPLICATE_COPIES }, () => services).flat();
+
   return (
-    <section id="services" className="py-16 sm:py-24 bg-muted/30 relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-20 left-1/4 w-40 sm:w-64 h-40 sm:h-64 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-1/4 w-48 sm:w-80 h-48 sm:h-80 bg-rose-gold/10 rounded-full blur-3xl" />
+    <div
+      className="overflow-hidden py-5 md:py-8"
+      onMouseEnter={() => { pausedRef.current = true; }}
+      onMouseLeave={() => { pausedRef.current = false; }}
+    >
+      <div
+        ref={trackRef}
+        className="flex gap-6 w-max"
+        style={{ willChange: "transform" }}
+      >
+        {duplicated.map((service, index) => (
+          <div
+            key={`${service.id}-${index}`}
+            className={cn(
+              "flex-shrink-0 w-[min(100%,300px)] min-w-[260px] sm:min-w-[280px]",
+              "transition-transform duration-300 hover:-translate-y-2.5 hover:scale-[1.02]",
+              !prefersReducedMotion && index % 4 === 0 && "rotate-[-2deg] hover:rotate-0",
+              !prefersReducedMotion && index % 4 === 1 && "rotate-[1deg] hover:rotate-0",
+              !prefersReducedMotion && index % 4 === 2 && "rotate-[2deg] hover:rotate-0",
+              !prefersReducedMotion && index % 4 === 3 && "rotate-[-1deg] hover:rotate-0"
+            )}
+          >
+            <ServiceCardComponent
+              service={service}
+              index={index % services.length}
+              isInView={isInView}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ServiceCardComponent({
+  service,
+  index,
+  isInView,
+}: {
+  service: ServiceCard;
+  index: number;
+  isInView: boolean;
+}) {
+  const [isFlipped, setIsFlipped] = useState(false);
+  const IconComponent = getServiceIcon(service.icon) ?? ICONS[index % ICONS.length];
+  const brief = service.brief || getBrief(service.description);
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay: index * 0.08, ease: [0.4, 0, 0.2, 1] }}
+      className="service-flip-card w-full h-[280px] cursor-pointer"
+      role="listitem"
+      onMouseEnter={() => setIsFlipped(true)}
+      onMouseLeave={() => setIsFlipped(false)}
+      onClick={() => setIsFlipped((prev) => !prev)}
+    >
+      <div
+        className="service-flip-inner w-full h-full"
+        style={{ transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+      >
+        {/* FRONT */}
+        <div
+          className="service-flip-front bg-card flex flex-col items-center justify-center p-5 
+                     shadow-[0_4px_20px_rgba(28,25,23,0.06)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] border border-border dark:border-white/10"
+        >
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
+            style={{
+              background: `linear-gradient(135deg, ${service.accentColor}, ${service.accentColor}dd)`,
+              boxShadow: `0 4px 12px ${service.accentColor}40`,
+            }}
+          >
+            <IconComponent className="w-6 h-6 text-white" aria-hidden />
+          </div>
+          <h3 className="text-base font-bold text-card-foreground text-center mb-1.5 line-clamp-2 leading-tight">
+            {service.title}
+          </h3>
+          <p className="text-xs text-muted-foreground text-center line-clamp-2 leading-relaxed">
+            {brief}
+          </p>
+        </div>
+
+        {/* BACK */}
+        <div
+          className="service-flip-back bg-card p-4 flex flex-col 
+                     shadow-[0_4px_20px_rgba(28,25,23,0.08)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)] border border-border dark:border-white/10"
+          style={{ borderLeft: `4px solid ${service.accentColor}` }}
+        >
+          <h3 className="text-sm font-bold text-card-foreground mb-2 line-clamp-2">
+            {service.title}
+          </h3>
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 mb-3 flex-1">
+            {service.description}
+          </p>
+          <ul className="space-y-1 mb-3">
+            {service.features.slice(0, 3).map((f) => (
+              <li key={f} className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: service.accentColor }} />
+                {f}
+              </li>
+            ))}
+          </ul>
+          <Link
+            to="/services"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg text-sm font-semibold 
+                       text-white transition-all hover:opacity-90"
+            style={{ background: service.accentColor }}
+          >
+            Learn More
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
+const ServicesSection = () => {
+  const [services, setServices] = useState<ServiceCard[]>(DEFAULT_SERVICES);
+  const [loading, setLoading] = useState(true);
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { amount: 0.2, once: true });
+  const prefersReducedMotion =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  useEffect(() => {
+    getActiveServices()
+      .then((data: Service[]) => {
+        if (data.length > 0) {
+          setServices(
+            data.slice(0, 8).map((s, i) => {
+              const def = DEFAULT_SERVICES[i];
+              return {
+                id: s.id,
+                title: s.title,
+                description: s.description || def?.description || "",
+                brief: getBrief(s.description || def?.description || ""),
+                icon: s.icon || def?.icon || "Sparkles",
+                accentColor: ACCENT_COLORS[i % ACCENT_COLORS.length],
+                features: s.features?.length ? s.features : def?.features || [],
+                priceFrom: def?.priceFrom || "Get Quote",
+                slug: slugify(s.title),
+              };
+            })
+          );
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const displayed = services.length > 0 ? services : DEFAULT_SERVICES;
+
+  /* Auto-scroll config: same pattern as gallery rows */
+  const SCROLL_DIRECTION = "left" as const;
+  const SCROLL_SPEED = 0.4;
+
+  return (
+    <section
+      ref={sectionRef}
+      id="services"
+      className="relative overflow-hidden py-12 sm:py-14 lg:py-18 bg-gradient-to-b from-charcoal/5 via-background to-muted/20 dark:from-charcoal/30 dark:via-background dark:to-charcoal/20"
+    >
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-64 h-64 bg-primary/[0.05] rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-primary/[0.04] rounded-full blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4 relative">
-        {/* Section Header - Compact on mobile */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-8 sm:mb-16"
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <motion.header
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-8 sm:mb-10"
         >
-          <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-            What We Offer
-          </span>
-          <h2 className="section-title mb-3 sm:mb-4 text-2xl sm:text-3xl md:text-4xl">
-            Our <span className="text-gradient-gold">Services</span>
-          </h2>
-          <p className="section-subtitle text-sm sm:text-base max-w-xl mx-auto">
+          <p className="section-eyebrow text-primary">What We Offer</p>
+          <h2 className="section-heading">Our Services</h2>
+          <p className="section-description">
             Comprehensive event solutions to bring your vision to life.
           </p>
-        </motion.div>
+        </motion.header>
+      </div>
 
-        {/* Services Grid - Instagram-style cards on mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {services.map((service, index) => (
-            <motion.div
-              key={service.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="group"
-            >
-              {/* Mobile: Compact Instagram-style card */}
-              <div className="glass-card h-full p-3 sm:p-4 lg:p-6 transition-all duration-500
-                            hover:shadow-luxury hover:-translate-y-2 hover:border-primary/30
-                            active:scale-[0.98] sm:active:scale-100">
-                {/* Icon - Smaller on mobile */}
-                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl 
-                              bg-gradient-to-br from-primary/20 to-rose-gold/10 
-                              flex items-center justify-center mb-2.5 sm:mb-4 lg:mb-5
-                              group-hover:from-primary group-hover:to-rose-gold 
-                              group-hover:scale-105 transition-all duration-500">
-                  <service.icon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-primary 
-                                         group-hover:text-primary-foreground transition-colors" />
-                </div>
-
-                {/* Content - Compact text on mobile */}
-                <h3 className="font-serif text-sm sm:text-base lg:text-xl font-semibold text-foreground 
-                             mb-1.5 sm:mb-2 lg:mb-3 leading-tight line-clamp-2
-                             group-hover:text-primary transition-colors duration-300">
-                  {service.title}
-                </h3>
-                <p className="text-muted-foreground text-[11px] sm:text-xs lg:text-sm leading-relaxed 
-                            line-clamp-2 sm:line-clamp-3 lg:line-clamp-none">
-                  {service.description}
-                </p>
-
-                {/* Hover Indicator - Hidden on mobile */}
-                <div className="hidden lg:flex mt-4 items-center gap-2 text-primary opacity-0 transform translate-x-2
-                              group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500">
-                  <span className="text-sm font-medium">Learn More</span>
-                  <motion.span
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    →
-                  </motion.span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
+      ) : (
+        <div className="w-full overflow-hidden">
+          <ServicesRow
+            services={displayed}
+            direction={SCROLL_DIRECTION}
+            speed={prefersReducedMotion ? 0 : SCROLL_SPEED}
+            isInView={prefersReducedMotion || isInView}
+            prefersReducedMotion={!!prefersReducedMotion}
+          />
+        </div>
+      )}
+
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="text-center mt-8"
+        >
+          <Link to="/services" className="btn-section-cta group">
+            <span>View All Services</span>
+            <ChevronRight className="w-4 h-4 text-primary group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        </motion.div>
       </div>
     </section>
   );

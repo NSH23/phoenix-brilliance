@@ -1,13 +1,14 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 const WhatsAppButton = () => {
+  const { contact } = useSiteConfig();
   const [isHovered, setIsHovered] = useState(false);
-  const phoneNumber = "917066763276";
   const message = "Hello! I'm interested in planning an event with Phoenix Events.";
 
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+  const whatsappUrl = `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(message)}`;
 
   return (
     <motion.div
