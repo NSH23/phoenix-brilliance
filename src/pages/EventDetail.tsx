@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link, useParams, Navigate } from "react-router-dom";
-import { 
-  ArrowLeft, ArrowRight, Calendar, Camera, Play, Star, 
+import {
+  ArrowLeft, ArrowRight, Calendar, Camera, Play, Star,
   MessageCircle, MapPin, Palette, Users, CheckCircle, Sparkles,
-  ClipboardList, PartyPopper, Cake, Target, FileText, Settings, Award, Loader2
+  ClipboardList, PartyPopper, Cake, Target, FileText, Settings, Award, Loader2,
+  ChevronLeft, ChevronRight, Quote
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -28,7 +29,16 @@ const EventDetail = () => {
   const [relatedAlbums, setRelatedAlbums] = useState<Album[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
   const timelineRef = useRef<HTMLDivElement>(null);
+
+  const nextTestimonial = () => {
+    setCurrentTestimonialIndex((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevTestimonial = () => {
+    setCurrentTestimonialIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
 
   const { scrollYProgress } = useScroll({
     target: timelineRef,
@@ -42,7 +52,7 @@ const EventDetail = () => {
   const loadEventData = async () => {
     try {
       setIsLoading(true);
-      
+
       if (!eventType) {
         setIsLoading(false);
         return;
@@ -50,7 +60,7 @@ const EventDetail = () => {
 
       // Load event with steps
       const eventData = await getEventWithSteps(eventType);
-      
+
       if (!eventData) {
         setIsLoading(false);
         return;
@@ -109,7 +119,7 @@ const EventDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="relative min-h-[60vh] flex items-end overflow-hidden">
         {/* Background Image */}
@@ -149,7 +159,7 @@ const EventDetail = () => {
             transition={{ duration: 0.8 }}
             className="max-w-3xl"
           >
-            <motion.span 
+            <motion.span
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -214,7 +224,7 @@ const EventDetail = () => {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <motion.span 
+              <motion.span
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full 
                          bg-gradient-to-r from-primary/20 to-rose-gold/20 
                          border border-primary/30 backdrop-blur-sm mb-6"
@@ -236,7 +246,7 @@ const EventDetail = () => {
               <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-border -translate-x-1/2">
                 <motion.div
                   className="absolute top-0 left-0 w-full bg-gradient-to-b from-primary to-rose-gold"
-                  style={{ 
+                  style={{
                     height: useTransform(scrollYProgress, [0, 1], ["0%", "100%"]),
                   }}
                 />
@@ -246,7 +256,7 @@ const EventDetail = () => {
               <div className="lg:hidden absolute left-6 top-0 bottom-0 w-0.5 bg-border">
                 <motion.div
                   className="absolute top-0 left-0 w-full bg-gradient-to-b from-primary to-rose-gold"
-                  style={{ 
+                  style={{
                     height: useTransform(scrollYProgress, [0, 1], ["0%", "100%"]),
                   }}
                 />
@@ -272,16 +282,16 @@ const EventDetail = () => {
                       {/* Mobile: Icon on left */}
                       <div className="lg:hidden flex-shrink-0 relative z-10">
                         <motion.div
-                          animate={{ 
+                          animate={{
                             scale: activeStep === index ? 1.1 : 1,
-                            boxShadow: activeStep === index 
-                              ? "0 0 30px rgba(var(--primary), 0.4)" 
+                            boxShadow: activeStep === index
+                              ? "0 0 30px rgba(var(--primary), 0.4)"
                               : "0 0 0 rgba(var(--primary), 0)"
                           }}
                           className={`w-12 h-12 rounded-full flex items-center justify-center
-                                    ${activeStep === index 
-                                      ? 'bg-primary text-primary-foreground' 
-                                      : 'bg-card border-2 border-primary/30 text-primary'}`}
+                                    ${activeStep === index
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-card border-2 border-primary/30 text-primary'}`}
                         >
                           <IconComponent className="w-5 h-5" />
                         </motion.div>
@@ -324,17 +334,17 @@ const EventDetail = () => {
                       {/* Desktop: Center Circle */}
                       <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 z-10">
                         <motion.div
-                          animate={{ 
+                          animate={{
                             scale: activeStep === index ? 1.2 : 1,
-                            boxShadow: activeStep === index 
-                              ? "0 0 40px rgba(var(--primary), 0.5)" 
+                            boxShadow: activeStep === index
+                              ? "0 0 40px rgba(var(--primary), 0.5)"
                               : "0 0 0 rgba(var(--primary), 0)"
                           }}
                           className={`w-16 h-16 rounded-full flex items-center justify-center
                                     transition-colors duration-300
-                                    ${activeStep === index 
-                                      ? 'bg-primary text-primary-foreground' 
-                                      : 'bg-card border-2 border-primary/30 text-primary'}`}
+                                    ${activeStep === index
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-card border-2 border-primary/30 text-primary'}`}
                         >
                           <IconComponent className="w-7 h-7" />
                         </motion.div>
@@ -388,7 +398,7 @@ const EventDetail = () => {
               </Link>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {relatedAlbums.map((album, index) => (
                 <motion.div
                   key={album.id}
@@ -412,11 +422,6 @@ const EventDetail = () => {
                         }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 to-transparent" />
-                      <div className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 
-                                    bg-charcoal/60 backdrop-blur-sm rounded-full text-xs text-ivory">
-                        <Camera className="w-3.5 h-3.5" />
-                        {album.id}
-                      </div>
                     </div>
                     <div className="p-5">
                       <h3 className="font-serif text-lg font-bold text-foreground mb-1 
@@ -460,7 +465,8 @@ const EventDetail = () => {
               </h2>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {/* Desktop Grid */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {testimonials.map((testimonial: any, index) => (
                 <motion.div
                   key={testimonial.id}
@@ -468,16 +474,16 @@ const EventDetail = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-card rounded-2xl p-6 border border-border"
+                  className="bg-card rounded-2xl p-6 border border-border h-full flex flex-col"
                 >
                   <div className="flex items-center gap-1 mb-4">
                     {[...Array(testimonial.rating || 5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 text-primary fill-primary" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-4 italic">"{testimonial.content || testimonial.message}"</p>
-                  <div className="flex items-center gap-3">
-                    {testimonial.avatar_url && (
+                  <p className="text-muted-foreground mb-4 italic flex-grow">"{testimonial.content || testimonial.message}"</p>
+                  <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                    {testimonial.avatar_url ? (
                       <img
                         src={testimonial.avatar_url}
                         alt={testimonial.name}
@@ -486,6 +492,10 @@ const EventDetail = () => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}
                       />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-primary" />
+                      </div>
                     )}
                     <div>
                       <div className="font-medium text-foreground">{testimonial.name}</div>
@@ -496,6 +506,83 @@ const EventDetail = () => {
                   </div>
                 </motion.div>
               ))}
+            </div>
+
+            {/* Mobile Carousel */}
+            <div className="md:hidden max-w-md mx-auto relative px-4">
+              <div className="min-h-[300px] relative">
+                <AnimatePresence mode="wait">
+                  {testimonials[currentTestimonialIndex] && (
+                    <motion.div
+                      key={currentTestimonialIndex}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-card rounded-2xl p-6 border border-border shadow-lg relative"
+                    >
+                      <Quote className="absolute top-4 right-4 w-8 h-8 text-primary/10 fill-primary/10" />
+                      <div className="flex items-center gap-1 mb-4">
+                        {[...Array(testimonials[currentTestimonialIndex].rating || 5)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 text-primary fill-primary" />
+                        ))}
+                      </div>
+                      <p className="text-foreground/80 mb-6 italic leading-relaxed text-lg">
+                        "{testimonials[currentTestimonialIndex].content || testimonials[currentTestimonialIndex].message}"
+                      </p>
+                      <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                        {testimonials[currentTestimonialIndex].avatar_url ? (
+                          <img
+                            src={testimonials[currentTestimonialIndex].avatar_url}
+                            alt={testimonials[currentTestimonialIndex].name}
+                            className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder.svg';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
+                            <Users className="w-6 h-6 text-primary" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-semibold text-foreground">{testimonials[currentTestimonialIndex].name}</div>
+                          {testimonials[currentTestimonialIndex].role && (
+                            <div className="text-xs text-muted-foreground">{testimonials[currentTestimonialIndex].role}</div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Navigation Controls */}
+              <div className="flex justify-center items-center gap-4 mt-6">
+                <button
+                  onClick={prevTestimonial}
+                  className="p-2 rounded-full bg-card border border-border hover:border-primary hover:text-primary transition-colors shadow-sm active:scale-95"
+                  aria-label="Previous testimonial"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="flex gap-1.5">
+                  {testimonials.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentTestimonialIndex ? "w-6 bg-primary" : "w-1.5 bg-border"
+                        }`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={nextTestimonial}
+                  className="p-2 rounded-full bg-card border border-border hover:border-primary hover:text-primary transition-colors shadow-sm active:scale-95"
+                  aria-label="Next testimonial"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </section>

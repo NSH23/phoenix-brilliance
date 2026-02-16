@@ -1,349 +1,182 @@
-import { useState, useEffect, useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import SectionHeading from "@/components/SectionHeading";
+import { ExpandingCards, CardItem } from "@/components/ui/expanding-cards";
+import { getActiveServices } from "@/services/services";
 import {
-  Calendar,
+  Crown,
   Palette,
-  Lightbulb,
-  Music,
-  Camera,
-  UtensilsCrossed,
-  Mic2,
   Building2,
-  ChevronRight,
-  Loader2,
+  Gift,
+  Speaker,
+  Camera,
+  Mic2,
+  MapPin,
+  Sparkles
 } from "lucide-react";
-import { getActiveServices, Service } from "@/services/services";
-import { getServiceIcon } from "@/lib/serviceIcons";
-import { cn } from "@/lib/utils";
 
-/* Flip cards: front = icon, title, brief; back = full details, pricing, CTA.
- * 3D flip on hover, compact card size.
- */
+// Helper to map icon names (if we stored them) or just use default icons
+const ICON_MAP: Record<string, any> = {
+  'Crown': Crown,
+  'Palette': Palette,
+  'Building2': Building2,
+  'Gift': Gift,
+  'Speaker': Speaker,
+  'Camera': Camera,
+  'Mic2': Mic2,
+  'MapPin': MapPin
+};
 
-interface ServiceCard {
-  id: string;
-  title: string;
-  description: string;
-  brief: string;
-  icon: string;
-  accentColor: string;
-  features: string[];
-  priceFrom?: string;
-  slug?: string;
-}
-
-/* Brand-aligned accents: gold, rose-gold, copper (hex for gradient/shadow alpha) */
-const ACCENT_COLORS = [
-  "#C9A227", /* primary gold */
-  "#B76E79", /* rose-gold */
-  "#B8860B", /* dark gold */
-  "#A67C52", /* warm copper */
-  "#D4AF37", /* gold */
-  "#C4956A", /* champagne */
-  "#C9A227", /* gold */
-  "#A67C52", /* copper */
-];
-
-const ICONS = [
-  Calendar, Palette, Lightbulb, Music,
-  Camera, UtensilsCrossed, Mic2, Building2,
-];
-
-const DEFAULT_SERVICES: ServiceCard[] = [
-  { id: "1", title: "Event Planning & Management", description: "End-to-end event planning and execution, ensuring a seamless and stress-free experience from concept to completion.", brief: "Full planning & execution from concept to completion.", icon: "Calendar", accentColor: "#667eea", features: ["Venue Selection", "Budget Management", "Timeline Planning"], priceFrom: "₹25,000" },
-  { id: "2", title: "Decoration & Design", description: "Stunning décor solutions that transform any venue into a magical and memorable space.", brief: "Transform your venue with stunning décor.", icon: "Palette", accentColor: "#f093fb", features: ["Theme Design", "Floral Arrangements", "Lighting"], priceFrom: "₹20,000" },
-  { id: "3", title: "Stage & Lighting", description: "Professionally designed stages and lighting setups that create the perfect ambiance.", brief: "Custom stages and professional lighting.", icon: "Lightbulb", accentColor: "#FFD93D", features: ["Custom Stage", "Ambient Lighting", "Spotlights"], priceFrom: "₹15,000" },
-  { id: "4", title: "Sound & DJ", description: "Premium sound systems and talented DJs to keep your celebration lively and engaging.", brief: "Professional sound and DJ services.", icon: "Music", accentColor: "#FF6B9D", features: ["Sound Systems", "DJ Services", "Audio Setup"], priceFrom: "₹18,000" },
-  { id: "5", title: "Photography & Videography", description: "Capture every precious moment with cinematic visuals and professional storytelling.", brief: "Cinematic coverage of your special day.", icon: "Camera", accentColor: "#4ECDC4", features: ["Pre-Event Shoots", "Full Coverage", "Drone"], priceFrom: "₹30,000" },
-  { id: "6", title: "Catering Services", description: "Exquisite culinary experiences tailored to your taste, style, and event requirements.", brief: "Exquisite cuisine for your event.", icon: "UtensilsCrossed", accentColor: "#95E1D3", features: ["Menu Planning", "Live Stations", "Multi-Cuisine"], priceFrom: "₹150/plate" },
-  { id: "7", title: "Entertainment & Artists", description: "Top-tier entertainment that keeps your guests engaged and energized.", brief: "Top entertainment for your guests.", icon: "Mic2", accentColor: "#F38181", features: ["DJ", "Live Bands", "Performers"], priceFrom: "₹20,000" },
-  { id: "8", title: "Corporate Branding", description: "Professional branding for corporate events, exhibitions, and product launches.", brief: "Branding for corporate events.", icon: "Building2", accentColor: "#6C5CE7", features: ["Stage Branding", "Digital Assets", "Launches"], priceFrom: "₹22,000" },
-];
-
-function slugify(text: string): string {
-  return text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
-}
-
-function getBrief(desc: string, maxLen = 60): string {
-  if (desc.length <= maxLen) return desc;
-  const cut = desc.slice(0, maxLen).lastIndexOf(" ");
-  return (cut > 0 ? desc.slice(0, cut) : desc.slice(0, maxLen)) + "…";
-}
-
-const DUPLICATE_COPIES = 6;
-
-function ServicesRow({
-  services,
-  direction,
-  speed,
-  isInView,
-  prefersReducedMotion,
-}: {
-  services: ServiceCard[];
-  direction: "left" | "right";
-  speed: number;
-  isInView: boolean;
-  prefersReducedMotion: boolean;
-}) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const posRef = useRef(0);
-  const unitWidthRef = useRef(0);
-  const pausedRef = useRef(false);
+const MobileServiceCarousel = ({ services }: { services: CardItem[] }) => {
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const track = trackRef.current;
-    if (!track || services.length === 0) return;
+    if (services.length <= 1) return;
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % services.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [services.length]);
 
-    const updateWidth = () => {
-      unitWidthRef.current = track.scrollWidth / DUPLICATE_COPIES;
-    };
-    updateWidth();
-    const ro = new ResizeObserver(updateWidth);
-    ro.observe(track);
+  if (services.length === 0) return null;
 
-    if (direction === "right" && posRef.current === 0 && unitWidthRef.current > 0) {
-      posRef.current = unitWidthRef.current;
-      track.style.transform = `translateX(${-posRef.current}px)`;
-    }
-
-    let rafId: number;
-    const tick = () => {
-      if (track && unitWidthRef.current > 0 && !pausedRef.current) {
-        const step = direction === "left" ? speed : -speed;
-        posRef.current += step;
-        const unit = unitWidthRef.current;
-        if (posRef.current >= unit) posRef.current -= unit;
-        if (posRef.current < 0) posRef.current += unit;
-        track.style.transform = `translateX(${-posRef.current}px)`;
-      }
-      rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      ro.disconnect();
-    };
-  }, [services.length, direction, speed]);
-
-  const duplicated = Array.from({ length: DUPLICATE_COPIES }, () => services).flat();
+  const currentService = services[index];
 
   return (
-    <div
-      className="overflow-hidden py-5 md:py-8"
-      onMouseEnter={() => { pausedRef.current = true; }}
-      onMouseLeave={() => { pausedRef.current = false; }}
-    >
-      <div
-        ref={trackRef}
-        className="flex gap-6 w-max"
-        style={{ willChange: "transform" }}
-      >
-        {duplicated.map((service, index) => (
-          <div
-            key={`${service.id}-${index}`}
-            className={cn(
-              "flex-shrink-0 w-[min(100%,300px)] min-w-[260px] sm:min-w-[280px]",
-              "transition-transform duration-300 hover:-translate-y-2.5 hover:scale-[1.02]",
-              !prefersReducedMotion && index % 4 === 0 && "rotate-[-2deg] hover:rotate-0",
-              !prefersReducedMotion && index % 4 === 1 && "rotate-[1deg] hover:rotate-0",
-              !prefersReducedMotion && index % 4 === 2 && "rotate-[2deg] hover:rotate-0",
-              !prefersReducedMotion && index % 4 === 3 && "rotate-[-1deg] hover:rotate-0"
-            )}
+    <div className="relative w-full h-[400px] overflow-hidden rounded-xl bg-muted/20">
+      <div className="relative w-full h-full"> {/* Container for absolute items */}
+        <AnimatePresence initial={false} custom={index}>
+          <motion.div
+            key={currentService.id}
+            custom={index}
+            initial={{ x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "-100%", opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="absolute inset-0 flex flex-col bg-background" // Ensure background to cover exiting slide
           >
-            <ServiceCardComponent
-              service={service}
-              index={index % services.length}
-              isInView={isInView}
+            {/* Image Area */}
+            <div className="relative h-[60%] w-full overflow-hidden">
+              <img
+                src={currentService.imgSrc}
+                alt={currentService.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              <div className="absolute bottom-4 left-4 text-white">
+                <div className="p-2 bg-white/10 backdrop-blur-md rounded-full w-fit mb-2">
+                  {currentService.icon}
+                </div>
+              </div>
+            </div>
+
+            {/* Text Area */}
+            <div className="flex-1 p-6 bg-card flex flex-col justify-center text-center">
+              <h3 className="text-xl font-bold mb-2 text-foreground font-display">
+                {currentService.title}
+              </h3>
+              <p className="text-sm text-muted-foreground line-clamp-3">
+                {currentService.description}
+              </p>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Indicators */}
+        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-10">
+          {services.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === index ? "w-6 bg-primary" : "w-1.5 bg-primary/30"
+                }`}
             />
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
-}
-
-function ServiceCardComponent({
-  service,
-  index,
-  isInView,
-}: {
-  service: ServiceCard;
-  index: number;
-  isInView: boolean;
-}) {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const IconComponent = getServiceIcon(service.icon) ?? ICONS[index % ICONS.length];
-  const brief = service.brief || getBrief(service.description);
-
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 24 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.08, ease: [0.4, 0, 0.2, 1] }}
-      className="service-flip-card w-full h-[280px] cursor-pointer"
-      role="listitem"
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
-      onClick={() => setIsFlipped((prev) => !prev)}
-    >
-      <div
-        className="service-flip-inner w-full h-full"
-        style={{ transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
-      >
-        {/* FRONT */}
-        <div
-          className="service-flip-front bg-card flex flex-col items-center justify-center p-5 
-                     shadow-[0_4px_20px_rgba(28,25,23,0.06)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] border border-border dark:border-white/10"
-        >
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
-            style={{
-              background: `linear-gradient(135deg, ${service.accentColor}, ${service.accentColor}dd)`,
-              boxShadow: `0 4px 12px ${service.accentColor}40`,
-            }}
-          >
-            <IconComponent className="w-6 h-6 text-white" aria-hidden />
-          </div>
-          <h3 className="text-base font-bold text-card-foreground text-center mb-1.5 line-clamp-2 leading-tight">
-            {service.title}
-          </h3>
-          <p className="text-xs text-muted-foreground text-center line-clamp-2 leading-relaxed">
-            {brief}
-          </p>
-        </div>
-
-        {/* BACK */}
-        <div
-          className="service-flip-back bg-card p-4 flex flex-col 
-                     shadow-[0_4px_20px_rgba(28,25,23,0.08)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)] border border-border dark:border-white/10"
-          style={{ borderLeft: `4px solid ${service.accentColor}` }}
-        >
-          <h3 className="text-sm font-bold text-card-foreground mb-2 line-clamp-2">
-            {service.title}
-          </h3>
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 mb-3 flex-1">
-            {service.description}
-          </p>
-          <ul className="space-y-1 mb-3">
-            {service.features.slice(0, 3).map((f) => (
-              <li key={f} className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: service.accentColor }} />
-                {f}
-              </li>
-            ))}
-          </ul>
-          <Link
-            to="/services"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg text-sm font-semibold 
-                       text-white transition-all hover:opacity-90"
-            style={{ background: service.accentColor }}
-          >
-            Learn More
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    </motion.article>
-  );
-}
+};
 
 const ServicesSection = () => {
-  const [services, setServices] = useState<ServiceCard[]>(DEFAULT_SERVICES);
+  const [services, setServices] = useState<CardItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { amount: 0.2, once: true });
-  const prefersReducedMotion =
-    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {
-    getActiveServices()
-      .then((data: Service[]) => {
-        if (data.length > 0) {
-          setServices(
-            data.slice(0, 8).map((s, i) => {
-              const def = DEFAULT_SERVICES[i];
-              return {
-                id: s.id,
-                title: s.title,
-                description: s.description || def?.description || "",
-                brief: getBrief(s.description || def?.description || ""),
-                icon: s.icon || def?.icon || "Sparkles",
-                accentColor: ACCENT_COLORS[i % ACCENT_COLORS.length],
-                features: s.features?.length ? s.features : def?.features || [],
-                priceFrom: def?.priceFrom || "Get Quote",
-                slug: slugify(s.title),
-              };
-            })
-          );
+    async function fetchServices() {
+      try {
+        const data = await getActiveServices();
+        if (data && data.length > 0) {
+          // Map DB items to Card items
+          const mapped = data.map((s) => {
+            // If icon name is stored in 'icon' field, try to map it, else default
+            const IconComponent = (s.icon && ICON_MAP[s.icon as string]) ? ICON_MAP[s.icon as string] : Sparkles;
+
+            return {
+              id: s.id,
+              title: s.title,
+              description: s.description || "",
+              imgSrc: s.image_url || "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80", // fallback
+              icon: <IconComponent size={24} />,
+              linkHref: "/services"
+            };
+          });
+          setServices(mapped);
+        } else {
+          // Fallback / Default data if DB is empty
+          // ... (We could keep the hardcoded constants as fallback, but for brevity I'll assume DB works or empty)
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      } catch (error) {
+        console.error("Failed to fetch services", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchServices();
   }, []);
 
-  const displayed = services.length > 0 ? services : DEFAULT_SERVICES;
+  // Split into rows? Or just pass all? The expanding cards might handle it.
+  // The original code split into 2 rows of 4.
+  // If we have dynamic count, we can just render one big list or split evenly.
 
-  /* Auto-scroll config: same pattern as gallery rows */
-  const SCROLL_DIRECTION = "left" as const;
-  const SCROLL_SPEED = 0.4;
+  const midPoint = Math.ceil(services.length / 2);
+  const row1 = services.slice(0, midPoint);
+  const row2 = services.slice(midPoint);
+
+  if (!loading && services.length === 0) return null; // Hide if no services
 
   return (
-    <section
-      ref={sectionRef}
-      id="services"
-      className="relative overflow-hidden py-12 sm:py-14 lg:py-18 bg-gradient-to-b from-charcoal/5 via-background to-muted/20 dark:from-charcoal/30 dark:via-background dark:to-charcoal/20"
-    >
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-64 h-64 bg-primary/[0.05] rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-primary/[0.04] rounded-full blur-3xl" />
-      </div>
+    <section id="services" className="py-10 md:py-16 overflow-hidden relative bg-background">
 
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8 sm:mb-10"
-        >
-          <p className="section-eyebrow text-primary">What We Offer</p>
-          <h2 className="section-heading">Our Services</h2>
-          <p className="section-description">
-            Comprehensive event solutions to bring your vision to life.
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 flex flex-col items-center relative z-10">
+        <div className="mb-12 text-center">
+          <p className="text-primary font-sans text-sm md:text-base tracking-[0.25em] uppercase mb-3 font-medium">
+            Our Services
           </p>
-        </motion.header>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <SectionHeading className="text-foreground dark:text-white font-display font-medium leading-tight text-4xl md:text-5xl whitespace-nowrap">
+            What We <span className="italic text-primary">Create</span>
+          </SectionHeading>
         </div>
-      ) : (
-        <div className="w-full overflow-hidden">
-          <ServicesRow
-            services={displayed}
-            direction={SCROLL_DIRECTION}
-            speed={prefersReducedMotion ? 0 : SCROLL_SPEED}
-            isInView={prefersReducedMotion || isInView}
-            prefersReducedMotion={!!prefersReducedMotion}
-          />
-        </div>
-      )}
 
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-center mt-8"
-        >
-          <Link to="/services" className="btn-section-cta group">
-            <span>View All Services</span>
-            <ChevronRight className="w-4 h-4 text-primary group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        </motion.div>
+        {/* Desktop View: Expanding Cards */}
+        <div className="hidden md:block w-full">
+          {row1.length > 0 && (
+            <div className="w-full mb-4">
+              <ExpandingCards items={row1} defaultActiveIndex={0} />
+            </div>
+          )}
+          {row2.length > 0 && (
+            <div className="w-full">
+              <ExpandingCards items={row2} defaultActiveIndex={0} />
+            </div>
+          )}
+        </div>
+
+        {/* Mobile View: Auto-rotating Service Carousel */}
+        <div className="md:hidden w-full relative min-h-[400px]">
+          <MobileServiceCarousel services={services} />
+        </div>
+
       </div>
     </section>
   );

@@ -1,217 +1,173 @@
-import { motion } from "framer-motion";
+import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import HeroStatsBlock from "./HeroStatsBlock";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+
+import { getHeroVideos } from "@/services/contentMedia";
+import { StackedCards } from "@/components/ui/stacked-cards";
+import { HeroBackgroundPattern } from "@/components/ui/HeroBackgroundPattern";
 
 const HeroSection = () => {
-  const [isDark, setIsDark] = useState(false);
-  
+  const sectionRef = useRef<HTMLElement>(null);
+  const [heroVideos, setHeroVideos] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(false);
+
   useEffect(() => {
-    const checkTheme = () => {
-      const darkMode = document.documentElement.classList.contains('dark');
-      setIsDark(darkMode);
-    };
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
   }, []);
+
+  const { scrollY } = useScroll();
+  const y1 = useTransform(scrollY, [0, 500], [0, 100]);
+  const y2 = useTransform(scrollY, [0, 500], [0, -50]);
+
+  // Fetch Videos
+  useEffect(() => {
+    async function fetchVideos() {
+      try {
+        const data = await getHeroVideos();
+        if (data && data.length > 0) {
+          setHeroVideos(data.map(v => v.url));
+        } else {
+          // Fallback if no videos found in DB
+          setHeroVideos(["/1.mp4", "/reel 1.mp4", "/3.MP4"]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch hero videos:", error);
+        // Fallback on error
+        setHeroVideos(["/1.mp4", "/reel 1.mp4", "/3.MP4"]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchVideos();
+  }, []);
+
+  if (loading && heroVideos.length === 0) {
+    return (
+      <section className="h-screen flex items-center justify-center bg-background text-foreground">
+        {/* Optional loading state, or just render nothing until loaded */}
+      </section>
+    )
+  }
 
   return (
     <section
-      id="home"
-      className="relative min-h-[85vh] sm:min-h-[90vh] flex flex-col items-center justify-center overflow-hidden"
+      ref={sectionRef}
+      className="relative min-h-[90vh] md:min-h-screen flex items-center justify-center overflow-hidden md:overflow-visible bg-background pt-24 pb-0 text-foreground"
+      aria-label="Hero"
     >
-      {/* Elegant abstract gradient mesh background */}
-      <div className="absolute inset-0" aria-hidden>
-        {/* Base gradient layer - adapts to theme (dark unchanged) */}
-        {isDark ? (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1a1f3a] to-[#2d1b3d]" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-champagne" />
-        )}
-        
-        {/* Dark: rose/champagne mesh. Light: Heritage gold/champagne mesh only */}
-        <motion.div
-          className={`absolute inset-0 ${isDark ? 'opacity-60' : 'opacity-70'}`}
-          animate={{
-            background: isDark ? [
-              "radial-gradient(circle at 20% 30%, rgba(232, 180, 160, 0.4) 0%, transparent 50%)",
-              "radial-gradient(circle at 80% 70%, rgba(232, 180, 160, 0.4) 0%, transparent 50%)",
-              "radial-gradient(circle at 50% 50%, rgba(232, 180, 160, 0.4) 0%, transparent 50%)",
-              "radial-gradient(circle at 20% 30%, rgba(232, 180, 160, 0.4) 0%, transparent 50%)",
-            ] : [
-              "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(212, 175, 55, 0.12) 0%, transparent 65%)",
-              "radial-gradient(ellipse 115% 105% at 30% 35%, rgba(255, 248, 240, 0.5) 0%, transparent 65%)",
-              "radial-gradient(ellipse 105% 115% at 60% 60%, rgba(212, 175, 55, 0.1) 0%, transparent 65%)",
-              "radial-gradient(ellipse 100% 120% at 90% 80%, rgba(255, 244, 230, 0.5) 0%, transparent 65%)",
-              "radial-gradient(ellipse 110% 110% at 70% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 65%)",
-              "radial-gradient(ellipse 115% 105% at 40% 25%, rgba(255, 248, 240, 0.5) 0%, transparent 65%)",
-              "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(212, 175, 55, 0.12) 0%, transparent 65%)",
-            ],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: [0.25, 0.1, 0.25, 1],
-          }}
-        />
-        
-        <motion.div
-          className={`absolute inset-0 ${isDark ? 'opacity-50' : 'opacity-65'}`}
-          animate={{
-            background: isDark ? [
-              "radial-gradient(circle at 70% 20%, rgba(247, 231, 206, 0.3) 0%, transparent 50%)",
-              "radial-gradient(circle at 30% 80%, rgba(247, 231, 206, 0.3) 0%, transparent 50%)",
-              "radial-gradient(circle at 60% 40%, rgba(247, 231, 206, 0.3) 0%, transparent 50%)",
-              "radial-gradient(circle at 70% 20%, rgba(247, 231, 206, 0.3) 0%, transparent 50%)",
-            ] : [
-              "radial-gradient(ellipse 100% 130% at 80% 15%, rgba(255, 248, 240, 0.4) 0%, transparent 70%)",
-              "radial-gradient(ellipse 115% 120% at 60% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 70%)",
-              "radial-gradient(ellipse 130% 100% at 20% 85%, rgba(255, 244, 230, 0.4) 0%, transparent 70%)",
-              "radial-gradient(ellipse 120% 115% at 45% 70%, rgba(212, 175, 55, 0.06) 0%, transparent 70%)",
-              "radial-gradient(ellipse 110% 120% at 55% 45%, rgba(255, 248, 240, 0.35) 0%, transparent 70%)",
-              "radial-gradient(ellipse 105% 125% at 75% 20%, rgba(212, 175, 55, 0.07) 0%, transparent 70%)",
-              "radial-gradient(ellipse 100% 130% at 80% 15%, rgba(255, 248, 240, 0.4) 0%, transparent 70%)",
-            ],
-          }}
-          transition={{
-            duration: 24,
-            repeat: Infinity,
-            ease: [0.25, 0.1, 0.25, 1],
-            delay: 3,
-          }}
-        />
-        
-        <motion.div
-          className={`absolute inset-0 ${isDark ? 'opacity-40' : 'opacity-60'}`}
-          animate={{
-            background: isDark ? [
-              "radial-gradient(circle at 40% 60%, rgba(232, 180, 160, 0.25) 0%, transparent 60%)",
-              "radial-gradient(circle at 60% 40%, rgba(232, 180, 160, 0.25) 0%, transparent 60%)",
-              "radial-gradient(circle at 80% 80%, rgba(232, 180, 160, 0.25) 0%, transparent 60%)",
-              "radial-gradient(circle at 40% 60%, rgba(232, 180, 160, 0.25) 0%, transparent 60%)",
-            ] : [
-              "radial-gradient(ellipse 130% 110% at 35% 65%, rgba(212, 175, 55, 0.06) 0%, transparent 75%)",
-              "radial-gradient(ellipse 125% 115% at 50% 50%, rgba(255, 248, 240, 0.35) 0%, transparent 75%)",
-              "radial-gradient(ellipse 110% 130% at 65% 35%, rgba(212, 175, 55, 0.05) 0%, transparent 75%)",
-              "radial-gradient(ellipse 120% 120% at 85% 85%, rgba(255, 244, 230, 0.3) 0%, transparent 75%)",
-              "radial-gradient(ellipse 115% 125% at 25% 40%, rgba(255, 248, 240, 0.4) 0%, transparent 75%)",
-              "radial-gradient(ellipse 125% 115% at 70% 75%, rgba(212, 175, 55, 0.05) 0%, transparent 75%)",
-              "radial-gradient(ellipse 130% 110% at 35% 65%, rgba(212, 175, 55, 0.06) 0%, transparent 75%)",
-            ],
-          }}
-          transition={{
-            duration: 28,
-            repeat: Infinity,
-            ease: [0.25, 0.1, 0.25, 1],
-            delay: 6,
-          }}
-        />
-        
-        {/* Light theme only: extra gold accent layer (Heritage) - no cyan/purple */}
-        {!isDark && (
-          <motion.div
-            className="absolute inset-0 opacity-40"
-            animate={{
-              background: [
-                "radial-gradient(ellipse 90% 100% at 5% 45%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                "radial-gradient(ellipse 95% 105% at 25% 35%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                "radial-gradient(ellipse 100% 90% at 95% 55%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                "radial-gradient(ellipse 105% 95% at 70% 70%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                "radial-gradient(ellipse 110% 110% at 50% 5%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                "radial-gradient(ellipse 100% 100% at 15% 60%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                "radial-gradient(ellipse 90% 100% at 5% 45%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-              ],
-            }}
-            transition={{
-              duration: 26,
-              repeat: Infinity,
-              ease: [0.25, 0.1, 0.25, 1],
-              delay: 4,
-            }}
-          />
-        )}
-        
-        {/* Subtle overlay for depth - adapts to theme (dark unchanged) */}
-        {isDark ? (
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/40 via-transparent to-transparent" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-t from-[#FFFBF5]/20 via-transparent to-transparent" />
-        )}
-      </div>
+      {/* Background is now handled globally by GlobalBackground.tsx */}
+      {/* Subtle animated radial dot pattern */}
+      <HeroBackgroundPattern />
 
-      {/* Content – centered, max-width 900px */}
-      <div className="relative z-10 w-full max-w-[900px] mx-auto px-4 sm:px-6 flex flex-col items-center justify-center text-center min-h-[90vh] py-20">
+      <div className="container relative z-10 px-4 md:px-6 grid lg:grid-cols-2 gap-4 md:gap-10 lg:gap-12 items-center">
+
+        {/* LEFT: Text Content */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="flex flex-col items-center"
+          style={{ y: isDesktop ? y1 : 0 }}
+          className="text-center lg:text-left space-y-6 relative z-20" // Increased z-index
         >
-          {/* 1. Eyebrow – 13px, uppercase, 2–3px letter-spacing */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="typography-eyebrow text-primary mb-5"
-          >
-            TURNING DREAMS INTO REALITY
-          </motion.p>
-
-          {/* 2. Brand name – Hero: 72–80px desktop, 40px mobile, extrabold */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-            className="typography-hero text-hero mb-6"
-          >
-            Phoenix Brilliance
-          </motion.h1>
-
-          {/* 3. Tagline – body-lg 18px */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
-            className="typography-body-lg text-hero-muted mb-10 max-w-xl mx-auto"
-          >
-            Luxury Event Management & Production
-          </motion.p>
-
-          {/* 4. CTA Buttons – side by side */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.6 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
+            transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <Link
-              to="/services"
-              className="inline-flex items-center justify-center px-10 py-[18px] rounded-[30px] text-base font-semibold bg-primary text-primary-foreground transition-all duration-300 hover:scale-105 hover:bg-rose-gold hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent"
-            >
-              Explore Our Services
-            </Link>
-            <Link
-              to="/gallery"
-              className="inline-flex items-center justify-center px-10 py-[18px] rounded-[30px] text-base font-semibold border-2 border-primary/30 text-foreground bg-transparent transition-all duration-300 hover:border-primary/50 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-transparent"
-            >
-              View Our Work
-            </Link>
+            <p className="text-primary font-sans text-xs md:text-sm tracking-[0.3em] uppercase mb-4 font-medium">
+              Phoenix Events & Production
+            </p>
+
+            <h1 className="font-hero text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1] text-foreground dark:text-white">
+              Crafting Moments <br />
+              That Last <br />
+              <span className="italic relative inline-block text-primary">
+                Forever
+                <motion.span
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.8, duration: 1, ease: "circOut" }}
+                  className="absolute bottom-0 left-0 w-full h-[3px] md:h-[5px] bg-primary/40 rounded-full origin-left"
+                />
+              </span>
+            </h1>
           </motion.div>
 
-          {/* 5. Stats Block */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.1, duration: 0.6 }}
-            className="w-full"
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="text-lg md:text-xl text-muted-foreground dark:text-white/80 font-light max-w-xl mx-auto lg:mx-0 leading-relaxed"
           >
-            <HeroStatsBlock />
+            From weddings to corporate celebrations, we turn your vision into
+            unforgettable experiences with elegance and precision.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2"
+          >
+            <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-warm-lg hover:shadow-warm-xl transition-all duration-300" asChild>
+              <Link to="/contact">
+                Plan Your Event
+              </Link>
+            </Button>
+            <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full border-2 border-primary/50 text-foreground hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 group font-medium" asChild>
+              <Link to="/gallery">
+                View Our Work <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+          </motion.div>
+
+          {/* Stats Section */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
+            className="mt-8 flex items-center gap-8 justify-center lg:justify-start pt-4 border-t border-border/40"
+          >
+            <div className="text-center lg:text-left">
+              <p className="text-2xl font-display font-semibold text-primary">500+</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Events</p>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="text-center lg:text-left">
+              <p className="text-2xl font-display font-semibold text-primary">12+</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Years</p>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="text-center lg:text-left">
+              <p className="text-2xl font-display font-semibold text-primary">98%</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Satisfaction</p>
+            </div>
           </motion.div>
         </motion.div>
+
+        {/* RIGHT: Stacked Video Gallery using reusable component */}
+        <motion.div
+          style={{ y: isDesktop ? y2 : 0 }}
+          className="relative w-full max-w-[400px] md:max-w-[480px] lg:max-w-[560px] aspect-[9/14] md:aspect-[10/9] mx-auto perspective-1000 mt-2 md:mt-8 lg:-mt-14 flex items-center justify-center p-4 overflow-hidden md:overflow-visible" // Added overflow handling for mobile
+        >
+          <StackedCards items={heroVideos} autoplay={true} />
+        </motion.div>
+
       </div>
 
+      {/* Scroll Indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 1 }}
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10"
+      >
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">Scroll</span>
+        <div className="w-[1px] h-8 bg-gradient-to-b from-primary/50 to-transparent" />
+      </motion.div>
     </section>
   );
 };

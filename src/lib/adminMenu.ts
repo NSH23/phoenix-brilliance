@@ -13,6 +13,7 @@ import {
   Award,
   Users,
   ImagePlus,
+  Film,
 } from 'lucide-react';
 
 export interface AdminMenuItem {
@@ -35,5 +36,6 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { name: 'Inquiries', href: '/admin/inquiries', icon: Mail, keywords: 'messages contact' },
   { name: 'Site Content', href: '/admin/content', icon: FileText, keywords: 'content pages' },
   { name: 'Why Choose Us', href: '/admin/why-us', icon: Award, keywords: 'why choose' },
+  { name: 'Manage Videos', href: '/admin/media', icon: Film, keywords: 'videos hero reels' },
   { name: 'Settings', href: '/admin/settings', icon: Settings, keywords: 'config' },
 ];

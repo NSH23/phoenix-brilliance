@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getEventsForHomepage } from "@/services/events";
-import { getSiteSettingOptional } from "@/services/siteContent";
-import { GALLERY_FRAME_TEMPLATES, type GalleryFrameTemplateId } from "@/lib/galleryFrames";
-import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
+import { StackedCards } from "@/components/ui/stacked-cards";
 
-/* Event Categories: Three-column layout - left (text + frames), center (categories), right (2 frames).
- * Top 5 events by display_order. Hover category → switch images & description.
- * Frame style configurable via admin.
+/* Event Categories: Three-column layout - left (StackedCards), center (categories), right (StackedCards).
  */
 
 const FALLBACK_IMAGES = [
@@ -20,99 +16,6 @@ const FALLBACK_IMAGES = [
   "/haldi.jpg",
 ];
 
-function EventFrame({
-  src,
-  alt,
-  rotationDeg,
-  slug,
-  frameId,
-  className = "",
-  behind = false,
-  revealOnHover = false,
-  isHovered = false,
-  slideDirection = "left",
-}: {
-  src: string;
-  alt: string;
-  rotationDeg: number;
-  slug?: string;
-  frameId: GalleryFrameTemplateId;
-  className?: string;
-  behind?: boolean;
-  revealOnHover?: boolean;
-  isHovered?: boolean;
-  slideDirection?: "left" | "right";
-}) {
-  const revealOffsetX = revealOnHover && isHovered ? (slideDirection === "left" ? -64 : 64) : 0;
-  const revealOffsetY = revealOnHover && isHovered ? -8 : 0;
-  const isRevealed = revealOnHover && isHovered;
-  const content = (
-    <motion.div
-      className={cn(
-        "flex-shrink-0 origin-center",
-        className,
-        behind && "opacity-90",
-        isRevealed ? "z-30" : "z-0"
-      )}
-      style={{ transformOrigin: "center center" }}
-      initial={{ opacity: 0, scale: behind ? 0.88 : 0.96 }}
-      animate={{
-        x: revealOffsetX,
-        y: revealOffsetY,
-        rotate: rotationDeg,
-        opacity: behind ? (isHovered && revealOnHover ? 1 : 0.9) : 1,
-        scale: behind ? (isHovered && revealOnHover ? 0.98 : 0.85) : 1,
-      }}
-      transition={{
-        type: "spring",
-        stiffness: 260,
-        damping: 24,
-        mass: 0.8,
-      }}
-    >
-      <div
-        className={cn(
-          "relative overflow-visible",
-          frameId === "polaroid" &&
-            "bg-white p-5 pb-14 rounded-sm shadow-[0_8px_30px_rgba(0,0,0,0.4),0_16px_50px_rgba(0,0,0,0.25)] border-4 border-white",
-          frameId === "rounded" && "bg-white p-3 rounded-2xl shadow-lg",
-          frameId === "shadow" &&
-            "bg-white p-2 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.15)] border border-black/5",
-          frameId === "vintage" &&
-            "bg-amber-50/90 p-4 rounded-sm border-2 border-amber-200/80 shadow-[inset_0_0_20px_rgba(0,0,0,0.05)]",
-          frameId === "minimal" && "bg-white p-1 rounded border border-black/10"
-        )}
-      >
-        <div
-          className={cn(
-            "aspect-[4/5] overflow-hidden bg-muted",
-            frameId === "polaroid" && "rounded-sm",
-            frameId === "rounded" && "rounded-xl",
-            frameId === "shadow" && "rounded-md",
-            frameId === "vintage" && "rounded-sm",
-            frameId === "minimal" && "rounded-sm"
-          )}
-        >
-          <img
-            src={src}
-            alt={alt}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/placeholder.svg";
-            }}
-          />
-        </div>
-      </div>
-    </motion.div>
-  );
-
-  return (
-    <Link to={slug ? `/events/${slug}` : "/events"} className="block">
-      {content}
-    </Link>
-  );
-}
-
 type EventCategory = {
   title: string;
   slug: string;
@@ -121,39 +24,27 @@ type EventCategory = {
   powered_by: string | null;
 };
 
-type HoveredStack = "left" | "right" | null;
-
 const EventsSection = () => {
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [selectedSlug, setSelectedSlug] = useState<string>("");
-  const [frameId, setFrameId] = useState<GalleryFrameTemplateId>("polaroid");
   const [isLoading, setIsLoading] = useState(true);
-  const [hoveredStack, setHoveredStack] = useState<HoveredStack>(null);
 
   useEffect(() => {
-    const limit = 5;
-    Promise.all([
-      getEventsForHomepage(limit),
-      getSiteSettingOptional("homepage_events_frame_template"),
-    ])
-      .then(([eventsData, frameVal]) => {
-        setFrameId(
-          frameVal && frameVal in GALLERY_FRAME_TEMPLATES
-            ? (frameVal as GalleryFrameTemplateId)
-            : "polaroid"
-        );
+    const limit = 6;
+    getEventsForHomepage(limit)
+      .then((eventsData) => {
         const cats: EventCategory[] = (eventsData || []).map((e) => {
           const imgs = (e.event_images || [])
             .sort((a, b) => a.display_order - b.display_order)
             .map((i) => i.url);
-          while (imgs.length < 5) {
+          while (imgs.length < 6) {
             imgs.push(e.cover_image || FALLBACK_IMAGES[imgs.length % FALLBACK_IMAGES.length]);
           }
           return {
             title: e.title,
             slug: e.slug,
             description: e.short_description || e.description || "",
-            images: imgs.slice(0, 5),
+            images: imgs.slice(0, 6),
             powered_by: e.powered_by?.trim() || null,
           };
         });
@@ -161,6 +52,16 @@ const EventsSection = () => {
         setSelectedSlug((prev) =>
           cats.find((c) => c.slug === prev) ? prev : cats[0]?.slug || ""
         );
+
+        // Preload images for smoother transitions
+        if (cats && cats.length > 0) {
+          cats.forEach(cat => {
+            cat.images.forEach(src => {
+              const img = new Image();
+              img.src = src;
+            });
+          });
+        }
       })
       .catch(() => {
         setCategories([]);
@@ -171,16 +72,17 @@ const EventsSection = () => {
 
   const displayCategories = categories;
   const selectedCategory = displayCategories.find((c) => c.slug === selectedSlug) || displayCategories[0];
-  const selectedIndex = displayCategories.findIndex((c) => c.slug === selectedSlug);
-  const isLayoutA = selectedIndex % 2 === 0;
-  const images = selectedCategory?.images || FALLBACK_IMAGES;
-  const img0 = images[0] || "/placeholder.svg";
-  const img1 = images[1] || "/placeholder.svg";
-  const img2 = images[2] || "/placeholder.svg";
-  const img3 = images[3] || "/placeholder.svg";
-  const img4 = images[4] || "/placeholder.svg";
 
-  const polaroidSize = "w-[220px] sm:w-[240px] md:w-[260px] lg:w-[280px] xl:w-[320px]";
+  // Split images into Left and Right stacks
+  const { leftImages, rightImages } = useMemo(() => {
+    const defaultImages = selectedCategory?.images || FALLBACK_IMAGES;
+    // Split 6 images into 2 sets of 3
+    return {
+      leftImages: defaultImages.slice(0, 3),
+      rightImages: defaultImages.slice(3, 6)
+    };
+  }, [selectedCategory]);
+
 
   if (isLoading && displayCategories.length === 0) {
     return (
@@ -194,7 +96,7 @@ const EventsSection = () => {
 
   if (displayCategories.length === 0) {
     return (
-      <section id="events" className="home-section bg-muted dark:bg-charcoal py-20 sm:py-24 lg:py-28">
+      <section id="events" className="home-section bg-muted dark:bg-charcoal py-12 sm:py-16">
         <div className="text-center py-16">
           <p className="text-muted-foreground dark:text-ivory/70">No events to display. Add events in the admin dashboard.</p>
           <Link to="/events" className="mt-4 inline-block text-primary hover:underline">
@@ -206,83 +108,77 @@ const EventsSection = () => {
   }
 
   return (
-    <section id="events" className="relative home-section bg-muted dark:bg-charcoal overflow-visible pt-4 sm:pt-6 lg:pt-8 pb-16 lg:pb-20">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+    <section id="events" className="relative home-section overflow-visible pt-4 sm:pt-6 lg:pt-8 pb-8 lg:pb-12 bg-background">
+
+
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
         {/* Header - extra margin so text doesn't overlap images below */}
-        <div className="text-center mb-10 sm:mb-12 lg:mb-14">
-          <p className="section-eyebrow text-muted-foreground dark:text-ivory/70">What We Create</p>
-          <h2 className="section-heading text-foreground dark:text-ivory">Event Categories</h2>
+        <div className="text-center mb-8 sm:mb-10 lg:mb-12">
+          <p className="section-eyebrow text-primary font-medium tracking-wider" style={{ whiteSpace: "nowrap" }}>What We Create</p>
+          <h2 className="section-heading text-4xl md:text-5xl font-bold text-foreground dark:text-white">Event Categories</h2>
         </div>
 
-        {/* Three-column layout: Layout A (Wedding,Engagement,Haldi) = 1 left+text, center, 2 right. Layout B = 2 left, center, 1 right+text */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 xl:gap-10 items-start">
-          {/* Left column - fixed height container to prevent layout shift */}
-          <div
-            className="lg:col-span-4 order-2 lg:order-1 relative min-h-[340px] sm:min-h-[380px] lg:min-h-[480px] xl:min-h-[520px] overflow-visible"
-            onMouseEnter={() => setHoveredStack("left")}
-            onMouseLeave={() => setHoveredStack(null)}
-          >
-            <AnimatePresence mode="sync">
-              {isLayoutA ? (
-                <motion.div
-                  key="layout-a-left"
-                  className="absolute inset-0 flex flex-col gap-4 lg:gap-5 items-center lg:items-end justify-center lg:justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
+        {/* Mobile Marquee View */}
+        <div className="block lg:hidden w-full overflow-hidden mb-8">
+          <div className="collaborations-logo-mask overflow-hidden pt-2 pb-2">
+            <div
+              className="collaborations-logo-track flex gap-4 px-4"
+              style={{
+                animationDuration: '45s', // Optimized speed
+                width: 'max-content',
+                willChange: 'transform' // Hardware acceleration
+              }}
+            >
+              {/* Duplicate enough times to ensure no gaps */}
+              {[...categories, ...categories, ...categories, ...categories].map((cat, index) => (
+                <Link
+                  key={`${cat.slug}-mobile-${index}`}
+                  to={`/events?category=${cat.slug}`}
+                  className="flex-shrink-0 w-[200px] group relative rounded-xl overflow-hidden aspect-[3/4]"
                 >
-                  <div
-                    className="relative flex justify-center lg:justify-end min-h-[280px] lg:min-h-[320px] w-full py-5"
-                    onMouseEnter={() => setHoveredStack("left")}
-                    onMouseLeave={() => setHoveredStack(null)}
-                  >
-                    <EventFrame key={`left-behind-${selectedSlug}`} src={img3} alt={selectedCategory?.title || ""} rotationDeg={-12} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} absolute -left-6 -top-4`} behind revealOnHover isHovered={hoveredStack === "left"} slideDirection="left" />
-                    <EventFrame key={`left-${selectedSlug}`} src={img0} alt={selectedCategory?.title || ""} rotationDeg={10} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} relative z-10`} />
+                  <img
+                    src={cat.images[0] || FALLBACK_IMAGES[0]}
+                    alt={cat.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
+                    <h3 className="text-white font-display text-lg font-bold tracking-wide">{cat.title}</h3>
                   </div>
-                  <motion.div
-                    key={`text-${selectedSlug}`}
-                    className="text-center lg:text-right max-w-sm lg:max-w-none"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.05 }}
-                  >
-                    <p className="text-muted-foreground dark:text-ivory/90 text-sm sm:text-base leading-relaxed">
-                      {selectedCategory?.description || ""}
-                    </p>
-                    {selectedCategory?.powered_by && (
-                      <div className="mt-4">
-                        <p className="text-muted-foreground/80 dark:text-ivory/50 text-[10px] sm:text-xs tracking-[0.25em] uppercase mb-2">Powered By</p>
-                        <span className="text-foreground dark:text-ivory/70 text-sm font-medium">{selectedCategory.powered_by}</span>
-                      </div>
-                    )}
-                  </motion.div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="layout-b-left"
-                  className="absolute inset-0 flex flex-col items-center lg:items-end justify-center lg:justify-center gap-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                >
-                  <div
-                    className="relative flex flex-col items-center lg:items-end gap-4 min-h-[280px] lg:min-h-[320px] w-full py-5"
-                    onMouseEnter={() => setHoveredStack("left")}
-                    onMouseLeave={() => setHoveredStack(null)}
-                  >
-                    <EventFrame key={`left-behind-${selectedSlug}`} src={img3} alt={selectedCategory?.title || ""} rotationDeg={-8} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} absolute -right-4 -bottom-6`} behind revealOnHover isHovered={hoveredStack === "left"} slideDirection="right" />
-                    <EventFrame key={`left-a-${selectedSlug}`} src={img0} alt={selectedCategory?.title || ""} rotationDeg={-12} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} relative z-10`} />
-                    <EventFrame key={`left-b-${selectedSlug}`} src={img1} alt={selectedCategory?.title || ""} rotationDeg={11} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} relative z-10`} />
-                  </div>
-                </motion.div>
-              )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Three-column layout - Hidden on Mobile */}
+        <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 xl:gap-10 items-center">
+
+          {/* Left column - StackedCards */}
+          <div className="lg:col-span-4 order-2 lg:order-1 flex flex-col items-center justify-center py-10 h-[450px] md:h-[550px] relative">
+            <div className="w-full h-full flex items-center justify-center p-4">
+              <StackedCards items={leftImages} autoplay={false} />
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={selectedSlug}
+                className="text-center lg:text-right max-w-sm lg:max-w-none relative z-20 mt-4 min-h-[4rem]"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.2 }}
+              >
+                <p className="text-muted-foreground dark:text-ivory/90 text-sm sm:text-base leading-relaxed hidden lg:block">
+                  {/* Shown on desktop below left stack, or hide if desired layout differs */}
+                  {selectedCategory?.description || ""}
+                </p>
+              </motion.div>
             </AnimatePresence>
           </div>
 
           {/* Center: Categories */}
-          <div className="lg:col-span-4 order-1 lg:order-2 flex flex-col items-center justify-center py-4 lg:py-0 lg:min-h-[480px] xl:min-h-[520px]">
+          <div className="lg:col-span-4 order-1 lg:order-2 flex flex-col items-center justify-center py-4 lg:py-0">
             <div className="flex flex-col gap-3 sm:gap-4 lg:gap-5">
               {displayCategories.map((cat) => {
                 const isActive = cat.slug === selectedSlug;
@@ -297,8 +193,8 @@ const EventsSection = () => {
                     className="text-center cursor-pointer"
                   >
                     <span
-                      className={`block text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight transition-all duration-300 ease-out
-                        ${isActive ? "text-foreground dark:text-ivory border-b-2 border-primary dark:border-ivory pb-2" : "text-muted-foreground dark:text-ivory/70 hover:text-foreground dark:hover:text-ivory"}`}
+                      className={`block text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight transition-all duration-300 ease-out font-display
+                        ${isActive ? "text-foreground dark:text-ivory border-b-2 border-primary dark:border-ivory pb-2 scale-105" : "text-muted-foreground dark:text-ivory/70 hover:text-foreground dark:hover:text-ivory"}`}
                     >
                       {cat.title.toUpperCase()}
                     </span>
@@ -306,76 +202,24 @@ const EventsSection = () => {
                 );
               })}
             </div>
+
+            {/* Description shown on mobile in center (below categories) */}
+            <div className="mt-6 lg:hidden max-w-md text-center">
+              <p className="text-muted-foreground dark:text-ivory/90 text-sm leading-relaxed">
+                {selectedCategory?.description || ""}
+              </p>
+            </div>
           </div>
 
-          {/* Right column - fixed height container to prevent layout shift */}
-          <div
-            data-debug-events-right
-            className="lg:col-span-4 order-3 relative min-h-[340px] sm:min-h-[380px] lg:min-h-[480px] xl:min-h-[520px] overflow-visible"
-            onMouseEnter={() => setHoveredStack("right")}
-            onMouseLeave={() => setHoveredStack(null)}
-          >
-            <AnimatePresence mode="sync">
-              {isLayoutA ? (
-                <motion.div
-                  key="layout-a-right"
-                  className="absolute inset-0 flex flex-col items-center lg:items-start justify-center lg:justify-center gap-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                >
-                  <div
-                    className="relative flex flex-col items-center lg:items-start pt-5 min-h-[280px] lg:min-h-[320px] w-full py-5"
-                    onMouseEnter={() => setHoveredStack("right")}
-                    onMouseLeave={() => setHoveredStack(null)}
-                  >
-                    <EventFrame key={`right-behind-${selectedSlug}`} src={img4} alt={selectedCategory?.title || ""} rotationDeg={5} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} absolute -right-4 bottom-0`} behind revealOnHover isHovered={hoveredStack === "right"} slideDirection="right" />
-                    <EventFrame key={`right-b-${selectedSlug}`} src={img2} alt={selectedCategory?.title || ""} rotationDeg={12} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} relative z-10`} />
-                    <EventFrame key={`right-a-${selectedSlug}`} src={img1} alt={selectedCategory?.title || ""} rotationDeg={-10} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} relative z-20 -mt-4`} />
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="layout-b-right"
-                  className="absolute inset-0 flex flex-col gap-4 lg:gap-5 items-center lg:items-start justify-center lg:justify-center w-full"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                >
-                  <div
-                    className="relative flex justify-center lg:justify-start min-h-[280px] lg:min-h-[320px] w-full py-5"
-                    onMouseEnter={() => setHoveredStack("right")}
-                    onMouseLeave={() => setHoveredStack(null)}
-                  >
-                    <EventFrame key={`right-behind-${selectedSlug}`} src={img4} alt={selectedCategory?.title || ""} rotationDeg={8} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} absolute -left-6 -top-4`} behind revealOnHover isHovered={hoveredStack === "right"} slideDirection="left" />
-                    <EventFrame key={`right-${selectedSlug}`} src={img2} alt={selectedCategory?.title || ""} rotationDeg={-11} slug={selectedSlug} frameId={frameId} className={`${polaroidSize} relative z-10`} />
-                  </div>
-                  <motion.div
-                    key={`text-r-${selectedSlug}`}
-                    className="text-center lg:text-left max-w-sm lg:max-w-none"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.05 }}
-                  >
-                    <p className="text-muted-foreground dark:text-ivory/90 text-sm sm:text-base leading-relaxed">
-                      {selectedCategory?.description || ""}
-                    </p>
-                    {selectedCategory?.powered_by && (
-                      <div className="mt-4">
-                        <p className="text-muted-foreground/80 dark:text-ivory/50 text-[10px] sm:text-xs tracking-[0.25em] uppercase mb-2">Powered By</p>
-                        <span className="text-foreground dark:text-ivory/70 text-sm font-medium">{selectedCategory.powered_by}</span>
-                      </div>
-                    )}
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Right column - StackedCards - HIDDEN ON MOBILE */}
+          <div className="hidden lg:flex lg:col-span-4 order-3 flex-col items-center justify-center py-10 h-[450px] md:h-[550px] relative">
+            <div className="w-full h-full flex items-center justify-center p-4">
+              <StackedCards items={rightImages} autoplay={false} />
+            </div>
           </div>
         </div>
 
-        <div className="text-center mt-10">
+        <div className="text-center mt-12">
           <Link to="/events" className="btn-section-cta">
             <span>View All Events</span>
             <span aria-hidden>→</span>

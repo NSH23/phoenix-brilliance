@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { HeroBackgroundPattern } from "@/components/ui/HeroBackgroundPattern";
 import { Link } from "react-router-dom";
 import {
   Camera,
@@ -131,10 +132,10 @@ const Gallery = () => {
     heroContent?.stats && heroContent.stats.length >= 3
       ? heroContent.stats.slice(0, 3)
       : [
-          { value: `${totalPhotos}+`, label: "Photos" },
-          { value: String(totalAlbums), label: "Albums" },
-          { value: String(events.length), label: "Event Types" },
-        ];
+        { value: `${totalPhotos}+`, label: "Photos" },
+        { value: String(totalAlbums), label: "Albums" },
+        { value: String(events.length), label: "Event Types" },
+      ];
 
   const heroSubtitle = heroContent?.subtitle ?? "Moments We've Captured";
   const heroSubtitleLastSpace = heroSubtitle.lastIndexOf(" ");
@@ -145,7 +146,7 @@ const Gallery = () => {
 
   return (
     <>
-      <SEO 
+      <SEO
         title="Gallery"
         description="Browse our stunning event photography gallery showcasing weddings, birthdays, corporate events, and celebrations in Pune, Maharashtra."
         keywords="event photography Pune, wedding photos, event gallery, party photography Maharashtra, celebration photos"
@@ -154,27 +155,29 @@ const Gallery = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
 
-      {/* Hero Section - elegant abstract gradient mesh */}
-      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 overflow-hidden min-h-[60vh] flex items-center">
-        {/* Abstract gradient mesh background */}
-        <div className="absolute inset-0 gallery-page-mesh-bg" aria-hidden />
-        {!prefersReducedMotion && (
-          <>
-            {/* Purple gradient mesh for light theme - smooth elegant movement */}
-            <motion.div
-              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-60" : "opacity-70"}`}
-              aria-hidden
-              animate={{
-                background: isDark
-                  ? [
-                      "radial-gradient(circle at 25% 35%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
-                      "radial-gradient(circle at 65% 25%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
-                      "radial-gradient(circle at 75% 55%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
-                      "radial-gradient(circle at 45% 75%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
-                      "radial-gradient(circle at 20% 60%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
-                      "radial-gradient(circle at 25% 35%, rgba(183, 110, 121, 0.25) 0%, transparent 50%)",
+        {/* Hero Section - Reduced height for compact layout */}
+        <section className="relative pt-24 pb-12 sm:pt-32 sm:pb-16 overflow-hidden min-h-[45vh] flex items-center justify-center">
+          {/* Abstract gradient mesh background */}
+          <div className="absolute inset-0 gallery-page-mesh-bg" aria-hidden />
+          {/* Subtle animated radial dot pattern - theme aware */}
+          <HeroBackgroundPattern />
+          {!prefersReducedMotion && (
+            <>
+              {/* Purple gradient mesh for light theme - smooth elegant movement */}
+              <motion.div
+                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-40" : "opacity-70"}`}
+                aria-hidden
+                animate={{
+                  background: isDark
+                    ? [
+                      "radial-gradient(circle at 25% 35%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
+                      "radial-gradient(circle at 65% 25%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
+                      "radial-gradient(circle at 75% 55%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
+                      "radial-gradient(circle at 45% 75%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
+                      "radial-gradient(circle at 20% 60%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
+                      "radial-gradient(circle at 25% 35%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
                     ]
-                  : [
+                    : [
                       "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
                       "radial-gradient(ellipse 115% 105% at 30% 35%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
                       "radial-gradient(ellipse 105% 115% at 60% 60%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
@@ -183,24 +186,24 @@ const Gallery = () => {
                       "radial-gradient(ellipse 115% 105% at 40% 25%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
                       "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(139, 92, 246, 0.32) 0%, transparent 65%)",
                     ],
-              }}
-              transition={{ duration: 20, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1] }}
-            />
-            {/* Indigo blue layer */}
-            <motion.div
-              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-50" : "opacity-65"}`}
-              aria-hidden
-              animate={{
-                background: isDark
-                  ? [
-                      "radial-gradient(circle at 70% 25%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
-                      "radial-gradient(circle at 35% 70%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
-                      "radial-gradient(circle at 15% 45%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
-                      "radial-gradient(circle at 55% 15%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
-                      "radial-gradient(circle at 80% 65%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
-                      "radial-gradient(circle at 70% 25%, rgba(247, 231, 206, 0.2) 0%, transparent 50%)",
+                }}
+                transition={{ duration: 20, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1] }}
+              />
+              {/* Indigo blue layer */}
+              <motion.div
+                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-30" : "opacity-65"}`}
+                aria-hidden
+                animate={{
+                  background: isDark
+                    ? [
+                      "radial-gradient(circle at 70% 25%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
+                      "radial-gradient(circle at 35% 70%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
+                      "radial-gradient(circle at 15% 45%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
+                      "radial-gradient(circle at 55% 15%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
+                      "radial-gradient(circle at 80% 65%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
+                      "radial-gradient(circle at 70% 25%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
                     ]
-                  : [
+                    : [
                       "radial-gradient(ellipse 100% 130% at 80% 15%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
                       "radial-gradient(ellipse 115% 120% at 60% 30%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
                       "radial-gradient(ellipse 130% 100% at 20% 85%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
@@ -209,21 +212,21 @@ const Gallery = () => {
                       "radial-gradient(ellipse 105% 125% at 75% 20%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
                       "radial-gradient(ellipse 100% 130% at 80% 15%, rgba(99, 102, 241, 0.28) 0%, transparent 70%)",
                     ],
-              }}
-              transition={{ duration: 24, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 3 }}
-            />
-            {/* Purple layer */}
-            <motion.div
-              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-35" : "opacity-60"}`}
-              aria-hidden
-              animate={{
-                background: isDark
-                  ? [
-                      "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(183, 110, 121, 0.15) 0%, transparent 60%)",
-                      "radial-gradient(ellipse 100% 80% at 50% 50%, rgba(247, 231, 206, 0.12) 0%, transparent 60%)",
-                      "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(183, 110, 121, 0.15) 0%, transparent 60%)",
+                }}
+                transition={{ duration: 24, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 3 }}
+              />
+              {/* Purple layer */}
+              <motion.div
+                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-20" : "opacity-60"}`}
+                aria-hidden
+                animate={{
+                  background: isDark
+                    ? [
+                      "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 100% 80% at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%)",
                     ]
-                  : [
+                    : [
                       "radial-gradient(ellipse 130% 110% at 35% 65%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
                       "radial-gradient(ellipse 125% 115% at 50% 50%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
                       "radial-gradient(ellipse 110% 130% at 65% 35%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
@@ -232,492 +235,455 @@ const Gallery = () => {
                       "radial-gradient(ellipse 125% 115% at 70% 75%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
                       "radial-gradient(ellipse 130% 110% at 35% 65%, rgba(168, 85, 247, 0.24) 0%, transparent 75%)",
                     ],
-              }}
-              transition={{ duration: 28, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 6 }}
-            />
-            {/* Cyan/blue accent for light theme - smooth elegant movement */}
-            {!isDark && (
-              <motion.div
-                className="absolute inset-0 pointer-events-none opacity-50"
-                aria-hidden
-                animate={{
-                  background: [
-                    "radial-gradient(ellipse 100% 120% at 25% 10%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
-                    "radial-gradient(ellipse 110% 115% at 40% 25%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
-                    "radial-gradient(ellipse 120% 100% at 75% 90%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
-                    "radial-gradient(ellipse 115% 105% at 60% 70%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
-                    "radial-gradient(ellipse 110% 110% at 45% 55%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
-                    "radial-gradient(ellipse 105% 115% at 30% 30%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
-                    "radial-gradient(ellipse 100% 120% at 25% 10%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
-                  ],
                 }}
-                transition={{ duration: 22, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 1.5 }}
+                transition={{ duration: 28, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 6 }}
               />
-            )}
-            {/* Gold accent for light theme - smooth elegant movement */}
-            {!isDark && (
-              <motion.div
-                className="absolute inset-0 pointer-events-none opacity-35"
-                aria-hidden
-                animate={{
-                  background: [
-                    "radial-gradient(ellipse 90% 100% at 5% 45%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                    "radial-gradient(ellipse 95% 105% at 25% 35%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                    "radial-gradient(ellipse 100% 90% at 95% 55%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                    "radial-gradient(ellipse 105% 95% at 70% 70%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                    "radial-gradient(ellipse 110% 110% at 50% 5%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                    "radial-gradient(ellipse 100% 100% at 15% 60%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                    "radial-gradient(ellipse 90% 100% at 5% 45%, rgba(212, 175, 55, 0.18) 0%, transparent 55%)",
-                  ],
-                }}
-                transition={{ duration: 26, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 4 }}
-              />
-            )}
-          </>
-        )}
+              {/* Cyan/blue accent for light theme - smooth elegant movement */}
+              {!isDark && (
+                <motion.div
+                  className="absolute inset-0 pointer-events-none opacity-50"
+                  aria-hidden
+                  animate={{
+                    background: [
+                      "radial-gradient(ellipse 100% 120% at 25% 10%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 110% 115% at 40% 25%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 120% 100% at 75% 90%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 115% 105% at 60% 70%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 110% 110% at 45% 55%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 105% 115% at 30% 30%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                      "radial-gradient(ellipse 100% 120% at 25% 10%, rgba(59, 130, 246, 0.2) 0%, transparent 60%)",
+                    ],
+                  }}
+                  transition={{ duration: 22, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 1.5 }}
+                />
+              )}
+              {/* Gold accent for light theme - smooth elegant movement */}
+              {!isDark && (
+                <motion.div
+                  className="absolute inset-0 pointer-events-none opacity-35"
+                  aria-hidden
+                  animate={{
+                    background: [
+                      "radial-gradient(ellipse 90% 100% at 5% 45%, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
+                      "radial-gradient(ellipse 95% 105% at 25% 35%, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
+                      "radial-gradient(ellipse 100% 90% at 95% 55%, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
+                      "radial-gradient(ellipse 105% 95% at 70% 70%, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
+                      "radial-gradient(ellipse 110% 110% at 50% 5%, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
+                      "radial-gradient(ellipse 100% 100% at 15% 60%, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
+                      "radial-gradient(ellipse 90% 100% at 5% 45%, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
+                    ],
+                  }}
+                  transition={{ duration: 26, repeat: Infinity, ease: [0.25, 0.1, 0.25, 1], delay: 4 }}
+                />
+              )}
+            </>
+          )}
 
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <motion.span
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="typography-eyebrow inline-block text-primary mb-4"
-            >
-              {heroContent?.title ?? "Our Portfolio"}
-            </motion.span>
-
-            <h1 className={`typography-hero mb-6 ${isDark ? "text-white" : "text-foreground"}`}>
-              {heroSubtitleFirst}
-              <span className="text-gradient-gold">{heroSubtitleGold}</span>
-            </h1>
-            <p className={`typography-body-lg max-w-2xl mx-auto ${isDark ? "text-white/90" : "text-muted-foreground"}`}>
-              {heroContent?.description ??
-                "Browse through our collection of stunning events, each album telling a unique story of celebration and joy."}
-            </p>
-
+          <div className="container mx-auto px-4 relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex justify-center gap-8 sm:gap-16 mt-10"
+              transition={{ duration: 0.8 }}
+              className="text-center max-w-4xl mx-auto"
             >
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className={`text-3xl sm:text-4xl font-serif font-bold ${isDark ? "text-white" : "text-primary"}`}>
-                    {stat.value}
-                  </div>
-                  <div className={`text-sm mt-1 ${isDark ? "text-white/70" : "text-muted-foreground"}`}>{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-        {/* Smooth merge: hero fades gently into background (theme-aware) */}
-        <div
-          className="absolute bottom-0 left-0 right-0 pointer-events-none z-[1] hero-merge-gradient"
-          style={{
-            height: "clamp(180px, 28vh, 280px)",
-          }}
-          aria-hidden
-        />
-      </section>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        </div>
-      ) : (
-        <>
-          {/* Browse by Event Type - Circular selector */}
-          <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
-            <div className="max-w-[1200px] mx-auto">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="text-center mb-12 sm:mb-16"
+              <motion.span
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="typography-eyebrow inline-block text-primary mb-4"
               >
-                <h2 className="typography-section mb-4">
-                  Browse by <span className="text-primary">Event Type</span>
-                </h2>
-                <p className="typography-body-lg text-muted-foreground max-w-2xl mx-auto">
-                  Select an event category to explore our curated albums. Click again to deselect.
-                </p>
-              </motion.div>
+                Our Portfolio
+              </motion.span>
+              <h1 className="typography-hero mb-6 text-foreground">
+                Browse by <span className="text-gradient-gold">Event Type</span>
+              </h1>
+              <p className="typography-body-lg max-w-2xl mx-auto text-muted-foreground">
+                Select an event category to explore our curated albums. Click again to deselect.
+              </p>
+            </motion.div>
+          </div>
+          {/* Smooth merge: hero fades gently into background (theme-aware) */}
+          <div
+            className="absolute bottom-0 left-0 right-0 pointer-events-none z-[1] hero-merge-gradient"
+            style={{
+              height: "clamp(180px, 28vh, 280px)",
+            }}
+            aria-hidden
+          />
+        </section>
 
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-8 sm:gap-10 justify-items-center">
-                {eventTypesForCircles.map((option, index) => {
-                  const isSelected = option.id === selectedEventId;
-                  const isHovered = hoveredCircle === option.slug;
-                  const event = option.id ? events.find((e) => e.id === option.id) : null;
-                  const eventImage = event?.cover_image;
-                  const IconComponent = getEventIcon(option.slug);
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            {/* Browse by Event Type - Circular selector */}
+            <section className="pb-16 sm:pb-20 lg:pb-24 px-4 sm:px-6 -mt-8 relative z-10">
+              <div className="max-w-[1200px] mx-auto">
 
-                  return (
-                    <motion.button
-                      key={option.slug}
-                      type="button"
-                      initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.8 }}
-                      whileInView={
-                        prefersReducedMotion ? {} : { opacity: 1, scale: 1 }
-                      }
-                      viewport={{ once: true, margin: "-20px" }}
-                      transition={{
-                        duration: 0.5,
-                        delay: index * 0.08,
-                        ease: [0.4, 0, 0.2, 1],
-                      }}
-                      onMouseEnter={() => setHoveredCircle(option.slug)}
-                      onMouseLeave={() => setHoveredCircle(null)}
-                      onClick={() => {
-                        // Toggle: if already selected, deselect (set to null), otherwise select
-                        setSelectedEventId(option.id === selectedEventId ? null : option.id);
-                      }}
-                      className="flex flex-col items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
-                      aria-label={`Filter by ${option.title}`}
-                      aria-pressed={isSelected}
-                    >
-                      <motion.div
-                        className={`
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-8 sm:gap-10 justify-items-center">
+                  {eventTypesForCircles.map((option, index) => {
+                    const isSelected = option.id === selectedEventId;
+                    const isHovered = hoveredCircle === option.slug;
+                    const event = option.id ? events.find((e) => e.id === option.id) : null;
+                    const eventImage = event?.cover_image;
+                    const IconComponent = getEventIcon(option.slug);
+
+                    return (
+                      <motion.button
+                        key={option.slug}
+                        type="button"
+                        initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.8 }}
+                        whileInView={
+                          prefersReducedMotion ? {} : { opacity: 1, scale: 1 }
+                        }
+                        viewport={{ once: true, margin: "-20px" }}
+                        transition={{
+                          duration: 0.5,
+                          delay: index * 0.08,
+                          ease: [0.4, 0, 0.2, 1],
+                        }}
+                        onMouseEnter={() => setHoveredCircle(option.slug)}
+                        onMouseLeave={() => setHoveredCircle(null)}
+                        onClick={() => {
+                          // Toggle: if already selected, deselect (set to null), otherwise select
+                          setSelectedEventId(option.id === selectedEventId ? null : option.id);
+                        }}
+                        className="flex flex-col items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
+                        aria-label={`Filter by ${option.title}`}
+                        aria-pressed={isSelected}
+                      >
+                        <motion.div
+                          className={`
                           relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[140px] md:h-[140px]
                           rounded-full overflow-hidden cursor-pointer
                           transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]
                           ${isSelected
-                            ? "border-2 border-primary shadow-[0_8px_32px_rgba(212,175,55,0.3)] ring-2 ring-primary/20"
-                            : "border-2 border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
-                          }
-                          ${isHovered && !isSelected ? "border-primary shadow-[0_12px_40px_rgba(212,175,55,0.25)] -translate-y-2 scale-105" : ""}
+                              ? "border-2 border-primary shadow-[0_8px_32px_hsl(var(--primary)_/_0.28)] ring-2 ring-primary/20"
+                              : "border-2 border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+                            }
+                          ${isHovered && !isSelected ? "border-primary shadow-[0_12px_40px_hsl(var(--primary)_/_0.22)] -translate-y-2 scale-105" : ""}
                         `}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {eventImage ? (
-                          <>
-                            <img
-                              src={eventImage}
-                              alt={option.title}
-                              className={`w-full h-full object-cover transition-all duration-500 ${
-                                isSelected || isHovered
-                                  ? "brightness-100 scale-110"
-                                  : "brightness-75 grayscale-[30%]"
-                              }`}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = "none";
-                                const fallback = (e.target as HTMLElement).parentElement?.querySelector(".icon-fallback");
-                                if (fallback) (fallback as HTMLElement).style.display = "flex";
-                              }}
-                            />
-                            <div
-                              className={`absolute inset-0 transition-all duration-300 ${
-                                isSelected
-                                  ? "bg-gradient-to-br from-primary/30 to-primary/10"
-                                  : "bg-gradient-to-br from-black/40 to-black/20"
-                              }`}
-                            />
-                            <div
-                              className="icon-fallback hidden absolute inset-0 items-center justify-center bg-white/5 backdrop-blur-[10px]"
-                              style={{ display: "none" }}
-                            >
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {eventImage ? (
+                            <>
+                              <img
+                                src={eventImage}
+                                alt={option.title}
+                                className={`w-full h-full object-cover transition-all duration-500 ${isSelected || isHovered
+                                  ? "scale-110"
+                                  : "scale-100"
+                                  }`}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = "none";
+                                  const fallback = (e.target as HTMLElement).parentElement?.querySelector(".icon-fallback");
+                                  if (fallback) (fallback as HTMLElement).style.display = "flex";
+                                }}
+                              />
+                              <div
+                                className={`absolute inset-0 transition-all duration-300 ${isSelected
+                                  ? "bg-primary/20 backdrop-blur-[1px]"
+                                  : "bg-transparent"
+                                  }`}
+                              />
+                              <div
+                                className="icon-fallback hidden absolute inset-0 items-center justify-center bg-white/5 backdrop-blur-[10px]"
+                                style={{ display: "none" }}
+                              >
+                                <IconComponent
+                                  className={`w-9 h-9 sm:w-10 sm:h-10 md:w-14 md:h-14 transition-colors duration-300 ${isSelected || isHovered ? "text-primary" : "text-white"
+                                    }`}
+                                  aria-hidden
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-white/5 backdrop-blur-[10px] flex items-center justify-center">
                               <IconComponent
-                                className={`w-9 h-9 sm:w-10 sm:h-10 md:w-14 md:h-14 transition-colors duration-300 ${
-                                  isSelected || isHovered ? "text-primary" : "text-white"
-                                }`}
+                                className={`w-9 h-9 sm:w-10 sm:h-10 md:w-14 md:h-14 transition-colors duration-300 ${isSelected || isHovered ? "text-primary" : "text-white"
+                                  }`}
                                 aria-hidden
                               />
                             </div>
-                          </>
-                        ) : (
-                          <div className="absolute inset-0 bg-white/5 backdrop-blur-[10px] flex items-center justify-center">
-                            <IconComponent
-                              className={`w-9 h-9 sm:w-10 sm:h-10 md:w-14 md:h-14 transition-colors duration-300 ${
-                                isSelected || isHovered ? "text-primary" : "text-white"
-                              }`}
-                              aria-hidden
-                            />
-                          </div>
-                        )}
-                        {isSelected && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                            className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-lg"
-                          >
-                            <Check className="w-3.5 h-3.5 text-[#1A1A2E]" strokeWidth={3} />
-                          </motion.div>
-                        )}
-                        {(isHovered || isSelected) && (
-                          <motion.span
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="absolute -top-1 -right-1 px-2 py-0.5 rounded-full bg-primary text-[#1A1A2E] text-[10px] font-semibold border-2 border-background shadow-lg"
-                          >
-                            {option.photoCount}+
-                          </motion.span>
-                        )}
-                      </motion.div>
-                      <span
-                        className={`text-sm font-medium text-center transition-colors duration-300 max-w-[100px] sm:max-w-[120px] ${
-                          isSelected || isHovered ? "text-primary" : "text-foreground/90 dark:text-white/90"
-                        }`}
-                      >
-                        {option.title}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          {/* Featured / Filtered Albums - Premium cards */}
-          <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 bg-muted/20 dark:bg-muted/10">
-            <div className="max-w-[1400px] mx-auto">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10"
-              >
-                <div>
-                  <h2 className="typography-section mb-2">
-                    {selectedEventId === null ? (
-                      <>
-                        Featured <span className="text-primary">Albums</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-primary">
-                          {events.find((e) => e.id === selectedEventId)?.title ?? "Albums"}
-                        </span>{" "}
-                        Albums
-                      </>
-                    )}
-                  </h2>
-                  <p className="typography-body-lg text-muted-foreground">
-                    {selectedEventId === null
-                      ? "Our most loved event collections"
-                      : `${filteredAlbums.length} album${filteredAlbums.length !== 1 ? "s" : ""} in this category`}
-                  </p>
-                </div>
-                <Link
-                  to="/gallery/all"
-                  className="inline-flex items-center gap-2 text-primary font-medium hover:underline text-sm sm:text-base"
-                >
-                  View All Albums <ArrowRight className="w-4 h-4" />
-                </Link>
-              </motion.div>
-
-              {displayAlbums.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-16"
-                >
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                    <Camera className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-muted-foreground mb-2">No albums found in this category</p>
-                  <p className="text-sm text-muted-foreground">Try selecting a different event type</p>
-                </motion.div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-                  <AnimatePresence mode="wait">
-                    {displayAlbums.map((album, index) => {
-                      const event = events.find((e) => e.id === album.event_id);
-                      const slug = event?.slug ?? "all";
-
-                      return (
-                        <motion.article
-                          key={album.id}
-                          initial={{ opacity: 0, y: 24 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.98 }}
-                          transition={{
-                            duration: 0.4,
-                            delay: prefersReducedMotion ? 0 : index * 0.08,
-                            ease: [0.4, 0, 0.2, 1],
-                          }}
-                          className="group"
+                          )}
+                          {isSelected && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-lg"
+                            >
+                              <Check className="w-3.5 h-3.5 text-[#1A1A2E]" strokeWidth={3} />
+                            </motion.div>
+                          )}
+                          {(isHovered || isSelected) && (
+                            <motion.span
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="absolute -top-1 -right-1 px-2 py-0.5 rounded-full bg-primary text-[#1A1A2E] text-[10px] font-semibold border-2 border-background shadow-lg"
+                            >
+                              {option.photoCount}+
+                            </motion.span>
+                          )}
+                        </motion.div>
+                        <span
+                          className={`text-sm font-medium text-center transition-colors duration-300 max-w-[100px] sm:max-w-[120px] ${isSelected || isHovered ? "text-primary" : "text-foreground/90"
+                            }`}
                         >
-                          <Link
-                            to={`/gallery/${slug}/${album.id}`}
-                            className="group/album block relative h-full rounded-[20px] overflow-hidden
-                              bg-card border border-border/60
-                              shadow-[0_4px_24px_rgba(26,26,46,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]
-                              transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]
-                              hover:shadow-[0_24px_56px_rgba(26,26,46,0.12)] dark:hover:shadow-[0_24px_56px_rgba(0,0,0,0.25)]
-                              hover:-translate-y-2 hover:border-primary/20 dark:hover:border-primary/30
-                              focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                          >
-                            <div className="relative aspect-[3/4] flex flex-col">
-                              {/* Image section */}
-                              <div className="relative h-[62%] overflow-hidden bg-muted/50">
-                                <img
-                                  src={album.cover_image ?? "/placeholder.svg"}
-                                  alt={album.title}
-                                  className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover/album:scale-105 brightness-[0.92] group-hover/album:brightness-100"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                  }}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-                                
-                                {album.is_featured && (
-                                  <div className="absolute top-5 left-5 flex items-center gap-2 px-4 py-2 rounded-full bg-primary/95 backdrop-blur-sm text-primary-foreground text-[11px] font-semibold uppercase tracking-widest shadow-[0_4px_14px_rgba(212,175,55,0.35)]">
-                                    <Sparkles className="w-3.5 h-3.5" />
-                                    Featured
-                                  </div>
-                                )}
-                                
-                                <div className="absolute bottom-5 right-5 flex items-center gap-2 px-3.5 py-2 rounded-full bg-background/95 dark:bg-[#1A1A2E]/95 backdrop-blur-md border border-border/60 text-foreground dark:text-white text-[13px] font-medium">
-                                  <Camera className="w-3.5 h-3.5 text-primary" />
-                                  {album.mediaCount ?? 0} photos
-                                </div>
-                              </div>
-
-                              {/* Content section */}
-                              <div className="relative flex flex-col justify-between flex-1 min-h-0 p-5 sm:p-6 bg-card">
-                                <div>
-                                  <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.15em] text-primary mb-2">
-                                    {album.eventTitle}
-                                  </span>
-                                  <h3 className="font-serif text-lg sm:text-xl font-bold text-foreground mb-2 line-clamp-2 leading-tight tracking-tight
-                                                group-hover/album:text-primary transition-colors duration-300">
-                                    {album.title}
-                                  </h3>
-                                  {album.event_date && (
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                      <Calendar className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                                      {new Date(album.event_date).toLocaleDateString("en-US", {
-                                        month: "short",
-                                        day: "numeric",
-                                        year: "numeric",
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                                <span className="mt-4 inline-flex items-center gap-2 w-fit px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold
-                                  opacity-0 translate-y-1 group-hover/album:opacity-100 group-hover/album:translate-y-0 transition-all duration-300 ease-out
-                                  shadow-[0_4px_14px_rgba(212,175,55,0.3)] group-hover/album:shadow-[0_6px_20px_rgba(212,175,55,0.4)]">
-                                  View Album <ArrowRight className="w-4 h-4" />
-                                </span>
-                              </div>
-                            </div>
-                          </Link>
-                        </motion.article>
-                      );
-                    })}
-                  </AnimatePresence>
+                          {option.title}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+            </section>
 
-              {displayAlbums.length > 0 && (
-                <div className="mt-10 text-center sm:hidden">
+            {/* Featured / Filtered Albums - Premium cards */}
+            <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6">
+              <div className="max-w-[1400px] mx-auto">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10"
+                >
+                  <div>
+                    <h2 className="typography-section mb-2">
+                      {selectedEventId === null ? (
+                        <>
+                          Featured <span className="text-primary">Albums</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-primary">
+                            {events.find((e) => e.id === selectedEventId)?.title ?? "Albums"}
+                          </span>{" "}
+                          Albums
+                        </>
+                      )}
+                    </h2>
+                    <p className="typography-body-lg text-muted-foreground">
+                      {selectedEventId === null
+                        ? "Our most loved event collections"
+                        : `${filteredAlbums.length} album${filteredAlbums.length !== 1 ? "s" : ""} in this category`}
+                    </p>
+                  </div>
                   <Link
                     to="/gallery/all"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium"
+                    className="inline-flex items-center gap-2 text-primary font-medium hover:underline text-sm sm:text-base"
                   >
                     View All Albums <ArrowRight className="w-4 h-4" />
                   </Link>
-                </div>
-              )}
-            </div>
-          </section>
-        </>
-      )}
+                </motion.div>
 
-      {/* CTA Section – gradient mesh, echoes hero */}
-      <section className="relative py-16 sm:py-24 overflow-hidden">
-        <div className="absolute inset-0 gallery-cta-mesh-bg" aria-hidden />
-        {!prefersReducedMotion && (
-          <>
-            <motion.div
-              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-40" : "opacity-65"}`}
-              aria-hidden
-              animate={{
-                background: isDark
-                  ? [
-                      "radial-gradient(circle at 30% 40%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
-                      "radial-gradient(circle at 60% 70%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
-                      "radial-gradient(circle at 70% 30%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
-                      "radial-gradient(circle at 30% 40%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
+                {displayAlbums.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-16"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                      <Camera className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground mb-2">No albums found in this category</p>
+                    <p className="text-sm text-muted-foreground">Try selecting a different event type</p>
+                  </motion.div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+                    <AnimatePresence mode="wait">
+                      {displayAlbums.map((album, index) => {
+                        const event = events.find((e) => e.id === album.event_id);
+                        const slug = event?.slug ?? "all";
+
+                        return (
+                          <motion.article
+                            key={album.id}
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            transition={{
+                              duration: 0.4,
+                              delay: prefersReducedMotion ? 0 : index * 0.08,
+                              ease: [0.4, 0, 0.2, 1],
+                            }}
+                            className="group"
+                          >
+                            <Link
+                              to={`/gallery/${slug}/${album.id}`}
+                              className="group/album block relative h-full rounded-[20px] overflow-hidden
+                              bg-card border border-border/60 dark:border-white/10
+                              shadow-[0_4px_24px_rgba(26,26,46,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]
+                              transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]
+                              hover:shadow-[0_24px_56px_rgba(26,26,46,0.12)] dark:hover:shadow-[0_24px_56px_rgba(0,0,0,0.4)]
+                              hover:-translate-y-2 hover:border-primary/20 dark:hover:border-primary/40
+                              focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                            >
+                              <div className="relative aspect-[3/4] flex flex-col">
+                                {/* Image section */}
+                                <div className="relative h-[62%] overflow-hidden bg-muted/50">
+                                  <img
+                                    src={album.cover_image ?? "/placeholder.svg"}
+                                    alt={album.title}
+                                    className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover/album:scale-105 brightness-[0.92] group-hover/album:brightness-100"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = "/placeholder.svg";
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 hidden dark:block bg-gradient-to-t from-background via-background/30 to-transparent" />
+
+                                  {album.is_featured && (
+                                    <div className="hidden sm:flex absolute top-5 left-5 items-center gap-2 px-4 py-2 rounded-full bg-primary/95 backdrop-blur-sm text-primary-foreground text-[11px] font-semibold uppercase tracking-widest shadow-[0_4px_14px_hsl(var(--primary)_/_0.35)]">
+                                      <Sparkles className="w-3.5 h-3.5" />
+                                      Featured
+                                    </div>
+                                  )}
+
+                                  <div className="hidden sm:flex absolute bottom-5 right-5 items-center gap-2 px-3.5 py-2 rounded-full bg-background/95 dark:bg-[#1A1A2E]/95 backdrop-blur-md border border-border/60 text-foreground dark:text-white text-[13px] font-medium">
+                                    <Camera className="w-3.5 h-3.5 text-primary" />
+                                    {album.mediaCount ?? 0} photos
+                                  </div>
+                                </div>
+
+                                {/* Content section */}
+                                <div className="relative flex flex-col justify-between flex-1 min-h-0 p-3 sm:p-6 bg-card">
+                                  <div>
+                                    <span className="inline-block text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.15em] text-primary mb-1.5 sm:mb-2 leading-none">
+                                      {album.eventTitle}
+                                    </span>
+                                    <h3 className="font-serif text-sm sm:text-xl font-bold text-foreground mb-1 sm:mb-2 line-clamp-2 leading-tight tracking-tight
+                                                  group-hover/album:text-primary transition-colors duration-300">
+                                      {album.title}
+                                    </h3>
+                                    {album.event_date && (
+                                      <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Calendar className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                                        {new Date(album.event_date).toLocaleDateString("en-US", {
+                                          month: "short",
+                                          day: "numeric",
+                                          year: "numeric",
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className="hidden sm:inline-flex mt-4 items-center gap-2 w-fit px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold
+                                    opacity-0 translate-y-1 group-hover/album:opacity-100 group-hover/album:translate-y-0 transition-all duration-300 ease-out
+                                    shadow-[0_4px_14px_hsl(var(--primary)_/_0.3)] group-hover/album:shadow-[0_6px_20px_hsl(var(--primary)_/_0.4)]">
+                                    View Album <ArrowRight className="w-4 h-4" />
+                                  </span>
+                                </div>
+                              </div>
+                            </Link>
+                          </motion.article>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {displayAlbums.length > 0 && (
+                  <div className="mt-10 text-center sm:hidden">
+                    <Link
+                      to="/gallery/all"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium"
+                    >
+                      View All Albums <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* CTA Section – gradient mesh, echoes hero */}
+        <section className="relative py-16 sm:py-24 overflow-hidden">
+          <div className="absolute inset-0 gallery-cta-mesh-bg" aria-hidden />
+          {!prefersReducedMotion && (
+            <>
+              <motion.div
+                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-30" : "opacity-65"}`}
+                aria-hidden
+                animate={{
+                  background: isDark
+                    ? [
+                      "radial-gradient(circle at 30% 40%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
+                      "radial-gradient(circle at 60% 70%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
+                      "radial-gradient(circle at 70% 30%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
+                      "radial-gradient(circle at 30% 40%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
                     ]
-                  : [
+                    : [
                       "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
                       "radial-gradient(ellipse 120% 100% at 60% 70%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
                       "radial-gradient(ellipse 110% 110% at 70% 30%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
                       "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
                     ],
-              }}
-              transition={{ duration: 12, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
-            />
-            <motion.div
-              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-30" : "opacity-55"}`}
-              aria-hidden
-              animate={{
-                background: isDark
-                  ? [
-                      "radial-gradient(circle at 70% 60%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
-                      "radial-gradient(circle at 40% 25%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
-                      "radial-gradient(circle at 25% 65%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
-                      "radial-gradient(circle at 70% 60%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
+                }}
+                transition={{ duration: 12, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
+              />
+              <motion.div
+                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-20" : "opacity-55"}`}
+                aria-hidden
+                animate={{
+                  background: isDark
+                    ? [
+                      "radial-gradient(circle at 70% 60%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
+                      "radial-gradient(circle at 40% 25%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
+                      "radial-gradient(circle at 25% 65%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
+                      "radial-gradient(circle at 70% 60%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
                     ]
-                  : [
+                    : [
                       "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
                       "radial-gradient(ellipse 120% 110% at 40% 25%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
                       "radial-gradient(ellipse 100% 130% at 25% 65%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
                       "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
                     ],
-              }}
-              transition={{ duration: 14, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 2 }}
-            />
-            {!isDark && (
-              <motion.div
-                className="absolute inset-0 pointer-events-none opacity-45"
-                aria-hidden
-                animate={{
-                  background: [
-                    "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
-                    "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 70%)",
-                    "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
-                  ],
                 }}
-                transition={{ duration: 16, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 4 }}
+                transition={{ duration: 14, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 2 }}
               />
-            )}
-          </>
-        )}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="relative z-10 max-w-3xl mx-auto px-4 text-center"
-        >
-          <h2 className={`typography-section mb-4 ${isDark ? "text-white" : "text-foreground"}`}>
-            Ready to Create Your Own <span className="text-primary">Story?</span>
-          </h2>
-          <p className={`typography-body-lg mb-8 ${isDark ? "text-white/90" : "text-muted-foreground"}`}>
-            Let us help you create moments that you'll cherish forever.
-          </p>
-          <Link
-            to="/contact"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold 
+              {!isDark && (
+                <motion.div
+                  className="absolute inset-0 pointer-events-none opacity-45"
+                  aria-hidden
+                  animate={{
+                    background: [
+                      "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 70%)",
+                      "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
+                    ],
+                  }}
+                  transition={{ duration: 16, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 4 }}
+                />
+              )}
+            </>
+          )}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative z-10 max-w-3xl mx-auto px-4 text-center"
+          >
+            <h2 className="typography-section mb-4 text-foreground">
+              Ready to Create Your Own <span className="text-primary">Story?</span>
+            </h2>
+            <p className="typography-body-lg mb-8 text-muted-foreground">
+              Let us help you create moments that you'll cherish forever.
+            </p>
+            <Link
+              to="/contact"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold 
                      hover:scale-105 hover:shadow-xl transition-all duration-300
                      focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            Book Your Event <ArrowRight className="w-5 h-5" />
-          </Link>
-        </motion.div>
-      </section>
+            >
+              Book Your Event <ArrowRight className="w-5 h-5" />
+            </Link>
+          </motion.div>
+        </section>
 
-      <Footer />
-      <WhatsAppButton />
+        <Footer />
+        <WhatsAppButton />
       </div>
     </>
   );

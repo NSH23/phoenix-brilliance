@@ -1,0 +1,284 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import {
+    Play,
+    Film,
+    Plus,
+    Pencil,
+    Trash2,
+    Loader2,
+    GripVertical
+} from 'lucide-react';
+import AdminLayout from '@/components/admin/AdminLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+    getAllContentMedia,
+    createContentMedia,
+    updateContentMedia,
+    deleteContentMedia,
+    type ContentMedia
+} from '@/services/contentMedia';
+import { logger } from '@/utils/logger';
+
+function MediaList({
+    items,
+    onEdit,
+    onDelete
+}: {
+    items: ContentMedia[],
+    onEdit: (item: ContentMedia) => void,
+    onDelete: (item: ContentMedia) => void
+}) {
+    if (items.length === 0) {
+        return (
+            <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-xl border border-dashed">
+                <p>No media found. Add some content to get started.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {items.map((item) => (
+                <Card key={item.id} className="overflow-hidden group">
+                    <CardContent className="p-4 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 flex-1">
+                            <div className="cursor-grab active:cursor-grabbing p-2 text-muted-foreground hover:text-foreground">
+                                <GripVertical size={20} />
+                            </div>
+
+                            <div className="w-32 h-20 bg-black/10 rounded-lg overflow-hidden relative flex-shrink-0">
+                                {item.category === 'hero' ? (
+                                    <video
+                                        src={item.url}
+                                        className="w-full h-full object-cover"
+                                        muted
+                                        loop
+                                        onMouseOver={e => e.currentTarget.play()}
+                                        onMouseOut={e => {
+                                            e.currentTarget.pause();
+                                            e.currentTarget.currentTime = 0;
+                                        }}
+                                    />
+                                ) : (
+                                    <video
+                                        src={item.url}
+                                        className="w-full h-full object-cover"
+                                        muted // No autoplay for list
+                                    />
+                                )}
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                                    {item.category === 'hero' ? <Play className="text-white/80" size={24} /> : <Film className="text-white/80" size={24} />}
+                                </div>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-1">
+                                    <h3 className="font-medium truncate">{item.title || 'Untitled Video'}</h3>
+                                    {!item.is_active && (
+                                        <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs">
+                                            Inactive
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate font-mono">
+                                    {item.url}
+                                </p>
+                                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                    <span>Order: {item.display_order}</span>
+                                    <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="sm" variant="ghost" onClick={() => onEdit(item)}>
+                                <Pencil size={16} />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => onDelete(item)}>
+                                <Trash2 size={16} />
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+}
+
+const [uploading, setUploading] = useState(false);
+
+// ... (existing code: loadData, handleCreate, handleEdit, handleDelete)
+
+const onSubmit = async (data: Partial<ContentMedia>) => {
+    try {
+        setIsDeploying(true);
+        let videoUrl = data.url;
+
+        // Handle File Upload if a file is selected
+        const fileInput = document.getElementById('video-upload') as HTMLInputElement;
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+            const filePath = `${activeTab}/${fileName}`;
+
+            setUploading(true);
+            const { error: uploadError } = await supabase.storage
+                .from('content-media')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('content-media')
+                .getPublicUrl(filePath);
+
+            videoUrl = publicUrl;
+            setUploading(false);
+        }
+
+        const payload = {
+            ...data,
+            url: videoUrl,
+            category: activeTab
+        };
+
+        if (editingItem) {
+            const updated = await updateContentMedia(editingItem.id, payload);
+            setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
+            toast.success('Video updated successfully');
+        } else {
+            const created = await createContentMedia(payload as any);
+            setItems(prev => [...prev, created]);
+            toast.success('Video added successfully');
+        }
+        setIsDialogOpen(false);
+    } catch (error) {
+        logger.error('Failed to save media', error);
+        toast.error('Failed to save video');
+        setUploading(false);
+    } finally {
+        setIsDeploying(false);
+    }
+};
+
+return (
+    <AdminLayout title="Manage Videos" subtitle="Control Hero section videos and Moments We've Crafted reels.">
+        {/* ... (existing code: Tabs, Add Button, Loader, List) */}
+        <div className="flex justify-between items-center mb-6">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-[400px]">
+                <TabsList>
+                    <TabsTrigger value="hero" className="flex items-center gap-2">
+                        <Play size={16} /> Hero Videos
+                    </TabsTrigger>
+                    <TabsTrigger value="moment" className="flex items-center gap-2">
+                        <Film size={16} /> Moments (Reels)
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
+
+            <Button onClick={handleCreate}>
+                <Plus size={16} className="mr-2" /> Add Video
+            </Button>
+        </div>
+
+        {loading ? (
+            <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-primary" size={32} />
+            </div>
+        ) : (
+            <MediaList
+                items={items}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+            />
+        )}
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{editingItem ? 'Edit Video' : 'Add New Video'}</DialogTitle>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label>Video File</Label>
+                        <Input
+                            id="video-upload"
+                            type="file"
+                            accept="video/mp4,video/webm"
+                            className="cursor-pointer"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Upload a video file (MP4, WebM). This will upload to the 'content-media' bucket.
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Or Video URL</Label>
+                        <Input
+                            {...register('url')}
+                            placeholder="https://example.com/video.mp4"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Alternatively, paste a direct link if hosted elsewhere.
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Title (Optional)</Label>
+                        <Input {...register('title')} placeholder="e.g. Summer Wedding" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Display Order</Label>
+                            <Input
+                                type="number"
+                                {...register('display_order', { valueAsNumber: true })}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-3 pt-8">
+                            <Label htmlFor="is-active" className="cursor-pointer">Active</Label>
+                            <Switch
+                                id="is-active"
+                                checked={watch('is_active')}
+                                onCheckedChange={(checked) => setValue('is_active', checked)}
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                        <Button type="submit" disabled={isDeploying || uploading}>
+                            {(isDeploying || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {uploading ? 'Uploading...' : 'Save Video'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    </AdminLayout>
+);
+}

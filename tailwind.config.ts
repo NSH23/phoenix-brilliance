@@ -18,9 +18,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "DM Sans", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
+        // phoenix-foundation-2 typography: big elegant serif headings + clean sans body
+        sans: ["Poppins", "Inter", "DM Sans", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
         serif: ["Playfair Display", "Cormorant Garamond", "Georgia", "serif"],
         display: ["Playfair Display", "Cormorant Garamond", "Georgia", "serif"],
+        hero: ["Cormorant Garamond", "Playfair Display", "Georgia", "serif"],
       },
       fontSize: {
         "hero": ["clamp(2.5rem, 5vw + 2rem, 5rem)", { lineHeight: "1.15", letterSpacing: "-0.02em" }],
@@ -62,6 +64,13 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        heading: "hsl(var(--heading))",
+        section: "hsl(var(--section-bg))",
+        "section-alt": "hsl(var(--section-alt-bg))",
+        "section-about": "hsl(var(--section-about))",
+        "section-reels": "hsl(var(--section-reels))",
+        "section-contact": "hsl(var(--section-contact))",
+        divider: "hsl(var(--divider))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -131,6 +140,10 @@ export default {
         },
         silk: "#F5F3EF",
         pearl: "#E8E6E3",
+        "footer-bg": "var(--footer-bg)",
+        "footer-text": "var(--footer-text)",
+        "footer-heading": "var(--footer-heading)",
+        "footer-border": "hsl(var(--footer-border))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -138,6 +151,10 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(calc(-100% - var(--gap)))" },
+        },
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -215,6 +232,7 @@ export default {
         glow: "glow 2s ease-in-out infinite",
         "polaroid-scroll-left": "polaroid-scroll-left 45s linear infinite",
         "polaroid-scroll-right": "polaroid-scroll-right 50s linear infinite",
+        marquee: "marquee var(--duration) linear infinite",
       },
       backgroundImage: {
         "gradient-gold": "var(--gradient-gold)",
@@ -229,10 +247,13 @@ export default {
         glass: "var(--glass-shadow)",
         luxury: "0 25px 50px -12px rgba(212, 175, 55, 0.2)",
         "luxury-lg": "0 35px 60px -15px rgba(212, 175, 55, 0.25)",
-        "heritage-sm": "0 2px 8px rgba(62, 39, 35, 0.04)",
-        "heritage-md": "0 4px 16px rgba(62, 39, 35, 0.06)",
-        "heritage-lg": "0 8px 32px rgba(62, 39, 35, 0.08)",
-        "heritage-xl": "0 12px 48px rgba(62, 39, 35, 0.10)",
+        "warm": "0 4px 20px rgba(232, 175, 193, 0.18)",
+        "warm-lg": "0 8px 32px rgba(232, 175, 193, 0.22)",
+        "warm-xl": "0 12px 48px rgba(232, 175, 193, 0.24)",
+        "heritage-sm": "0 2px 10px rgba(232, 175, 193, 0.12)",
+        "heritage-md": "0 4px 20px rgba(232, 175, 193, 0.18)",
+        "heritage-lg": "0 8px 32px rgba(232, 175, 193, 0.20)",
+        "heritage-xl": "0 12px 48px rgba(232, 175, 193, 0.22)",
         "gold-glow": "0 8px 24px rgba(212, 175, 55, 0.30)",
       },
     },

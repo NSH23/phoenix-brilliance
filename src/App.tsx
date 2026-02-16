@@ -8,6 +8,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AdminProvider } from "./contexts/AdminContext";
 import { SiteConfigProvider } from "./contexts/SiteConfigContext";
+import GlobalBackground from "@/components/GlobalBackground";
 
 // Lazy load all route components for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -28,7 +29,7 @@ const Collaborations = lazy(() => import("./pages/Collaborations"));
 const CollaborationDetail = lazy(() => import("./pages/CollaborationDetail"));
 
 // Public Services Page
-const Services = lazy(() => import("./pages/Services"));
+
 
 // Admin Pages
 const AdminEntry = lazy(() => import("./pages/admin/AdminEntry"));
@@ -44,6 +45,7 @@ const AdminInquiries = lazy(() => import("./pages/admin/Inquiries"));
 const AdminContent = lazy(() => import("./pages/admin/Content"));
 const AdminWhyUs = lazy(() => import("./pages/admin/WhyUs"));
 const AdminBeforeAfter = lazy(() => import("./pages/admin/BeforeAfter"));
+const AdminContentMedia = lazy(() => import("./pages/admin/ContentMedia"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminTeam = lazy(() => import("./pages/admin/Team"));
 import ProtectedRoute from "./components/admin/ProtectedRoute";
@@ -73,114 +75,122 @@ function AppRoutes() {
           <Route path="/events/:eventType" element={<EventDetail />} />
           <Route path="/collaborations" element={<Collaborations />} />
           <Route path="/collaborations/:partnerId" element={<CollaborationDetail />} />
-          <Route path="/services" element={<Services />} />
+
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<LoginRedirect />} />
           <Route path="/admin" element={<AdminEntry />} />
-          <Route 
-            path="/admin/dashboard" 
+          <Route
+            path="/admin/dashboard"
             element={
               <ProtectedRoute>
                 <AdminDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/events" 
+          <Route
+            path="/admin/events"
             element={
               <ProtectedRoute>
                 <AdminEvents />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/albums" 
+          <Route
+            path="/admin/albums"
             element={
               <ProtectedRoute>
                 <AdminAlbums />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/gallery" 
+          <Route
+            path="/admin/gallery"
             element={
               <ProtectedRoute>
                 <AdminGallery />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/services" 
+          <Route
+            path="/admin/services"
             element={
               <ProtectedRoute>
                 <AdminServices />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/collaborations" 
+          <Route
+            path="/admin/collaborations"
             element={
               <ProtectedRoute>
                 <AdminCollaborations />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/testimonials" 
+          <Route
+            path="/admin/testimonials"
             element={
               <ProtectedRoute>
                 <AdminTestimonials />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/inquiries" 
+          <Route
+            path="/admin/inquiries"
             element={
               <ProtectedRoute>
                 <AdminInquiries />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/content" 
+          <Route
+            path="/admin/content"
             element={
               <ProtectedRoute>
                 <AdminContent />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/why-us" 
+          <Route
+            path="/admin/why-us"
             element={
               <ProtectedRoute>
                 <AdminWhyUs />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/before-after" 
+          <Route
+            path="/admin/before-after"
             element={
               <ProtectedRoute>
                 <AdminBeforeAfter />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/team" 
+          <Route
+            path="/admin/media"
+            element={
+              <ProtectedRoute>
+                <AdminContentMedia />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/team"
             element={
               <ProtectedRoute>
                 <AdminTeam />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/settings" 
+          <Route
+            path="/admin/settings"
             element={
               <ProtectedRoute>
                 <AdminSettings />
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* Catch-all */}
@@ -191,6 +201,8 @@ function AppRoutes() {
   );
 }
 
+
+
 const App = () => (
   <HelmetProvider>
     <TooltipProvider>
@@ -199,6 +211,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ScrollToTop />
+            <GlobalBackground />
             <AppRoutes />
           </BrowserRouter>
         </SiteConfigProvider>

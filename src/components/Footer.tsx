@@ -22,25 +22,26 @@ const Footer = () => {
   };
 
   return (
-    <footer className="relative overflow-hidden bg-footer">
+    <footer className="relative bg-gradient-to-br from-footer-bg to-black text-footer-text dark:from-background dark:to-background overflow-hidden pt-8 md:pt-12 pb-6 transition-colors duration-500">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-        {/* Main Footer - 80px top padding */}
-        <div className="pt-20 pb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-16">
+        {/* Main Footer - Compact padding */}
+        <div className="pt-4 pb-4 md:pt-8 md:pb-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-10 text-center lg:text-left">
           {/* Brand Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="col-span-2 sm:col-span-1 flex flex-col items-center lg:items-start space-y-1.5 md:space-y-0"
           >
-            <div className="flex items-center gap-3 mb-5">
-              <img src="/logo.png" alt="Phoenix" className="w-12 h-12 object-contain" />
-              <span className="font-display text-subsection font-bold text-footer-heading">Phoenix</span>
+            <div className="flex items-center gap-1.5 mb-1.5 md:mb-3">
+              <img src="/logo.png" alt="Phoenix" className="w-6 h-6 md:w-10 md:h-10 object-contain" />
+              <span className="font-display text-base md:text-xl font-bold text-footer-heading">Phoenix</span>
             </div>
-            <p className="text-small italic leading-body-relaxed mb-6 text-footer">
+            <p className="text-[10px] md:text-small italic leading-relaxed mb-2 md:mb-4 text-footer px-2 md:px-0">
               Turning your dreams into magnificent celebrations. Where every moment becomes a cherished memory.
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-4 justify-center lg:justify-start mt-4">
               {SOCIAL_ICONS.map(({ key, Icon }) => {
                 const url = (socialLinks as Record<string, string>)[key];
                 return (
@@ -50,7 +51,7 @@ const Footer = () => {
                     target={url ? "_blank" : undefined}
                     rel={url ? "noopener noreferrer" : undefined}
                     className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
-                             bg-[var(--footer-icon-bg)] text-[var(--footer-link)] hover:bg-primary hover:text-primary-foreground"
+                             bg-[var(--footer-icon-bg)] text-[var(--footer-link)] hover:bg-primary hover:text-primary-foreground hover:scale-110"
                     aria-label={key}
                   >
                     <Icon className="w-5 h-5" />
@@ -58,14 +59,7 @@ const Footer = () => {
                 );
               })}
             </div>
-            <Link
-              to="/contact"
-              className="inline-flex items-center justify-center mt-6 px-8 py-3.5 rounded-full font-semibold
-                       bg-gradient-gold text-primary-foreground transition-all duration-300 hover:scale-105
-                       hover:shadow-lg hover:opacity-90"
-            >
-              Get Quote
-            </Link>
+            {/* Get Quote removed as requested */}
           </motion.div>
 
           {/* Quick Links */}
@@ -74,11 +68,12 @@ const Footer = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
+            className="col-span-1"
           >
-            <h4 className="text-body font-bold typography-eyebrow mb-6 text-primary">
+            <h4 className="text-xs md:text-body font-bold typography-eyebrow mb-1.5 md:mb-4 text-primary">
               Quick Links
             </h4>
-            <ul className="space-y-1" style={{ lineHeight: 2.2 }}>
+            <ul className="space-y-0" style={{ lineHeight: 1.6 }}>
               {[
                 { to: "/", label: "Home" },
                 { to: "/events", label: "Events" },
@@ -90,7 +85,7 @@ const Footer = () => {
                 <li key={label}>
                   <Link
                     to={to}
-                    className="text-small transition-colors duration-300 text-[var(--footer-link)] hover:text-primary"
+                    className="text-[10px] md:text-small transition-colors duration-300 text-[var(--footer-link)] hover:text-primary"
                   >
                     {label}
                   </Link>
@@ -105,16 +100,17 @@ const Footer = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
+            className="col-span-1"
           >
-            <h4 className="text-body font-bold typography-eyebrow mb-6 text-primary">
+            <h4 className="text-xs md:text-body font-bold typography-eyebrow mb-1.5 md:mb-4 text-primary">
               Our Events
             </h4>
-            <ul className="space-y-1" style={{ lineHeight: 2.2 }}>
+            <ul className="space-y-0" style={{ lineHeight: 1.6 }}>
               {["Weddings", "Birthdays", "Engagements", "Corporate", "Sangeet", "Traditional"].map((event) => (
                 <li key={event}>
                   <Link
                     to="/events"
-                    className="text-small transition-colors duration-300 text-[var(--footer-link)] hover:text-primary"
+                    className="text-[10px] md:text-small transition-colors duration-300 text-[var(--footer-link)] hover:text-primary"
                   >
                     {event}
                   </Link>
@@ -129,34 +125,35 @@ const Footer = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
+            className="col-span-2 sm:col-span-1"
           >
-            <h4 className="text-body font-bold typography-eyebrow mb-6 text-primary">
+            <h4 className="text-xs md:text-body font-bold typography-eyebrow mb-1.5 md:mb-4 text-primary">
               Get In Touch
             </h4>
-            <ul className="space-y-4">
+            <ul className="space-y-1.5 md:space-y-3 flex flex-col items-center lg:items-start">
               {contactInfo.address && (
-                <li className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary" />
-                  <p className="text-small text-footer whitespace-pre-line">{contactInfo.address}</p>
+                <li className="flex items-start gap-1.5 md:gap-3">
+                  <MapPin className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 mt-0.5 text-primary" />
+                  <p className="text-[10px] md:text-small text-footer whitespace-pre-line text-left lg:text-left">{contactInfo.address}</p>
                 </li>
               )}
               {contactInfo.phone && (
-                <li className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 flex-shrink-0 text-primary" />
+                <li className="flex items-center gap-1.5 md:gap-3">
+                  <Phone className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 text-primary" />
                   <a
                     href={`tel:${contactInfo.phone.replace(/\s/g, "")}`}
-                    className="text-small text-footer hover:text-primary transition-colors"
+                    className="text-[10px] md:text-small text-footer hover:text-primary transition-colors"
                   >
                     {contactInfo.phone}
                   </a>
                 </li>
               )}
               {contactInfo.email && (
-                <li className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 flex-shrink-0 text-primary" />
+                <li className="flex items-center gap-1.5 md:gap-3">
+                  <Mail className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 text-primary" />
                   <a
                     href={`mailto:${contactInfo.email}`}
-                    className="text-small text-footer hover:text-primary transition-colors"
+                    className="text-[10px] md:text-small text-footer hover:text-primary transition-colors"
                   >
                     {contactInfo.email}
                   </a>
@@ -168,16 +165,14 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div
-          className="pt-[30px] mt-[60px] pb-8 relative flex flex-col items-center gap-6 pr-14 border-t border-footer"
+          className="pt-6 mt-8 pb-4 relative flex flex-col items-center gap-4 pr-14 border-t border-footer"
         >
           <p className="text-small flex items-center justify-center gap-2 text-center text-footer">
-            © {new Date().getFullYear()} Phoenix Events & Production. Made with
-            <Heart className="w-4 h-4 text-primary fill-primary" aria-hidden />
-            in India
+            © {new Date().getFullYear()} Phoenix Events & Production.
           </p>
           <button
             onClick={scrollToTop}
-            className="absolute right-0 top-[30px] w-12 h-12 rounded-full flex items-center justify-center
+            className="absolute right-0 top-[24px] w-10 h-10 rounded-full flex items-center justify-center
                      bg-[var(--footer-icon-bg)] text-[var(--footer-link)] transition-all duration-300 hover:scale-110 group"
             aria-label="Scroll to top"
           >

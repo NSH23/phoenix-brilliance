@@ -77,24 +77,24 @@ function FrameImage({ src, alt, category, frameId }: FrameImageProps) {
           "relative overflow-visible transition-all duration-300",
           // Enhanced frames with theme-aware styling
           frameId === "polaroid" && (isDark 
-            ? "bg-white p-5 pb-14 rounded-sm shadow-[0_8px_30px_rgba(0,0,0,0.5),0_15px_50px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(212,175,55,0.25)] border border-[rgba(212,175,55,0.3)] group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.6),0_20px_60px_rgba(212,175,55,0.2)]"
-            : "bg-gradient-to-br from-[#FAFAF8] to-[#F5F3EF] p-5 pb-14 rounded-sm shadow-[0_8px_30px_rgba(0,0,0,0.12),0_15px_50px_rgba(0,0,0,0.08),inset_0_0_0_1px_rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.2)] group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.18),0_20px_60px_rgba(212,175,55,0.15)]"
+            ? "bg-white p-5 pb-14 rounded-sm shadow-[0_8px_30px_rgba(0,0,0,0.5),0_15px_50px_rgba(0,0,0,0.4),inset_0_0_0_1px_hsl(var(--primary)_/_0.25)] border border-[hsl(var(--primary)_/_0.3)] group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.6),0_20px_60px_hsl(var(--primary)_/_0.2)]"
+            : "bg-gradient-to-br from-[#FAFAF8] to-[#F5F3EF] p-5 pb-14 rounded-sm shadow-[0_8px_30px_rgba(232,175,193,0.2),0_15px_50px_rgba(232,175,193,0.14),inset_0_0_0_1px_hsl(var(--primary)_/_0.15)] border border-[hsl(var(--primary)_/_0.2)] group-hover:shadow-[0_12px_40px_rgba(232,175,193,0.26),0_20px_60px_hsl(var(--primary)_/_0.15)]"
           ),
           frameId === "rounded" && (isDark
-            ? "bg-white p-4 rounded-2xl shadow-[0_8px_25px_rgba(0,0,0,0.5),0_2px_8px_rgba(212,175,55,0.15),inset_0_0_0_1px_rgba(212,175,55,0.2)] border border-[rgba(212,175,55,0.25)] group-hover:shadow-[0_12px_35px_rgba(0,0,0,0.6),0_4px_12px_rgba(212,175,55,0.2)]"
-            : "bg-gradient-to-br from-[#FFFFFF] to-[#FAFAF8] p-4 rounded-2xl shadow-[0_8px_25px_rgba(0,0,0,0.1),0_2px_8px_rgba(212,175,55,0.08),inset_0_0_0_1px_rgba(212,175,55,0.12)] border border-[rgba(212,175,55,0.18)] group-hover:shadow-[0_12px_35px_rgba(0,0,0,0.15),0_4px_12px_rgba(212,175,55,0.12)]"
+            ? "bg-white p-4 rounded-2xl shadow-[0_8px_25px_rgba(0,0,0,0.5),0_2px_8px_hsl(var(--primary)_/_0.15),inset_0_0_0_1px_hsl(var(--primary)_/_0.2)] border border-[hsl(var(--primary)_/_0.25)] group-hover:shadow-[0_12px_35px_rgba(0,0,0,0.6),0_4px_12px_hsl(var(--primary)_/_0.2)]"
+            : "bg-gradient-to-br from-[#FFFFFF] to-[#FAFAF8] p-4 rounded-2xl shadow-[0_8px_25px_rgba(232,175,193,0.18),0_2px_8px_hsl(var(--primary)_/_0.08),inset_0_0_0_1px_hsl(var(--primary)_/_0.12)] border border-[hsl(var(--primary)_/_0.18)] group-hover:shadow-[0_12px_35px_rgba(232,175,193,0.24),0_4px_12px_hsl(var(--primary)_/_0.12)]"
           ),
           frameId === "shadow" && (isDark
-            ? "bg-white p-3 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.5),0_3px_10px_rgba(212,175,55,0.2),inset_0_0_0_1px_rgba(212,175,55,0.25)] border border-[rgba(212,175,55,0.3)] group-hover:shadow-[0_15px_45px_rgba(0,0,0,0.6),0_5px_15px_rgba(212,175,55,0.25)]"
-            : "bg-gradient-to-br from-[#FFFFFF] to-[#F9F7F5] p-3 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12),0_3px_10px_rgba(212,175,55,0.1),inset_0_0_0_1px_rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.2)] group-hover:shadow-[0_15px_45px_rgba(0,0,0,0.18),0_5px_15px_rgba(212,175,55,0.15)]"
+            ? "bg-white p-3 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.5),0_3px_10px_hsl(var(--primary)_/_0.2),inset_0_0_0_1px_hsl(var(--primary)_/_0.25)] border border-[hsl(var(--primary)_/_0.3)] group-hover:shadow-[0_15px_45px_rgba(0,0,0,0.6),0_5px_15px_hsl(var(--primary)_/_0.25)]"
+            : "bg-gradient-to-br from-[#FFFFFF] to-[#F9F7F5] p-3 rounded-xl shadow-[0_10px_35px_rgba(232,175,193,0.18),0_3px_10px_hsl(var(--primary)_/_0.1),inset_0_0_0_1px_hsl(var(--primary)_/_0.15)] border border-[hsl(var(--primary)_/_0.2)] group-hover:shadow-[0_15px_45px_rgba(232,175,193,0.24),0_5px_15px_hsl(var(--primary)_/_0.15)]"
           ),
           frameId === "vintage" && (isDark
-            ? "bg-white p-5 rounded-sm border-2 border-[rgba(212,175,55,0.5)] shadow-[0_8px_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.1),inset_0_2px_4px_rgba(212,175,55,0.1)] group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.6),inset_0_0_25px_rgba(0,0,0,0.15)]"
-            : "bg-gradient-to-br from-[#FFF8E7] to-[#FFEAA7] p-5 rounded-sm border-2 border-[rgba(212,175,55,0.4)] shadow-[0_8px_30px_rgba(0,0,0,0.1),inset_0_0_20px_rgba(0,0,0,0.03),inset_0_2px_4px_rgba(255,255,255,0.5)] group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.15),inset_0_0_25px_rgba(0,0,0,0.05)]"
+            ? "bg-white p-5 rounded-sm border-2 border-[hsl(var(--primary)_/_0.5)] shadow-[0_8px_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.1),inset_0_2px_4px_hsl(var(--primary)_/_0.1)] group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.6),inset_0_0_25px_rgba(0,0,0,0.15)]"
+            : "bg-gradient-to-br from-[#FFF8E7] to-[#FFEAA7] p-5 rounded-sm border-2 border-[hsl(var(--primary)_/_0.4)] shadow-[0_8px_30px_rgba(232,175,193,0.18),inset_0_0_20px_rgba(232,175,193,0.04),inset_0_2px_4px_rgba(255,255,255,0.5)] group-hover:shadow-[0_12px_40px_rgba(232,175,193,0.24),inset_0_0_25px_rgba(232,175,193,0.06)]"
           ),
           frameId === "minimal" && (isDark
-            ? "bg-white p-2 rounded-lg border-2 border-[rgba(212,175,55,0.3)] shadow-[0_4px_15px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(212,175,55,0.15)] group-hover:shadow-[0_8px_25px_rgba(0,0,0,0.5),0_2px_6px_rgba(212,175,55,0.2)]"
-            : "bg-gradient-to-br from-[#FFFFFF] to-[#FAFAF8] p-2 rounded-lg border-2 border-[rgba(212,175,55,0.25)] shadow-[0_4px_15px_rgba(0,0,0,0.08),inset_0_0_0_1px_rgba(212,175,55,0.1)] group-hover:shadow-[0_8px_25px_rgba(0,0,0,0.12),0_2px_6px_rgba(212,175,55,0.15)]"
+            ? "bg-white p-2 rounded-lg border-2 border-[hsl(var(--primary)_/_0.3)] shadow-[0_4px_15px_rgba(0,0,0,0.4),inset_0_0_0_1px_hsl(var(--primary)_/_0.15)] group-hover:shadow-[0_8px_25px_rgba(0,0,0,0.5),0_2px_6px_hsl(var(--primary)_/_0.2)]"
+            : "bg-gradient-to-br from-[#FFFFFF] to-[#FAFAF8] p-2 rounded-lg border-2 border-[hsl(var(--primary)_/_0.25)] shadow-[0_4px_15px_rgba(232,175,193,0.16),inset_0_0_0_1px_hsl(var(--primary)_/_0.1)] group-hover:shadow-[0_8px_25px_rgba(232,175,193,0.22),0_2px_6px_hsl(var(--primary)_/_0.15)]"
           )
         )}
       >

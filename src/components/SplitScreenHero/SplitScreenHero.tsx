@@ -21,28 +21,28 @@ const getBackgroundGradient = (category: string, isDark: boolean): string => {
   if (isDark) {
     switch (category) {
       case "wedding":
-        return "radial-gradient(circle at 25% 40%, rgba(74, 50, 70, 0.4) 0%, transparent 60%), radial-gradient(circle at 75% 70%, rgba(58, 42, 62, 0.3) 0%, transparent 60%), radial-gradient(circle at 50% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 50%), linear-gradient(135deg, #1A1A2E 0%, #242438 100%)";
+        return "radial-gradient(circle at 25% 40%, rgba(74, 50, 70, 0.4) 0%, transparent 60%), radial-gradient(circle at 75% 70%, rgba(58, 42, 62, 0.3) 0%, transparent 60%), radial-gradient(circle at 50% 20%, hsl(var(--primary) / 0.10) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
       case "birthday":
-        return "radial-gradient(circle at 30% 50%, rgba(77, 41, 66, 0.4) 0%, transparent 60%), radial-gradient(circle at 70% 30%, rgba(93, 44, 75, 0.3) 0%, transparent 60%), radial-gradient(circle at 40% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%), linear-gradient(135deg, #1A1A2E 0%, #2A2440 100%)";
+        return "radial-gradient(circle at 30% 50%, rgba(77, 41, 66, 0.4) 0%, transparent 60%), radial-gradient(circle at 70% 30%, rgba(93, 44, 75, 0.3) 0%, transparent 60%), radial-gradient(circle at 40% 80%, hsl(var(--primary) / 0.12) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
       case "corporate":
-        return "radial-gradient(circle at 20% 60%, rgba(42, 53, 72, 0.5) 0%, transparent 60%), radial-gradient(circle at 80% 40%, rgba(45, 56, 82, 0.4) 0%, transparent 60%), radial-gradient(circle at 50% 90%, rgba(212, 175, 55, 0.08) 0%, transparent 50%), linear-gradient(135deg, #1A1A2E 0%, #22283E 100%)";
+        return "radial-gradient(circle at 20% 60%, rgba(42, 53, 72, 0.5) 0%, transparent 60%), radial-gradient(circle at 80% 40%, rgba(45, 56, 82, 0.4) 0%, transparent 60%), radial-gradient(circle at 50% 90%, hsl(var(--primary) / 0.10) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
       case "haldi":
-        return "radial-gradient(circle at 35% 45%, rgba(74, 56, 26, 0.5) 0%, transparent 60%), radial-gradient(circle at 65% 75%, rgba(90, 67, 32, 0.4) 0%, transparent 60%), radial-gradient(circle at 50% 15%, rgba(212, 175, 55, 0.12) 0%, transparent 50%), linear-gradient(135deg, #1A1A2E 0%, #2A2820 100%)";
+        return "radial-gradient(circle at 35% 45%, rgba(74, 56, 26, 0.5) 0%, transparent 60%), radial-gradient(circle at 65% 75%, rgba(90, 67, 32, 0.4) 0%, transparent 60%), radial-gradient(circle at 50% 15%, hsl(var(--primary) / 0.14) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
       default:
-        return "linear-gradient(135deg, #1A1A2E 0%, #242438 100%)";
+        return "linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
     }
   } else {
     switch (category) {
       case "wedding":
-        return "radial-gradient(circle at 20% 50%, rgba(255, 240, 245, 0.6) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 228, 232, 0.4) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(212, 175, 55, 0.08) 0%, transparent 50%), linear-gradient(135deg, #FEFEFE 0%, #F9F7F5 100%)";
+        return "radial-gradient(circle at 20% 50%, rgba(255, 240, 245, 0.6) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 228, 232, 0.4) 0%, transparent 50%), radial-gradient(circle at 40% 80%, hsl(var(--primary) / 0.10) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
       case "birthday":
-        return "radial-gradient(circle at 25% 60%, rgba(255, 224, 240, 0.5) 0%, transparent 50%), radial-gradient(circle at 75% 30%, rgba(255, 182, 193, 0.3) 0%, transparent 50%), radial-gradient(circle at 50% 90%, rgba(212, 175, 55, 0.1) 0%, transparent 50%), linear-gradient(135deg, #FEFEFE 0%, #FFF5FA 100%)";
+        return "radial-gradient(circle at 25% 60%, rgba(255, 224, 240, 0.5) 0%, transparent 50%), radial-gradient(circle at 75% 30%, rgba(255, 182, 193, 0.3) 0%, transparent 50%), radial-gradient(circle at 50% 90%, hsl(var(--primary) / 0.12) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
       case "corporate":
-        return "radial-gradient(circle at 30% 40%, rgba(224, 235, 255, 0.5) 0%, transparent 50%), radial-gradient(circle at 70% 70%, rgba(214, 230, 255, 0.4) 0%, transparent 50%), radial-gradient(circle at 50% 10%, rgba(212, 175, 55, 0.08) 0%, transparent 50%), linear-gradient(135deg, #FEFEFE 0%, #F8FAFE 100%)";
+        return "radial-gradient(circle at 30% 40%, rgba(224, 235, 255, 0.5) 0%, transparent 50%), radial-gradient(circle at 70% 70%, rgba(214, 230, 255, 0.4) 0%, transparent 50%), radial-gradient(circle at 50% 10%, hsl(var(--primary) / 0.10) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
       case "haldi":
-        return "radial-gradient(circle at 35% 55%, rgba(255, 248, 220, 0.6) 0%, transparent 50%), radial-gradient(circle at 65% 25%, rgba(255, 238, 170, 0.4) 0%, transparent 50%), radial-gradient(circle at 45% 85%, rgba(212, 175, 55, 0.12) 0%, transparent 50%), linear-gradient(135deg, #FEFEFE 0%, #FFFBF0 100%)";
+        return "radial-gradient(circle at 35% 55%, rgba(255, 248, 220, 0.6) 0%, transparent 50%), radial-gradient(circle at 65% 25%, rgba(255, 238, 170, 0.4) 0%, transparent 50%), radial-gradient(circle at 45% 85%, hsl(var(--primary) / 0.14) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
       default:
-        return "linear-gradient(135deg, #FEFEFE 0%, #F9F7F5 100%)";
+        return "linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%)";
     }
   }
 };
@@ -215,15 +215,15 @@ const SplitScreenHero = ({
         {/* Light theme: Animated gradient mesh layers */}
         {!isDark && !isReduced && (
           <>
-            {/* Layer 1: Gold accent blobs - left side focus */}
+            {/* Layer 1: Primary accent blobs - left side focus */}
             <motion.div
               className="absolute inset-0 opacity-70"
               animate={{
                 background: [
-                  "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(212, 175, 55, 0.15) 0%, transparent 65%)",
-                  "radial-gradient(ellipse 115% 105% at 15% 25%, rgba(212, 175, 55, 0.18) 0%, transparent 65%)",
-                  "radial-gradient(ellipse 110% 110% at 20% 30%, rgba(212, 175, 55, 0.15) 0%, transparent 65%)",
-                  "radial-gradient(ellipse 120% 100% at 10% 20%, rgba(212, 175, 55, 0.15) 0%, transparent 65%)",
+                  "radial-gradient(ellipse 120% 100% at 10% 20%, hsl(var(--primary) / 0.15) 0%, transparent 65%)",
+                  "radial-gradient(ellipse 115% 105% at 15% 25%, hsl(var(--primary) / 0.18) 0%, transparent 65%)",
+                  "radial-gradient(ellipse 110% 110% at 20% 30%, hsl(var(--primary) / 0.15) 0%, transparent 65%)",
+                  "radial-gradient(ellipse 120% 100% at 10% 20%, hsl(var(--primary) / 0.15) 0%, transparent 65%)",
                 ],
               }}
               transition={{
@@ -252,15 +252,15 @@ const SplitScreenHero = ({
               }}
             />
             
-            {/* Layer 3: Soft rose/gold wash - left side */}
+            {/* Layer 3: Soft wash - left side */}
             <motion.div
               className="absolute inset-0 opacity-60"
               animate={{
                 background: [
-                  "radial-gradient(ellipse 130% 110% at 8% 65%, rgba(212, 175, 55, 0.08) 0%, transparent 75%)",
+                  "radial-gradient(ellipse 130% 110% at 8% 65%, hsl(var(--primary) / 0.08) 0%, transparent 75%)",
                   "radial-gradient(ellipse 125% 115% at 12% 70%, rgba(255, 248, 246, 0.4) 0%, transparent 75%)",
-                  "radial-gradient(ellipse 120% 120% at 15% 75%, rgba(212, 175, 55, 0.06) 0%, transparent 75%)",
-                  "radial-gradient(ellipse 130% 110% at 8% 65%, rgba(212, 175, 55, 0.08) 0%, transparent 75%)",
+                  "radial-gradient(ellipse 120% 120% at 15% 75%, hsl(var(--primary) / 0.06) 0%, transparent 75%)",
+                  "radial-gradient(ellipse 130% 110% at 8% 65%, hsl(var(--primary) / 0.08) 0%, transparent 75%)",
                 ],
               }}
               transition={{
@@ -271,15 +271,15 @@ const SplitScreenHero = ({
               }}
             />
             
-            {/* Layer 4: Extra gold accent - left side emphasis */}
+            {/* Layer 4: Extra primary accent - left side emphasis */}
             <motion.div
               className="absolute inset-0 opacity-40"
               animate={{
                 background: [
-                  "radial-gradient(ellipse 90% 100% at 3% 45%, rgba(212, 175, 55, 0.2) 0%, transparent 55%)",
-                  "radial-gradient(ellipse 95% 105% at 6% 50%, rgba(212, 175, 55, 0.22) 0%, transparent 55%)",
-                  "radial-gradient(ellipse 100% 90% at 9% 55%, rgba(212, 175, 55, 0.2) 0%, transparent 55%)",
-                  "radial-gradient(ellipse 90% 100% at 3% 45%, rgba(212, 175, 55, 0.2) 0%, transparent 55%)",
+                  "radial-gradient(ellipse 90% 100% at 3% 45%, hsl(var(--primary) / 0.2) 0%, transparent 55%)",
+                  "radial-gradient(ellipse 95% 105% at 6% 50%, hsl(var(--primary) / 0.22) 0%, transparent 55%)",
+                  "radial-gradient(ellipse 100% 90% at 9% 55%, hsl(var(--primary) / 0.2) 0%, transparent 55%)",
+                  "radial-gradient(ellipse 90% 100% at 3% 45%, hsl(var(--primary) / 0.2) 0%, transparent 55%)",
                 ],
               }}
               transition={{
@@ -292,8 +292,8 @@ const SplitScreenHero = ({
           </>
         )}
         
-        {/* Subtle overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#FDFCFB]/20 via-transparent to-transparent dark:from-[#0f172a]/40 dark:via-transparent dark:to-transparent" />
+        {/* Soft gradient for depth – warm rose (light), no white overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(232,175,193,0.12)] via-transparent to-transparent dark:from-[#0f172a]/30 dark:via-transparent dark:to-transparent pointer-events-none" />
       </div>
 
       {/* Desktop: 50/50 split. Mobile: stacked */}
@@ -318,10 +318,10 @@ const SplitScreenHero = ({
                     className="absolute inset-0 opacity-70"
                     animate={{
                       background: [
-                        "radial-gradient(ellipse 140% 120% at 15% 25%, rgba(212, 175, 55, 0.12) 0%, transparent 60%)",
-                        "radial-gradient(ellipse 135% 125% at 20% 30%, rgba(212, 175, 55, 0.15) 0%, transparent 60%)",
-                        "radial-gradient(ellipse 130% 130% at 25% 35%, rgba(212, 175, 55, 0.12) 0%, transparent 60%)",
-                        "radial-gradient(ellipse 140% 120% at 15% 25%, rgba(212, 175, 55, 0.12) 0%, transparent 60%)",
+                        "radial-gradient(ellipse 140% 120% at 15% 25%, hsl(var(--primary) / 0.12) 0%, transparent 60%)",
+                        "radial-gradient(ellipse 135% 125% at 20% 30%, hsl(var(--primary) / 0.15) 0%, transparent 60%)",
+                        "radial-gradient(ellipse 130% 130% at 25% 35%, hsl(var(--primary) / 0.12) 0%, transparent 60%)",
+                        "radial-gradient(ellipse 140% 120% at 15% 25%, hsl(var(--primary) / 0.12) 0%, transparent 60%)",
                       ],
                     }}
                     transition={{
@@ -351,10 +351,10 @@ const SplitScreenHero = ({
                     className="absolute inset-0 opacity-50"
                     animate={{
                       background: [
-                        "radial-gradient(ellipse 110% 130% at 5% 80%, rgba(212, 175, 55, 0.08) 0%, transparent 70%)",
+                        "radial-gradient(ellipse 110% 130% at 5% 80%, hsl(var(--primary) / 0.08) 0%, transparent 70%)",
                         "radial-gradient(ellipse 115% 125% at 8% 85%, rgba(255, 251, 245, 0.4) 0%, transparent 70%)",
-                        "radial-gradient(ellipse 120% 120% at 12% 90%, rgba(212, 175, 55, 0.06) 0%, transparent 70%)",
-                        "radial-gradient(ellipse 110% 130% at 5% 80%, rgba(212, 175, 55, 0.08) 0%, transparent 70%)",
+                        "radial-gradient(ellipse 120% 120% at 12% 90%, hsl(var(--primary) / 0.06) 0%, transparent 70%)",
+                        "radial-gradient(ellipse 110% 130% at 5% 80%, hsl(var(--primary) / 0.08) 0%, transparent 70%)",
                       ],
                     }}
                     transition={{
@@ -387,16 +387,16 @@ const SplitScreenHero = ({
                   {/* Enhanced Gallery-style frame with depth */}
                   <div className={`relative w-full h-full rounded-[36px] p-5 transition-all duration-500 group ${
                     isDark 
-                      ? 'bg-gradient-to-br from-[#2A2A3E] to-[#1F1F2E] shadow-[0_40px_80px_-10px_rgba(0,0,0,0.5),0_25px_50px_-10px_rgba(0,0,0,0.4),0_15px_30px_-5px_rgba(212,175,55,0.15),inset_0_0_0_1px_rgba(212,175,55,0.25),inset_0_2px_4px_rgba(212,175,55,0.1)] hover:shadow-[0_50px_100px_-10px_rgba(0,0,0,0.6),0_30px_60px_-10px_rgba(0,0,0,0.5),0_20px_40px_-5px_rgba(212,175,55,0.2),inset_0_0_0_1px_rgba(212,175,55,0.3)]'
-                      : 'bg-gradient-to-br from-[#FFFFFF] to-[#F9F7F5] shadow-[0_35px_65px_-10px_rgba(0,0,0,0.08),0_20px_40px_-10px_rgba(0,0,0,0.05),0_10px_20px_-5px_rgba(212,175,55,0.08),inset_0_0_0_1px_rgba(212,175,55,0.12),inset_0_2px_4px_rgba(255,255,255,0.8)] hover:shadow-[0_45px_85px_-10px_rgba(0,0,0,0.12),0_25px_50px_-10px_rgba(0,0,0,0.08),0_15px_30px_-5px_rgba(212,175,55,0.12),inset_0_0_0_1px_rgba(212,175,55,0.15)]'
+                      ? 'bg-gradient-to-br from-[#2A2A3E] to-[#1F1F2E] shadow-[0_40px_80px_-10px_rgba(0,0,0,0.5),0_25px_50px_-10px_rgba(0,0,0,0.4),0_15px_30px_-5px_hsl(var(--primary)_/_0.15),inset_0_0_0_1px_hsl(var(--primary)_/_0.25),inset_0_2px_4px_hsl(var(--primary)_/_0.1)] hover:shadow-[0_50px_100px_-10px_rgba(0,0,0,0.6),0_30px_60px_-10px_rgba(0,0,0,0.5),0_20px_40px_-5px_hsl(var(--primary)_/_0.2),inset_0_0_0_1px_hsl(var(--primary)_/_0.3)]'
+                      : 'bg-gradient-to-br from-[#FFFFFF] to-[#F9F7F5] shadow-[0_35px_65px_-10px_rgba(232,175,193,0.16),0_20px_40px_-10px_rgba(232,175,193,0.12),0_10px_20px_-5px_hsl(var(--primary)_/_0.08),inset_0_0_0_1px_hsl(var(--primary)_/_0.12)] hover:shadow-[0_45px_85px_-10px_rgba(232,175,193,0.22),0_25px_50px_-10px_rgba(232,175,193,0.16),0_15px_30px_-5px_hsl(var(--primary)_/_0.12),inset_0_0_0_1px_hsl(var(--primary)_/_0.15)]'
                   }`}>
-                    {/* Gold glow effect on top edge - light theme */}
+                    {/* Accent glow effect on top edge - light theme */}
                     {!isDark && (
-                      <div className="absolute top-0 left-[20%] right-[20%] h-[1px] bg-gradient-to-r from-transparent via-[rgba(212,175,55,0.4)] to-transparent blur-[2px] z-10" />
+                      <div className="absolute top-0 left-[20%] right-[20%] h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--primary)_/_0.45)] to-transparent blur-[2px] z-10" />
                     )}
-                    {/* Gold glow effect - dark theme (on hover) */}
+                    {/* Accent glow effect - dark theme (on hover) */}
                     {isDark && (
-                      <div className="absolute inset-[-2px] rounded-[38px] bg-gradient-to-br from-[rgba(212,175,55,0.3)] via-transparent to-[rgba(212,175,55,0.2)] opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms] blur-[12px] -z-10" />
+                      <div className="absolute inset-[-2px] rounded-[38px] bg-gradient-to-br from-[hsl(var(--primary)_/_0.35)] via-transparent to-[hsl(var(--primary)_/_0.2)] opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms] blur-[12px] -z-10" />
                     )}
                     {/* Inner image container */}
                     <div className="relative w-full h-full rounded-[24px] sm:rounded-[26px] lg:rounded-[28px] overflow-hidden">
@@ -486,13 +486,11 @@ const SplitScreenHero = ({
             />
           )}
           
-          {/* Floating Gold Particles - Decorative Elements */}
+          {/* Floating accent particles - Decorative Elements */}
           {!isReduced && (
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <motion.div
-                className={`absolute w-1 h-1 rounded-full ${
-                  isDark ? "bg-yellow-400/20" : "bg-yellow-400/20"
-                }`}
+                className="absolute w-1 h-1 rounded-full bg-primary/20"
                 style={{ top: "15%", left: "10%" }}
                 animate={{
                   y: [0, -20, 0],
@@ -505,9 +503,7 @@ const SplitScreenHero = ({
                 }}
               />
               <motion.div
-                className={`absolute w-2 h-2 rounded-full ${
-                  isDark ? "bg-yellow-400/15" : "bg-yellow-400/15"
-                }`}
+                className="absolute w-2 h-2 rounded-full bg-primary/15"
                 style={{ top: "45%", right: "15%" }}
                 animate={{
                   y: [0, -15, 0],
@@ -521,9 +517,7 @@ const SplitScreenHero = ({
                 }}
               />
               <motion.div
-                className={`absolute w-1.5 h-1.5 rounded-full ${
-                  isDark ? "bg-yellow-400/10" : "bg-yellow-400/10"
-                }`}
+                className="absolute w-1.5 h-1.5 rounded-full bg-primary/10"
                 style={{ top: "75%", left: "20%" }}
                 animate={{
                   y: [0, -25, 0],
@@ -537,9 +531,7 @@ const SplitScreenHero = ({
                 }}
               />
               <motion.div
-                className={`absolute w-1 h-1 rounded-full ${
-                  isDark ? "bg-yellow-400/15" : "bg-yellow-400/15"
-                }`}
+                className="absolute w-1 h-1 rounded-full bg-primary/15"
                 style={{ top: "30%", right: "25%" }}
                 animate={{
                   y: [0, -18, 0],
@@ -553,9 +545,7 @@ const SplitScreenHero = ({
                 }}
               />
               <motion.div
-                className={`absolute w-1.5 h-1.5 rounded-full ${
-                  isDark ? "bg-yellow-400/12" : "bg-yellow-400/12"
-                }`}
+                className="absolute w-1.5 h-1.5 rounded-full bg-primary/12"
                 style={{ top: "60%", left: "30%" }}
                 animate={{
                   y: [0, -22, 0],
@@ -647,14 +637,14 @@ function NavDot({
       onClick={onClick}
       className={`
         relative w-[10px] h-[10px] rounded-full cursor-pointer transition-all duration-300
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:ring-offset-2
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
         ${isActive 
           ? isDark 
-            ? "ring-2 ring-[rgba(212,175,55,0.4)] scale-120" 
-            : "ring-2 ring-[rgba(212,175,55,0.3)] scale-120"
+            ? "ring-2 ring-primary/40 scale-120" 
+            : "ring-2 ring-primary/30 scale-120"
           : isDark 
-            ? "bg-white/20 hover:bg-[rgba(212,175,55,0.5)] hover:scale-110" 
-            : "bg-[rgba(62,39,35,0.25)] hover:bg-[rgba(212,175,55,0.5)] hover:scale-110"
+            ? "bg-white/20 hover:bg-primary/50 hover:scale-110" 
+            : "bg-[rgba(232,175,193,0.28)] hover:bg-primary/50 hover:scale-110"
         }
       `}
       style={isActive ? { transform: "scale(1.2)" } : {}}
@@ -664,10 +654,10 @@ function NavDot({
           <span 
             className="absolute inset-0 rounded-full" 
             style={{ 
-              background: "#D4AF37",
+              background: "hsl(var(--primary))",
               boxShadow: isDark 
-                ? "0 0 16px rgba(212, 175, 55, 0.6)" 
-                : "0 0 12px rgba(212, 175, 55, 0.4)"
+                ? "0 0 16px hsl(var(--primary) / 0.6)" 
+                : "0 0 12px hsl(var(--primary) / 0.4)"
             }}
             aria-hidden 
           />
@@ -681,8 +671,8 @@ function NavDot({
               cx={size / 2}
               cy={size / 2}
               r={r}
-              fill="#D4AF37"
-              stroke={isDark ? "rgba(212, 175, 55, 0.4)" : "rgba(212, 175, 55, 0.3)"}
+              fill="hsl(var(--primary))"
+              stroke={isDark ? "hsl(var(--primary) / 0.4)" : "hsl(var(--primary) / 0.3)"}
               strokeWidth={stroke}
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
@@ -690,8 +680,8 @@ function NavDot({
               style={{ 
                 transition: "stroke-dashoffset 0.1s linear",
                 filter: isDark 
-                  ? "drop-shadow(0 0 16px rgba(212, 175, 55, 0.6))" 
-                  : "drop-shadow(0 0 12px rgba(212, 175, 55, 0.4))"
+                  ? "drop-shadow(0 0 16px hsl(var(--primary) / 0.6))" 
+                  : "drop-shadow(0 0 12px hsl(var(--primary) / 0.4))"
               }}
             />
           </svg>
@@ -741,7 +731,7 @@ function ContentPanel({ scene }: { scene: Scene }) {
         }}
         className="text-xs sm:text-sm font-light uppercase tracking-[0.15em] mb-1"
         style={{
-          color: isDark ? "rgba(255, 255, 255, 0.9)" : "#D4AF37",
+          color: isDark ? "hsl(var(--foreground) / 0.9)" : "hsl(var(--primary))",
         }}
       >
         {scene.eyebrow}
@@ -778,7 +768,7 @@ function ContentPanel({ scene }: { scene: Scene }) {
                       fontSize: "clamp(36px, 8vw, 72px)",
                       fontWeight: 700,
                       letterSpacing: "-1px",
-                      WebkitTextStroke: "2px #D4AF37",
+                      WebkitTextStroke: "2px hsl(var(--primary))",
                       WebkitTextFillColor: "transparent",
                       color: "transparent",
                       lineHeight: "0.95",
@@ -788,7 +778,7 @@ function ContentPanel({ scene }: { scene: Scene }) {
                       fontWeight: 700,
                       letterSpacing: "-1px",
                       lineHeight: "0.95",
-                      color: isDark ? "#FFFFFF" : "#1A1A2E",
+                      color: isDark ? "hsl(var(--foreground))" : "hsl(var(--heading))",
                       textShadow: isDark ? "0 2px 4px rgba(0,0,0,0.3)" : "none",
                     }
               }
@@ -837,7 +827,7 @@ function ContentPanel({ scene }: { scene: Scene }) {
         {/* Primary Button - INQUIRE NOW */}
         <Link
           to={scene.ctaLink}
-          className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-[#D4AF37] text-white text-base font-semibold transition-all duration-300 hover:bg-[#C19B2E] hover:scale-105 hover:shadow-[0_10px_30px_rgba(212,175,55,0.4)] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+          className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-semibold transition-all duration-300 hover:bg-primary/90 hover:scale-105 hover:shadow-[0_10px_30px_hsl(var(--primary)_/_0.35)] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         >
           {scene.ctaText}
           <ArrowRight className="w-5 h-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
@@ -846,7 +836,7 @@ function ContentPanel({ scene }: { scene: Scene }) {
         {/* Secondary Button - VIEW PORTFOLIO */}
         <Link
           to="/gallery"
-          className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border-2 border-[#E8E6E3] dark:border-white/30 text-[#1A1A2E] dark:text-white text-base font-semibold bg-transparent transition-all duration-300 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+          className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border-2 border-divider dark:border-white/30 text-heading dark:text-foreground text-base font-semibold bg-transparent transition-all duration-300 hover:border-primary dark:hover:border-primary hover:bg-primary/5 dark:hover:bg-primary/10 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         >
           VIEW PORTFOLIO
         </Link>
@@ -891,7 +881,7 @@ function ContentPanel({ scene }: { scene: Scene }) {
               </p>
             </motion.div>
             {index < stats.length - 1 && (
-              <div className="w-px h-12 bg-gradient-to-b from-transparent via-[rgba(212,175,55,0.3)] to-transparent" />
+              <div className="w-px h-12 bg-gradient-to-b from-transparent via-primary/30 to-transparent" />
             )}
           </React.Fragment>
         ))}

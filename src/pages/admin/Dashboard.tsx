@@ -15,6 +15,7 @@ import {
   UserPlus,
   Shield,
   Trash2,
+  Film,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,6 +48,7 @@ const quickActions = [
   { title: 'Create Album', href: '/admin/albums?add=1', icon: FolderOpen },
   { title: 'Upload Images', href: '/admin/gallery?upload=1', icon: Images },
   { title: 'Add Collaboration', href: '/admin/collaborations?add=1', icon: Handshake },
+  { title: 'Manage Videos', href: '/admin/media', icon: Film },
   { title: 'Add Employee', href: '/admin/team', icon: UserPlus },
 ];
 
@@ -324,9 +326,8 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            inquiry.status === 'new' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                          }`}
+                          className={`text-xs px-2 py-1 rounded-full ${inquiry.status === 'new' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                            }`}
                         >
                           {inquiry.status}
                         </span>

@@ -4,19 +4,26 @@ import { Link } from "react-router-dom";
 import { getActiveCollaborations } from "@/services/collaborations";
 
 const PartnersSection = () => {
-  const [partners, setPartners] = useState<{ name: string; logo_url: string | null }[]>([]);
+  const [partners, setPartners] = useState<{ id: string; name: string; logo_url: string | null }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getActiveCollaborations()
-      .then((data) => setPartners(data.map((c) => ({ name: c.name, logo_url: c.logo_url }))))
-      .catch(() => setPartners([]));
+      .then((data) => {
+        console.log("Fetched partners:", data);
+        setPartners(data.map((c) => ({ id: c.id, name: c.name, logo_url: c.logo_url })));
+      })
+      .catch((err) => {
+        console.error("Failed to fetch partners:", err);
+        setPartners([]);
+      });
   }, []);
 
   useEffect(() => {
     const scrollContainer = scrollRef.current;
     if (!scrollContainer || partners.length === 0) return;
 
+    // ... (keep scrolling logic same)
     let animationId: number;
     let scrollPosition = 0;
     const scrollSpeed = 0.5;
@@ -47,11 +54,13 @@ const PartnersSection = () => {
     };
   }, [partners.length]);
 
+  if (partners.length === 0) return null; // Or return a placeholder if desired, but hiding section is safer if empty
+
   return (
-    <section className="py-20 bg-muted/30 relative overflow-hidden">
+    <section className="py-20 bg-background relative overflow-hidden transition-colors duration-500">
       {/* Subtle Background */}
       <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background z-10 pointer-events-none" />
-      
+
       <div className="container mx-auto px-4 mb-12">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -73,35 +82,44 @@ const PartnersSection = () => {
       </div>
 
       {/* Auto-scrolling Logo Slider */}
-      <div 
+      <div
         ref={scrollRef}
-        className="flex gap-8 overflow-x-hidden cursor-default"
+        className="flex gap-8 overflow-x-hidden cursor-pointer"
         style={{ scrollBehavior: 'auto' }}
       >
         {/* Duplicate for seamless loop */}
         {[...partners, ...partners].map((partner, index) => (
           <motion.div
-            key={`${partner.name}-${index}`}
+            key={`${partner.id}-${index}`}
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: (index % partners.length) * 0.05 }}
             className="flex-shrink-0"
           >
-            <div className="w-48 h-24 flex items-center justify-center rounded-xl 
-                          bg-card/50 dark:bg-card/30 backdrop-blur-sm border border-border/50
-                          hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10
-                          transition-all duration-300 group">
-              <div className="text-center p-2">
-                {/* Always show name only, never logo */}
-                <span className="font-serif text-lg font-semibold text-foreground/70 
-                               group-hover:text-primary transition-colors duration-300">
-                  {partner.name}
-                </span>
-                <div className="w-8 h-0.5 bg-primary/30 mx-auto mt-1 
-                              group-hover:w-12 group-hover:bg-primary transition-all duration-300" />
+            <Link to={`/collaborations/${partner.id}`} className="block">
+              <div className="w-48 h-24 flex items-center justify-center rounded-xl 
+                            bg-card/50 dark:bg-card/30 backdrop-blur-sm border border-border/50
+                            hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10
+                            transition-all duration-300 group overflow-hidden p-4">
+                {partner.logo_url ? (
+                  <img
+                    src={partner.logo_url}
+                    alt={partner.name}
+                    className="w-full h-full object-contain filter grayscale-0 transition-all duration-300"
+                  />
+                ) : (
+                  <div className="text-center">
+                    <span className="font-serif text-lg font-semibold text-foreground/70 
+                                   group-hover:text-primary transition-colors duration-300">
+                      {partner.name}
+                    </span>
+                    <div className="w-8 h-0.5 bg-primary/30 mx-auto mt-1 
+                                  group-hover:w-12 group-hover:bg-primary transition-all duration-300" />
+                  </div>
+                )}
               </div>
-            </div>
+            </Link>
           </motion.div>
         ))}
       </div>

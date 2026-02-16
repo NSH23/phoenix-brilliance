@@ -3,15 +3,15 @@ import { supabase } from '@/lib/supabase';
 export interface Testimonial {
   id: string;
   name: string;
-  role: string | null;
+  role: string;
   content: string;
-  avatar: string | null;
   rating: number;
-  event_type: string | null;
-  is_featured: boolean;
-  display_order: number;
+  avatar_url?: string;
   created_at: string;
-  updated_at: string;
+  event_type?: string;
+  message?: string; // Legacy/Alternative field
+  is_featured?: boolean;
+  display_order?: number;
 }
 
 // Get all testimonials

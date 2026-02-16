@@ -9,7 +9,7 @@
 -- 
 -- Solution: Change "Admins can manage X" from FOR ALL to only INSERT/UPDATE/DELETE
 -- This removes SELECT from admin management policies, leaving only the consolidated SELECT policy
---
+--s
 -- IMPORTANT: This preserves exact same functionality - nothing breaks!
 -- Run this AFTER fix-all-rls-performance-issues.sql
 -- ============================================

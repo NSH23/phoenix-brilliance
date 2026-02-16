@@ -28,3 +28,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+public/*.mp4
+public/*.MP4
+public/*.mov
+*.mov
+*.mp4
+
+phoenix-foundation-2/
+phoenix-foundation-main/
+
+Capture.PNG
+bg10.jpg
+bg3.jpg

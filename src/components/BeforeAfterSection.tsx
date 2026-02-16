@@ -186,7 +186,7 @@ export default function BeforeAfterSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
-              className="bg-white dark:bg-white/95 rounded-[24px] p-8 shadow-[0_8px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_12px_48px_rgba(0,0,0,0.3)] transition-shadow"
+              className="bg-white dark:bg-white/95 rounded-[24px] p-8 shadow-[0_8px_40px_rgba(232,175,193,0.18)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_12px_48px_rgba(232,175,193,0.24)] dark:hover:shadow-[0_12px_48px_rgba(0,0,0,0.3)] transition-shadow"
             >
               {/* Event Type Badge */}
               <span className="inline-flex px-4 py-2 rounded-full text-sm font-medium bg-primary/15 dark:bg-primary/20 border border-primary/30 text-primary mb-4">

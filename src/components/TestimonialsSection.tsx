@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Star, Quote } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getFeaturedTestimonials } from "@/services/testimonials";
 
-/* Testimonials section: floating cards on desktop (6 cards), stacked grid on mobile.
- */
 
 interface Testimonial {
   name: string;
@@ -12,6 +11,49 @@ interface Testimonial {
   quote: string;
   image: string;
 }
+
+const MobileTestimonialCarousel = ({ testimonials }: { testimonials: Testimonial[] }) => {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (testimonials.length <= 1) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [testimonials.length]);
+
+  if (testimonials.length === 0) return null;
+  const t = testimonials[index];
+
+  return (
+    <div className="relative min-h-[250px] overflow-hidden">
+      <div className="relative w-full min-h-[300px]"> {/* Fixed height container */}
+        <AnimatePresence initial={false}>
+          <motion.div
+            key={index}
+            initial={{ x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "-100%", opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="absolute inset-0 w-full top-0 left-0" // Absolute positioning for slide
+          >
+            <TestimonialCard testimonial={t} />
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="flex justify-center gap-2 mt-4">
+          {testimonials.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === index ? "w-6 bg-primary" : "w-1.5 bg-primary/30"}`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const DEFAULT_TESTIMONIALS: Testimonial[] = [
   {
@@ -75,9 +117,8 @@ function StarRating({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
-          className={`w-3.5 h-3.5 ${
-            i <= rating ? "fill-[var(--testimonial-star-filled)] text-[var(--testimonial-star-filled)]" : "fill-[var(--testimonial-star-empty)] text-[var(--testimonial-star-empty)]"
-          }`}
+          className={`w-3.5 h-3.5 ${i <= rating ? "fill-[var(--testimonial-star-filled)] text-[var(--testimonial-star-filled)]" : "fill-[var(--testimonial-star-empty)] text-[var(--testimonial-star-empty)]"
+            }`}
         />
       ))}
     </div>
@@ -193,7 +234,7 @@ const TestimonialsSection = () => {
           );
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const list = testimonials.length > 0 ? testimonials : DEFAULT_TESTIMONIALS;
@@ -202,8 +243,7 @@ const TestimonialsSection = () => {
   return (
     <section
       id="testimonials"
-      className="relative py-10 sm:py-12 lg:py-16"
-      style={{ background: "var(--testimonial-floating-bg)" }}
+      className="relative py-10 sm:py-12 lg:py-16 bg-background"
     >
       <div
         className="absolute inset-0 pointer-events-none overflow-hidden"
@@ -234,10 +274,9 @@ const TestimonialsSection = () => {
         </div>
 
         {/* Mobile / Tablet: stacked grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 sm:gap-4">
-          {displayList.map((t, i) => (
-            <TestimonialCard key={t.name + t.event + i} testimonial={t} />
-          ))}
+        {/* Mobile / Tablet: Carousel */}
+        <div className="lg:hidden relative">
+          <MobileTestimonialCarousel testimonials={displayList} />
         </div>
       </div>
 
