@@ -125,160 +125,208 @@ function MediaList({
     );
 }
 
-const [uploading, setUploading] = useState(false);
+export default function ContentMedia() {
+    const [uploading, setUploading] = useState(false);
+    const [items, setItems] = useState<ContentMedia[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<'hero' | 'moment'>('hero');
+    const [editingItem, setEditingItem] = useState<ContentMedia | null>(null);
+    const [isDeploying, setIsDeploying] = useState(false);
 
-// ... (existing code: loadData, handleCreate, handleEdit, handleDelete)
+    const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<Partial<ContentMedia>>(); // Added partial for form
 
-const onSubmit = async (data: Partial<ContentMedia>) => {
-    try {
-        setIsDeploying(true);
-        let videoUrl = data.url;
+    useEffect(() => {
+        loadData();
+    }, [activeTab]);
 
-        // Handle File Upload if a file is selected
-        const fileInput = document.getElementById('video-upload') as HTMLInputElement;
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-            const filePath = `${activeTab}/${fileName}`;
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const data = await getAllContentMedia(activeTab);
+            setItems(data);
+        } catch (error) {
+            console.error('Failed to load media', error);
+            toast.error('Failed to load media');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            setUploading(true);
-            const { error: uploadError } = await supabase.storage
-                .from('content-media')
-                .upload(filePath, file);
+    const handleCreate = () => {
+        setEditingItem(null);
+        reset({});
+        setIsDialogOpen(true);
+    };
 
-            if (uploadError) throw uploadError;
+    const handleEdit = (item: ContentMedia) => {
+        setEditingItem(item);
+        reset(item);
+        setIsDialogOpen(true);
+    };
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('content-media')
-                .getPublicUrl(filePath);
+    const handleDelete = async (item: ContentMedia) => {
+        if (!confirm('Are you sure you want to delete this video?')) return;
+        try {
+            await deleteContentMedia(item.id);
+            setItems(prev => prev.filter(i => i.id !== item.id));
+            toast.success('Video deleted');
+        } catch (error) {
+            console.error('Failed to delete', error);
+            toast.error('Failed to delete video');
+        }
+    };
 
-            videoUrl = publicUrl;
+    const onSubmit = async (data: Partial<ContentMedia>) => {
+        try {
+            setIsDeploying(true);
+            let videoUrl = data.url;
+
+            // Handle File Upload if a file is selected
+            const fileInput = document.getElementById('video-upload') as HTMLInputElement;
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+                const filePath = `${activeTab}/${fileName}`;
+
+                setUploading(true);
+                const { error: uploadError } = await supabase.storage
+                    .from('content-media')
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('content-media')
+                    .getPublicUrl(filePath);
+
+                videoUrl = publicUrl;
+                setUploading(false);
+            }
+
+            const payload = {
+                ...data,
+                url: videoUrl,
+                category: activeTab
+            };
+
+            if (editingItem) {
+                const updated = await updateContentMedia(editingItem.id, payload);
+                setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
+                toast.success('Video updated successfully');
+            } else {
+                const created = await createContentMedia(payload as any);
+                setItems(prev => [...prev, created]);
+                toast.success('Video added successfully');
+            }
+            setIsDialogOpen(false);
+        } catch (error) {
+            logger.error('Failed to save media', error);
+            toast.error('Failed to save video');
             setUploading(false);
+        } finally {
+            setIsDeploying(false);
         }
+    };
 
-        const payload = {
-            ...data,
-            url: videoUrl,
-            category: activeTab
-        };
+    return (
+        <AdminLayout title="Manage Videos" subtitle="Control Hero section videos and Moments We've Crafted reels.">
+            <div className="flex justify-between items-center mb-6">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-[400px]">
+                    <TabsList>
+                        <TabsTrigger value="hero" className="flex items-center gap-2">
+                            <Play size={16} /> Hero Videos
+                        </TabsTrigger>
+                        <TabsTrigger value="moment" className="flex items-center gap-2">
+                            <Film size={16} /> Moments (Reels)
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
 
-        if (editingItem) {
-            const updated = await updateContentMedia(editingItem.id, payload);
-            setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
-            toast.success('Video updated successfully');
-        } else {
-            const created = await createContentMedia(payload as any);
-            setItems(prev => [...prev, created]);
-            toast.success('Video added successfully');
-        }
-        setIsDialogOpen(false);
-    } catch (error) {
-        logger.error('Failed to save media', error);
-        toast.error('Failed to save video');
-        setUploading(false);
-    } finally {
-        setIsDeploying(false);
-    }
-};
-
-return (
-    <AdminLayout title="Manage Videos" subtitle="Control Hero section videos and Moments We've Crafted reels.">
-        {/* ... (existing code: Tabs, Add Button, Loader, List) */}
-        <div className="flex justify-between items-center mb-6">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-[400px]">
-                <TabsList>
-                    <TabsTrigger value="hero" className="flex items-center gap-2">
-                        <Play size={16} /> Hero Videos
-                    </TabsTrigger>
-                    <TabsTrigger value="moment" className="flex items-center gap-2">
-                        <Film size={16} /> Moments (Reels)
-                    </TabsTrigger>
-                </TabsList>
-            </Tabs>
-
-            <Button onClick={handleCreate}>
-                <Plus size={16} className="mr-2" /> Add Video
-            </Button>
-        </div>
-
-        {loading ? (
-            <div className="flex justify-center py-12">
-                <Loader2 className="animate-spin text-primary" size={32} />
+                <Button onClick={handleCreate}>
+                    <Plus size={16} className="mr-2" /> Add Video
+                </Button>
             </div>
-        ) : (
-            <MediaList
-                items={items}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-            />
-        )}
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Edit Video' : 'Add New Video'}</DialogTitle>
-                </DialogHeader>
+            {loading ? (
+                <div className="flex justify-center py-12">
+                    <Loader2 className="animate-spin text-primary" size={32} />
+                </div>
+            ) : (
+                <MediaList
+                    items={items}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />
+            )}
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Video File</Label>
-                        <Input
-                            id="video-upload"
-                            type="file"
-                            accept="video/mp4,video/webm"
-                            className="cursor-pointer"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Upload a video file (MP4, WebM). This will upload to the 'content-media' bucket.
-                        </p>
-                    </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{editingItem ? 'Edit Video' : 'Add New Video'}</DialogTitle>
+                    </DialogHeader>
 
-                    <div className="space-y-2">
-                        <Label>Or Video URL</Label>
-                        <Input
-                            {...register('url')}
-                            placeholder="https://example.com/video.mp4"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Alternatively, paste a direct link if hosted elsewhere.
-                        </p>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Title (Optional)</Label>
-                        <Input {...register('title')} placeholder="e.g. Summer Wedding" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label>Display Order</Label>
+                            <Label>Video File</Label>
                             <Input
-                                type="number"
-                                {...register('display_order', { valueAsNumber: true })}
+                                id="video-upload"
+                                type="file"
+                                accept="video/mp4,video/webm"
+                                className="cursor-pointer"
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Upload a video file (MP4, WebM). This will upload to the 'content-media' bucket.
+                            </p>
                         </div>
 
-                        <div className="flex items-center gap-3 pt-8">
-                            <Label htmlFor="is-active" className="cursor-pointer">Active</Label>
-                            <Switch
-                                id="is-active"
-                                checked={watch('is_active')}
-                                onCheckedChange={(checked) => setValue('is_active', checked)}
+                        <div className="space-y-2">
+                            <Label>Or Video URL</Label>
+                            <Input
+                                {...register('url')}
+                                placeholder="https://example.com/video.mp4"
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Alternatively, paste a direct link if hosted elsewhere.
+                            </p>
                         </div>
-                    </div>
 
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                        <Button type="submit" disabled={isDeploying || uploading}>
-                            {(isDeploying || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {uploading ? 'Uploading...' : 'Save Video'}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-    </AdminLayout>
-);
+                        <div className="space-y-2">
+                            <Label>Title (Optional)</Label>
+                            <Input {...register('title')} placeholder="e.g. Summer Wedding" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Display Order</Label>
+                                <Input
+                                    type="number"
+                                    {...register('display_order', { valueAsNumber: true })}
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-3 pt-8">
+                                <Label htmlFor="is-active" className="cursor-pointer">Active</Label>
+                                <Switch
+                                    id="is-active"
+                                    checked={watch('is_active')}
+                                    onCheckedChange={(checked) => setValue('is_active', checked)}
+                                />
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={isDeploying || uploading}>
+                                {(isDeploying || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {uploading ? 'Uploading...' : 'Save Video'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </AdminLayout>
+    );
 }
+
