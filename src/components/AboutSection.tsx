@@ -1,10 +1,34 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ShuffleGrid } from "@/components/ui/shuffle-grid";
+import { getSiteContentByKey } from "@/services/siteContent";
 import { cn } from "@/lib/utils";
 
 export default function AboutSection() {
   const containerRef = useRef<HTMLElement>(null);
+  const [content, setContent] = useState<{
+    title: string;
+    subtitle: string;
+    description: string;
+    cta_text: string;
+    cta_link: string;
+  } | null>(null);
+
+  useEffect(() => {
+    getSiteContentByKey('about')
+      .then(data => {
+        if (data) {
+          setContent({
+            title: data.title || "The Art of Crafting Unforgettable Celebrations",
+            subtitle: data.subtitle || "About Us",
+            description: data.description || "We believe that celebrations are not simply events — they are chapters in a story that deserves to be told beautifully. Phoenix Events & Production was born from a passion for transforming ordinary spaces into extraordinary experiences.",
+            cta_text: data.cta_text || "Read More",
+            cta_link: data.cta_link || "/about"
+          });
+        }
+      })
+      .catch(() => { }); // silent fail, uses default if null
+  }, []);
 
   // Parallax effect for the left image
   const { scrollYProgress } = useScroll({
@@ -14,6 +38,12 @@ export default function AboutSection() {
 
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.05]);
   const y = useTransform(scrollYProgress, [0, 1], [0, 50]);
+
+  // Handle potential React nodes or splitting for the title if needed, 
+  // but for now we assume linear text or basic HTML handling if we were using a parser.
+  // The original title had a <br /> and span. We'll try to replicate that structure if it matches default.
+
+  const isDefaultTitle = !content || content.title.includes("The Art of Crafting Unforgettable Celebrations");
 
   return (
     <section
@@ -35,13 +65,19 @@ export default function AboutSection() {
             <div className="space-y-2">
               {/* Eyebrow */}
               <span className="inline-block text-primary font-medium tracking-wider uppercase text-xs md:text-sm border-b border-primary/30 pb-0.5">
-                About Us
+                {content?.subtitle || "About Us"}
               </span>
 
               {/* Main Heading */}
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif leading-tight text-foreground">
-                The Art of Crafting <br />
-                <span className="text-primary italic">Unforgettable Celebrations</span>
+                {isDefaultTitle ? (
+                  <>
+                    The Art of Crafting <br />
+                    <span className="text-primary italic">Unforgettable Celebrations</span>
+                  </>
+                ) : (
+                  content?.title
+                )}
               </h2>
             </div>
 
@@ -71,15 +107,17 @@ export default function AboutSection() {
 
               {/* Story Copy */}
               <div className="space-y-4 text-muted-foreground leading-relaxed text-sm md:text-base">
-                <p>
-                  We believe that celebrations are not simply events — they are chapters in a story that deserves to be told beautifully.
-                </p>
-                <p>
-                  Phoenix Events & Production was born from a passion for transforming ordinary spaces into extraordinary experiences. Over the years, we have curated weddings filled with emotion, corporate events driven by excellence, and celebrations that remain etched in memory long after the final applause.
-                </p>
-                <p>
-                  From the first consultation to the final spotlight, every detail is intentional. Every element is designed to reflect your personality, your vision, and your story.
-                </p>
+                <p>{content?.description || "We believe that celebrations are not simply events..."}</p>
+                {!content && (
+                  <>
+                    <p>
+                      Phoenix Events & Production was born from a passion for transforming ordinary spaces into extraordinary experiences. Over the years, we have curated weddings filled with emotion, corporate events driven by excellence, and celebrations that remain etched in memory long after the final applause.
+                    </p>
+                    <p>
+                      From the first consultation to the final spotlight, every detail is intentional. Every element is designed to reflect your personality, your vision, and your story.
+                    </p>
+                  </>
+                )}
 
                 <div className="pl-4 border-l-2 border-primary/40 text-foreground font-medium py-1 italic text-base md:text-lg">
                   "We do not just plan events. <br /> We design how they are remembered."

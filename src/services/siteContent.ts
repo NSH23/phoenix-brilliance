@@ -73,6 +73,17 @@ export async function updateSiteContent(sectionKey: string, updates: Partial<Sit
   return data as SiteContent;
 }
 
+export async function upsertSiteContent(content: Partial<SiteContent> & { section_key: string }) {
+  const { data, error } = await supabase
+    .from('site_content')
+    .upsert(content, { onConflict: 'section_key' })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as SiteContent;
+}
+
 // Site Settings
 export async function getAllSiteSettings() {
   const { data, error } = await supabase

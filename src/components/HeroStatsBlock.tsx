@@ -2,7 +2,7 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { Trophy, Heart, Handshake, Shield, type LucideIcon } from "lucide-react";
 import CountUp from "./CountUp";
-import { getWhyChooseUsStats, type WhyChooseUsStat } from "@/services/whyChooseUs";
+
 
 const ICON_MAP: Record<string, LucideIcon> = {
   trophy: Trophy,
@@ -28,23 +28,7 @@ function parseStatValue(statValue: string): { value: number; suffix: string } {
 
 type DisplayStat = { value: number; suffix: string; label: string; Icon: LucideIcon };
 
-function toDisplayStats(raw: WhyChooseUsStat[]): DisplayStat[] {
-  const byKey = new Map(raw.map((s) => [s.icon_key, s]));
-  return DEFAULT_STATS.map((d) => {
-    const row = byKey.get(d.iconKey);
-    const Icon = ICON_MAP[d.iconKey] ?? Trophy;
-    if (row) {
-      const { value, suffix } = parseStatValue(row.stat_value);
-      return { value, suffix, label: row.stat_label, Icon };
-    }
-    return {
-      value: d.value,
-      suffix: d.suffix,
-      label: d.label,
-      Icon,
-    };
-  });
-}
+
 
 /** Stats overlay: equal-height cards with icon, number, label (no podium bar) */
 const HeroStatsBlock = () => {
@@ -107,8 +91,8 @@ const HeroStatsBlock = () => {
             }}
             className="group relative flex flex-col rounded-xl border dark:border-white/10 py-4 px-3 sm:py-5 sm:px-4 text-center overflow-hidden transition-all duration-300 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-primary/30 dark:focus-within:ring-white/30 focus-within:ring-offset-2 focus-within:ring-offset-transparent hero-stats dark:bg-black/60 dark:backdrop-blur-md"
             style={{
-              border: isDark 
-                ? undefined 
+              border: isDark
+                ? undefined
                 : '1px solid hsl(var(--primary) / 0.15)',
               background: isDark
                 ? undefined
@@ -130,7 +114,7 @@ const HeroStatsBlock = () => {
               }
             }}
           >
-            <div 
+            <div
               className="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-lg dark:bg-white/10 flex items-center justify-center mb-2 flex-shrink-0"
               style={{
                 background: isDark
@@ -141,15 +125,15 @@ const HeroStatsBlock = () => {
                   : '2px solid hsl(var(--primary) / 0.22)'
               }}
             >
-              <stat.Icon 
-                className="w-5 h-5 sm:w-6 sm:h-6 dark:text-white" 
+              <stat.Icon
+                className="w-5 h-5 sm:w-6 sm:h-6 dark:text-white"
                 style={{
                   color: isDark ? undefined : 'hsl(var(--primary))'
                 }}
-                strokeWidth={2} 
+                strokeWidth={2}
               />
             </div>
-            <p 
+            <p
               className="text-2xl sm:text-3xl font-bold dark:text-white leading-none tabular-nums"
               style={{
                 color: isDark ? undefined : '#2A2219'
@@ -162,7 +146,7 @@ const HeroStatsBlock = () => {
                 reducedMotion={!!reducedMotion}
               />
             </p>
-            <p 
+            <p
               className="text-xs sm:text-sm font-medium dark:text-white/80 mt-1"
               style={{
                 color: isDark ? undefined : '#4A3F35'

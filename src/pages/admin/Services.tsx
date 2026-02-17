@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search, Edit, Trash2, MoreHorizontal, GripVertical, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ export default function AdminServices() {
     title: '',
     description: '',
     icon: '',
+    image_url: '',
     features: '',
     isActive: true,
     display_order: 0,
@@ -80,6 +82,7 @@ export default function AdminServices() {
         title: service.title,
         description: service.description || '',
         icon: service.icon || '',
+        image_url: service.image_url || '',
         features: (service.features || []).join(', '),
         isActive: service.is_active ?? true,
         display_order: service.display_order ?? 0,
@@ -90,6 +93,7 @@ export default function AdminServices() {
         title: '',
         description: '',
         icon: '',
+        image_url: '',
         features: '',
         isActive: true,
         display_order: nextOrder,
@@ -111,6 +115,7 @@ export default function AdminServices() {
           title: formData.title.trim(),
           description: formData.description.trim() || null,
           icon: formData.icon.trim() || null,
+          image_url: formData.image_url || null,
           features: featuresArray,
           is_active: formData.isActive,
           display_order: formData.display_order,
@@ -122,6 +127,7 @@ export default function AdminServices() {
           title: formData.title.trim(),
           description: formData.description.trim() || null,
           icon: formData.icon.trim() || null,
+          image_url: formData.image_url || null,
           features: featuresArray,
           is_active: formData.isActive,
           display_order: formData.display_order,
@@ -195,6 +201,13 @@ export default function AdminServices() {
                   <div className="flex items-start gap-4">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <GripVertical className="w-5 h-5" />
+                      {s.image_url && (
+                        <img
+                          src={s.image_url}
+                          alt={s.title}
+                          className="w-12 h-12 object-cover rounded-md border"
+                        />
+                      )}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
@@ -250,7 +263,7 @@ export default function AdminServices() {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
             <DialogDescription>
@@ -259,6 +272,15 @@ export default function AdminServices() {
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Service Image</Label>
+              <ImageUpload
+                value={formData.image_url}
+                onChange={(url) => setFormData({ ...formData, image_url: url as string })}
+                bucket="service-images"
+                previewClassName="aspect-video w-full object-cover"
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="title">Service Title</Label>
               <Input

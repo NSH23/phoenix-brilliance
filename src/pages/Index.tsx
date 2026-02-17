@@ -1,13 +1,6 @@
+import { Suspense, lazy } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-
-import ReelsSection from "@/components/ReelsSection";
-import EventsSection from "@/components/EventsSection";
-import ServicesSection from "@/components/ServicesSection";
-import CollaborationsSection from "@/components/CollaborationsSection";
-import TestimonialsSection from "@/components/TestimonialsSectionNew";
-import VideoFeatureSection from "@/components/VideoFeatureSection";
-import AboutSection from "@/components/AboutSection";
 import Footer from "@/components/Footer";
 import SectionSeparator from "@/components/SectionSeparator";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -15,6 +8,15 @@ import MobileCTA from "@/components/MobileCTA";
 import { SEO } from "@/components/SEO";
 import { OrganizationSchema } from "@/components/StructuredData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+
+// Lazy Load Below-the-Fold Sections
+const ReelsSection = lazy(() => import("@/components/ReelsSection"));
+const EventsSection = lazy(() => import("@/components/EventsSection"));
+const ServicesSection = lazy(() => import("@/components/ServicesSection"));
+const CollaborationsSection = lazy(() => import("@/components/CollaborationsSection"));
+const TestimonialsSection = lazy(() => import("@/components/TestimonialsSectionNew"));
+const VideoFeatureSection = lazy(() => import("@/components/VideoFeatureSection"));
+const AboutSection = lazy(() => import("@/components/AboutSection"));
 
 const Index = () => {
   const { contact, socialLinks } = useSiteConfig();
@@ -49,49 +51,45 @@ const Index = () => {
       <div className="min-h-screen bg-transparent text-foreground antialiased main-page-flow">
         <Navbar />
         <main>
-          {/* Hero (Cinematic + Petals) */}
+          {/* Hero (Cinematic + Petals) - Rendered Immediately */}
           <div id="home">
             <HeroSection />
           </div>
 
+          {/* Fallback Loader */}
+          <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
 
-          {/* Collaborations / Elegant Venues (above, compact) */}
-          <div id="venues">
-            <CollaborationsSection />
-          </div>
+            {/* Collaborations / Elegant Venues (above, compact) */}
+            <div id="venues">
+              <CollaborationsSection />
+            </div>
 
+            {/* Reels (Visual Proof) */}
+            <div id="reels">
+              <ReelsSection />
+            </div>
 
+            {/* About Us (New Horizontal Curtain Reveal) */}
+            <div id="about">
+              <AboutSection />
+            </div>
 
+            {/* Events (Keep) */}
+            <div id="events">
+              <EventsSection />
+            </div>
 
-          {/* Reels (Visual Proof) */}
-          <div id="reels">
-            <ReelsSection />
-          </div>
+            {/* Services (3D Flip) */}
+            <div id="services">
+              <ServicesSection />
+            </div>
 
-          {/* About Us (New Horizontal Curtain Reveal) */}
-          <div id="about">
-            <AboutSection />
-          </div>
+            {/* Testimonials (Trust) */}
+            <div id="testimonials">
+              <TestimonialsSection />
+            </div>
 
-          {/* Events (Keep) */}
-          <div id="events">
-            <EventsSection />
-          </div>
-
-
-          {/* Services (3D Flip) */}
-          <div id="services">
-            <ServicesSection />
-          </div>
-
-
-          {/* Testimonials (Trust) */}
-          <div id="testimonials">
-            <TestimonialsSection />
-          </div>
-
-
-          {/* Video Feature (Cinematic End) */}
+          </Suspense>
 
         </main>
         <Footer />

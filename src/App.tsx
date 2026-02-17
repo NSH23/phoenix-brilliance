@@ -43,8 +43,8 @@ const AdminCollaborations = lazy(() => import("./pages/admin/Collaborations"));
 const AdminTestimonials = lazy(() => import("./pages/admin/Testimonials"));
 const AdminInquiries = lazy(() => import("./pages/admin/Inquiries"));
 const AdminContent = lazy(() => import("./pages/admin/Content"));
-const AdminWhyUs = lazy(() => import("./pages/admin/WhyUs"));
-const AdminBeforeAfter = lazy(() => import("./pages/admin/BeforeAfter"));
+
+
 const AdminContentMedia = lazy(() => import("./pages/admin/ContentMedia"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminTeam = lazy(() => import("./pages/admin/Team"));
@@ -152,22 +152,8 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/admin/why-us"
-            element={
-              <ProtectedRoute>
-                <AdminWhyUs />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/before-after"
-            element={
-              <ProtectedRoute>
-                <AdminBeforeAfter />
-              </ProtectedRoute>
-            }
-          />
+
+
           <Route
             path="/admin/media"
             element={

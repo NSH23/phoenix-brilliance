@@ -61,8 +61,6 @@ export default function AdminEvents() {
     display_order: 0,
   });
   const [eventImages, setEventImagesForm] = useState<string[]>([]);
-  const [eventsFrameTemplate, setEventsFrameTemplate] = useState<GalleryFrameTemplateId>('polaroid');
-  const [savingFrame, setSavingFrame] = useState(false);
 
   // Load events from database
   useEffect(() => {
@@ -75,22 +73,14 @@ export default function AdminEvents() {
       setSearchParams({}, { replace: true });
       handleOpenDialog();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.get('add')]);
 
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const [data, frameVal] = await Promise.all([
-        getAllEvents(),
-        getSiteSettingOptional('homepage_events_frame_template'),
-      ]);
+      const data = await getAllEvents();
       setEvents(data);
-      setEventsFrameTemplate(
-        frameVal && frameVal in GALLERY_FRAME_TEMPLATES
-          ? (frameVal as GalleryFrameTemplateId)
-          : 'polaroid'
-      );
     } catch (error: unknown) {
       logger.error('Error loading events', error, { component: 'AdminEvents', action: 'loadEvents' });
       toast.error('Failed to load events', {
@@ -98,20 +88,6 @@ export default function AdminEvents() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleFrameTemplateChange = async (value: string) => {
-    if (!(value in GALLERY_FRAME_TEMPLATES)) return;
-    setSavingFrame(true);
-    try {
-      await upsertSiteSetting('homepage_events_frame_template', value);
-      setEventsFrameTemplate(value as GalleryFrameTemplateId);
-      toast.success('Frame template updated');
-    } catch (e: unknown) {
-      toast.error('Failed to save', { description: (e as Error)?.message });
-    } finally {
-      setSavingFrame(false);
     }
   };
 
@@ -237,33 +213,7 @@ export default function AdminEvents() {
 
   return (
     <AdminLayout title="Events" subtitle="Manage your event types and their details">
-      {/* Homepage Events Settings */}
-      <Card className="mb-6 p-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Label className="text-sm font-medium">Homepage events frame template</Label>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Frame style for event images on the homepage. Top 5 events by order are shown.
-            </p>
-          </div>
-          <Select
-            value={eventsFrameTemplate}
-            onValueChange={handleFrameTemplateChange}
-            disabled={savingFrame}
-          >
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(GALLERY_FRAME_TEMPLATES).map(([id, t]) => (
-                <SelectItem key={id} value={id}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
+
 
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -334,7 +284,7 @@ export default function AdminEvents() {
                             <DropdownMenuItem onClick={() => window.open(`/events/${event.slug}`, '_blank')}>
                               <Eye className="w-4 h-4 mr-2" /> Preview
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleDelete(event.id)}
                               className="text-destructive"
                             >
@@ -390,8 +340,8 @@ export default function AdminEvents() {
                 value={formData.title}
                 onChange={(e) => {
                   const title = e.target.value;
-                  setFormData({ 
-                    ...formData, 
+                  setFormData({
+                    ...formData,
                     title,
                     slug: editingEvent ? formData.slug : generateSlug(title)
                   });

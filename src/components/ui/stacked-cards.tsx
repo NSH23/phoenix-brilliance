@@ -62,6 +62,60 @@ export const StackedCards = ({ items, className, autoplay = true }: StackedCards
         }
     }, [activeVideoIndex, items, autoplay]); // Dependency on activeVideoIndex to replay when switching
 
+    // Listen for other components playing video with sound
+    useEffect(() => {
+        const handleExclusivePlay = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail?.origin !== 'hero-stacked-cards') {
+                setIsMuted(true);
+                if (activeVideoRef.current) {
+                    activeVideoRef.current.muted = true;
+                }
+            }
+        };
+
+        window.addEventListener('video-exclusive-play', handleExclusivePlay);
+        return () => window.removeEventListener('video-exclusive-play', handleExclusivePlay);
+    }, []);
+
+    // Performance: Pause active video when out of view
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) {
+                        // Pause active video if playing
+                        if (activeVideoRef.current && !activeVideoRef.current.paused) {
+                            activeVideoRef.current.pause();
+                        }
+                    } else {
+                        // Resume if it was supposed to be playing?
+                        // Autoplay logic handles initial play.
+                        // If we are back in view, and it's the active item, maybe resume?
+                        // Let's resume if it matches active index.
+                        if (activeVideoRef.current && activeVideoRef.current.paused) {
+                            activeVideoRef.current.play().catch(() => { });
+                        }
+                    }
+                });
+            },
+            { threshold: 0.2 }
+        );
+
+        const container = activeVideoRef.current?.closest('.perspective-1000'); // targeting the container
+        if (container) {
+            observer.observe(container);
+        } else {
+            // Fallback: observe the parent of the first video found, or just the component wrapper if ref available
+            // We don't have a ref for the wrapper div but we can find it
+            // For now, let's try finding by class since we are inside the component
+            const el = document.querySelector('.perspective-1000');
+            if (el) observer.observe(el);
+        }
+
+        return () => observer.disconnect();
+    }, [activeVideoIndex]); // Re-attach if index changes? properties might change. Actually observer is stable.
+
     // Handle mute toggle
     const toggleMute = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -69,6 +123,13 @@ export const StackedCards = ({ items, className, autoplay = true }: StackedCards
             const newMutedState = !activeVideoRef.current.muted;
             activeVideoRef.current.muted = newMutedState;
             setIsMuted(newMutedState);
+
+            // If we are unmuting, broadcast to others
+            if (!newMutedState) {
+                window.dispatchEvent(new CustomEvent('video-exclusive-play', {
+                    detail: { origin: 'hero-stacked-cards' }
+                }));
+            }
         }
     };
 

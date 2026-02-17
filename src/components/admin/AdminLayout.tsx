@@ -14,6 +14,7 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
+import { getAllInquiries, type Inquiry } from '@/services';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -23,9 +24,39 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const navigate = useNavigate();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('adminSidebarCollapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [darkMode, setDarkMode] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Notification State
+  const [notifications, setNotifications] = useState<Inquiry[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    localStorage.setItem('adminSidebarCollapsed', JSON.stringify(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  // Fetch Notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const inquiries = await getAllInquiries();
+        const unread = inquiries.filter(i => i.status === 'new');
+        setNotifications(unread.slice(0, 5)); // Show top 5 unread
+        setUnreadCount(unread.length);
+      } catch (error) {
+        console.error('Failed to fetch notifications', error);
+      }
+    };
+
+    fetchNotifications();
+    // Optional: Poll every minute
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -109,10 +140,61 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative rounded-xl">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-            </Button>
+            {/* Notifications */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative rounded-xl">
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0 mr-4" align="end">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <h4 className="font-semibold text-sm">Notifications</h4>
+                  {unreadCount > 0 && (
+                    <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+                <div className="max-h-[300px] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                      <p className="text-sm">No new notifications</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border/50">
+                      {notifications.map((inquiry) => (
+                        <button
+                          key={inquiry.id}
+                          className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex gap-3 items-start"
+                          onClick={() => navigate('/admin/inquiries')}
+                        >
+                          <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{inquiry.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{inquiry.event_type || 'General Inquiry'}</p>
+                            <p className="text-[10px] text-muted-foreground truncate opacity-70">{inquiry.message}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              {new Date(inquiry.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="p-2 border-t border-border bg-muted/20">
+                  <Button variant="ghost" size="sm" className="w-full text-xs h-8" onClick={() => navigate('/admin/inquiries')}>
+                    View all inquiries
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="rounded-xl">
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
@@ -152,6 +234,6 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
           </motion.div>
         </main>
       </motion.div>
-    </div>
+    </div >
   );
 }

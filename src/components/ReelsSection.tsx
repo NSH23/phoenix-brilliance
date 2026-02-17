@@ -18,8 +18,14 @@ const ReelsSection = () => {
             src: item.url,
             alt: item.title || `Phoenix Moment ${index + 1}`
           }));
-          // Duplicate list for infinite scroll feel if item count is low
-          setReels([...mapped, ...mapped, ...mapped]);
+          // Optimization: Only duplicate if we have few items to support infinite scroll feel without massive DOM
+          if (mapped.length < 6) {
+            setReels([...mapped, ...mapped, ...mapped]);
+          } else if (mapped.length < 12) {
+            setReels([...mapped, ...mapped]);
+          } else {
+            setReels(mapped);
+          }
         } else {
           // Fallback
           const fallback = ["/4.mp4", "/5.MP4", "/6.mp4", "/7.MP4", "/1.mp4", "/reel 1.mp4"].map((src, index) => ({

@@ -9,7 +9,7 @@ export * from './inquiries';
 export * from './siteContent';
 export * from './storage';
 export * from './dashboard';
-export * from './whyChooseUs';
+
 export * from './pageHeroContent';
 export * from './team';
 export * from './adminUsers';

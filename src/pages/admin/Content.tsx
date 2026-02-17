@@ -8,11 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  getWhyChooseUsStats,
-  updateWhyChooseUsStat,
-  type WhyChooseUsStat,
-} from '@/services/whyChooseUs';
+
 import {
   getPageHeroContent,
   upsertPageHeroContent,
@@ -22,6 +18,7 @@ import {
 import {
   getAllSiteContent,
   updateSiteContent,
+  upsertSiteContent,
   getAllSocialLinks,
   upsertSocialLink,
   getContactInfoOptional,
@@ -30,7 +27,7 @@ import {
 } from '@/services/siteContent';
 import { toast } from 'sonner';
 
-const ICON_MAP = { trophy: Trophy, heart: Heart, users: Users, shield: Shield } as const;
+
 
 interface SocialLinks {
   facebook: string;
@@ -103,7 +100,7 @@ function ensureThree(stats: PageHeroStat[]): PageHeroStat[] {
 }
 
 export default function AdminContent() {
-  const [stats, setStats] = useState<WhyChooseUsStat[]>([]);
+
   const [eventsPage, setEventsPage] = useState<PageHeroContent | null>(null);
   const [galleryPage, setGalleryPage] = useState<PageHeroContent | null>(null);
   const [collaborationsPage, setCollaborationsPage] = useState<PageHeroContent | null>(null);
@@ -130,8 +127,38 @@ export default function AdminContent() {
   const load = async () => {
     try {
       setLoading(true);
-      const [s, e, g, collab, c, social, contact] = await Promise.all([
-        getWhyChooseUsStats(),
+
+      // Ensure default sections exist
+      const requiredSections = [
+        {
+          section_key: 'home-hero',
+          title: 'Crafting Moments That Last Forever',
+          subtitle: 'Phoenix Events & Production',
+          description: 'From weddings to corporate celebrations, we turn your vision into unforgettable experiences with elegance and precision.',
+          cta_text: 'Plan Your Event',
+          cta_link: '/contact'
+        },
+        {
+          section_key: 'about',
+          title: 'The Art of Crafting Unforgettable Celebrations',
+          subtitle: 'About Us',
+          description: 'We believe that celebrations are not simply events — they are chapters in a story that deserves to be told beautifully. Phoenix Events & Production was born from a passion for transforming ordinary spaces into extraordinary experiences.',
+          cta_text: 'Read More',
+          cta_link: '/about'
+        },
+        {
+          section_key: 'why-us',
+          title: 'Why Phoenix Events?',
+          subtitle: 'Why Choose Us',
+          description: 'We create experiences that become cherished memories. With over a decade of expertise, we bring your dreams to life.'
+        }
+      ];
+
+      for (const section of requiredSections) {
+        await upsertSiteContent(section).catch(err => console.error(`Failed to seed ${section.section_key}`, err));
+      }
+
+      const [e, g, collab, c, social, contact] = await Promise.all([
         getPageHeroContent('events').catch(() => null),
         getPageHeroContent('gallery').catch(() => null),
         getPageHeroContent('collaborations').catch(() => null),
@@ -139,7 +166,6 @@ export default function AdminContent() {
         getAllSocialLinks().catch(() => []),
         getContactInfoOptional().catch(() => null),
       ]);
-      setStats(s);
       setEventsPage(e ? { ...e, stats: ensureThree(e.stats) } : { ...DEFAULT_EVENTS });
       setGalleryPage(g ? { ...g, stats: ensureThree(g.stats) } : { ...DEFAULT_GALLERY });
       setCollaborationsPage(collab ? { ...collab, stats: ensureThree(collab.stats) } : { ...DEFAULT_COLLABORATIONS });
@@ -166,18 +192,7 @@ export default function AdminContent() {
     }
   };
 
-  const handleSaveStat = async (id: string, updates: Partial<WhyChooseUsStat>) => {
-    setSaving(id);
-    try {
-      const updated = await updateWhyChooseUsStat(id, updates);
-      setStats((prev) => prev.map((s) => (s.id === id ? updated : s)));
-      toast.success('Stat updated');
-    } catch (err) {
-      toast.error('Failed to update', { description: (err as Error)?.message });
-    } finally {
-      setSaving(null);
-    }
-  };
+
 
   const handleSaveEventsPage = async (data: { title?: string; subtitle?: string; description?: string; stats?: PageHeroStat[] }) => {
     setSaving('events');
@@ -307,12 +322,9 @@ export default function AdminContent() {
 
   return (
     <AdminLayout title="Site Content" subtitle="Manage your website text and information">
-      <Tabs defaultValue="stats" className="space-y-6">
+      <Tabs defaultValue="events-page" className="space-y-6">
         <TabsList className="flex flex-wrap gap-1">
-          <TabsTrigger value="stats" className="gap-2">
-            <Trophy className="w-4 h-4" />
-            Stats
-          </TabsTrigger>
+
           <TabsTrigger value="events-page" className="gap-2">
             <Calendar className="w-4 h-4" />
             Events Page
@@ -336,51 +348,7 @@ export default function AdminContent() {
           <TabsTrigger value="contact">Contact Info</TabsTrigger>
         </TabsList>
 
-        {/* Stats (4 cards) – moved from Why Us to Site Content */}
-        <TabsContent value="stats" className="space-y-6">
-          <div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Edit the 4 stat cards shown on the homepage (Why Choose Us). Icons: trophy, heart, users, shield.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stats.map((stat) => {
-                const Icon = ICON_MAP[stat.icon_key];
-                return (
-                  <Card key={stat.id} className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      {Icon && <Icon className="w-5 h-5 text-primary" />}
-                      <span className="text-sm font-medium text-muted-foreground">{stat.icon_key}</span>
-                    </div>
-                    <div className="grid gap-2">
-                      <Input
-                        value={stat.stat_value}
-                        onChange={(e) => setStats((p) => p.map((s) => (s.id === stat.id ? { ...s, stat_value: e.target.value } : s)))}
-                        onBlur={(e) => handleSaveStat(stat.id, { stat_value: e.target.value })}
-                        placeholder="2200+"
-                      />
-                      <Input
-                        value={stat.stat_label}
-                        onChange={(e) => setStats((p) => p.map((s) => (s.id === stat.id ? { ...s, stat_label: e.target.value } : s)))}
-                        onBlur={(e) => handleSaveStat(stat.id, { stat_label: e.target.value })}
-                        placeholder="Successful Events"
-                      />
-                      <Input
-                        value={stat.stat_description || ''}
-                        onChange={(e) => setStats((p) => p.map((s) => (s.id === stat.id ? { ...s, stat_description: e.target.value } : s)))}
-                        onBlur={(e) => handleSaveStat(stat.id, { stat_description: e.target.value })}
-                        placeholder="Flawlessly executed celebrations"
-                      />
-                    </div>
-                    {saving === stat.id && <Loader2 className="w-4 h-4 animate-spin mt-2" />}
-                  </Card>
-                );
-              })}
-            </div>
-            {stats.length === 0 && (
-              <p className="text-muted-foreground">No stats yet. Run the <code className="text-sm bg-muted px-1 rounded">site-content-stats-and-pages.sql</code> seed.</p>
-            )}
-          </div>
-        </TabsContent>
+
 
         {/* Events Page hero */}
         <TabsContent value="events-page" className="space-y-6">

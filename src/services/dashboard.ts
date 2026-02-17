@@ -24,6 +24,7 @@ export interface DashboardStats {
   albums: { total: number; thisMonth: number };
   galleryImages: { total: number; thisMonth: number };
   inquiries: { total: number; new: number };
+  team: { total: number; active: number; thisMonth: number };
 }
 
 export interface RecentInquiry {
