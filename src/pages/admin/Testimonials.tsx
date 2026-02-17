@@ -99,7 +99,7 @@ export default function AdminTestimonials() {
         name: testimonial.name,
         role: testimonial.role || '',
         content: testimonial.content,
-        avatar: testimonial.avatar || '',
+        avatar: testimonial.avatar_url || '',
         rating: testimonial.rating ?? 5,
         eventType: testimonial.event_type || '',
         display_order: testimonial.display_order ?? 0,
@@ -133,7 +133,7 @@ export default function AdminTestimonials() {
           name: formData.name.trim(),
           role: formData.role.trim() || null,
           content: formData.content.trim(),
-          avatar: formData.avatar.trim() || null,
+          avatar_url: formData.avatar.trim() || null,
           rating: formData.rating,
           event_type: formData.eventType.trim() || null,
           display_order: formData.display_order,
@@ -146,7 +146,7 @@ export default function AdminTestimonials() {
           name: formData.name.trim(),
           role: formData.role.trim() || null,
           content: formData.content.trim(),
-          avatar: formData.avatar.trim() || null,
+          avatar_url: formData.avatar.trim() || null,
           rating: formData.rating,
           event_type: formData.eventType.trim() || null,
           is_featured: formData.is_featured,
@@ -230,7 +230,7 @@ export default function AdminTestimonials() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
             {filteredTestimonials.map((t, i) => (
               <motion.div
                 key={t.id}
@@ -239,26 +239,26 @@ export default function AdminTestimonials() {
                 transition={{ delay: i * 0.05 }}
               >
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
-                  <CardContent className="p-6 flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                          {t.avatar ? (
-                            <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
+                  <CardContent className="p-3 md:p-6 flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-2 md:mb-4">
+                      <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
+                        <div className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden bg-muted shrink-0">
+                          {t.avatar_url ? (
+                            <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold">
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-base">
                               {t.name.charAt(0)}
                             </div>
                           )}
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-sm">{t.name}</h3>
-                          <p className="text-xs text-muted-foreground">{t.role || '—'}</p>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-xs md:text-sm truncate">{t.name}</h3>
+                          <p className="text-[10px] md:text-xs text-muted-foreground truncate">{t.role || '—'}</p>
                         </div>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 -mr-1 md:-mr-2">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -272,14 +272,23 @@ export default function AdminTestimonials() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <div className="flex items-center gap-1 mb-3">{renderStars(t.rating)}</div>
-                    <p className="text-sm text-muted-foreground flex-1 mb-4 italic">"{t.content}"</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">{t.event_type || '—'}</Badge>
-                      <Badge variant="secondary" className="text-xs">Order: {t.display_order ?? 0}</Badge>
+                    <div className="flex items-center gap-0.5 md:gap-1 mb-2 md:mb-3">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3 h-3 md:w-4 md:h-4 ${i < (t.rating ?? 0) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-[10px] md:text-sm text-muted-foreground flex-1 mb-2 md:mb-4 italic line-clamp-3 md:line-clamp-none">
+                      "{t.content}"
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1 md:gap-2">
+                      <Badge variant="outline" className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto line-clamp-1 max-w-[80px] md:max-w-none">{t.event_type || '—'}</Badge>
+                      <Badge variant="secondary" className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">Order: {t.display_order ?? 0}</Badge>
                       {t.is_featured && (
-                        <Badge className="gap-1 bg-primary/90">
-                          <Star className="w-3 h-3 fill-current" /> Featured
+                        <Badge className="gap-0.5 px-1 py-0 md:gap-1 md:px-2.5 md:py-0.5 bg-primary/90 text-[10px] md:text-xs">
+                          <Star className="w-2 h-2 md:w-3 md:h-3 fill-current" /> <span className="hidden md:inline">Featured</span>
                         </Badge>
                       )}
                     </div>

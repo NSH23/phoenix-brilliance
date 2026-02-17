@@ -222,7 +222,7 @@ export default function AdminCollaborations() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
           {filteredCollaborations.map((c, i) => (
             <motion.div
               key={c.id}
@@ -230,30 +230,30 @@ export default function AdminCollaborations() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted">
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+                <div className="p-3 md:p-6 flex-1">
+                  <div className="flex items-start justify-between mb-2 md:mb-4">
+                    <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-muted shrink-0">
                         {c.logo_url ? (
                           <img src={c.logo_url} alt={c.name} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-sm">
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-sm">
                             {c.name.charAt(0)}
                           </div>
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-serif font-bold">{c.name}</h3>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="w-3 h-3" />
-                          {c.location || '—'}
+                      <div className="min-w-0">
+                        <h3 className="font-serif font-bold text-sm md:text-base truncate">{c.name}</h3>
+                        <div className="flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground truncate">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{c.location || '—'}</span>
                         </div>
                       </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 -mr-1 md:mr-0">
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -267,27 +267,27 @@ export default function AdminCollaborations() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4 hidden md:block">
                     {c.description || '—'}
                   </p>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-muted-foreground">Order: {c.display_order ?? 0}</span>
+                  <div className="flex items-center justify-between gap-2 mt-2 md:mt-0">
+                    <span className="text-[10px] md:text-xs text-muted-foreground">Order: {c.display_order ?? 0}</span>
                     <span
-                      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                        c.is_active
+                      className={`inline-flex items-center rounded-md px-1.5 py-0.5 md:px-2 md:py-1 text-[10px] md:text-xs font-medium ring-1 ring-inset ${c.is_active
                           ? 'bg-primary/10 text-primary ring-primary/20'
                           : 'bg-muted text-muted-foreground ring-border'
-                      }`}
+                        }`}
                     >
                       {c.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
                 </div>
-                <div className="px-6 py-3 bg-muted/50 border-t flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Status</span>
+                <div className="px-3 py-2 md:px-6 md:py-3 bg-muted/50 border-t flex items-center justify-between">
+                  <span className="text-[10px] md:text-xs text-muted-foreground">Status</span>
                   <Switch
                     checked={c.is_active}
                     onCheckedChange={() => handleToggleActive(c)}
+                    className="h-4 w-8 md:h-6 md:w-11"
                   />
                 </div>
               </Card>

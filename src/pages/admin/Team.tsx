@@ -398,7 +398,7 @@ export default function AdminTeam() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
           {filtered.map((m, i) => (
             <motion.div
               key={m.id}
@@ -406,77 +406,59 @@ export default function AdminTeam() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
             >
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="flex flex-1 items-start gap-4 min-w-0 cursor-pointer rounded-lg -m-1 p-1 transition-colors hover:bg-muted/50"
-                      onClick={() => setViewingMember(m)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && setViewingMember(m)}
-                    >
-                      <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary/10 flex items-center justify-center">
-                        <TeamPhotoImg
-                          photoUrl={m.photo_url}
-                          alt={m.name}
-                          className="w-full h-full object-cover"
-                          fallback={<Users className="w-6 h-6 text-primary" />}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold">{m.name}</h3>
-                          <Badge variant={m.is_active ? 'default' : 'secondary'}>
-                            {m.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Mail className="w-3.5 h-3.5" /> {m.email}
-                          </span>
-                          {m.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3.5 h-3.5" /> {m.phone}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Briefcase className="w-3.5 h-3.5" /> {m.designation}
-                            {m.department ? ` · ${m.department}` : ''}
-                          </span>
-                        </div>
-                        {(m.age != null || m.join_date) && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {m.age != null && `Age ${m.age}`}
-                            {m.age != null && m.join_date && ' · '}
-                            {m.join_date && `Joined ${new Date(m.join_date).toLocaleDateString()}`}
-                          </p>
-                        )}
-                      </div>
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full relative group">
+                <CardContent className="p-3 md:p-6 flex flex-col items-center text-center h-full">
+                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setViewingMember(m)}>
+                          <Eye className="w-4 h-4 mr-2" /> View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openDialog(m)}>
+                          <Edit className="w-4 h-4 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(m.id)} className="text-destructive">
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div
+                    className="flex flex-col items-center cursor-pointer w-full"
+                    onClick={() => setViewingMember(m)}
+                  >
+                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-muted mb-2 md:mb-4 bg-muted/30">
+                      <TeamPhotoImg
+                        photoUrl={m.photo_url}
+                        alt={m.name}
+                        className="w-full h-full object-cover"
+                        fallback={<Users className="w-8 h-8 md:w-10 md:h-10 text-muted-foreground" />}
+                      />
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Active</span>
-                        <Switch checked={m.is_active} onCheckedChange={() => handleToggleActive(m)} />
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setViewingMember(m)}>
-                            <Eye className="w-4 h-4 mr-2" /> View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openDialog(m)}>
-                            <Edit className="w-4 h-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(m.id)} className="text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+
+                    <h3 className="font-semibold text-sm md:text-lg w-full truncate px-1">{m.name}</h3>
+                    <p className="text-xs text-muted-foreground w-full truncate px-1 mb-1 md:mb-2">{m.designation}</p>
+
+                    <div className="flex flex-wrap items-center justify-center gap-1 mt-auto">
+                      <Badge variant={m.is_active ? 'default' : 'secondary'} className="text-[10px] md:text-xs px-1.5 py-0 h-5">
+                        {m.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                      {m.department && (
+                        <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 py-0 h-5 max-w-[80px] truncate hidden md:inline-flex">
+                          {m.department}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="hidden md:flex gap-3 mt-3 text-xs text-muted-foreground">
+                      {m.email && <Mail className="w-3 h-3" />}
+                      {m.phone && <Phone className="w-3 h-3" />}
                     </div>
                   </div>
                 </CardContent>

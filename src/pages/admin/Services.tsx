@@ -188,7 +188,7 @@ export default function AdminServices() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
           {filteredServices.map((s, i) => (
             <motion.div
               key={s.id}
@@ -196,60 +196,64 @@ export default function AdminServices() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <GripVertical className="w-5 h-5" />
-                      {s.image_url && (
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
+                <CardContent className="p-3 md:p-6 flex flex-col h-full">
+                  <div className="flex items-start justify-between mb-2 md:mb-4">
+                    <div className="flex items-center gap-2 text-muted-foreground bg-muted p-1.5 md:p-2 rounded-lg">
+                      {s.image_url ? (
                         <img
                           src={s.image_url}
                           alt={s.title}
-                          className="w-12 h-12 object-cover rounded-md border"
+                          className="w-8 h-8 md:w-10 md:h-10 object-cover rounded-md"
                         />
+                      ) : (
+                        <GripVertical className="w-5 h-5 md:w-6 md:h-6" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-serif font-bold">{s.title}</h3>
-                        <Badge variant={s.is_active ? 'default' : 'secondary'}>
-                          {s.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">Order: {s.display_order ?? 0}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {s.description || '—'}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {(s.features || []).map((f, j) => (
-                          <Badge key={j} variant="outline" className="text-xs">{f}</Badge>
-                        ))}
-                      </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 -mr-1 md:-mr-2">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenDialog(s)}>
+                          <Edit className="w-4 h-4 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive">
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="text-sm md:text-lg font-serif font-bold mb-1 md:mb-2 line-clamp-1">{s.title}</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 hidden md:block">
+                      {s.description || '—'}
+                    </p>
+                    <div className="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-0">
+                      {(s.features || []).slice(0, 2).map((f, j) => (
+                        <Badge key={j} variant="outline" className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">{f}</Badge>
+                      ))}
+                      {(s.features || []).length > 2 && (
+                        <Badge variant="outline" className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">+{s.features.length - 2}</Badge>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Active</span>
-                        <Switch
-                          checked={s.is_active}
-                          onCheckedChange={() => handleToggleActive(s)}
-                        />
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenDialog(s)}>
-                            <Edit className="w-4 h-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1 mt-auto pt-2 border-t text-xs">
+                    <div className="flex items-center gap-1 md:gap-2">
+                      <span className="text-[10px] md:text-xs text-muted-foreground hidden md:inline">Order: {s.display_order ?? 0}</span>
+                      <Switch
+                        checked={s.is_active}
+                        onCheckedChange={() => handleToggleActive(s)}
+                        className="scale-75 md:scale-100 origin-left"
+                      />
                     </div>
+                    <Badge variant={s.is_active ? 'default' : 'secondary'} className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">
+                      {s.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>

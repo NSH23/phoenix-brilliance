@@ -30,6 +30,7 @@ import {
 import { getAllInquiries, updateInquiry, deleteInquiry, type Inquiry } from '@/services/inquiries';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { logger } from '@/utils/logger';
 
 const statusColors: Record<Inquiry['status'], string> = {
   new: 'bg-blue-500',
@@ -264,10 +265,10 @@ export default function AdminInquiries() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="overflow-hidden">
                   <p className="text-xs text-muted-foreground mb-1">Email</p>
-                  <a href={`mailto:${selectedInquiry.email}`} className="text-sm text-primary hover:underline">
+                  <a href={`mailto:${selectedInquiry.email}`} className="text-sm text-primary hover:underline truncate block">
                     {selectedInquiry.email}
                   </a>
                 </div>

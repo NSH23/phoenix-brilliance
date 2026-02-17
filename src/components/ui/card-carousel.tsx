@@ -1,14 +1,11 @@
-"use client"
-
-import React from "react"
-// import Image from "next/image" // Removed for Vite compatibility
+import React, { useEffect, useRef, useState } from "react"
 import { Swiper, SwiperSlide } from "swiper/react"
 
 import "swiper/css"
 import "swiper/css/effect-coverflow"
 import "swiper/css/pagination"
 import "swiper/css/navigation"
-import { SparklesIcon } from "lucide-react"
+import { SparklesIcon, Volume2, VolumeX } from "lucide-react"
 import {
     Autoplay,
     EffectCoverflow,
@@ -16,9 +13,7 @@ import {
     Pagination,
 } from "swiper/modules"
 
-import { useEffect, useRef } from "react"
 import type { Swiper as SwiperType } from "swiper"
-import { Badge } from "@/components/ui/badge"
 
 interface CarouselProps {
     images: { src: string; alt: string }[]
@@ -28,6 +23,122 @@ interface CarouselProps {
     title?: string
     description?: string
 }
+
+// Sub-component for individual video slides to handle local state (sound icon)
+const VideoSlide = ({ src, swiperRef }: { src: string, swiperRef: React.MutableRefObject<SwiperType | null> }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isMuted, setIsMuted] = useState(true);
+
+    const handleClick = () => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const isPlayingAudio = !video.muted && !video.paused;
+        const swiper = swiperRef.current;
+
+        // Helper to reset all videos to silent loop
+        const resetAll = () => {
+            const allVideos = document.querySelectorAll('.swiper-slide video');
+            allVideos.forEach((v) => {
+                const vid = v as HTMLVideoElement;
+                vid.muted = true;
+                vid.loop = true;
+                vid.play().catch(() => { });
+            });
+            if (swiper?.autoplay && !swiper.autoplay.running) {
+                swiper.autoplay.start();
+            }
+        };
+
+        if (isPlayingAudio) {
+            // Toggle OFF: Go back to normal
+            resetAll();
+        } else {
+            // Toggle ON: Active mode
+
+            // 0. Broadcast exclusive play
+            window.dispatchEvent(new CustomEvent('video-exclusive-play', {
+                detail: { origin: 'reels-carousel' }
+            }));
+
+            // 1. Pause all others
+            const allVideos = document.querySelectorAll('.swiper-slide video');
+            allVideos.forEach(v => {
+                if (v !== video) {
+                    (v as HTMLVideoElement).pause();
+                }
+            });
+
+            // 2. Stop Swiper
+            if (swiper?.autoplay?.running) {
+                swiper.autoplay.stop();
+            }
+
+            // 3. Play this one unmuted, no loop
+            video.muted = false;
+            video.loop = false;
+            video.currentTime = 0;
+            video.play().catch(console.error);
+        }
+    };
+
+    const handleEnded = () => {
+        const video = videoRef.current;
+        const swiper = swiperRef.current;
+        if (!video) return;
+
+        // Reset this video to silent loop
+        video.muted = true;
+        video.loop = true;
+        video.play().catch(() => { });
+
+        // Restart others?
+        const allVideos = document.querySelectorAll('.swiper-slide video');
+        allVideos.forEach((v) => {
+            if (v !== video) {
+                const vid = v as HTMLVideoElement;
+                vid.muted = true;
+                vid.loop = true;
+                vid.play().catch(() => { });
+            }
+        });
+
+        // Restart Swiper
+        if (swiper?.autoplay && !swiper.autoplay.running) {
+            swiper.autoplay.start();
+        }
+    };
+
+    return (
+        <div className="relative w-full h-full cursor-pointer group" onClick={handleClick}>
+            <video
+                ref={videoRef}
+                src={src}
+                className="size-full object-cover rounded-xl pointer-events-none"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                onEnded={handleEnded}
+                onVolumeChange={(e) => setIsMuted(e.currentTarget.muted)}
+            />
+
+            {/* Sound Indicator Icon - Bottom Right */}
+            <div className="absolute bottom-4 right-4 z-20">
+                <div className="bg-black/40 p-2 rounded-full backdrop-blur-md border border-white/10 shadow-sm transition-all duration-300 group-hover:bg-black/60">
+                    {isMuted ? (
+                        <VolumeX className="w-4 h-4 text-white/90" />
+                    ) : (
+                        <Volume2 className="w-4 h-4 text-white" />
+                    )}
+                </div>
+            </div>
+
+            {/* Removing the center SparklesIcon overlay as requested */}
+        </div>
+    );
+};
 
 export const CardCarousel: React.FC<CarouselProps> = ({
     images,
@@ -43,7 +154,6 @@ export const CardCarousel: React.FC<CarouselProps> = ({
     useEffect(() => {
         const handleExclusivePlay = (e: Event) => {
             const customEvent = e as CustomEvent;
-            // If the event came from somewhere else (like Hero), reset us!
             if (customEvent.detail?.origin !== 'reels-carousel') {
                 const swiper = swiperRef.current;
                 const allVideos = document.querySelectorAll('.swiper-slide video');
@@ -78,17 +188,14 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                         const allVideos = document.querySelectorAll('.swiper-slide video');
                         allVideos.forEach((v) => (v as HTMLVideoElement).pause());
                     } else {
-                        // Resume Swiper auto-scroll (but keep videos muted/default unless user interacted? Default is auto-play silent)
+                        // Resume Swiper auto-scroll
                         if (swiper?.autoplay && !swiper.autoplay.running) {
                             swiper.autoplay.start();
                         }
-                        // Resume silent loop for visible slides?
-                        // Ideally we only play visible ones, but simpler is to play all that were looping.
-                        // For now, let's just resume the silent loop behavior.
+                        // Resume silent loop
                         const allVideos = document.querySelectorAll('.swiper-slide video');
                         allVideos.forEach((v) => {
                             const vid = v as HTMLVideoElement;
-                            // Only play if it was meant to be playing (we don't track that state easily globally, so reset to default silent loop)
                             if (vid.muted) {
                                 vid.play().catch(() => { });
                             }
@@ -96,7 +203,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                     }
                 });
             },
-            { threshold: 0.1 } // 10% visibility triggers it
+            { threshold: 0.1 }
         );
 
         const section = document.querySelector('.swiper')?.closest('section');
@@ -116,9 +223,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
   .swiper-slide {
     background-position: center;
     background-size: cover;
-    width: 420px; /* Reduced from 450px */
-    /* height: 300px; */
-    /* margin: 20px; */
+    width: 420px;
   }
 
   @media (max-width: 768px) {
@@ -136,8 +241,6 @@ export const CardCarousel: React.FC<CarouselProps> = ({
     display: block;
     width: 100%;
   }
-
-
   
   .swiper-3d .swiper-slide-shadow-left {
     background-image: none;
@@ -147,8 +250,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
   }
   `
 
-
-    // Helper to manage ambient video playback: only play Center, Left (Prev), and Right (Next)
+    // Helper to manage ambient video playback
     const updateActiveVideos = (swiper: SwiperType) => {
         if (!swiper || !swiper.el) return;
 
@@ -161,12 +263,10 @@ export const CardCarousel: React.FC<CarouselProps> = ({
         });
 
         // 2. Play only the active 3 (Active, Prev, Next)
-        // Swiper adds specific classes to these slides.
         const activeSlides = swiper.el.querySelectorAll('.swiper-slide-active, .swiper-slide-prev, .swiper-slide-next');
 
         activeSlides.forEach((slide) => {
             const video = slide.querySelector('video');
-            // Only play if it's meant to be ambient (muted)
             if (video && video.muted) {
                 video.play().catch((e) => {
                     // console.log("Auto-play prevented", e);
@@ -197,20 +297,18 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                             <Swiper
                                 onSwiper={(swiper) => {
                                     swiperRef.current = swiper;
-                                    // Initial Playback Check
                                     setTimeout(() => {
                                         updateActiveVideos(swiper);
                                     }, 100);
                                 }}
                                 onSlideChange={(swiper) => updateActiveVideos(swiper)}
                                 spaceBetween={50}
-                                // Continuous Autoplay Config
                                 autoplay={{
-                                    delay: 0, // No pause
+                                    delay: 0,
                                     disableOnInteraction: false,
-                                    pauseOnMouseEnter: true, // Allow user to stop it by hovering
+                                    pauseOnMouseEnter: true,
                                 }}
-                                speed={8000} // Slow continuous speed
+                                speed={8000}
                                 effect={"coverflow"}
                                 grabCursor={true}
                                 centeredSlides={true}
@@ -236,112 +334,8 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                 {images.map((image, index) => (
                                     <SwiperSlide key={index}>
                                         <div className="size-full rounded-3xl overflow-hidden aspect-[3/4] relative group bg-black">
-                                            {/* Support video if src ends in mp4/webm etc, otherwise img */}
                                             {image.src.match(/\.(mp4|webm)$/i) ? (
-                                                <div
-                                                    className="relative w-full h-full cursor-pointer"
-                                                    onClick={(e) => {
-                                                        const container = e.currentTarget;
-                                                        const video = container.querySelector('video');
-                                                        if (!video) return;
-
-                                                        const isPlayingAudio = !video.muted && !video.paused;
-                                                        const swiper = swiperRef.current; // Use the ref for Swiper instance
-
-                                                        // Helper to reset all videos to silent loop
-                                                        const resetAll = () => {
-                                                            const allVideos = document.querySelectorAll('.swiper-slide video');
-                                                            allVideos.forEach((v) => {
-                                                                const vid = v as HTMLVideoElement;
-                                                                vid.muted = true;
-                                                                vid.loop = true;
-                                                                vid.play().catch(() => { });
-                                                            });
-                                                            if (swiper?.autoplay && !swiper.autoplay.running) {
-                                                                swiper.autoplay.start();
-                                                            }
-                                                        };
-
-                                                        // Listen for external exclusive play events (e.g. from Hero)
-                                                        // This needs to be attached once, but here we are in a click handler.
-                                                        // Better to just dispatch here and have a separate useEffect for listening.
-                                                        // See below for the useEffect injection.
-
-                                                        if (isPlayingAudio) {
-                                                            // Toggle OFF: Go back to normal
-                                                            resetAll();
-                                                        } else {
-                                                            // Toggle ON: Active mode
-
-                                                            // 0. Broadcast exclusive play to other components (like Hero)
-                                                            window.dispatchEvent(new CustomEvent('video-exclusive-play', {
-                                                                detail: { origin: 'reels-carousel' }
-                                                            }));
-
-                                                            // 1. Pause all others IN THIS COMPONENT
-                                                            const allVideos = document.querySelectorAll('.swiper-slide video');
-                                                            allVideos.forEach(v => {
-                                                                if (v !== video) {
-                                                                    (v as HTMLVideoElement).pause();
-                                                                }
-                                                            });
-
-                                                            // 2. Stop Swiper
-                                                            if (swiper?.autoplay?.running) {
-                                                                swiper.autoplay.stop();
-                                                            }
-
-                                                            // 3. Play this one unmuted, no loop (to catch end)
-                                                            video.muted = false;
-                                                            video.loop = false;
-                                                            video.currentTime = 0; // Optional: restart or continue? User didn't specify, but restart is cleaner for "playing a moment". Let's simply unmute and ensure playing.
-                                                            // actually if it was already looping silently, continuing is better.
-                                                            video.play().catch(console.error);
-                                                        }
-                                                    }}
-                                                >
-                                                    <video
-                                                        src={image.src}
-                                                        className="size-full object-cover rounded-xl pointer-events-none"
-                                                        autoPlay
-                                                        loop
-                                                        muted
-                                                        playsInline
-                                                        preload="metadata"
-                                                        onEnded={(e) => {
-                                                            // When finished, go back to normal
-                                                            const video = e.currentTarget;
-                                                            const swiper = swiperRef.current; // Use the ref for Swiper instance
-
-                                                            // Reset this video to silent loop
-                                                            video.muted = true;
-                                                            video.loop = true;
-                                                            video.play().catch(() => { });
-
-                                                            // Restart others?
-                                                            // User: "when playing is off then other should start behaving normally"
-                                                            const allVideos = document.querySelectorAll('.swiper-slide video');
-                                                            allVideos.forEach((v) => {
-                                                                if (v !== video) {
-                                                                    const vid = v as HTMLVideoElement;
-                                                                    vid.muted = true;
-                                                                    vid.loop = true;
-                                                                    vid.play().catch(() => { });
-                                                                }
-                                                            });
-
-                                                            // Restart Swiper
-                                                            if (swiper?.autoplay && !swiper.autoplay.running) {
-                                                                swiper.autoplay.start();
-                                                            }
-                                                        }}
-                                                    />
-                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <div className="bg-black/50 p-3 rounded-full backdrop-blur-sm">
-                                                            <SparklesIcon className="w-6 h-6 text-white" />
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <VideoSlide src={image.src} swiperRef={swiperRef} />
                                             ) : (
                                                 <img
                                                     src={image.src}

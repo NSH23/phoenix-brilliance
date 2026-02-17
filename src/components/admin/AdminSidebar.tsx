@@ -8,9 +8,10 @@ import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
 interface AdminSidebarProps {
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  mobile?: boolean; // New prop
 }
 
-export default function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSidebarProps) {
+export default function AdminSidebar({ collapsed = false, onCollapsedChange, mobile = false }: AdminSidebarProps) {
   const location = useLocation();
   const { user, logout } = useAdmin();
 
@@ -21,17 +22,22 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange }: A
     return location.pathname.startsWith(path);
   };
 
+  const sidebarClasses = cn(
+    "bg-card border-r border-border flex flex-col z-40",
+    mobile ? "w-full h-full" : "fixed left-0 top-0 bottom-0"
+  );
+
   return (
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 80 : 280 }}
+      animate={mobile ? undefined : { width: collapsed ? 80 : 280 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 bottom-0 z-40 bg-card border-r border-border flex flex-col"
+      className={sidebarClasses}
     >
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         <AnimatePresence mode="wait">
-          {!collapsed && (
+          {(!collapsed || mobile) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -43,16 +49,18 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange }: A
             </motion.div>
           )}
         </AnimatePresence>
-        <button
-          onClick={() => onCollapsedChange?.(!collapsed)}
-          className={cn(
-            "w-8 h-8 flex items-center justify-center rounded-lg transition-colors",
-            "hover:bg-muted text-muted-foreground hover:text-foreground",
-            collapsed && "mx-auto"
-          )}
-        >
-          <ChevronLeft className={cn("w-5 h-5 transition-transform", collapsed && "rotate-180")} />
-        </button>
+        {!mobile && (
+          <button
+            onClick={() => onCollapsedChange?.(!collapsed)}
+            className={cn(
+              "w-8 h-8 flex items-center justify-center rounded-lg transition-colors",
+              "hover:bg-muted text-muted-foreground hover:text-foreground",
+              collapsed && "mx-auto"
+            )}
+          >
+            <ChevronLeft className={cn("w-5 h-5 transition-transform", collapsed && "rotate-180")} />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -74,7 +82,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange }: A
               isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
             )} />
             <AnimatePresence mode="wait">
-              {!collapsed && (
+              {(!collapsed || mobile) && (
                 <motion.span
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: 'auto' }}
@@ -93,7 +101,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange }: A
       <div className="p-3 border-t border-border">
         <div className={cn(
           "flex items-center gap-3 p-3 rounded-xl bg-muted/50",
-          collapsed && "justify-center"
+          (collapsed && !mobile) && "justify-center"
         )}>
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
             <span className="text-primary font-semibold">
@@ -101,7 +109,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange }: A
             </span>
           </div>
           <AnimatePresence mode="wait">
-            {!collapsed && (
+            {(!collapsed || mobile) && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -119,12 +127,12 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange }: A
           className={cn(
             "w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors",
             "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-            collapsed && "justify-center"
+            (collapsed && !mobile) && "justify-center"
           )}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
           <AnimatePresence mode="wait">
-            {!collapsed && (
+            {(!collapsed || mobile) && (
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

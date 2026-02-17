@@ -5,6 +5,7 @@ import { Menu, Bell, Search, Moon, Sun } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import {
   Command,
   CommandInput,
@@ -30,6 +31,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   });
   const [darkMode, setDarkMode] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Notification State
   const [notifications, setNotifications] = useState<Inquiry[]>([]);
@@ -38,6 +40,13 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   useEffect(() => {
     localStorage.setItem('adminSidebarCollapsed', JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch Notifications
   useEffect(() => {
@@ -77,25 +86,46 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sidebar */}
-      <AdminSidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
+      {/* Desktop Sidebar */}
+      <div className="hidden md:block">
+        <AdminSidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
+      </div>
 
       {/* Main Content */}
       <motion.div
         initial={false}
-        animate={{ marginLeft: sidebarCollapsed ? 80 : 280 }}
+        animate={{ marginLeft: isMobile ? 0 : (sidebarCollapsed ? 80 : 280) }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className="min-h-screen"
       >
         {/* Top Header */}
-        <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-lg border-b border-border flex items-center justify-between px-6">
+        <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-lg border-b border-border flex items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-4">
+
+            {/* Mobile Menu Trigger */}
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted">
+                    <Menu className="w-5 h-5" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 w-[280px]">
+                  <SheetTitle className="sr-only">Navigation</SheetTitle>
+                  <SheetDescription className="sr-only">Mobile navigation menu</SheetDescription>
+                  <AdminSidebar mobile />
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {/* Desktop Collapse Trigger */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted"
+              className="hidden md:flex w-10 h-10 items-center justify-center rounded-lg hover:bg-muted"
             >
               <Menu className="w-5 h-5" />
             </button>
+
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <button
@@ -202,13 +232,13 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         </header>
 
         {/* Page Content */}
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           {/* Page Header */}
-          <div className="mb-8">
+          <div className="mb-6 md:mb-8">
             <motion.h1
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-3xl font-serif font-bold text-foreground"
+              className="text-2xl md:text-3xl font-serif font-bold text-foreground"
             >
               {title}
             </motion.h1>
@@ -217,7 +247,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="text-muted-foreground mt-1"
+                className="text-sm md:text-base text-muted-foreground mt-1"
               >
                 {subtitle}
               </motion.p>

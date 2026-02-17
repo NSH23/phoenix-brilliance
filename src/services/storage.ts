@@ -9,7 +9,8 @@ export type BucketName =
   | 'testimonial-avatars'
   | 'admin-avatars'
   | 'team-photos'
-  | 'team-documents';
+  | 'team-documents'
+  | 'service-images';
 
 /**
  * Upload a file to Supabase Storage
@@ -63,7 +64,7 @@ export async function uploadFiles(
   pathPrefix?: string
 ): Promise<string[]> {
   const uploadPromises = files.map((file, index) => {
-    const fileName = pathPrefix 
+    const fileName = pathPrefix
       ? `${pathPrefix}/${Date.now()}-${index}-${file.name}`
       : `${Date.now()}-${index}-${file.name}`;
     return uploadFile(bucket, file, fileName);

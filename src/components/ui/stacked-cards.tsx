@@ -54,9 +54,14 @@ export const StackedCards = ({ items, className, autoplay = true }: StackedCards
                     }
                 })
                 .catch((error) => {
-                    console.log("Autoplay with sound blocked. Falling back to muted.", error);
+                    // Silently fall back to muted autoplay
                     video.muted = true;
-                    video.play().catch(e => console.error("Force play failed", e));
+                    video.play().catch(e => {
+                        // Ignore standard autoplay errors
+                        if (e.name !== "AbortError" && e.name !== "NotAllowedError") {
+                            // console.error("Force play failed", e);
+                        }
+                    });
                     setIsMuted(true);
                 });
         }

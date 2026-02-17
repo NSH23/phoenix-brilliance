@@ -330,7 +330,7 @@ export default function AdminGallery() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-4">
           {filteredImages.map((image) => (
             <motion.div
               key={image.id}
@@ -352,54 +352,54 @@ export default function AdminGallery() {
                     }}
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 md:gap-2 scale-90 md:scale-100">
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="h-8 w-8"
+                        className="h-6 w-6 md:h-8 md:w-8"
                         onClick={() => handleOpenEdit(image)}
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-3 h-3 md:w-4 md:h-4" />
                       </Button>
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="h-8 w-8"
+                        className="h-6 w-6 md:h-8 md:w-8"
                         onClick={() => handleToggleFeatured(image.id)}
                       >
                         <Star
-                          className={`w-4 h-4 ${image.is_featured ? 'fill-primary text-primary' : ''}`}
+                          className={`w-3 h-3 md:w-4 md:h-4 ${image.is_featured ? 'fill-primary text-primary' : ''}`}
                         />
                       </Button>
                       <Button
                         size="icon"
                         variant="destructive"
-                        className="h-8 w-8"
+                        className="h-6 w-6 md:h-8 md:w-8"
                         onClick={() => handleDelete(image.id)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                       </Button>
                     </div>
                   </div>
-                  <div className="absolute top-2 left-2">
+                  <div className="absolute top-1 left-1 md:top-2 md:left-2">
                     <div
                       onClick={() => handleSelectImage(image.id)}
-                      className={`w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-colors ${selectedImages.has(image.id) ? 'bg-primary border-primary' : 'bg-white/80 border-gray-300'
+                      className={`w-5 h-5 md:w-6 md:h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-colors ${selectedImages.has(image.id) ? 'bg-primary border-primary' : 'bg-white/80 border-gray-300'
                         }`}
                     >
-                      {selectedImages.has(image.id) && <Check className="w-4 h-4 text-white" />}
+                      {selectedImages.has(image.id) && <Check className="w-3 h-3 md:w-4 md:h-4 text-white" />}
                     </div>
                   </div>
                   {image.is_featured && (
-                    <div className="absolute top-2 right-2">
-                      <Badge className="gap-1 bg-primary/90">
-                        <Star className="w-3 h-3 fill-current" />
+                    <div className="absolute top-1 right-1 md:top-2 md:right-2">
+                      <Badge className="gap-1 bg-primary/90 px-1 py-0 md:px-2 md:py-0.5">
+                        <Star className="w-2 h-2 md:w-3 md:h-3 fill-current" />
                       </Badge>
                     </div>
                   )}
-                  <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1">
+                  <div className="absolute bottom-1 left-1 right-1 md:bottom-2 md:left-2 md:right-2 flex flex-wrap gap-1">
                     {image.category && (
-                      <Badge variant="secondary" className="bg-black/50 text-white border-0 text-xs">
+                      <Badge variant="secondary" className="bg-black/50 text-white border-0 text-[8px] px-1 py-0 md:text-xs md:px-2.5 md:py-0.5 line-clamp-1">
                         {image.category}
                       </Badge>
                     )}

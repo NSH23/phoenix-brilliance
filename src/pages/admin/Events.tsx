@@ -246,7 +246,7 @@ export default function AdminEvents() {
               <Button onClick={() => handleOpenDialog()}>Create Your First Event</Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 gap-2 md:grid-cols-3 lg:grid-cols-3 md:gap-6">
               {filteredEvents.map((event, index) => (
                 <motion.div
                   key={event.id}
@@ -254,8 +254,8 @@ export default function AdminEvents() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
-                    <div className="relative h-48 overflow-hidden">
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col">
+                    <div className="relative h-24 md:h-48 overflow-hidden shrink-0">
                       <img
                         src={event.cover_image || '/placeholder.svg'}
                         alt={event.title}
@@ -265,16 +265,16 @@ export default function AdminEvents() {
                         }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute top-3 left-3">
-                        <Badge variant={event.is_active ? 'default' : 'secondary'}>
+                      <div className="absolute top-1 left-1 md:top-3 md:left-3">
+                        <Badge variant={event.is_active ? 'default' : 'secondary'} className="text-[10px] px-1 py-0 h-4 md:text-xs md:px-2 md:py-0.5 md:h-auto">
                           {event.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute top-1 right-1 md:top-3 md:right-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="secondary" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="w-4 h-4" />
+                            <Button variant="secondary" size="icon" className="h-6 w-6 md:h-8 md:w-8">
+                              <MoreHorizontal className="w-3 h-3 md:w-4 md:h-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -293,23 +293,23 @@ export default function AdminEvents() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="text-xl font-serif font-bold text-white">{event.title}</h3>
+                      <div className="absolute bottom-1 left-1 right-1 md:bottom-3 md:left-3 md:right-3">
+                        <h3 className="text-xs md:text-xl font-serif font-bold text-white line-clamp-1">{event.title}</h3>
                       </div>
                     </div>
-                    <CardContent className="p-4">
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                    <CardContent className="p-2 md:p-4 flex-1 flex flex-col justify-between gap-2">
+                      <p className="text-xs text-muted-foreground line-clamp-2 hidden md:block">
                         {event.short_description || event.description || 'No description'}
                       </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1 md:gap-0 mt-auto">
+                        <span className="text-[10px] md:text-xs text-muted-foreground">
                           Order: {event.display_order}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Active</span>
+                        <div className="flex items-center gap-1 md:gap-2 scale-75 md:scale-100 origin-left">
                           <Switch
                             checked={event.is_active}
                             onCheckedChange={() => handleToggleActive(event.id)}
+                            className="h-4 w-8 md:h-6 md:w-11"
                           />
                         </div>
                       </div>

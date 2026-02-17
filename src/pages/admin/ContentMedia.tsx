@@ -61,19 +61,20 @@ function MediaList({
         <div className="space-y-4">
             {items.map((item) => (
                 <Card key={item.id} className="overflow-hidden group">
-                    <CardContent className="p-4 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 flex-1">
-                            <div className="cursor-grab active:cursor-grabbing p-2 text-muted-foreground hover:text-foreground">
+                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1 w-full">
+                            <div className="hidden sm:block cursor-grab active:cursor-grabbing p-2 text-muted-foreground hover:text-foreground">
                                 <GripVertical size={20} />
                             </div>
 
-                            <div className="w-32 h-20 bg-black/10 rounded-lg overflow-hidden relative flex-shrink-0">
+                            <div className="w-full sm:w-32 h-40 sm:h-20 bg-black/10 rounded-lg overflow-hidden relative flex-shrink-0">
                                 {item.category === 'hero' ? (
                                     <video
                                         src={item.url}
                                         className="w-full h-full object-cover"
                                         muted
                                         loop
+                                        playsInline
                                         onMouseOver={e => e.currentTarget.play()}
                                         onMouseOut={e => {
                                             e.currentTarget.pause();
@@ -84,7 +85,8 @@ function MediaList({
                                     <video
                                         src={item.url}
                                         className="w-full h-full object-cover"
-                                        muted // No autoplay for list
+                                        muted
+                                        playsInline
                                     />
                                 )}
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
@@ -92,7 +94,7 @@ function MediaList({
                                 </div>
                             </div>
 
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 w-full">
                                 <div className="flex items-center gap-3 mb-1">
                                     <h3 className="font-medium truncate">{item.title || 'Untitled Video'}</h3>
                                     {!item.is_active && (
@@ -111,12 +113,12 @@ function MediaList({
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 mt-2 sm:mt-0">
                             <Button size="sm" variant="ghost" onClick={() => onEdit(item)}>
-                                <Pencil size={16} />
+                                <Pencil size={16} /> <span className="sm:hidden ml-2">Edit</span>
                             </Button>
                             <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => onDelete(item)}>
-                                <Trash2 size={16} />
+                                <Trash2 size={16} /> <span className="sm:hidden ml-2">Delete</span>
                             </Button>
                         </div>
                     </CardContent>
@@ -233,19 +235,19 @@ export default function ContentMedia() {
 
     return (
         <AdminLayout title="Manage Videos" subtitle="Control Hero section videos and Moments We've Crafted reels.">
-            <div className="flex justify-between items-center mb-6">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-[400px]">
-                    <TabsList>
-                        <TabsTrigger value="hero" className="flex items-center gap-2">
-                            <Play size={16} /> Hero Videos
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full sm:w-[400px]">
+                    <TabsList className="w-full">
+                        <TabsTrigger value="hero" className="flex-1 flex items-center justify-center gap-2">
+                            <Play size={16} /> Hero
                         </TabsTrigger>
-                        <TabsTrigger value="moment" className="flex items-center gap-2">
-                            <Film size={16} /> Moments (Reels)
+                        <TabsTrigger value="moment" className="flex-1 flex items-center justify-center gap-2">
+                            <Film size={16} /> Moments
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
 
-                <Button onClick={handleCreate}>
+                <Button onClick={handleCreate} className="w-full sm:w-auto">
                     <Plus size={16} className="mr-2" /> Add Video
                 </Button>
             </div>

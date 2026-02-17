@@ -322,30 +322,33 @@ export default function AdminContent() {
 
   return (
     <AdminLayout title="Site Content" subtitle="Manage your website text and information">
-      <Tabs defaultValue="events-page" className="space-y-6">
-        <TabsList className="flex flex-wrap gap-1">
+      <Tabs defaultValue="events-page" className="space-y-8">
+        <TabsList className="flex flex-col sm:flex-row h-auto p-2 gap-2 w-full bg-muted/50">
 
-          <TabsTrigger value="events-page" className="gap-2">
+          <TabsTrigger value="events-page" className="gap-2 flex-1">
             <Calendar className="w-4 h-4" />
-            Events Page
+            Events
           </TabsTrigger>
-          <TabsTrigger value="gallery-page" className="gap-2">
+          <TabsTrigger value="gallery-page" className="gap-2 flex-1">
             <ImageIcon className="w-4 h-4" />
-            Gallery Page
+            Gallery
           </TabsTrigger>
-          <TabsTrigger value="collaborations-page" className="gap-2">
+          <TabsTrigger value="collaborations-page" className="gap-2 flex-1">
             <Handshake className="w-4 h-4" />
-            Collaborations Page
+            Collaborations
           </TabsTrigger>
-          <TabsTrigger value="sections" className="gap-2">
+          <TabsTrigger value="sections" className="gap-2 flex-1">
             <FileText className="w-4 h-4" />
-            Page Sections
+            Sections
           </TabsTrigger>
-          <TabsTrigger value="social" className="gap-2">
+          <TabsTrigger value="social" className="gap-2 flex-1">
             <LinkIcon className="w-4 h-4" />
-            Social Links
+            Social
           </TabsTrigger>
-          <TabsTrigger value="contact">Contact Info</TabsTrigger>
+          <TabsTrigger value="contact" className="gap-2 flex-1">
+            <Users className="w-4 h-4" />
+            Contact
+          </TabsTrigger>
         </TabsList>
 
 
@@ -607,7 +610,7 @@ export default function AdminContent() {
                         rows={3}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor={`${section.section_key}-cta-text`}>CTA Text</Label>
                         <Input

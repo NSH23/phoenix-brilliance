@@ -72,7 +72,7 @@ export default function AdminAlbums() {
       setSearchParams({}, { replace: true });
       handleOpenDialog();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.get('add')]);
 
   const loadData = async () => {
@@ -82,7 +82,7 @@ export default function AdminAlbums() {
         getAllAlbums(),
         getAllEvents()
       ]);
-      
+
       setEvents(eventsData);
 
       // Load media count for each album
@@ -185,7 +185,7 @@ export default function AdminAlbums() {
         setAlbums([...albums, newAlbumWithCount]);
         toast.success('Album created successfully');
       }
-      
+
       setIsDialogOpen(false);
     } catch (error: any) {
       logger.error('Error saving album', error, { component: 'AdminAlbums', action: 'saveAlbum', editingAlbum: !!editingAlbum });
@@ -279,8 +279,8 @@ export default function AdminAlbums() {
               <Image className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">No albums found</h3>
               <p className="text-muted-foreground mb-4">
-                {searchQuery || filterEvent !== 'all' 
-                  ? 'Try adjusting your search or filters' 
+                {searchQuery || filterEvent !== 'all'
+                  ? 'Try adjusting your search or filters'
                   : 'Create your first album to get started'}
               </p>
               <Button onClick={() => handleOpenDialog()}>
@@ -289,7 +289,7 @@ export default function AdminAlbums() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 gap-2 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
               {filteredAlbums.map((album, index) => (
                 <motion.div
                   key={album.id}
@@ -297,8 +297,8 @@ export default function AdminAlbums() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
-                    <div className="relative h-52 overflow-hidden">
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col">
+                    <div className="relative h-24 md:h-52 overflow-hidden shrink-0">
                       <img
                         src={album.cover_image || '/placeholder.svg'}
                         alt={album.title}
@@ -308,25 +308,25 @@ export default function AdminAlbums() {
                         }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      
+
                       {/* Badges */}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        <Badge variant="secondary" className="bg-black/50 text-white border-0">
+                      <div className="absolute top-1 left-1 md:top-3 md:left-3 flex gap-1 md:gap-2">
+                        <Badge variant="secondary" className="bg-black/50 text-white border-0 text-[8px] px-1 py-0 md:text-xs md:px-2.5 md:py-0.5 line-clamp-1 max-w-[60px] md:max-w-none">
                           {album.eventTitle}
                         </Badge>
                         {album.is_featured && (
-                          <Badge className="bg-primary text-primary-foreground gap-1">
-                            <Star className="w-3 h-3 fill-current" /> Featured
+                          <Badge className="bg-primary text-primary-foreground gap-0.5 px-1 py-0 md:gap-1 md:px-2.5 md:py-0.5 text-[8px] md:text-xs">
+                            <Star className="w-2 h-2 md:w-3 md:h-3 fill-current" /> <span className="hidden md:inline">Featured</span>
                           </Badge>
                         )}
                       </div>
 
                       {/* Actions */}
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute top-1 right-1 md:top-3 md:right-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 border-0 text-white hover:bg-black/70">
-                              <MoreHorizontal className="w-4 h-4" />
+                            <Button variant="secondary" size="icon" className="h-6 w-6 md:h-8 md:w-8 bg-black/50 border-0 text-white hover:bg-black/70 text-white">
+                              <MoreHorizontal className="w-3 h-3 md:w-4 md:h-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -337,10 +337,10 @@ export default function AdminAlbums() {
                               <Image className="w-4 h-4 mr-2" /> Manage Media
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => toggleFeatured(album.id)}>
-                              <Star className="w-4 h-4 mr-2" /> 
+                              <Star className="w-4 h-4 mr-2" />
                               {album.is_featured ? 'Remove Featured' : 'Set Featured'}
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleDelete(album.id)}
                               className="text-destructive"
                             >
@@ -351,24 +351,25 @@ export default function AdminAlbums() {
                       </div>
 
                       {/* Info Overlay */}
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="text-lg font-serif font-bold text-white line-clamp-1">{album.title}</h3>
-                        <div className="flex items-center gap-3 mt-1 text-white/80 text-xs">
+                      <div className="absolute bottom-1 left-1 right-1 md:bottom-3 md:left-3 md:right-3">
+                        <h3 className="text-xs md:text-lg font-serif font-bold text-white line-clamp-1">{album.title}</h3>
+                        <div className="flex items-center gap-1 md:gap-3 mt-0.5 md:mt-1 text-white/80 text-[8px] md:text-xs">
                           {album.event_date && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(album.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            <span className="flex items-center gap-0.5 md:gap-1">
+                              <Calendar className="w-2 h-2 md:w-3 md:h-3" />
+                              <span className="hidden md:inline">{new Date(album.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                              <span className="md:hidden">{new Date(album.event_date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</span>
                             </span>
                           )}
-                          <span className="flex items-center gap-1">
-                            <Image className="w-3 h-3" />
-                            {album.mediaCount || 0} items
+                          <span className="flex items-center gap-0.5 md:gap-1 ml-auto md:ml-0">
+                            <Image className="w-2 h-2 md:w-3 md:h-3" />
+                            {album.mediaCount || 0}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <CardContent className="p-4">
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                    <CardContent className="p-2 md:p-4 hidden md:block">
+                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
                         {album.description || 'No description'}
                       </p>
                     </CardContent>
@@ -393,8 +394,8 @@ export default function AdminAlbums() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="eventId">Event Type *</Label>
-              <Select 
-                value={formData.event_id} 
+              <Select
+                value={formData.event_id}
                 onValueChange={(value) => setFormData({ ...formData, event_id: value })}
               >
                 <SelectTrigger>

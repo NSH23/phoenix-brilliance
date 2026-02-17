@@ -1,10 +1,11 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import Footer from "@/components/Footer";
 import SectionSeparator from "@/components/SectionSeparator";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import MobileCTA from "@/components/MobileCTA";
+import ContactPopup from "@/components/ContactPopup";
 import { SEO } from "@/components/SEO";
 import { OrganizationSchema } from "@/components/StructuredData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
@@ -27,6 +28,29 @@ const Index = () => {
   if (socialLinks.youtube) sameAs.push(socialLinks.youtube);
   if (socialLinks.twitter) sameAs.push(socialLinks.twitter);
 
+  // Contact Popup Logic
+  const [showContactPopup, setShowContactPopup] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroHeight = window.innerHeight * 0.8;
+      const scrollPosition = window.scrollY;
+
+      // Show if scrolled past hero and haven't seen it in this session
+      if (scrollPosition > heroHeight) {
+        const hasSeen = sessionStorage.getItem("hasSeenContactPopup");
+        if (!hasSeen) {
+          setShowContactPopup(true);
+          // Set it immediately so it doesn't trigger again on next scroll event
+          sessionStorage.setItem("hasSeenContactPopup", "true");
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <>
       <SEO
@@ -48,6 +72,9 @@ const Index = () => {
         }}
         sameAs={sameAs.length > 0 ? sameAs : undefined}
       />
+
+      <ContactPopup isOpen={showContactPopup} onClose={() => setShowContactPopup(false)} />
+
       <div className="min-h-screen bg-transparent text-foreground antialiased main-page-flow">
         <Navbar />
         <main>

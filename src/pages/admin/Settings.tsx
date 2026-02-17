@@ -260,26 +260,26 @@ export default function AdminSettings() {
 
   return (
     <AdminLayout title="Settings" subtitle="Manage your account and site settings">
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="profile" className="gap-2">
-            <User className="w-4 h-4 hidden sm:inline" />
+      <Tabs defaultValue="profile" className="space-y-8">
+        <TabsList className="flex flex-col sm:flex-row h-auto p-2 gap-2 w-full bg-muted/50">
+          <TabsTrigger value="profile" className="gap-2 flex-1">
+            <User className="w-4 h-4" />
             Profile
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
-            <Shield className="w-4 h-4 hidden sm:inline" />
+          <TabsTrigger value="security" className="gap-2 flex-1">
+            <Shield className="w-4 h-4" />
             Security
           </TabsTrigger>
-          <TabsTrigger value="users" className="gap-2">
-            <UserPlus className="w-4 h-4 hidden sm:inline" />
+          <TabsTrigger value="users" className="gap-2 flex-1">
+            <UserPlus className="w-4 h-4" />
             Add User
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="w-4 h-4 hidden sm:inline" />
+          <TabsTrigger value="notifications" className="gap-2 flex-1">
+            <Bell className="w-4 h-4" />
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="site" className="gap-2">
-            <Globe className="w-4 h-4 hidden sm:inline" />
+          <TabsTrigger value="site" className="gap-2 flex-1">
+            <Globe className="w-4 h-4" />
             Site
           </TabsTrigger>
         </TabsList>
@@ -538,7 +538,7 @@ export default function AdminSettings() {
                           variant="ghost"
                           size="sm"
                           disabled={addUserLoading}
-                          onClick={() => handleSendOtp({ preventDefault: () => {} } as React.FormEvent)}
+                          onClick={() => handleSendOtp({ preventDefault: () => { } } as React.FormEvent)}
                         >
                           Resend code
                         </Button>
@@ -627,7 +627,7 @@ export default function AdminSettings() {
                     </div>
                     <Switch
                       checked={notifications.emailInquiries}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotifications({ ...notifications, emailInquiries: checked })
                       }
                     />
@@ -644,7 +644,7 @@ export default function AdminSettings() {
                     </div>
                     <Switch
                       checked={notifications.emailNewBooking}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotifications({ ...notifications, emailNewBooking: checked })
                       }
                     />
@@ -661,7 +661,7 @@ export default function AdminSettings() {
                     </div>
                     <Switch
                       checked={notifications.browserNotifications}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotifications({ ...notifications, browserNotifications: checked })
                       }
                     />
@@ -678,7 +678,7 @@ export default function AdminSettings() {
                     </div>
                     <Switch
                       checked={notifications.weeklyReport}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotifications({ ...notifications, weeklyReport: checked })
                       }
                     />
@@ -731,8 +731,8 @@ export default function AdminSettings() {
 
                 <div className="grid gap-2">
                   <Label htmlFor="theme">Default Theme</Label>
-                  <Select 
-                    value={siteSettings.defaultTheme} 
+                  <Select
+                    value={siteSettings.defaultTheme}
                     onValueChange={(value) => setSiteSettings({ ...siteSettings, defaultTheme: value })}
                   >
                     <SelectTrigger>
@@ -765,7 +765,7 @@ export default function AdminSettings() {
                   </div>
                   <Switch
                     checked={siteSettings.maintenanceMode}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setSiteSettings({ ...siteSettings, maintenanceMode: checked })
                     }
                   />

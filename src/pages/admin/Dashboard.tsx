@@ -168,7 +168,7 @@ export default function AdminDashboard() {
   return (
     <AdminLayout title="Dashboard" subtitle="Welcome back! Here's what's happening with your events.">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {statMeta.map((m, index) => {
           const s = st[m.key] as { total: number; thisMonth?: number; new?: number };
           const change = formatChange(st, m.key, m.changeKey);
