@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
 import { ExpandingCards, CardItem } from "@/components/ui/expanding-cards";
 import { getActiveServices } from "@/services/services";
+import { getPublicUrl } from "@/services/storage";
 import {
   Crown,
   Palette,
@@ -113,11 +114,14 @@ const ServicesSection = () => {
             // If icon name is stored in 'icon' field, try to map it, else default
             const IconComponent = (s.icon && ICON_MAP[s.icon as string]) ? ICON_MAP[s.icon as string] : Sparkles;
 
+            const imgSrc = s.image_url
+              ? (s.image_url.startsWith("http") ? s.image_url : getPublicUrl("service-images", s.image_url))
+              : "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80";
             return {
               id: s.id,
               title: s.title,
               description: s.description || "",
-              imgSrc: s.image_url || "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80", // fallback
+              imgSrc,
               icon: <IconComponent size={24} />,
               linkHref: "/services"
             };

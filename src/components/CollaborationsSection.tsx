@@ -1,9 +1,16 @@
 import { motion } from "framer-motion";
+import { getPublicUrl } from "@/services/storage";
 import SectionHeading from "@/components/SectionHeading";
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { getActiveCollaborations, Collaboration } from "@/services/collaborations";
 import { useLeadCaptureOptional } from "@/contexts/LeadCaptureContext";
+
+function resolveLogoUrl(url: string | null | undefined): string {
+  if (!url) return "/placeholder.svg";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return getPublicUrl("partner-logos", url);
+}
 
 const CollaborationsSection = () => {
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
@@ -69,7 +76,7 @@ const CollaborationsSection = () => {
                   <div className="bg-card dark:bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-[0_16px_40px_rgba(232,175,193,0.22)] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:ring-2 hover:ring-primary/20 dark:hover:ring-primary/40 border border-transparent dark:border-white/5">
                     <div className="aspect-[4/3] overflow-hidden">
                       <img
-                        src={venue.logo_url || "/placeholder.svg"}
+                        src={resolveLogoUrl(venue.logo_url)}
                         alt={venue.name}
                         className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                         loading="lazy"

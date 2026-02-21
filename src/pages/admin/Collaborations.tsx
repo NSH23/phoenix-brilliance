@@ -42,7 +42,14 @@ import {
   type CollaborationFolder,
   type CollaborationImage,
 } from '@/services/collaborations';
+import { getPublicUrl } from '@/services/storage';
 import { toast } from 'sonner';
+
+function resolveLogoUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return getPublicUrl('partner-logos', url);
+}
 
 export default function AdminCollaborations() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -378,7 +385,7 @@ export default function AdminCollaborations() {
                     <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
                       <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-muted shrink-0">
                         {c.logo_url ? (
-                          <img src={c.logo_url} alt={c.name} className="w-full h-full object-cover" />
+                          <img src={resolveLogoUrl(c.logo_url)!} alt={c.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-sm">
                             {c.name.charAt(0)}

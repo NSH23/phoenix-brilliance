@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   MapPin, ArrowLeft, ArrowRight, ExternalLink, Phone, X, ChevronLeft, ChevronRight,
@@ -9,8 +9,15 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getCollaborationById } from "@/services/collaborations";
+import { getPublicUrl } from "@/services/storage";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
+
+/** Resolve collaboration media URL: use as-is if full URL, else resolve from gallery-images bucket. */
+function resolveCollaborationMediaUrl(urlOrPath: string): string {
+  if (urlOrPath.startsWith("http://") || urlOrPath.startsWith("https://")) return urlOrPath;
+  return getPublicUrl("gallery-images", urlOrPath);
+}
 
 type CollaborationDetail = Awaited<ReturnType<typeof getCollaborationById>>;
 type CollabImage = { id: string; image_url: string; caption: string | null; folder_id?: string | null; media_type?: 'image' | 'video' };
@@ -137,21 +144,22 @@ function GalleryTreeAndContent({
         </div>
         {selectedImages.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-            {selectedImages.map((media, i) => {
+                {selectedImages.map((media, i) => {
               const globalIndex = images.indexOf(media);
               const isVideo = media.media_type === 'video';
+              const mediaSrc = resolveCollaborationMediaUrl(media.image_url);
               return (
                 <motion.div key={media.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.02 }} className="aspect-square min-h-0">
                   <div className="relative w-full h-full rounded-xl overflow-hidden cursor-pointer group" onClick={() => globalIndex >= 0 && onOpenLightbox(globalIndex)}>
                     {isVideo ? (
                       <video
-                        src={media.image_url}
+                        src={mediaSrc}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         playsInline
                         preload="none"
                       />
                     ) : (
-                      <img src={media.image_url} alt={media.caption || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                      <img src={mediaSrc} alt={media.caption || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                     )}
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
@@ -171,6 +179,8 @@ function GalleryTreeAndContent({
 
 export default function CollaborationDetail() {
   const { partnerId } = useParams();
+  const location = useLocation();
+  const fromLeadCapture = (location.state as { fromLeadCapture?: boolean } | null)?.fromLeadCapture === true;
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const touchStartX = useRef(0);
@@ -250,10 +260,10 @@ export default function CollaborationDetail() {
             <h1 className="text-2xl font-serif font-bold mb-2 text-foreground">Partner Not Found</h1>
             <p className="text-muted-foreground mb-6">This collaboration may no longer be available.</p>
             <Link
-              to="/collaborations"
+              to={fromLeadCapture ? "/" : "/collaborations"}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
             >
-              Back to Collaborations
+              {fromLeadCapture ? "Back to Home" : "Back to Collaborations"}
             </Link>
           </div>
         </main>
@@ -317,11 +327,11 @@ export default function CollaborationDetail() {
             className="mb-8"
           >
             <Link 
-              to="/collaborations" 
+              to={fromLeadCapture ? "/" : "/collaborations"} 
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Collaborations</span>
+              <span>{fromLeadCapture ? "Back to Home" : "Back to Collaborations"}</span>
             </Link>
           </motion.div>
 
@@ -335,10 +345,16 @@ export default function CollaborationDetail() {
             >
               <div className="relative rounded-3xl overflow-hidden aspect-[4/3]">
                 {images[0]?.media_type === 'video' && !collaboration.banner_url ? (
-                  <video src={images[0].image_url} className="w-full h-full object-cover" controls playsInline />
+                  <video src={resolveCollaborationMediaUrl(images[0].image_url)} className="w-full h-full object-cover" controls playsInline />
                 ) : (
                   <img
-                    src={collaboration.banner_url || images[0]?.image_url || collaboration.logo_url || "/placeholder.svg"}
+                    src={(() => {
+                      const b = collaboration.banner_url || images[0]?.image_url;
+                      const logo = collaboration.logo_url;
+                      if (b) return b.startsWith("http") ? b : getPublicUrl("gallery-images", b);
+                      if (logo) return logo.startsWith("http") ? logo : getPublicUrl("partner-logos", logo);
+                      return "/placeholder.svg";
+                    })()}
                     alt={collaboration.name}
                     className="w-full h-full object-cover"
                   />
@@ -346,10 +362,13 @@ export default function CollaborationDetail() {
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
               </div>
 
-              {/* Location Badge */}
-              <div className="absolute bottom-6 left-6 flex items-center gap-2 px-4 py-2 rounded-full 
-                            bg-background/90 backdrop-blur-sm">
-                <MapPin className="w-5 h-5 text-primary" />
+              {/* Location Badge - desktop: on image; mobile: below image */}
+              <div className="absolute bottom-6 left-6 hidden lg:flex items-center gap-2 px-4 py-2 rounded-full bg-background/90 backdrop-blur-sm">
+                <MapPin className="w-5 h-5 text-primary shrink-0" />
+                <span className="font-medium">{collaboration.location}</span>
+              </div>
+              <div className="flex lg:hidden items-center gap-2 px-4 py-3 mt-3 rounded-xl bg-muted/80 text-sm">
+                <MapPin className="w-4 h-4 text-primary shrink-0" />
                 <span className="font-medium">{collaboration.location}</span>
               </div>
             </motion.div>
@@ -363,7 +382,7 @@ export default function CollaborationDetail() {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={collaboration.logo_url || "/placeholder.svg"}
+                  src={collaboration.logo_url ? (collaboration.logo_url.startsWith("http") ? collaboration.logo_url : getPublicUrl("partner-logos", collaboration.logo_url)) : "/placeholder.svg"}
                   alt={`${collaboration.name} logo`}
                   className="w-16 h-16 rounded-2xl object-cover border-2 border-border"
                 />
@@ -441,18 +460,21 @@ export default function CollaborationDetail() {
               />
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                {images.map((image, index) => (
+                {images.map((image, index) => {
+                  const mediaSrc = resolveCollaborationMediaUrl(image.image_url);
+                  return (
                   <motion.div key={image.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: index * 0.02 }} className="aspect-square min-h-0">
                     <div className="relative w-full h-full rounded-xl overflow-hidden cursor-pointer group" onClick={() => openLightbox(index)}>
                       {(image as CollabImage).media_type === 'video' ? (
-                        <video src={image.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" playsInline preload="metadata" />
+                        <video src={mediaSrc} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" playsInline preload="metadata" />
                       ) : (
-                        <img src={image.image_url} alt={image.caption || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                        <img src={mediaSrc} alt={image.caption || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                       )}
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </motion.div>
-                ))}
+                );
+                })}
               </div>
             )}
           </div>
@@ -547,8 +569,8 @@ export default function CollaborationDetail() {
             >
               {images[lightboxIndex].media_type === 'video' ? (
                 <video
-                  key={images[lightboxIndex].image_url}
-                  src={`${images[lightboxIndex].image_url}${images[lightboxIndex].image_url.includes("?") ? "&" : "?"}cb=1`}
+                  key={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
+                  src={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
                   className="w-full h-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-lg"
                   controls
                   autoPlay
@@ -557,7 +579,7 @@ export default function CollaborationDetail() {
                 />
               ) : (
                 <img
-                  src={images[lightboxIndex].image_url}
+                  src={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
                   alt={images[lightboxIndex].caption || ""}
                   className="w-full h-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-lg select-none"
                   draggable={false}

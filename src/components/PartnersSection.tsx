@@ -2,6 +2,13 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getActiveCollaborations } from "@/services/collaborations";
+import { getPublicUrl } from "@/services/storage";
+
+function resolveLogoUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return getPublicUrl("partner-logos", url);
+}
 
 const PartnersSection = () => {
   const [partners, setPartners] = useState<{ id: string; name: string; logo_url: string | null }[]>([]);
@@ -103,7 +110,7 @@ const PartnersSection = () => {
                             transition-all duration-300 group overflow-hidden p-4">
                 {partner.logo_url ? (
                   <img
-                    src={partner.logo_url}
+                    src={resolveLogoUrl(partner.logo_url)!}
                     alt={partner.name}
                     className="w-full h-full object-contain filter grayscale-0 transition-all duration-300"
                   />

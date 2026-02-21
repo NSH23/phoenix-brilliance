@@ -2,10 +2,10 @@
  * Admin-only avatar: resolves admin-avatars storage path/URL and displays image.
  * Use ONLY inside admin dashboard (e.g. sidebar, Settings → Admin users list).
  * Never use on public routes.
+ * Uses getPublicUrl for the public admin-avatars bucket so avatars load without signed URLs.
  */
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { createSignedUrl } from '@/services/storage';
+import { getPublicUrl } from '@/services/storage';
 
 interface AdminUserAvatarProps {
   avatarUrl: string | null | undefined;
@@ -28,16 +28,7 @@ export default function AdminUserAvatar({ avatarUrl, name, className = '', size 
       setSrc(avatarUrl);
       return;
     }
-    let cancelled = false;
-    createSignedUrl('admin-avatars', avatarUrl, 3600)
-      .then((url) => { if (!cancelled) setSrc(url); })
-      .catch(() => {
-        if (!cancelled) {
-          const { data } = supabase.storage.from('admin-avatars').getPublicUrl(avatarUrl);
-          setSrc(data.publicUrl);
-        }
-      });
-    return () => { cancelled = true; };
+    setSrc(getPublicUrl('admin-avatars', avatarUrl));
   }, [avatarUrl]);
 
   const initial = name?.trim().charAt(0)?.toUpperCase() || '?';

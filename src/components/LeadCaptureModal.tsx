@@ -152,14 +152,14 @@ export default function LeadCaptureModal() {
         }
     };
 
-    const closeAndNavigate = (path: string) => {
+    const closeAndNavigate = (path: string, state?: { fromLeadCapture?: boolean }) => {
         localStorage.setItem(STORAGE_KEY, "true");
         setIsOpen(false);
         setIsSuccess(false);
         setSubmittedScenario(null);
         setSubmittedVenueName(null);
         setMatchedCollaborationId(null);
-        navigate(path);
+        navigate(path, { state });
     };
 
     const closeAndScrollToVenues = () => {
@@ -217,7 +217,7 @@ export default function LeadCaptureModal() {
                                     <Button
                                         type="button"
                                         className="w-full bg-gradient-to-r from-primary to-rose-gold text-white gap-2"
-                                        onClick={() => matchedCollaborationId ? closeAndNavigate(`/collaborations/${matchedCollaborationId}`) : closeAndScrollToVenues()}
+                                        onClick={() => matchedCollaborationId ? closeAndNavigate(`/collaborations/${matchedCollaborationId}`, { fromLeadCapture: true }) : closeAndScrollToVenues()}
                                     >
                                         <FolderOpen className="w-4 h-4" />
                                         {matchedCollaborationId ? `View ${submittedVenueName}` : "View venues"}

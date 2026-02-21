@@ -149,24 +149,24 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <AdminLayout title="Dashboard" subtitle="Welcome back! Here's what's happening with your events.">
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Card key={i} className="border-none shadow-sm bg-card/50 overflow-hidden">
-              <CardContent className="p-5">
-                <div className="h-4 w-20 rounded bg-muted animate-pulse mb-3" />
-                <div className="h-8 w-16 rounded bg-muted animate-pulse" />
+            <Card key={i} className="border border-border/60 sm:border-none shadow-sm bg-card/50 overflow-hidden rounded-2xl sm:rounded-lg">
+              <CardContent className="p-4 sm:p-5">
+                <div className="h-3.5 sm:h-4 w-16 sm:w-20 rounded bg-muted animate-pulse mb-2.5 sm:mb-3" />
+                <div className="h-7 sm:h-8 w-12 sm:w-16 rounded bg-muted animate-pulse" />
               </CardContent>
             </Card>
           ))}
         </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="border-none shadow-sm bg-card/50">
-            <CardHeader><div className="h-5 w-32 rounded bg-muted animate-pulse" /></CardHeader>
-            <CardContent><div className="h-24 rounded bg-muted animate-pulse" /></CardContent>
+        <div className="grid md:grid-cols-2 gap-5 sm:gap-6">
+          <Card className="border border-border/60 sm:border-none rounded-2xl sm:rounded-lg overflow-hidden bg-card/50">
+            <CardHeader className="py-3 px-4 sm:py-4 sm:px-6"><div className="h-4 sm:h-5 w-28 sm:w-32 rounded bg-muted animate-pulse" /></CardHeader>
+            <CardContent className="p-4 sm:p-6"><div className="h-20 sm:h-24 rounded bg-muted animate-pulse" /></CardContent>
           </Card>
-          <Card className="border-none shadow-sm bg-card/50">
-            <CardHeader><div className="h-5 w-32 rounded bg-muted animate-pulse" /></CardHeader>
-            <CardContent><div className="h-24 rounded bg-muted animate-pulse" /></CardContent>
+          <Card className="border border-border/60 sm:border-none rounded-2xl sm:rounded-lg overflow-hidden bg-card/50">
+            <CardHeader className="py-3 px-4 sm:py-4 sm:px-6"><div className="h-4 sm:h-5 w-28 sm:w-32 rounded bg-muted animate-pulse" /></CardHeader>
+            <CardContent className="p-4 sm:p-6"><div className="h-20 sm:h-24 rounded bg-muted animate-pulse" /></CardContent>
           </Card>
         </div>
       </AdminLayout>
@@ -184,8 +184,8 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout title="Dashboard" subtitle="Welcome back! Here's what's happening with your events.">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      {/* Stats Grid - mobile: tighter gap, larger tap targets, clearer hierarchy */}
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {statMeta.map((m, index) => {
           const s = st[m.key] as { total: number; thisMonth?: number; new?: number };
           const change = formatChange(st, m.key, m.changeKey);
@@ -196,21 +196,21 @@ export default function AdminDashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="relative overflow-hidden hover:shadow-lg transition-all border-none shadow-sm bg-card/50 backdrop-blur-sm">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">{m.title}</p>
-                      <p className="text-3xl font-bold mt-2">{s?.total ?? 0}</p>
+              <Card className="relative overflow-hidden hover:shadow-lg transition-all border border-border/60 sm:border-none shadow-sm bg-card/50 backdrop-blur-sm rounded-2xl sm:rounded-lg">
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{m.title}</p>
+                      <p className="text-2xl sm:text-3xl font-bold mt-1.5 sm:mt-2 tabular-nums">{s?.total ?? 0}</p>
                       {change && (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 font-medium">
-                          <TrendingUp className="w-3 h-3" />
-                          {change}
+                        <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 font-medium truncate">
+                          <TrendingUp className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{change}</span>
                         </p>
                       )}
                     </div>
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${m.color} flex items-center justify-center shadow-md`}>
-                      <m.icon className="w-5 h-5 text-white" />
+                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${m.color} flex items-center justify-center shadow-md shrink-0`}>
+                      <m.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
                   </div>
                 </CardContent>
@@ -221,33 +221,33 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+      {/* Main Content Area - mobile: more vertical spacing, clearer sections */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
 
         {/* Left Column (2/3 width on large screens) */}
-        <div className="xl:col-span-2 space-y-8">
+        <div className="xl:col-span-2 space-y-6 sm:space-y-8">
 
-          {/* Quick Actions */}
+          {/* Quick Actions - mobile: larger tap targets, rounded cards */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                <Zap className="w-5 h-5 text-primary shrink-0" />
                 Quick Actions
               </h2>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
               {quickActions.map((action) => (
-                <Link key={action.title} to={action.href}>
-                  <Card className="hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group h-full border-muted/60">
-                    <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                <Link key={action.title} to={action.href} className="min-h-[88px] sm:min-h-0">
+                  <Card className="h-full hover:shadow-md hover:border-primary/50 active:scale-[0.98] transition-all cursor-pointer group border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg">
+                    <CardContent className="p-4 sm:p-4 flex flex-col items-center justify-center text-center gap-2.5 sm:gap-3 min-h-[88px] sm:min-h-0">
+                      <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 shrink-0">
                         <action.icon className="w-5 h-5" />
                       </div>
-                      <span className="text-sm font-medium group-hover:text-primary transition-colors">{action.title}</span>
+                      <span className="text-xs sm:text-sm font-medium group-hover:text-primary transition-colors line-clamp-2 leading-tight">{action.title}</span>
                     </CardContent>
                   </Card>
                 </Link>
@@ -255,8 +255,8 @@ export default function AdminDashboard() {
             </div>
           </motion.div>
 
-          {/* Activity & Inquiries Split */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Activity & Inquiries Split - mobile: nicer cards and list spacing */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
             {/* Recent Inquiries */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -264,11 +264,11 @@ export default function AdminDashboard() {
               transition={{ delay: 0.5 }}
               className="h-full"
             >
-              <Card className="h-full flex flex-col border-muted/60">
-                <CardHeader className="flex flex-row items-center justify-between py-4 px-6 border-b border-border/40 bg-muted/20">
-                  <CardTitle className="text-base font-semibold">Recent Inquiries</CardTitle>
+              <Card className="h-full flex flex-col border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between py-3 px-4 sm:py-4 sm:px-6 border-b border-border/40 bg-muted/20">
+                  <CardTitle className="text-sm sm:text-base font-semibold">Recent Inquiries</CardTitle>
                   <Link to="/admin/inquiries">
-                    <Button variant="ghost" size="sm" className="h-8 text-xs text-primary hover:bg-primary/10">
+                    <Button variant="ghost" size="sm" className="h-8 text-xs text-primary hover:bg-primary/10 -mr-2">
                       View All <ArrowUpRight className="w-3 h-3 ml-1" />
                     </Button>
                   </Link>
@@ -276,7 +276,7 @@ export default function AdminDashboard() {
                 <CardContent className="p-0 flex-1">
                   <div className="divide-y divide-border/40">
                     {recentInquiries.length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
+                      <div className="p-6 sm:p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
                         <Mail className="w-8 h-8 opacity-20" />
                         <p className="text-sm">No new inquiries.</p>
                       </div>
@@ -284,17 +284,17 @@ export default function AdminDashboard() {
                       recentInquiries.slice(0, 5).map((inquiry) => (
                         <div
                           key={inquiry.id}
-                          className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+                          className="flex items-center justify-between gap-3 p-3 sm:p-4 hover:bg-muted/30 active:bg-muted/40 transition-colors"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                               <span className="text-primary font-bold text-xs">
                                 {inquiry.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
                               </span>
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="font-medium text-sm truncate">{inquiry.name}</p>
-                              <p className="text-xs text-muted-foreground truncate max-w-[120px]">{inquiry.event}</p>
+                              <p className="text-xs text-muted-foreground truncate sm:max-w-[120px]">{inquiry.event}</p>
                             </div>
                           </div>
                           <div className="text-right shrink-0">
@@ -321,24 +321,24 @@ export default function AdminDashboard() {
               transition={{ delay: 0.6 }}
               className="h-full"
             >
-              <Card className="h-full flex flex-col border-muted/60">
-                <CardHeader className="py-4 px-6 border-b border-border/40 bg-muted/20">
-                  <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+              <Card className="h-full flex flex-col border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg overflow-hidden">
+                <CardHeader className="py-3 px-4 sm:py-4 sm:px-6 border-b border-border/40 bg-muted/20">
+                  <CardTitle className="text-sm sm:text-base font-semibold">Recent Activity</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 flex-1">
-                  <div className="space-y-6">
+                <CardContent className="p-4 sm:p-6 flex-1">
+                  <div className="space-y-5 sm:space-y-6">
                     {recentActivity.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">No recent activity.</p>
                     ) : (
                       recentActivity.slice(0, 5).map((activity, index) => (
-                        <div key={activity.id} className="flex gap-4 relative">
-                          <div className="flex flex-col items-center">
+                        <div key={activity.id} className="flex gap-3 sm:gap-4 relative">
+                          <div className="flex flex-col items-center shrink-0">
                             <div className="w-2.5 h-2.5 rounded-full bg-primary/20 ring-4 ring-background z-10" />
-                            {index < recentActivity.length - 1 && <div className="w-px flex-1 bg-border/50 absolute top-2.5 bottom-[-24px] left-[4.5px]" />}
+                            {index < recentActivity.length - 1 && <div className="w-px flex-1 bg-border/50 absolute top-2.5 bottom-[-20px] sm:bottom-[-24px] left-[4.5px]" />}
                           </div>
-                          <div className="flex-1 -mt-1">
-                            <p className="text-sm font-medium">{activity.action}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{activity.target}</p>
+                          <div className="flex-1 min-w-0 -mt-1">
+                            <p className="text-sm font-medium break-words">{activity.action}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 break-words">{activity.target}</p>
                             <p className="text-[10px] text-muted-foreground mt-1 font-mono opacity-70">{activity.time}</p>
                           </div>
                         </div>
@@ -351,24 +351,24 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Right Column (1/3 width) */}
-        <div className="space-y-8">
+        {/* Right Column (1/3 width) - mobile: same spacing and rounded cards */}
+        <div className="space-y-6 sm:space-y-8">
 
-          {/* Site Overview */}
+          {/* Site Overview - mobile: slightly larger touch targets, rounded */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                <Eye className="w-5 h-5 text-primary shrink-0" />
                 Site Overview
               </h2>
             </div>
-            <Card className="border-muted/60">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-2 gap-3">
+            <Card className="border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg overflow-hidden">
+              <CardContent className="p-3 sm:p-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                   {[
                     { label: 'Event Types', value: over.eventTypes, icon: Calendar },
                     { label: 'Albums', value: over.albums, icon: Images },
@@ -377,9 +377,9 @@ export default function AdminDashboard() {
                     { label: 'Partners', value: over.partners, icon: Shield },
                     { label: 'Employees', value: over.employees, icon: UserPlus },
                   ].map((item, i) => (
-                    <div key={i} className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors border border-border/20">
-                      <span className="text-xl font-bold text-foreground">{item.value}</span>
-                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1 text-center">{item.label}</span>
+                    <div key={i} className="flex flex-col items-center justify-center p-3.5 sm:p-3 rounded-xl bg-muted/20 hover:bg-muted/40 active:bg-muted/50 transition-colors border border-border/20 min-h-[72px] sm:min-h-0">
+                      <span className="text-lg sm:text-xl font-bold text-foreground tabular-nums">{item.value}</span>
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1 text-center leading-tight">{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -387,35 +387,35 @@ export default function AdminDashboard() {
             </Card>
           </motion.div>
 
-          {/* Admin Users */}
+          {/* Admin Users - mobile: clearer list rows, tap-friendly */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary shrink-0" />
                 Team Access
               </h2>
             </div>
-            <Card className="border-muted/60">
+            <Card className="border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg overflow-hidden">
               <CardContent className="p-0">
                 <div className="divide-y divide-border/40">
                   {adminUsers.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-4 px-4 text-center">No admin users.</p>
+                    <p className="text-sm text-muted-foreground py-5 px-4 text-center">No admin users.</p>
                   ) : (
                     adminUsers.map((u) => (
                       <div
                         key={u.id}
-                        className="flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
+                        className="flex items-center justify-between gap-3 p-3.5 sm:p-3 hover:bg-muted/30 active:bg-muted/40 transition-colors"
                       >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                        <div className="flex items-center gap-3 overflow-hidden min-w-0 flex-1">
+                          <div className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
                             <span className="text-primary font-bold text-xs">{(u.name || u.email).charAt(0).toUpperCase()}</span>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-xs truncate">{u.name || u.email.split('@')[0]}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-xs sm:text-xs truncate">{u.name || u.email.split('@')[0]}</p>
                             <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>
                           </div>
                         </div>
@@ -423,13 +423,13 @@ export default function AdminDashboard() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                            className="h-8 w-8 sm:h-7 sm:w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 touch-manipulation"
                             onClick={() => setRemoveTarget(u)}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         ) : (
-                          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">You</span>
+                          <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded font-medium shrink-0">You</span>
                         )}
                       </div>
                     ))
