@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   MapPin, ArrowLeft, ArrowRight, ExternalLink, Phone, X, ChevronLeft, ChevronRight,
@@ -179,8 +179,6 @@ function GalleryTreeAndContent({
 
 export default function CollaborationDetail() {
   const { partnerId } = useParams();
-  const location = useLocation();
-  const fromLeadCapture = (location.state as { fromLeadCapture?: boolean } | null)?.fromLeadCapture === true;
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const touchStartX = useRef(0);
@@ -260,10 +258,10 @@ export default function CollaborationDetail() {
             <h1 className="text-2xl font-serif font-bold mb-2 text-foreground">Partner Not Found</h1>
             <p className="text-muted-foreground mb-6">This collaboration may no longer be available.</p>
             <Link
-              to={fromLeadCapture ? "/" : "/collaborations"}
+              to="/"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
             >
-              {fromLeadCapture ? "Back to Home" : "Back to Collaborations"}
+              Back to Home
             </Link>
           </div>
         </main>
@@ -327,11 +325,11 @@ export default function CollaborationDetail() {
             className="mb-8"
           >
             <Link 
-              to={fromLeadCapture ? "/" : "/collaborations"} 
+              to="/" 
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>{fromLeadCapture ? "Back to Home" : "Back to Collaborations"}</span>
+              <span>Back to Home</span>
             </Link>
           </motion.div>
 

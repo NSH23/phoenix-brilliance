@@ -72,7 +72,7 @@ const CollaborationsSection = () => {
                 key={singleCard ? venue.id : `${venue.id}-${index}`}
                 className="collaborations-logo-item flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] group"
               >
-                <Link to={`/collaborations/${venue.id}`}>
+                <Link to={`/collaborations/${venue.id}`} replace>
                   <div className="bg-card dark:bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-[0_16px_40px_rgba(232,175,193,0.22)] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:ring-2 hover:ring-primary/20 dark:hover:ring-primary/40 border border-transparent dark:border-white/5">
                     <div className="aspect-[4/3] overflow-hidden">
                       <img

@@ -103,7 +103,7 @@ const PartnersSection = () => {
             transition={{ duration: 0.5, delay: (index % partners.length) * 0.05 }}
             className="flex-shrink-0"
           >
-            <Link to={`/collaborations/${partner.id}`} className="block">
+            <Link to={`/collaborations/${partner.id}`} replace className="block">
               <div className="w-48 h-24 flex items-center justify-center rounded-xl 
                             bg-card/50 dark:bg-card/30 backdrop-blur-sm border border-border/50
                             hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10

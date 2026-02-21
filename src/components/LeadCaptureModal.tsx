@@ -152,14 +152,14 @@ export default function LeadCaptureModal() {
         }
     };
 
-    const closeAndNavigate = (path: string, state?: { fromLeadCapture?: boolean }) => {
+    const closeAndNavigate = (path: string, opts?: { state?: { fromLeadCapture?: boolean }; replace?: boolean }) => {
         localStorage.setItem(STORAGE_KEY, "true");
         setIsOpen(false);
         setIsSuccess(false);
         setSubmittedScenario(null);
         setSubmittedVenueName(null);
         setMatchedCollaborationId(null);
-        navigate(path, { state });
+        navigate(path, { state: opts?.state, replace: opts?.replace ?? true });
     };
 
     const closeAndScrollToVenues = () => {
@@ -217,7 +217,7 @@ export default function LeadCaptureModal() {
                                     <Button
                                         type="button"
                                         className="w-full bg-gradient-to-r from-primary to-rose-gold text-white gap-2"
-                                        onClick={() => matchedCollaborationId ? closeAndNavigate(`/collaborations/${matchedCollaborationId}`, { fromLeadCapture: true }) : closeAndScrollToVenues()}
+                                        onClick={() => matchedCollaborationId ? closeAndNavigate(`/collaborations/${matchedCollaborationId}`, { replace: true }) : closeAndScrollToVenues()}
                                     >
                                         <FolderOpen className="w-4 h-4" />
                                         {matchedCollaborationId ? `View ${submittedVenueName}` : "View venues"}
@@ -234,7 +234,7 @@ export default function LeadCaptureModal() {
                                     Book your venue through us for exclusive benefits and a seamless experience.
                                 </p>
                                 <div className="flex flex-col gap-2 w-full pt-1">
-                                    <Button type="button" className="w-full gap-2" onClick={() => closeAndNavigate("/contact")}>
+                                    <Button type="button" className="w-full gap-2" onClick={() => closeAndNavigate("/contact", { replace: false })}>
                                         <BookOpen className="w-4 h-4" />
                                         Book now
                                     </Button>

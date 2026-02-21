@@ -297,6 +297,7 @@ export default function Collaborations() {
                   >
                     <Link
                       to={`/collaborations/${collab.id}`}
+                      replace
                       className="group block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
                       <div className="group/card relative h-full rounded-[20px] overflow-hidden bg-card dark:bg-card/40 dark:backdrop-blur-md 
