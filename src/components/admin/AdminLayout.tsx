@@ -15,7 +15,9 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
-import { getAllInquiries, type Inquiry } from '@/services';
+import { getUnreadInquiriesForNotifications, getUnreadInquiriesCount, markInquiryAsRead, type Inquiry } from '@/services';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -48,24 +50,58 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Fetch Notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const inquiries = await getAllInquiries();
-        const unread = inquiries.filter(i => i.status === 'new');
-        setNotifications(unread.slice(0, 5)); // Show top 5 unread
-        setUnreadCount(unread.length);
-      } catch (error) {
-        console.error('Failed to fetch notifications', error);
-      }
-    };
+  const fetchNotifications = async () => {
+    try {
+      const [list, count] = await Promise.all([
+        getUnreadInquiriesForNotifications(10),
+        getUnreadInquiriesCount(),
+      ]);
+      setNotifications(list);
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Failed to fetch notifications', error);
+    }
+  };
 
-    fetchNotifications();
-    // Optional: Poll every minute
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
+  // Defer notifications so layout paints immediately; fetch after first paint
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = requestIdleCallback(() => fetchNotifications(), { timeout: 500 });
+      return () => cancelIdleCallback(id);
+    }
+    const id = setTimeout(fetchNotifications, 0);
+    return () => clearTimeout(id);
   }, []);
+
+  // Real-time: new inquiries
+  useEffect(() => {
+    const channel = supabase
+      .channel('inquiries-inserts')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inquiries' }, (payload) => {
+        const row = payload.new as Inquiry;
+        setNotifications(prev => [row, ...prev.filter(i => i.id !== row.id)].slice(0, 10));
+        setUnreadCount(prev => prev + 1);
+        toast.success('New inquiry', {
+          description: `${row.name} – ${row.event_type || 'Inquiry'}`,
+          action: { label: 'View', onClick: () => navigate('/admin/inquiries') },
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [navigate]);
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await markInquiryAsRead(id);
+      setNotifications(prev => prev.filter(i => i.id !== id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (e) {
+      console.error('Failed to mark as read', e);
+    }
+  };
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -176,7 +212,9 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                 <Button variant="ghost" size="icon" className="relative rounded-xl">
                   <Bell className="w-5 h-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-medium rounded-full">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
                   )}
                 </Button>
               </PopoverTrigger>
@@ -201,7 +239,10 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                         <button
                           key={inquiry.id}
                           className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex gap-3 items-start"
-                          onClick={() => navigate('/admin/inquiries')}
+                          onClick={() => {
+                            handleMarkAsRead(inquiry.id);
+                            navigate('/admin/inquiries');
+                          }}
                         >
                           <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
                           <div className="flex-1 min-w-0">

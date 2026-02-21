@@ -5,7 +5,8 @@ import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 const MobileCTA = () => {
   const { contact } = useSiteConfig();
-  const whatsappUrl = `https://wa.me/${contact.whatsapp}?text=Hi! I'm interested in your event services.`;
+  const whatsappNumber = contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276";
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Hi! I'm interested in your event services.`;
   return (
     <motion.div
       initial={{ y: 100, opacity: 0 }}

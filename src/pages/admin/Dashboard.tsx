@@ -149,8 +149,25 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <AdminLayout title="Dashboard" subtitle="Welcome back! Here's what's happening with your events.">
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Card key={i} className="border-none shadow-sm bg-card/50 overflow-hidden">
+              <CardContent className="p-5">
+                <div className="h-4 w-20 rounded bg-muted animate-pulse mb-3" />
+                <div className="h-8 w-16 rounded bg-muted animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="border-none shadow-sm bg-card/50">
+            <CardHeader><div className="h-5 w-32 rounded bg-muted animate-pulse" /></CardHeader>
+            <CardContent><div className="h-24 rounded bg-muted animate-pulse" /></CardContent>
+          </Card>
+          <Card className="border-none shadow-sm bg-card/50">
+            <CardHeader><div className="h-5 w-32 rounded bg-muted animate-pulse" /></CardHeader>
+            <CardContent><div className="h-24 rounded bg-muted animate-pulse" /></CardContent>
+          </Card>
         </div>
       </AdminLayout>
     );

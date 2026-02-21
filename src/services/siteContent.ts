@@ -39,6 +39,49 @@ export interface ContactInfo {
   updated_at: string;
 }
 
+/** About section extended content (stored as JSON in site_content.description for section_key 'about') */
+export interface AboutSectionContent {
+  tagline: string;
+  paragraphs: string[];
+  quote: string;
+  stats: { value: string; label: string }[];
+}
+
+const DEFAULT_ABOUT_BODY: AboutSectionContent = {
+  tagline: 'Where vision meets emotion, and every detail becomes a memory.',
+  paragraphs: [
+    "Kevin, the visionary behind Phoenix Events & Production, started the company in 2017 with a single-minded commitment to excellence in event décor and production. From day one, his philosophy has been clear: every celebration deserves to be crafted with the same care and creativity that he would want for his own.",
+    "In 2024, he took a decisive step by launching PnP Production, bringing design and production under one roof. This move was driven by a simple goal: to offer clients superior quality and hassle-free execution from concept to completion. By unifying creative design with hands-on production, Phoenix can now deliver more cohesive, timely, and refined outcomes without the friction of coordinating multiple vendors.",
+    "Today, Kevin's leadership and passion have positioned Phoenix Events & Production as a trusted name in the event industry. The company is known not only for beautiful setups and seamless execution but also for the integrity, reliability, and personal touch that he and his team bring to every project.",
+  ],
+  quote: 'We do not just plan events. We design how they are remembered.',
+  stats: [
+    { value: '500+', label: 'Events Curated' },
+    { value: '12+', label: 'Years of Excellence' },
+    { value: '50+', label: 'Premium Partners' },
+    { value: '98%', label: 'Client Satisfaction' },
+  ],
+};
+
+export function parseAboutSectionDescription(description: string | null): AboutSectionContent {
+  if (!description || typeof description !== 'string') return DEFAULT_ABOUT_BODY;
+  try {
+    const parsed = JSON.parse(description) as Partial<AboutSectionContent>;
+    return {
+      tagline: typeof parsed.tagline === 'string' ? parsed.tagline : DEFAULT_ABOUT_BODY.tagline,
+      paragraphs: Array.isArray(parsed.paragraphs) ? parsed.paragraphs.filter((p): p is string => typeof p === 'string') : DEFAULT_ABOUT_BODY.paragraphs,
+      quote: typeof parsed.quote === 'string' ? parsed.quote : DEFAULT_ABOUT_BODY.quote,
+      stats: Array.isArray(parsed.stats)
+        ? parsed.stats
+            .filter((s): s is { value: string; label: string } => s && typeof s.value === 'string' && typeof s.label === 'string')
+            .slice(0, 4)
+        : DEFAULT_ABOUT_BODY.stats,
+    };
+  } catch {
+    return DEFAULT_ABOUT_BODY;
+  }
+}
+
 // Site Content
 export async function getAllSiteContent() {
   const { data, error } = await supabase

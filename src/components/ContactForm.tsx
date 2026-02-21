@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Send, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { isValidPhone10 } from "@/services/inquiries";
+import { toast } from "sonner";
 
 const eventTypes = [
     "Wedding",
@@ -28,6 +30,10 @@ export default function ContactForm({ className }: { className?: string }) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isValidPhone10(formData.phone)) {
+            toast.error("Please enter a valid 10-digit number (with or without +91)");
+            return;
+        }
         // Simulate form submission
         setIsSubmitted(true);
         setTimeout(() => {
@@ -127,6 +133,8 @@ export default function ContactForm({ className }: { className?: string }) {
                         value={formData.eventDate}
                         onChange={handleChange}
                         required
+                        min="1900-01-01"
+                        max="2099-12-31"
                         className="w-full px-3 py-2 rounded-lg bg-background border border-border 
                      focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
                      transition-all text-sm"

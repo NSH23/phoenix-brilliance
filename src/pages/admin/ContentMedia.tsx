@@ -13,6 +13,7 @@ import {
     GripVertical
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { formatDateTimeLocal } from '@/lib/formatDate';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -108,7 +109,7 @@ function MediaList({
                                 </p>
                                 <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                                     <span>Order: {item.display_order}</span>
-                                    <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                                    <span>{formatDateTimeLocal(item.created_at)}</span>
                                 </div>
                             </div>
                         </div>

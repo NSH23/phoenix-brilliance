@@ -452,7 +452,7 @@ const GallerySection = () => {
                       : 'opacity-50 hover:opacity-100'
                   }`}
                 >
-                  <img src={img.url || '/placeholder.svg'} alt="" draggable={false} className="w-full h-full object-cover" />
+                  <img src={img.url || '/placeholder.svg'} alt={img.title || 'Gallery image'} draggable={false} className="w-full h-full object-cover" loading="lazy" />
                 </button>
               ))}
             </div>

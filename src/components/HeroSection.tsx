@@ -49,10 +49,12 @@ const HeroSection = () => {
         }
 
         if (content) {
+          const desc = content.description?.trim() || "";
+          const isOldLongCopy = desc.includes("From weddings to corporate celebrations");
           setHeroContent({
             title: content.title || "Crafting Moments That Last Forever",
             subtitle: content.subtitle || "Phoenix Events & Production",
-            description: content.description || "From weddings to corporate celebrations, we turn your vision into unforgettable experiences with elegance and precision.",
+            description: isOldLongCopy ? "" : desc,
             cta_text: content.cta_text || "Plan Your Event",
             cta_link: content.cta_link || "/contact"
           });
@@ -94,18 +96,15 @@ const HeroSection = () => {
         {/* LEFT: Text Content */}
         <motion.div
           style={{ y: isDesktop ? y1 : 0 }}
-          className="text-center lg:text-left space-y-6 relative z-20"
+          className="text-center lg:text-left space-y-5 md:space-y-6 relative z-20 max-w-2xl"
         >
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
+            className="space-y-4"
           >
-            <p className="text-primary font-sans text-xs md:text-sm tracking-[0.3em] uppercase mb-4 font-medium">
-              {heroContent?.subtitle || "Phoenix Events & Production"}
-            </p>
-
-            <h1 className="font-hero text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1] text-foreground dark:text-white">
+            <h1 className="font-hero text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-medium tracking-tight leading-[1.15] text-foreground dark:text-white">
               {isDefaultTitle ? (
                 <>
                   Crafting Moments <br />
@@ -121,28 +120,42 @@ const HeroSection = () => {
                   </span>
                 </>
               ) : (
-                // If custom title, simple render (maybe split by \n for breaks)
                 (heroContent?.title || "").split('\n').map((line, i) => (
                   <span key={i} className="block">{line}</span>
                 ))
               )}
             </h1>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.7 }}
+              className="text-lg md:text-xl text-muted-foreground dark:text-white/80 font-light leading-relaxed"
+            >
+              {heroContent?.description?.trim() || "Your vision, our craft—unforgettable events."}
+            </motion.p>
           </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="text-lg md:text-xl text-muted-foreground dark:text-white/80 font-light max-w-xl mx-auto lg:mx-0 leading-relaxed"
+          {/* Founder story – left side hero (elegant serif for refined, simple look) */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.7 }}
+            className="pl-0 lg:pl-4 border-l-0 lg:border-l-2 border-primary/30 lg:border-primary/40 font-serif"
           >
-            {heroContent?.description || "From weddings to corporate celebrations, we turn your vision into unforgettable experiences with elegance and precision."}
-          </motion.p>
+            <h2 className="font-hero text-sm font-semibold tracking-[0.15em] uppercase text-primary mb-2">
+              The Visionary Behind Phoenix
+            </h2>
+            <p className="text-sm md:text-base text-muted-foreground dark:text-white/75 font-light leading-relaxed tracking-[0.01em] font-serif">
+              Kevin started Phoenix Events & Production in 2017 with a commitment to excellence in event décor and production. Known for his attention to detail and creative approach, he believes every event should reflect elegance and individuality. With the launch of PnP Production in 2024, he brought design and production under one roof — ensuring superior quality and hassle-free execution. His leadership and passion have made the company a trusted name in the event industry.
+            </p>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
           >
             <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-warm-lg hover:shadow-warm-xl transition-all duration-300" asChild>
               <Link to={heroContent?.cta_link || "/contact"}>
@@ -161,20 +174,20 @@ const HeroSection = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 0.8 }}
-            className="mt-8 flex items-center gap-8 justify-center lg:justify-start pt-4 border-t border-border/40"
+            className="flex items-center gap-6 sm:gap-8 justify-center lg:justify-start pt-6 border-t border-border/40"
           >
             <div className="text-center lg:text-left">
-              <p className="text-2xl font-display font-semibold text-primary">500+</p>
+              <p className="text-2xl md:text-3xl font-display font-semibold text-primary">500+</p>
               <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Events</p>
             </div>
-            <div className="w-px h-8 bg-border" />
+            <div className="w-px h-10 bg-border/60" />
             <div className="text-center lg:text-left">
-              <p className="text-2xl font-display font-semibold text-primary">12+</p>
+              <p className="text-2xl md:text-3xl font-display font-semibold text-primary">12+</p>
               <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Years</p>
             </div>
-            <div className="w-px h-8 bg-border" />
+            <div className="w-px h-10 bg-border/60" />
             <div className="text-center lg:text-left">
-              <p className="text-2xl font-display font-semibold text-primary">98%</p>
+              <p className="text-2xl md:text-3xl font-display font-semibold text-primary">98%</p>
               <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Satisfaction</p>
             </div>
           </motion.div>

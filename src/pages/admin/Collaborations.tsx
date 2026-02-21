@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2, FolderPlus, FolderOpen, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';
@@ -33,8 +33,14 @@ import {
   deleteCollaboration,
   getCollaborationImages,
   createCollaborationImage,
+  updateCollaborationImage,
   deleteCollaborationImage,
+  getCollaborationFolders,
+  updateCollaborationFolder,
+  seedCollaborationFolders,
   type Collaboration,
+  type CollaborationFolder,
+  type CollaborationImage,
 } from '@/services/collaborations';
 import { toast } from 'sonner';
 
@@ -49,6 +55,7 @@ export default function AdminCollaborations() {
   const [formData, setFormData] = useState({
     name: '',
     logoUrl: '',
+    bannerUrl: '',
     description: '',
     location: '',
     mapUrl: '',
@@ -56,6 +63,10 @@ export default function AdminCollaborations() {
     display_order: 0,
   });
   const [venueImages, setVenueImages] = useState<string[]>([]);
+  const [galleryFolders, setGalleryFolders] = useState<Array<{ id: string; collaboration_id?: string; parent_id: string | null; name: string; display_order: number; is_enabled: boolean }>>([]);
+  const [galleryImages, setGalleryImages] = useState<Array<{ id?: string; image_url: string; folder_id: string | null; display_order: number }>>([]);
+  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(new Set());
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -96,6 +107,7 @@ export default function AdminCollaborations() {
       setFormData({
         name: collab.name,
         logoUrl: collab.logo_url || '',
+        bannerUrl: collab.banner_url || '',
         description: collab.description || '',
         location: collab.location || '',
         mapUrl: collab.map_url || '',
@@ -103,16 +115,41 @@ export default function AdminCollaborations() {
         display_order: collab.display_order ?? 0,
       });
       try {
-        const full = await getCollaborationById(collab.id) as { collaboration_images?: { image_url: string }[] };
-        setVenueImages((full?.collaboration_images || []).map(img => img.image_url));
+        const full = await getCollaborationById(collab.id) as {
+          collaboration_images?: Array<{ id: string; image_url: string; folder_id: string | null; display_order: number }>;
+          collaboration_folders?: CollaborationFolder[];
+        };
+        const imgs = full?.collaboration_images || [];
+        setVenueImages([]); // Venue images only used when creating; when editing we use gallery folders/images
+        setGalleryImages(imgs.map((img, i) => ({
+          id: img.id,
+          image_url: img.image_url,
+          folder_id: img.folder_id ?? null,
+          display_order: img.display_order ?? i,
+        })));
+        const folders = full?.collaboration_folders || [];
+        setGalleryFolders(folders.map(f => ({
+          id: f.id,
+          collaboration_id: f.collaboration_id,
+          parent_id: f.parent_id,
+          name: f.name,
+          display_order: f.display_order,
+          is_enabled: f.is_enabled ?? false,
+        })));
+        // Expand all root folders by default so folder/subfolder structure is visible
+        const rootIds = folders.filter(f => !f.parent_id).map(f => f.id);
+        setExpandedFolderIds(new Set(rootIds));
       } catch {
         setVenueImages([]);
+        setGalleryImages([]);
+        setGalleryFolders([]);
       }
     } else {
       setEditingCollab(null);
       setFormData({
         name: '',
         logoUrl: '',
+        bannerUrl: '',
         description: '',
         location: '',
         mapUrl: '',
@@ -120,7 +157,11 @@ export default function AdminCollaborations() {
         display_order: nextOrder,
       });
       setVenueImages([]);
+      setGalleryImages([]);
+      setGalleryFolders([]);
+      setExpandedFolderIds(new Set());
     }
+    setSelectedFolderId(null);
     setIsDialogOpen(true);
   };
 
@@ -134,6 +175,7 @@ export default function AdminCollaborations() {
       const base = {
         name: formData.name.trim(),
         logo_url: formData.logoUrl.trim() || null,
+        banner_url: formData.bannerUrl.trim() || null,
         description: formData.description.trim() || null,
         location: formData.location.trim() || null,
         map_url: formData.mapUrl.trim() || null,
@@ -145,17 +187,48 @@ export default function AdminCollaborations() {
         const updated = await updateCollaboration(editingCollab.id, base);
         setCollaborations(prev => prev.map(c => (c.id === updated.id ? updated : c)));
 
-        const existing = await getCollaborationImages(editingCollab.id);
-        for (const img of existing) await deleteCollaborationImage(img.id);
-        for (let i = 0; i < venueImages.length; i++) {
-          await createCollaborationImage({
-            collaboration_id: editingCollab.id,
-            image_url: venueImages[i],
-            caption: null,
-            display_order: i,
+        const collabId = editingCollab.id;
+
+        for (const folder of galleryFolders) {
+          await updateCollaborationFolder(folder.id, {
+            name: folder.name,
+            display_order: folder.display_order,
+            is_enabled: folder.is_enabled,
           });
         }
-        toast.success('Collaboration updated');
+
+        const validFolderIds = new Set(galleryFolders.map(f => f.id));
+        const resolveFolderId = (id: string | null): string | null => {
+          if (!id) return null;
+          return validFolderIds.has(id) ? id : null;
+        };
+        const existingImages = await getCollaborationImages(collabId);
+        const existingIds = new Set(existingImages.map(i => i.id));
+        const currentImageIds = new Set(galleryImages.filter(i => i.id).map(i => i.id));
+
+        for (const img of galleryImages) {
+          const folderId = resolveFolderId(img.folder_id);
+          if (img.id && existingIds.has(img.id)) {
+            const existing = existingImages.find(e => e.id === img.id);
+            if (existing?.folder_id !== folderId) {
+              await updateCollaborationImage(img.id!, { folder_id: folderId });
+            }
+          } else if (!img.id) {
+            await createCollaborationImage({
+              collaboration_id: collabId,
+              image_url: img.image_url,
+              caption: null,
+              display_order: img.display_order,
+              folder_id: folderId,
+              media_type: 'image',
+            });
+          }
+        }
+        for (const e of existingImages) {
+          if (!currentImageIds.has(e.id)) await deleteCollaborationImage(e.id);
+        }
+
+        toast.success('Collaboration updated. Folders and images will appear on the public collaboration page.');
       } else {
         const created = await createCollaboration(base);
         for (let i = 0; i < venueImages.length; i++) {
@@ -164,6 +237,8 @@ export default function AdminCollaborations() {
             image_url: venueImages[i],
             caption: null,
             display_order: i,
+            folder_id: null,
+            media_type: 'image',
           });
         }
         setCollaborations(prev => [created, ...prev]);
@@ -171,7 +246,9 @@ export default function AdminCollaborations() {
       }
       setIsDialogOpen(false);
     } catch (err: unknown) {
-      toast.error('Failed to save', { description: (err as Error)?.message });
+      const message = err instanceof Error ? err.message : typeof (err as { message?: string })?.message === 'string' ? (err as { message: string }).message : String(err);
+      toast.error('Save failed', { description: message, duration: 8000 });
+      console.error('Collaboration save error:', err);
     } finally {
       setSaving(false);
     }
@@ -198,6 +275,71 @@ export default function AdminCollaborations() {
       toast.error('Failed to update', { description: (err as Error)?.message });
     }
   };
+
+  const updateFolder = (id: string, updates: { name?: string; display_order?: number; is_enabled?: boolean }) => {
+    setGalleryFolders(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+  };
+
+  const toggleFolderEnabled = (id: string) => {
+    setGalleryFolders(prev => prev.map(f => f.id === id ? { ...f, is_enabled: !f.is_enabled } : f));
+  };
+
+  const handleSeedFolders = async () => {
+    if (!editingCollab) return;
+    try {
+      await seedCollaborationFolders(editingCollab.id);
+      const folders = await getCollaborationFolders(editingCollab.id);
+      setGalleryFolders(folders.map(f => ({
+        id: f.id,
+        collaboration_id: f.collaboration_id,
+        parent_id: f.parent_id,
+        name: f.name,
+        display_order: f.display_order,
+        is_enabled: f.is_enabled ?? false,
+      })));
+      const rootIds = folders.filter(f => !f.parent_id).map(f => f.id);
+      setExpandedFolderIds(new Set(rootIds));
+      toast.success('Standard folders created. Enable the ones you need and add images, then Save.');
+    } catch (err: unknown) {
+      toast.error('Failed to create folders', { description: (err as Error)?.message });
+    }
+  };
+
+  const toggleFolderExpanded = (id: string) => {
+    setExpandedFolderIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const imagesForFolder = (folderId: string | null) =>
+    galleryImages.filter(img => (img.folder_id ?? null) === folderId);
+
+  const setImagesForFolder = (folderId: string | null, urls: string[]) => {
+    const existingInFolder = galleryImages.filter(img => (img.folder_id ?? null) === folderId);
+    setGalleryImages(prev => {
+      const others = prev.filter(img => (img.folder_id ?? null) !== folderId);
+      const merged = urls.map((url, i) => {
+        const found = existingInFolder.find(e => e.image_url === url);
+        return found ? { ...found, display_order: i } : { image_url: url, folder_id: folderId, display_order: i };
+      });
+      return [...others, ...merged];
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setGalleryImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const setImageFolder = (index: number, folderId: string | null) => {
+    setGalleryImages(prev => prev.map((img, i) => i === index ? { ...img, folder_id: folderId } : img));
+  };
+
+  const rootFolders = galleryFolders.filter(f => !f.parent_id).sort((a, b) => a.display_order - b.display_order);
+  const getChildFolders = (parentId: string) =>
+    galleryFolders.filter(f => f.parent_id === parentId).sort((a, b) => a.display_order - b.display_order);
 
   return (
     <AdminLayout title="Collaborations" subtitle="Manage your venue partners and collaborators">
@@ -337,6 +479,23 @@ export default function AdminCollaborations() {
               />
             </div>
             <div className="grid gap-2">
+              <Label>Partner Banner</Label>
+              <ImageUpload
+                value={formData.bannerUrl}
+                onChange={v => setFormData({ ...formData, bannerUrl: (v as string) || '' })}
+                multiple={false}
+                previewClassName="object-cover"
+                bucket="gallery-images"
+                uploadOnSelect={true}
+              />
+              <p className="text-xs text-muted-foreground">Hero/banner image for the venue page. Or paste URL:</p>
+              <Input
+                value={formData.bannerUrl}
+                onChange={e => setFormData({ ...formData, bannerUrl: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
@@ -378,18 +537,113 @@ export default function AdminCollaborations() {
                 Auto-filled as next (e.g. 0→1, 1→2) when adding. Lower numbers appear first. You can change it.
               </p>
             </div>
-            <div className="grid gap-2">
-              <Label>Venue Images</Label>
-              <ImageUpload
-                value={venueImages}
-                onChange={v => setVenueImages((v as string[]) || [])}
-                multiple
-                maxFiles={20}
-                previewClassName="object-cover"
-                bucket="gallery-images"
-                uploadOnSelect={true}
-              />
-            </div>
+            {!editingCollab && (
+              <div className="grid gap-2">
+                <Label>Venue Images</Label>
+                <ImageUpload
+                  value={venueImages}
+                  onChange={v => setVenueImages((v as string[]) || [])}
+                  multiple
+                  maxFiles={20}
+                  previewClassName="object-cover"
+                  bucket="gallery-images"
+                  uploadOnSelect={true}
+                />
+              </div>
+            )}
+            {editingCollab && (
+              <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <Label className="text-base font-semibold">Gallery</Label>
+                  {rootFolders.length === 0 ? (
+                    <Button type="button" variant="outline" size="sm" onClick={handleSeedFolders} className="gap-1">
+                      <FolderPlus className="w-4 h-4" />
+                      Create standard folders
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Turn on &quot;Show&quot; for folders you want on the site. Select a folder to add images.</span>
+                  )}
+                </div>
+                {rootFolders.length === 0 ? (
+                  <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-2">No folders yet. Create standard event folders (Wedding, Birthday, etc.), then enable the ones you need.</p>
+                    <Button type="button" variant="outline" size="sm" onClick={handleSeedFolders} className="gap-1">
+                      <FolderPlus className="w-4 h-4" />
+                      Create standard folders
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-[minmax(0,220px)_1fr]">
+                    <div className="rounded-lg border bg-card overflow-hidden">
+                      <div className="p-2 border-b bg-muted/50 text-xs font-medium text-muted-foreground">Folders</div>
+                      <div className="max-h-[280px] overflow-y-auto">
+                        {rootFolders.map((f) => (
+                          <div key={f.id}>
+                            <div
+                              className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-md hover:bg-muted/70 ${selectedFolderId === f.id ? 'bg-primary/10' : ''}`}
+                              onClick={() => setSelectedFolderId(f.id)}
+                            >
+                              <button type="button" onClick={(e) => { e.stopPropagation(); toggleFolderExpanded(f.id); }} className="p-0.5 shrink-0">
+                                {expandedFolderIds.has(f.id) ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                              </button>
+                              <FolderOpen className="w-4 h-4 text-primary shrink-0" />
+                              <span className="text-sm font-medium truncate flex-1">{f.name}</span>
+                              <Switch checked={f.is_enabled} onCheckedChange={() => toggleFolderEnabled(f.id)} onClick={e => e.stopPropagation()} className="h-3.5 w-7 shrink-0" />
+                            </div>
+                            {expandedFolderIds.has(f.id) && getChildFolders(f.id).map((sub) => (
+                              <div
+                                key={sub.id}
+                                className={`flex items-center gap-2 pl-8 pr-2 py-1.5 cursor-pointer rounded-md hover:bg-muted/70 ${selectedFolderId === sub.id ? 'bg-primary/10' : ''}`}
+                                onClick={() => setSelectedFolderId(sub.id)}
+                              >
+                                <FolderOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-sm truncate flex-1">{sub.name}</span>
+                                <Switch checked={sub.is_enabled} onCheckedChange={() => toggleFolderEnabled(sub.id)} onClick={e => e.stopPropagation()} className="h-3.5 w-7 shrink-0" />
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        <div
+                          className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-md hover:bg-muted/70 border-t mt-1 ${selectedFolderId === null ? 'bg-primary/10' : ''}`}
+                          onClick={() => setSelectedFolderId(null)}
+                        >
+                          <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm truncate flex-1">Other (no folder)</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-card p-4 min-h-[200px]">
+                      <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                        <FolderOpen className="w-4 h-4" />
+                        {selectedFolderId === null ? 'Images in Other (no folder)' : galleryFolders.find(x => x.id === selectedFolderId)?.name ?? 'Images'}
+                      </p>
+                      <ImageUpload
+                        value={imagesForFolder(selectedFolderId).map(i => i.image_url)}
+                        onChange={v => setImagesForFolder(selectedFolderId, (v as string[]) || [])}
+                        multiple
+                        maxFiles={20}
+                        previewClassName="object-cover"
+                        bucket="gallery-images"
+                        uploadOnSelect={true}
+                      />
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {galleryImages.filter(img => (img.folder_id ?? null) === selectedFolderId).map((img, idx) => {
+                          const globalIdx = galleryImages.findIndex(i => i === img);
+                          return (
+                            <div key={img.id ?? `${globalIdx}-${img.image_url}`} className="relative group w-14 h-14 rounded overflow-hidden border">
+                              <img src={img.image_url} alt="Collaboration gallery image" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center">
+                                <Button type="button" variant="secondary" size="icon" className="h-5 w-5" onClick={() => removeImage(globalIdx)}><Trash2 className="w-3 h-3" /></Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <Label htmlFor="isActive">Active (visible on website)</Label>
               <Switch

@@ -12,6 +12,7 @@ import { getEventBySlug, Event } from "@/services/events";
 import { getAlbumById, getAlbumWithMedia, AlbumMedia } from "@/services/albums";
 import { Album } from "@/services/albums";
 import { logger } from "@/utils/logger";
+import { SEO } from "@/components/SEO";
 
 const GalleryAlbum = () => {
   const { eventType, albumId } = useParams<{ eventType: string; albumId: string }>();
@@ -134,9 +135,18 @@ const GalleryAlbum = () => {
   };
 
   const eventSlug = event?.slug || eventType || 'all';
+  const canonicalPath = eventType && albumId ? `/gallery/${eventType}/${albumId}` : '/gallery';
+  const albumDescription = album.description
+    ? `${album.description.slice(0, 155)}${album.description.length > 155 ? "…" : ""}`
+    : `${album.title} – event album photos in Pune by Phoenix Events.`;
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={album.title}
+        description={albumDescription}
+        url={canonicalPath}
+      />
       <Navbar />
       
       {/* Hero Section */}
@@ -522,9 +532,10 @@ const GalleryAlbum = () => {
                     >
                       <img
                         src={photo.url || '/placeholder.svg'}
-                        alt=""
+                        alt={photo.caption || `Photo in ${album.title}`}
                         draggable={false}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}

@@ -52,13 +52,13 @@ npm run dev
 
 ## What technologies are used for this project?
 
-This project is built with:
+See **[TECH_STACK.md](./TECH_STACK.md)** for the full tech stack, project structure, and feature overview.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Quick list:
+
+- **Frontend:** Vite, TypeScript, React 18, React Router, Tailwind CSS, Radix UI / shadcn-ui, Framer Motion, Swiper
+- **Backend / Data:** Supabase (Auth, Database, Storage, Realtime)
+- **Forms / UX:** React Hook Form, Zod, Sonner (toasts)
 
 ## How can I deploy this project?
 

@@ -460,6 +460,8 @@ export default function AdminAlbums() {
                 type="date"
                 value={formData.event_date}
                 onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                min="1900-01-01"
+                max="2099-12-31"
               />
             </div>
 

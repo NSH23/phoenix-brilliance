@@ -82,10 +82,20 @@ export async function getGalleryImagesByRows(maxRows = 10) {
   return byRow;
 }
 
-// Normalize gallery image (row_index may be missing in older DB)
+/** Resolve url to a full public URL; if it's a storage path, use gallery-images bucket public URL. */
+function resolveGalleryImageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const { data } = supabase.storage.from('gallery-images').getPublicUrl(url);
+  return data.publicUrl;
+}
+
+// Normalize gallery image (row_index may be missing in older DB; url may be path)
 function normalizeGalleryImage(row: Record<string, unknown>): GalleryImage & { row_index?: number } {
+  const url = row.url as string | undefined;
   return {
     ...row,
+    url: resolveGalleryImageUrl(url) || (url ?? ''),
     row_index: typeof row.row_index === 'number' ? row.row_index : 0,
   } as GalleryImage;
 }

@@ -8,7 +8,9 @@ import ScrollToTop from "./components/ScrollToTop";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AdminProvider } from "./contexts/AdminContext";
 import { SiteConfigProvider } from "./contexts/SiteConfigContext";
+import { LeadCaptureProvider } from "./contexts/LeadCaptureContext";
 import GlobalBackground from "@/components/GlobalBackground";
+import LeadCaptureModal from "@/components/LeadCaptureModal";
 
 // Lazy load all route components for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -29,7 +31,7 @@ const Collaborations = lazy(() => import("./pages/Collaborations"));
 const CollaborationDetail = lazy(() => import("./pages/CollaborationDetail"));
 
 // Public Services Page
-
+const Services = lazy(() => import("./pages/Services"));
 
 // Admin Pages
 const AdminEntry = lazy(() => import("./pages/admin/AdminEntry"));
@@ -48,6 +50,7 @@ const AdminContent = lazy(() => import("./pages/admin/Content"));
 const AdminContentMedia = lazy(() => import("./pages/admin/ContentMedia"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminTeam = lazy(() => import("./pages/admin/Team"));
+const AdminSetPassword = lazy(() => import("./pages/admin/SetPassword"));
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 
 // Loading component for Suspense fallback
@@ -75,10 +78,11 @@ function AppRoutes() {
           <Route path="/events/:eventType" element={<EventDetail />} />
           <Route path="/collaborations" element={<Collaborations />} />
           <Route path="/collaborations/:partnerId" element={<CollaborationDetail />} />
-
+          <Route path="/services" element={<Services />} />
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<LoginRedirect />} />
+          <Route path="/admin/set-password" element={<AdminSetPassword />} />
           <Route path="/admin" element={<AdminEntry />} />
           <Route
             path="/admin/dashboard"
@@ -196,9 +200,12 @@ const App = () => (
         <SiteConfigProvider>
           <Sonner />
           <BrowserRouter>
-            <ScrollToTop />
-            <GlobalBackground />
-            <AppRoutes />
+            <LeadCaptureProvider>
+              <ScrollToTop />
+              <GlobalBackground />
+              <LeadCaptureModal />
+              <AppRoutes />
+            </LeadCaptureProvider>
           </BrowserRouter>
         </SiteConfigProvider>
       </AdminProvider>

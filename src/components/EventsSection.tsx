@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getEventsForHomepage } from "@/services/events";
 import { Loader2 } from "lucide-react";
@@ -25,6 +25,7 @@ type EventCategory = {
 };
 
 const EventsSection = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [selectedSlug, setSelectedSlug] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -133,7 +134,7 @@ const EventsSection = () => {
               {[...categories, ...categories, ...categories, ...categories].map((cat, index) => (
                 <Link
                   key={`${cat.slug}-mobile-${index}`}
-                  to={`/events?category=${cat.slug}`}
+                  to={`/events/${cat.slug}`}
                   className="flex-shrink-0 w-[200px] group relative rounded-xl overflow-hidden aspect-[3/4]"
                 >
                   <img
@@ -183,14 +184,15 @@ const EventsSection = () => {
               {displayCategories.map((cat) => {
                 const isActive = cat.slug === selectedSlug;
                 return (
-                  <div
+                  <button
                     key={cat.slug}
+                    type="button"
                     onMouseEnter={() => setSelectedSlug(cat.slug)}
-                    onClick={() => setSelectedSlug(cat.slug)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && setSelectedSlug(cat.slug)}
-                    className="text-center cursor-pointer"
+                    onClick={() => {
+                      setSelectedSlug(cat.slug);
+                      navigate(`/events/${cat.slug}`);
+                    }}
+                    className="text-center cursor-pointer block w-full bg-transparent border-0 p-0 font-inherit"
                   >
                     <span
                       className={`block text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight transition-all duration-300 ease-out font-display
@@ -198,7 +200,7 @@ const EventsSection = () => {
                     >
                       {cat.title.toUpperCase()}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>

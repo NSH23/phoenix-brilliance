@@ -4,6 +4,7 @@ import { LogOut, ChevronLeft } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { cn } from '@/lib/utils';
 import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
+import AdminUserAvatar from '@/components/admin/AdminUserAvatar';
 
 interface AdminSidebarProps {
   collapsed?: boolean;
@@ -103,11 +104,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
           "flex items-center gap-3 p-3 rounded-xl bg-muted/50",
           (collapsed && !mobile) && "justify-center"
         )}>
-          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-primary font-semibold">
-              {user?.name?.charAt(0) || 'A'}
-            </span>
-          </div>
+          <AdminUserAvatar avatarUrl={user?.avatar} name={user?.name} size="md" className="w-10 h-10" />
           <AnimatePresence mode="wait">
             {(!collapsed || mobile) && (
               <motion.div

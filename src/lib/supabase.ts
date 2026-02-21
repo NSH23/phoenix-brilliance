@@ -37,6 +37,21 @@ if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
   throw new Error(`VITE_SUPABASE_URL must be a valid HTTP/HTTPS URL. Got: ${supabaseUrl.substring(0, 50)}...`);
 }
 
+// Dev check: 401 often means wrong key. Supabase anon key is a JWT with role "anon".
+if (import.meta.env.DEV && supabaseAnonKey) {
+  try {
+    const payload = JSON.parse(atob(supabaseAnonKey.split('.')[1] || ''));
+    if (payload.role && payload.role !== 'anon') {
+      console.warn(
+        '[Supabase] Client is using a key with role "%s". For the browser client, use the "anon" (public) key from Project Settings → API to avoid 401 on public inserts.',
+        payload.role
+      );
+    }
+  } catch {
+    // Not a JWT or invalid; anon key might be legacy format, ignore
+  }
+}
+
 // Create and export Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

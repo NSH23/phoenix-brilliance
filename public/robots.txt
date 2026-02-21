@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /admin/*
 
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://phoenixeventsandproduction.vercel.app/sitemap.xml

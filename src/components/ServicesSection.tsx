@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
 import { ExpandingCards, CardItem } from "@/components/ui/expanding-cards";
@@ -12,7 +13,8 @@ import {
   Camera,
   Mic2,
   MapPin,
-  Sparkles
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 
 // Helper to map icon names (if we stored them) or just use default icons
@@ -176,6 +178,21 @@ const ServicesSection = () => {
         <div className="md:hidden w-full relative min-h-[400px]">
           <MobileServiceCarousel services={services} />
         </div>
+
+        {/* See more / Explore – only when more than 10 services */}
+        {services.length > 10 && (
+          <div className="mt-8 flex justify-center">
+            <Link
+              to="/services"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium tracking-wide
+                         text-primary border border-primary/40 bg-primary/5 hover:bg-primary/10 hover:border-primary/60
+                         transition-all duration-300"
+            >
+              <span>Explore</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
 
       </div>
     </section>

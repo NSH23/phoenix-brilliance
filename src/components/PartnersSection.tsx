@@ -10,7 +10,6 @@ const PartnersSection = () => {
   useEffect(() => {
     getActiveCollaborations()
       .then((data) => {
-        console.log("Fetched partners:", data);
         setPartners(data.map((c) => ({ id: c.id, name: c.name, logo_url: c.logo_url })));
       })
       .catch((err) => {

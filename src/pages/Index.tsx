@@ -5,9 +5,8 @@ import Footer from "@/components/Footer";
 import SectionSeparator from "@/components/SectionSeparator";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import MobileCTA from "@/components/MobileCTA";
-import ContactPopup from "@/components/ContactPopup";
 import { SEO } from "@/components/SEO";
-import { OrganizationSchema } from "@/components/StructuredData";
+import { EventPlanningBusinessSchema, OrganizationSchema } from "@/components/StructuredData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 // Lazy Load Below-the-Fold Sections
@@ -28,37 +27,18 @@ const Index = () => {
   if (socialLinks.youtube) sameAs.push(socialLinks.youtube);
   if (socialLinks.twitter) sameAs.push(socialLinks.twitter);
 
-  // Contact Popup Logic
-  const [showContactPopup, setShowContactPopup] = useState(false);
+  if (socialLinks.twitter) sameAs.push(socialLinks.twitter);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const heroHeight = window.innerHeight * 0.8;
-      const scrollPosition = window.scrollY;
-
-      // Show if scrolled past hero and haven't seen it in this session
-      if (scrollPosition > heroHeight) {
-        const hasSeen = sessionStorage.getItem("hasSeenContactPopup");
-        if (!hasSeen) {
-          setShowContactPopup(true);
-          // Set it immediately so it doesn't trigger again on next scroll event
-          sessionStorage.setItem("hasSeenContactPopup", "true");
-        }
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   return (
     <>
       <SEO
-        title="Phoenix Events & Production"
-        description="Premium event planning and production services in Pune, Maharashtra. Specializing in weddings, corporate events, birthdays, and celebrations."
+        title="Phoenix Events & Production | Wedding & Corporate Event Management in Pune"
+        description="Premium wedding and corporate event planning company in Pune. Luxury décor and venue collaborations."
         keywords="event planning, wedding planning, corporate events, Pune events, Maharashtra event planners, party organizers"
         url="/"
       />
+      <EventPlanningBusinessSchema />
       <OrganizationSchema
         contactPoint={{
           telephone: contact?.phone || "+91 70667 63276",
@@ -73,7 +53,7 @@ const Index = () => {
         sameAs={sameAs.length > 0 ? sameAs : undefined}
       />
 
-      <ContactPopup isOpen={showContactPopup} onClose={() => setShowContactPopup(false)} />
+
 
       <div className="min-h-screen bg-transparent text-foreground antialiased main-page-flow">
         <Navbar />
@@ -96,7 +76,7 @@ const Index = () => {
               <ReelsSection />
             </div>
 
-            {/* About Us (New Horizontal Curtain Reveal) */}
+            {/* About Us – shuffle grid here uses gallery from Admin → Gallery (gallery-images) */}
             <div id="about">
               <AboutSection />
             </div>

@@ -1,5 +1,33 @@
 import { Helmet } from 'react-helmet-async';
 
+const getBaseUrl = () =>
+  import.meta.env.VITE_SITE_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : '');
+
+/** EventPlanningBusiness schema for local SEO (homepage). */
+export function EventPlanningBusinessSchema() {
+  const baseUrl = getBaseUrl();
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'EventPlanningBusiness',
+    name: 'Phoenix Events & Production',
+    url: baseUrl,
+    image: `${baseUrl}/logo.png`,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Pune',
+      addressCountry: 'IN',
+    },
+  };
+  return (
+    <Helmet>
+      <script type="application/ld+json">
+        {JSON.stringify(schema)}
+      </script>
+    </Helmet>
+  );
+}
+
 interface OrganizationSchemaProps {
   name?: string;
   url?: string;
@@ -27,7 +55,7 @@ export function OrganizationSchema({
   address,
   sameAs
 }: OrganizationSchemaProps) {
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const baseUrl = getBaseUrl();
   const finalUrl = url || baseUrl;
   const finalLogo = logo || `${baseUrl}/logo.png`;
 
@@ -94,8 +122,7 @@ export function EventSchema({
   image,
   organizer
 }: EventSchemaProps) {
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  
+  const baseUrl = getBaseUrl();
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Event',

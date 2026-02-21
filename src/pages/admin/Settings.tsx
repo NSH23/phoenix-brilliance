@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, User, Shield, Bell, Globe, Database, UserPlus, Mail, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { Save, User, Shield, Bell, Globe, Database, UserPlus, Mail, Lock, Loader2, ArrowLeft, Users } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminUserAvatar from '@/components/admin/AdminUserAvatar';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,36 +19,55 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAdmin } from '@/contexts/AdminContext';
-import { updateAdminUser } from '@/services/adminUsers';
+import { updateAdminUser, getAdminUsers, type AdminUserRow } from '@/services/adminUsers';
 import { supabase } from '@/lib/supabase';
+import { createSignedUrl } from '@/services/storage';
 import { toast } from 'sonner';
 
+const NOTIFICATION_STORAGE_KEY = 'admin_notification_preferences';
+const SITE_SETTINGS_STORAGE_KEY = 'admin_site_settings';
+
+const defaultNotifications = {
+  emailInquiries: true,
+  emailNewBooking: true,
+  browserNotifications: false,
+  weeklyReport: true,
+};
+
+const defaultSiteSettings = {
+  siteName: 'Phoenix Events & Production',
+  tagline: 'Creating Magical Moments',
+  defaultTheme: 'system',
+  maintenanceMode: false,
+};
+
+/** Avatar may be stored as full URL or storage path; return a URL suitable for <img src>. */
+function resolveAvatarDisplayUrl(avatar: string | undefined): string {
+  if (!avatar) return '';
+  if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+  const { data } = supabase.storage.from('admin-avatars').getPublicUrl(avatar);
+  return data.publicUrl;
+}
+
 export default function AdminSettings() {
-  const { user } = useAdmin();
+  const { user, refreshUser } = useAdmin();
   const [profileData, setProfileData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    avatar: (user as { avatar_url?: string })?.avatar_url || '',
+    name: '',
+    email: '',
+    avatar: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
 
-  const [notifications, setNotifications] = useState({
-    emailInquiries: true,
-    emailNewBooking: true,
-    browserNotifications: false,
-    weeklyReport: true,
-  });
-
-  const [siteSettings, setSiteSettings] = useState({
-    siteName: 'Phoenix Events & Production',
-    tagline: 'Creating Magical Moments',
-    defaultTheme: 'system',
-    maintenanceMode: false,
-  });
+  const [notifications, setNotifications] = useState(defaultNotifications);
+  const [siteSettings, setSiteSettings] = useState(defaultSiteSettings);
+  const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
 
   const [profileSaving, setProfileSaving] = useState(false);
+  const [avatarDisplayUrl, setAvatarDisplayUrl] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [addUserStep, setAddUserStep] = useState<1 | 2 | 3>(1);
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -57,7 +77,86 @@ export default function AdminSettings() {
   const [newUserConfirmPassword, setNewUserConfirmPassword] = useState('');
   const [addUserLoading, setAddUserLoading] = useState(false);
   const [otpResendCooldown, setOtpResendCooldown] = useState(0);
+  const [notificationsSaving, setNotificationsSaving] = useState(false);
+  const [siteSaving, setSiteSaving] = useState(false);
   const oldSessionRef = useRef<{ access_token: string; refresh_token: string } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    setProfileData((p) => ({
+      ...p,
+      name: user.name || '',
+      email: user.email || '',
+      avatar: user?.avatar ?? '',
+    }));
+  }, [user]);
+
+  // Resolve avatar for display (preview + img): full URL use as-is; path → signed URL so it works for private bucket
+  useEffect(() => {
+    const raw = profileData.avatar;
+    if (!raw) {
+      setAvatarDisplayUrl('');
+      return;
+    }
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      setAvatarDisplayUrl(raw);
+      return;
+    }
+    let cancelled = false;
+    createSignedUrl('admin-avatars', raw, 3600)
+      .then((url) => { if (!cancelled) setAvatarDisplayUrl(url); })
+      .catch(() => {
+        if (!cancelled) {
+          const { data } = supabase.storage.from('admin-avatars').getPublicUrl(raw);
+          setAvatarDisplayUrl(data.publicUrl);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [profileData.avatar]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<typeof defaultNotifications>;
+        setNotifications((n) => ({ ...n, ...parsed }));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SITE_SETTINGS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<typeof defaultSiteSettings>;
+        setSiteSettings((s) => ({ ...s, ...parsed }));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const { error } = await supabase.from('admin_users').select('id').limit(1);
+        setDbStatus(error ? 'error' : 'connected');
+      } catch {
+        setDbStatus('error');
+      }
+    };
+    check();
+  }, []);
+
+  useEffect(() => {
+    setAdminUsersLoading(true);
+    getAdminUsers()
+      .then(setAdminUsers)
+      .catch(() => setAdminUsers([]))
+      .finally(() => setAdminUsersLoading(false));
+  }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +168,10 @@ export default function AdminSettings() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: newUserEmail.trim(),
-        options: { shouldCreateUser: true },
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/admin/set-password`,
+        },
       });
       if (error) {
         const msg = error.message?.toLowerCase() || '';
@@ -105,13 +207,20 @@ export default function AdminSettings() {
     try {
       const { data: { session: cur } } = await supabase.auth.getSession();
       if (cur) oldSessionRef.current = { access_token: cur.access_token, refresh_token: cur.refresh_token };
-      const { error } = await supabase.auth.verifyOtp({
+      let error = (await supabase.auth.verifyOtp({
         email: newUserEmail.trim(),
         token: otp,
         type: 'email',
-      });
+      })).error;
+      if (error && (error.message?.includes('expired') || error.message?.includes('403'))) {
+        error = (await supabase.auth.verifyOtp({
+          email: newUserEmail.trim(),
+          token: otp,
+          type: 'magiclink',
+        })).error;
+      }
       if (error) {
-        toast.error(error.message || 'Invalid or expired code. You can request a new one.');
+        toast.error(error.message || 'Invalid or expired code. Request a new code and try again.');
         setAddUserLoading(false);
         return;
       }
@@ -169,6 +278,7 @@ export default function AdminSettings() {
         setNewUserName('');
         setNewUserPassword('');
         setNewUserConfirmPassword('');
+        getAdminUsers().then(setAdminUsers);
       }
       await supabase.auth.signOut();
       const old = oldSessionRef.current;
@@ -203,6 +313,7 @@ export default function AdminSettings() {
         name: profileData.name.trim() || user.name,
         avatar_url: profileData.avatar || null,
       });
+      await refreshUser();
       toast.success('Profile updated successfully');
     } catch (err) {
       toast.error('Failed to update profile', { description: (err as Error)?.message });
@@ -250,12 +361,28 @@ export default function AdminSettings() {
     }
   };
 
-  const handleSaveNotifications = () => {
-    toast.success('Notification preferences saved');
+  const handleSaveNotifications = async () => {
+    setNotificationsSaving(true);
+    try {
+      localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifications));
+      toast.success('Notification preferences saved');
+    } catch {
+      toast.error('Failed to save preferences');
+    } finally {
+      setNotificationsSaving(false);
+    }
   };
 
-  const handleSaveSiteSettings = () => {
-    toast.success('Site settings saved');
+  const handleSaveSiteSettings = async () => {
+    setSiteSaving(true);
+    try {
+      localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(siteSettings));
+      toast.success('Site settings saved');
+    } catch {
+      toast.error('Failed to save settings');
+    } finally {
+      setSiteSaving(false);
+    }
   };
 
   return (
@@ -301,8 +428,9 @@ export default function AdminSettings() {
                 <div className="grid gap-2">
                   <Label>Profile Avatar</Label>
                   <ImageUpload
-                    value={profileData.avatar}
-                    onChange={v => setProfileData({ ...profileData, avatar: (v as string) || '' })}
+                    key={profileData.avatar || 'no-avatar'}
+                    value={avatarDisplayUrl || resolveAvatarDisplayUrl(profileData.avatar)}
+                    onChange={(v) => setProfileData((p) => ({ ...p, avatar: (v as string) || '' }))}
                     multiple={false}
                     previewClassName="object-cover"
                     bucket="admin-avatars"
@@ -311,8 +439,8 @@ export default function AdminSettings() {
                   <p className="text-xs text-muted-foreground">Or paste URL:</p>
                   <Input
                     value={profileData.avatar}
-                    onChange={e => setProfileData({ ...profileData, avatar: e.target.value })}
-                    placeholder="https://..."
+                    onChange={(e) => setProfileData((p) => ({ ...p, avatar: e.target.value }))}
+                    placeholder="https://... or path from storage"
                   />
                 </div>
 
@@ -412,26 +540,6 @@ export default function AdminSettings() {
                 </div>
               </CardContent>
             </Card>
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Two-Factor Authentication</CardTitle>
-                <CardDescription>
-                  Add an extra layer of security to your account.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Enable 2FA</p>
-                    <p className="text-sm text-muted-foreground">
-                      Protect your account with two-factor authentication.
-                    </p>
-                  </div>
-                  <Button variant="outline">Setup 2FA</Button>
-                </div>
-              </CardContent>
-            </Card>
           </motion.div>
         </TabsContent>
 
@@ -440,7 +548,43 @@ export default function AdminSettings() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
           >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Admin Users ({adminUsers.length})
+                </CardTitle>
+                <CardDescription>
+                  People who can sign in to the admin dashboard. Add new admins below.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {adminUsersLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading...
+                  </div>
+                ) : adminUsers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No admin users yet.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {adminUsers.map((a) => (
+                      <li key={a.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                        <AdminUserAvatar avatarUrl={a.avatar_url} name={a.name || a.email} size="md" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">{a.name || a.email}</p>
+                          <p className="text-xs text-muted-foreground truncate">{a.email}</p>
+                        </div>
+                        <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground capitalize shrink-0">{a.role}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -460,6 +604,9 @@ export default function AdminSettings() {
 
                 {addUserStep === 1 && (
                   <form onSubmit={handleSendOtp} className="space-y-4 max-w-md">
+                    <p className="text-xs text-muted-foreground">
+                      If the email arrives but the 6-digit code does not, go to Supabase Dashboard → <strong>Authentication</strong> → <strong>Email Templates</strong> → <strong>Magic Link</strong> and add <code className="bg-muted px-1 rounded">{'{{ .Token }}'}</code> to the message body. See <code className="bg-muted px-1 rounded text-[10px]">docs/SUPABASE_OTP_EMAIL_SETUP.md</code> for exact steps.
+                    </p>
                     <div className="grid gap-2">
                       <Label htmlFor="new-user-email">Email</Label>
                       <div className="relative">
@@ -686,8 +833,8 @@ export default function AdminSettings() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveNotifications}>
-                    <Save className="w-4 h-4 mr-2" />
+                  <Button onClick={handleSaveNotifications} disabled={notificationsSaving}>
+                    {notificationsSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                     Save Preferences
                   </Button>
                 </div>
@@ -784,21 +931,40 @@ export default function AdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-3 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse" />
-                  <div>
-                    <p className="font-medium text-yellow-600 dark:text-yellow-400">Mock Data Mode</p>
-                    <p className="text-sm text-muted-foreground">
-                      Currently using mock data. Connect your database to enable live data.
-                    </p>
+                {dbStatus === 'checking' && (
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Checking connection...</p>
                   </div>
-                </div>
+                )}
+                {dbStatus === 'connected' && (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full" />
+                    <div>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400">Connected</p>
+                      <p className="text-sm text-muted-foreground">
+                        Your app is connected to Supabase. Data is live.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {dbStatus === 'error' && (
+                  <div className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                    <div className="w-3 h-3 bg-destructive rounded-full" />
+                    <div>
+                      <p className="font-medium text-destructive">Connection issue</p>
+                      <p className="text-sm text-muted-foreground">
+                        Could not reach the database. Check your Supabase project and env vars.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             <div className="flex justify-end">
-              <Button onClick={handleSaveSiteSettings}>
-                <Save className="w-4 h-4 mr-2" />
+              <Button onClick={handleSaveSiteSettings} disabled={siteSaving}>
+                {siteSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                 Save Settings
               </Button>
             </div>

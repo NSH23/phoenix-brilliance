@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -97,6 +100,33 @@ export default function AdminLogin() {
       toast.error('Error', {
         description: error.message || 'Failed to resend verification email.',
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email?.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    setIsLoading(true);
+    setResetSent(false);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/admin/set-password`,
+      });
+      if (error) {
+        toast.error('Failed to send reset email', { description: error.message });
+        return;
+      }
+      setResetSent(true);
+      toast.success('Check your email', {
+        description: 'If an account exists, we sent a link to set a new password.',
+      });
+    } catch (err: any) {
+      toast.error('Something went wrong', { description: err?.message });
     } finally {
       setIsLoading(false);
     }
@@ -192,7 +222,16 @@ export default function AdminLogin() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="login-password">Password</Label>
+                    <button
+                      type="button"
+                      onClick={() => { setForgotPassword(true); setResetSent(false); }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                     <Input
@@ -203,7 +242,7 @@ export default function AdminLogin() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       className="pl-10 pr-10 h-12 rounded-xl"
-                      required
+                      required={!forgotPassword}
                       disabled={isLoading}
                     />
                     <button
@@ -218,6 +257,35 @@ export default function AdminLogin() {
                   </div>
                 </div>
 
+                {forgotPassword ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Enter your email and we&apos;ll send a link to set a new password.
+                    </p>
+                    <Button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={isLoading}
+                      className="w-full h-12 rounded-xl"
+                    >
+                      {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send reset link'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => { setForgotPassword(false); setResetSent(false); }}
+                      disabled={isLoading}
+                    >
+                      Back to sign in
+                    </Button>
+                    {resetSent && (
+                      <p className="text-sm text-center text-muted-foreground">
+                        Check {email} and click the link to set your new password.
+                      </p>
+                    )}
+                  </div>
+                ) : (
                 <Button
                   type="submit"
                   disabled={isLoading}
@@ -232,6 +300,7 @@ export default function AdminLogin() {
                     'Sign In'
                   )}
                 </Button>
+                )}
               </form>
         </div>
       </motion.div>

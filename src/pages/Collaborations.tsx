@@ -8,6 +8,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import { HeroBackgroundPattern } from "@/components/ui/HeroBackgroundPattern";
 import { getActiveCollaborations } from "@/services/collaborations";
 import { getPageHeroContent } from "@/services/pageHeroContent";
+import { SEO } from "@/components/SEO";
 
 const DEFAULT_STATS = [
   { icon: Building2, value: "25+", label: "Partner Venues" },
@@ -53,6 +54,12 @@ export default function Collaborations() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Collaborations"
+        description="Partner venues and trusted vendors in Pune. Premium collaborations for weddings, corporate events, and celebrations."
+        keywords="event venue Pune, wedding venue collaborations, corporate event partners Maharashtra"
+        url="/collaborations"
+      />
       <Navbar />
 
       {/* Hero Section - elegant abstract gradient mesh (Compact) */}
@@ -276,7 +283,7 @@ export default function Collaborations() {
               <Loader2 className="w-10 h-10 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
               {activeCollaborations.map((collab, index) => {
                 const hasLogo = !!collab.logo_url;
 
@@ -300,7 +307,7 @@ export default function Collaborations() {
                                 hover:-translate-y-2
                                 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
                         {/* Card header - show logo in circle if present, otherwise show name prominently */}
-                        <div className={`relative ${hasLogo ? 'h-48' : 'h-40'} overflow-hidden bg-gradient-to-br from-muted/30 to-muted/10`}>
+                        <div className={`relative ${hasLogo ? 'h-32 sm:h-48' : 'h-28 sm:h-40'} overflow-hidden bg-gradient-to-br from-muted/30 to-muted/10`}>
                           {hasLogo ? (
                             <>
                               {/* Decorative background pattern when logo exists */}
@@ -309,22 +316,22 @@ export default function Collaborations() {
                                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary rounded-full blur-2xl" />
                               </div>
                               {/* Logo displayed in center as circular avatar */}
-                              <div className="absolute inset-0 flex items-center justify-center p-6">
-                                <div className="relative w-28 h-28 rounded-full bg-background/80 backdrop-blur-sm border-4 border-primary/20 
+                              <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
+                                <div className="relative w-16 h-16 sm:w-28 sm:h-28 rounded-full bg-background/80 backdrop-blur-sm border-2 sm:border-4 border-primary/20 
                                           shadow-xl group-hover/card:border-primary/40 group-hover/card:scale-105 
                                           transition-all duration-400 flex items-center justify-center overflow-hidden">
                                   <img
                                     src={collab.logo_url}
                                     alt={`${collab.name} logo`}
-                                    className="w-full h-full object-contain p-3"
+                                    className="w-full h-full object-contain p-2 sm:p-3"
                                   />
                                 </div>
                               </div>
                             </>
                           ) : (
                             /* When no logo, show name prominently */
-                            <div className="absolute inset-0 flex items-center justify-center p-6">
-                              <h3 className="text-xl md:text-2xl font-serif font-bold text-foreground group-hover/card:text-primary 
+                            <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
+                              <h3 className="text-sm sm:text-xl md:text-2xl font-serif font-bold text-foreground group-hover/card:text-primary 
                                        transition-colors duration-300 text-center line-clamp-2">
                                 {collab.name}
                               </h3>
@@ -332,11 +339,11 @@ export default function Collaborations() {
                           )}
                         </div>
 
-                        <div className="p-5 sm:p-6">
+                        <div className="p-3 sm:p-5 lg:p-6">
                           {/* Name below logo (if logo exists) */}
                           {hasLogo && (
-                            <div className="mb-3">
-                              <h3 className="text-lg font-serif font-bold text-foreground group-hover/card:text-primary 
+                            <div className="mb-2 sm:mb-3">
+                              <h3 className="text-sm sm:text-lg font-serif font-bold text-foreground group-hover/card:text-primary 
                                        transition-colors duration-300 text-center line-clamp-2">
                                 {collab.name}
                               </h3>
@@ -345,23 +352,23 @@ export default function Collaborations() {
 
                           {/* Location badge - positioned below name/logo, above description */}
                           {collab.location && (
-                            <div className="flex items-start gap-2 mb-3 px-3 py-2 rounded-lg 
+                            <div className="flex items-start gap-1.5 sm:gap-2 mb-2 sm:mb-3 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg 
                                       bg-muted/50 dark:bg-muted/30 border border-border/50">
-                              <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                              <p className="text-muted-foreground text-xs leading-relaxed line-clamp-2">
+                              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-primary flex-shrink-0 mt-0.5" />
+                              <p className="text-muted-foreground text-[10px] sm:text-xs leading-relaxed line-clamp-2">
                                 {collab.location}
                               </p>
                             </div>
                           )}
 
-                          <p className="text-muted-foreground text-sm line-clamp-3 mb-4 text-center min-h-[3.75rem]">
+                          <p className="text-muted-foreground text-xs sm:text-sm line-clamp-3 mb-2 sm:mb-4 text-center min-h-[2.5rem] sm:min-h-[3.75rem]">
                             {collab.description || "—"}
                           </p>
 
-                          <div className="flex items-center justify-center text-primary font-semibold text-sm 
-                                     group-hover/card:gap-3 gap-2 transition-all duration-300">
+                          <div className="flex items-center justify-center text-primary font-semibold text-xs sm:text-sm 
+                                     group-hover/card:gap-3 gap-1.5 sm:gap-2 transition-all duration-300">
                             <span>View Details</span>
-                            <ArrowRight className="w-4 h-4 group-hover/card:translate-x-1 transition-transform" />
+                            <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover/card:translate-x-1 transition-transform" />
                           </div>
                         </div>
                       </div>
@@ -374,89 +381,30 @@ export default function Collaborations() {
         </div>
       </section>
 
-      {/* CTA Section – gradient mesh, echoes hero */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 collaborations-cta-mesh-bg" aria-hidden />
-        {!prefersReducedMotion && (
-          <>
-            <motion.div
-              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-30" : "opacity-65"}`}
-              aria-hidden
-              animate={{
-                background: isDark
-                  ? [
-                    "radial-gradient(circle at 30% 40%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
-                    "radial-gradient(circle at 60% 70%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
-                    "radial-gradient(circle at 70% 30%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
-                    "radial-gradient(circle at 30% 40%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
-                  ]
-                  : [
-                    "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                    "radial-gradient(ellipse 120% 100% at 60% 70%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                    "radial-gradient(ellipse 110% 110% at 70% 30%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                    "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                  ],
-              }}
-              transition={{ duration: 12, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
-            />
-            <motion.div
-              className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-20" : "opacity-55"}`}
-              aria-hidden
-              animate={{
-                background: isDark
-                  ? [
-                    "radial-gradient(circle at 70% 60%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
-                    "radial-gradient(circle at 40% 25%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
-                    "radial-gradient(circle at 25% 65%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
-                    "radial-gradient(circle at 70% 60%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
-                  ]
-                  : [
-                    "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                    "radial-gradient(ellipse 120% 110% at 40% 25%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                    "radial-gradient(ellipse 100% 130% at 25% 65%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                    "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                  ],
-              }}
-              transition={{ duration: 14, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 2 }}
-            />
-            {!isDark && (
-              <motion.div
-                className="absolute inset-0 pointer-events-none opacity-45"
-                aria-hidden
-                animate={{
-                  background: [
-                    "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
-                    "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 70%)",
-                    "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
-                  ],
-                }}
-                transition={{ duration: 16, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 4 }}
-              />
-            )}
-          </>
-        )}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="relative z-10 max-w-3xl mx-auto px-4 text-center"
-        >
-          <h2 className="typography-section mb-6 text-foreground">
-            Want to <span className="text-gradient-gold">Partner</span> With Us?
-          </h2>
-          <p className="typography-body-lg mb-8 text-muted-foreground">
-            Join our network of premium venues and vendors. Let's create magical moments together.
-          </p>
-          <Link
-            to="/contact"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground 
-                     font-semibold hover:scale-105 hover:shadow-xl transition-all duration-300
-                     focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      {/* CTA Section – card-style like collaborations */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
           >
-            Become a Partner
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </motion.div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 sm:mb-4 text-foreground">
+              Want to <span className="text-gradient-gold">Partner</span> With Us?
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">
+              Join our network of premium venues and vendors. Let&apos;s create magical moments together.
+            </p>
+            <Link
+              to="/contact"
+              className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-primary text-primary-foreground font-semibold text-base hover:bg-primary/90 hover:shadow-lg transition-all"
+            >
+              Become a Partner
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+        </div>
       </section>
 
       <Footer />

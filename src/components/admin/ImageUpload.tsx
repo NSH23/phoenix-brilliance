@@ -66,7 +66,8 @@ export default function ImageUpload({
         }
       } catch (error) {
         logger.error('Upload error', error, { component: 'ImageUpload', action: 'handleFileSelect', bucket });
-        toast.error('Failed to upload image(s). Please try again.');
+        const message = error instanceof Error ? error.message : 'Failed to upload image(s). Please try again.';
+        toast.error('Upload failed', { description: message });
       } finally {
         setIsUploading(false);
       }
@@ -321,29 +322,9 @@ export default function ImageUpload({
         )}
       </div>
 
-      {/* Upload/Change Button */}
+      {/* Change / Add more button only (upload happens on parent form Save where applicable) */}
       {displayImages.length > 0 && (
         <div className="flex justify-end gap-2">
-          {bucket && !uploadOnSelect && previews.length > 0 && (
-            <Button
-              type="button"
-              onClick={handleUpload}
-              disabled={isUploading}
-              className="gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Upload to Storage
-                </>
-              )}
-            </Button>
-          )}
           <Button
             type="button"
             variant="outline"

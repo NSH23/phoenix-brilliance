@@ -40,7 +40,14 @@ export async function uploadFile(
     });
 
   if (error) {
-    throw new Error(`Failed to upload file: ${error.message}`);
+    const msg = error.message ?? '';
+    if (/mime type .* is not supported/i.test(msg)) {
+      throw new Error(
+        `File type not allowed for this bucket. ${msg} ` +
+        'Ask an admin to add this type in Storage → bucket → Settings → Allowed MIME types.'
+      );
+    }
+    throw new Error(`Failed to upload file: ${msg}`);
   }
 
   // Get public URL (not used for private buckets like team-documents)

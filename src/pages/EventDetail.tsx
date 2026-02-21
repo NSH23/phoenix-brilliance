@@ -14,6 +14,7 @@ import { getEventWithSteps, Event, EventStep } from "@/services/events";
 import { getAlbumsByEventId, Album } from "@/services/albums";
 import { getAllTestimonials, Testimonial } from "@/services/testimonials";
 import { logger } from "@/utils/logger";
+import { SEO } from "@/components/SEO";
 
 // Icon mapping for steps
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -44,6 +45,9 @@ const EventDetail = () => {
     target: timelineRef,
     offset: ["start center", "end center"]
   });
+
+  // Must be called unconditionally (React hooks rules)
+  const timelineHeightProgress = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   useEffect(() => {
     loadEventData();
@@ -116,8 +120,18 @@ const EventDetail = () => {
     return <Navigate to="/events" replace />;
   }
 
+  const eventSlug = event.slug || eventType || "";
+  const eventDescription = (event as { description?: string })?.description
+    ? `${(event as { description: string }).description.slice(0, 155)}…`
+    : `${event.title} event planning in Pune. Premium décor and production by Phoenix Events.`;
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={event.title}
+        description={eventDescription}
+        url={eventSlug ? `/events/${eventSlug}` : "/events"}
+      />
       <Navbar />
 
       {/* Hero Section */}
@@ -247,7 +261,7 @@ const EventDetail = () => {
                 <motion.div
                   className="absolute top-0 left-0 w-full bg-gradient-to-b from-primary to-rose-gold"
                   style={{
-                    height: useTransform(scrollYProgress, [0, 1], ["0%", "100%"]),
+                    height: timelineHeightProgress,
                   }}
                 />
               </div>
@@ -257,7 +271,7 @@ const EventDetail = () => {
                 <motion.div
                   className="absolute top-0 left-0 w-full bg-gradient-to-b from-primary to-rose-gold"
                   style={{
-                    height: useTransform(scrollYProgress, [0, 1], ["0%", "100%"]),
+                    height: timelineHeightProgress,
                   }}
                 />
               </div>

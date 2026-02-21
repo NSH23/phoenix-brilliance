@@ -92,15 +92,15 @@ export const ExpandingCards = React.forwardRef<
                     <img
                         src={item.imgSrc}
                         alt={item.title}
-                        // Removed grayscale and group-data-[active=true]:grayscale-0 as requested
-                        className="absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out group-data-[active=true]:scale-100 scale-110"
+                        className="absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out group-data-[active=true]:scale-100 scale-110 brightness-[0.92] group-data-[active=true]:brightness-100"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent/50 transition-opacity duration-300 group-data-[active=true]:from-black/80 group-data-[active=true]:via-black/40 group-data-[active=true]:to-transparent" />
 
                     <article
                         className="absolute inset-0 flex flex-col justify-end gap-2 p-4"
                     >
-                        <h3 className="hidden origin-left rotate-90 text-sm font-light uppercase tracking-wider text-white/80 opacity-100 transition-all duration-300 ease-out md:block group-data-[active=true]:opacity-0">
+                        {/* Collapsed: horizontal title with good contrast so it's always visible */}
+                        <h3 className="hidden md:block absolute bottom-4 left-4 right-4 text-left text-sm font-medium uppercase tracking-wider text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] line-clamp-2 opacity-100 transition-opacity duration-300 group-data-[active=true]:opacity-0">
                             {item.title}
                         </h3>
 

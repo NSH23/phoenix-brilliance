@@ -5,29 +5,29 @@ import ContactForm from "./ContactForm";
 const ContactSection = () => {
 
   return (
-    <section id="contact" className="py-16 sm:py-24 bg-muted/30 relative overflow-hidden pb-32 sm:pb-24">
-      {/* Background */}
-      <div className="absolute inset-0">
+    <section id="contact" className="py-12 sm:py-16 lg:py-24 pb-24 sm:pb-24 bg-background relative overflow-hidden">
+      {/* Soft decorative blurs – no flat strip */}
+      <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-20 right-1/4 w-56 sm:w-80 h-56 sm:h-80 bg-rose-gold/5 rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative">
-        {/* Section Header - Compact on mobile */}
+        {/* Section Header – card-style like collaborations CTA */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-8 sm:mb-16"
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-8 sm:py-10 px-6 sm:px-8 mb-8 sm:mb-12"
         >
           <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-3 sm:mb-4">
             Get In Touch
           </span>
-          <h2 className="section-title mb-3 sm:mb-4 text-2xl sm:text-3xl md:text-4xl">
+          <h2 className="section-title mb-2 sm:mb-3 text-2xl sm:text-3xl md:text-4xl">
             Let's Plan Your <span className="text-gradient-gold">Dream Event</span>
           </h2>
-          <p className="section-subtitle text-sm sm:text-base max-w-lg mx-auto">
+          <p className="section-subtitle text-sm sm:text-base max-w-lg mx-auto text-muted-foreground">
             Ready to create something extraordinary? Let's bring your vision to life.
           </p>
         </motion.div>

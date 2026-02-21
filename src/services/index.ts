@@ -6,6 +6,7 @@ export * from './collaborations';
 export * from './services';
 export * from './testimonials';
 export * from './inquiries';
+export * from './formOptions';
 export * from './siteContent';
 export * from './storage';
 export * from './dashboard';

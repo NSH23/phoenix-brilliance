@@ -8,7 +8,8 @@ const WhatsAppButton = () => {
   const [isHovered, setIsHovered] = useState(false);
   const message = "Hello! I'm interested in planning an event with Phoenix Events.";
 
-  const whatsappUrl = `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(message)}`;
+  const whatsappNumber = contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276";
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 
   return (
     <motion.div

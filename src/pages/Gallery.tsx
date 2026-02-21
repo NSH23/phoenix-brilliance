@@ -598,88 +598,30 @@ const Gallery = () => {
           </>
         )}
 
-        {/* CTA Section – gradient mesh, echoes hero */}
-        <section className="relative py-16 sm:py-24 overflow-hidden">
-          <div className="absolute inset-0 gallery-cta-mesh-bg" aria-hidden />
-          {!prefersReducedMotion && (
-            <>
-              <motion.div
-                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-30" : "opacity-65"}`}
-                aria-hidden
-                animate={{
-                  background: isDark
-                    ? [
-                      "radial-gradient(circle at 30% 40%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
-                      "radial-gradient(circle at 60% 70%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
-                      "radial-gradient(circle at 70% 30%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
-                      "radial-gradient(circle at 30% 40%, rgba(20, 30, 60, 0.4) 0%, transparent 50%)",
-                    ]
-                    : [
-                      "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                      "radial-gradient(ellipse 120% 100% at 60% 70%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                      "radial-gradient(ellipse 110% 110% at 70% 30%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                      "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                    ],
-                }}
-                transition={{ duration: 12, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
-              />
-              <motion.div
-                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-20" : "opacity-55"}`}
-                aria-hidden
-                animate={{
-                  background: isDark
-                    ? [
-                      "radial-gradient(circle at 70% 60%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
-                      "radial-gradient(circle at 40% 25%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
-                      "radial-gradient(circle at 25% 65%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
-                      "radial-gradient(circle at 70% 60%, rgba(232, 175, 193, 0.08) 0%, transparent 50%)",
-                    ]
-                    : [
-                      "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 120% 110% at 40% 25%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 100% 130% at 25% 65%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                    ],
-                }}
-                transition={{ duration: 14, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 2 }}
-              />
-              {!isDark && (
-                <motion.div
-                  className="absolute inset-0 pointer-events-none opacity-45"
-                  aria-hidden
-                  animate={{
-                    background: [
-                      "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
-                    ],
-                  }}
-                  transition={{ duration: 16, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 4 }}
-                />
-              )}
-            </>
-          )}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative z-10 max-w-3xl mx-auto px-4 text-center"
-          >
-            <h2 className="typography-section mb-4 text-foreground">
-              Ready to Create Your Own <span className="text-primary">Story?</span>
-            </h2>
-            <p className="typography-body-lg mb-8 text-muted-foreground">
-              Let us help you create moments that you'll cherish forever.
-            </p>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold 
-                     hover:scale-105 hover:shadow-xl transition-all duration-300
-                     focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        {/* CTA Section – card-style like collaborations */}
+        <section className="py-12 sm:py-16 lg:py-20 bg-background">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
             >
-              Book Your Event <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 sm:mb-4 text-foreground">
+                Ready to Create Your Own <span className="text-primary">Story?</span>
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">
+                Let us help you create moments that you&apos;ll cherish forever.
+              </p>
+              <Link
+                to="/contact"
+                className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-primary text-primary-foreground font-semibold text-base hover:bg-primary/90 hover:shadow-lg transition-all"
+              >
+                Book Your Event
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+          </div>
         </section>
 
         <Footer />

@@ -1,33 +1,34 @@
 import { useRef, useState, useEffect } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { ShuffleGrid } from "@/components/ui/shuffle-grid";
-import { getSiteContentByKey } from "@/services/siteContent";
-import { cn } from "@/lib/utils";
+import { getSiteContentByKey, parseAboutSectionDescription } from "@/services/siteContent";
 
 export default function AboutSection() {
   const containerRef = useRef<HTMLElement>(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const [content, setContent] = useState<{
     title: string;
     subtitle: string;
-    description: string;
     cta_text: string;
     cta_link: string;
   } | null>(null);
+  const [body, setBody] = useState(parseAboutSectionDescription(null));
 
   useEffect(() => {
     getSiteContentByKey('about')
-      .then(data => {
+      .then((data) => {
         if (data) {
           setContent({
             title: data.title || "The Art of Crafting Unforgettable Celebrations",
             subtitle: data.subtitle || "About Us",
-            description: data.description || "We believe that celebrations are not simply events — they are chapters in a story that deserves to be told beautifully. Phoenix Events & Production was born from a passion for transforming ordinary spaces into extraordinary experiences.",
             cta_text: data.cta_text || "Read More",
-            cta_link: data.cta_link || "/about"
+            cta_link: data.cta_link || "/about",
           });
+          setBody(parseAboutSectionDescription(data.description));
         }
       })
-      .catch(() => { }); // silent fail, uses default if null
+      .catch(() => {});
   }, []);
 
   // Parallax effect for the left image
@@ -39,7 +40,7 @@ export default function AboutSection() {
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.05]);
   const y = useTransform(scrollYProgress, [0, 1], [0, 50]);
 
-  // Handle potential React nodes or splitting for the title if needed, 
+  // Handle potential React nodes or splitting for the title if needed,
   // but for now we assume linear text or basic HTML handling if we were using a parser.
   // The original title had a <br /> and span. We'll try to replicate that structure if it matches default.
 
@@ -58,11 +59,11 @@ export default function AboutSection() {
       </div>
 
       <div className="container px-4 mx-auto relative z-30">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
 
-          {/* Left Column: Header + Shuffle Grid */}
-          <div className="order-1 space-y-4">
-            <div className="space-y-2">
+          {/* Left Column: Header + Shuffle Grid – same vertical size as right */}
+          <div className="order-1 flex flex-col gap-4 min-h-0">
+            <div className="space-y-2 flex-shrink-0">
               {/* Eyebrow */}
               <span className="inline-block text-primary font-medium tracking-wider uppercase text-xs md:text-sm border-b border-primary/30 pb-0.5">
                 {content?.subtitle || "About Us"}
@@ -83,9 +84,9 @@ export default function AboutSection() {
 
             <motion.div
               style={{ scale, y }}
-              className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 w-full"
+              className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 w-full flex-1 min-h-[260px] lg:min-h-0 flex flex-col"
             >
-              <div className="aspect-[4/3] relative group">
+              <div className="flex-1 min-h-[260px] lg:min-h-0 w-full relative group">
                 <ShuffleGrid />
 
                 {/* Decorative Corner Element */}
@@ -97,51 +98,82 @@ export default function AboutSection() {
             </motion.div>
           </div>
 
-          {/* Right Column: Story Text */}
-          <div className="order-2 relative h-full flex flex-col justify-start pt-10 md:pt-16">
+          {/* Right Column: Story Text – Kevin's story, from CMS or defaults */}
+          <div className="order-2 relative flex flex-col pt-10 md:pt-16">
             <div className="space-y-6 pr-2">
-              {/* Subheading */}
               <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed">
-                Where vision meets emotion, and every detail becomes a memory.
+                {body.tagline}
               </p>
 
-              {/* Story Copy */}
-              <div className="space-y-4 text-muted-foreground leading-relaxed text-sm md:text-base">
-                <p>{content?.description || "We believe that celebrations are not simply events..."}</p>
-                {!content && (
-                  <>
-                    <p>
-                      Phoenix Events & Production was born from a passion for transforming ordinary spaces into extraordinary experiences. Over the years, we have curated weddings filled with emotion, corporate events driven by excellence, and celebrations that remain etched in memory long after the final applause.
-                    </p>
-                    <p>
-                      From the first consultation to the final spotlight, every detail is intentional. Every element is designed to reflect your personality, your vision, and your story.
-                    </p>
-                  </>
-                )}
-
+              {/* Desktop: always full content */}
+              <div className="hidden md:block space-y-5 text-muted-foreground leading-relaxed text-base md:text-lg">
+                {body.paragraphs.map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
                 <div className="pl-4 border-l-2 border-primary/40 text-foreground font-medium py-1 italic text-base md:text-lg">
-                  "We do not just plan events. <br /> We design how they are remembered."
+                  &ldquo;{body.quote}&rdquo;
                 </div>
               </div>
 
-              {/* Stats Grid */}
+              {/* Mobile: Read more / expandable */}
+              <div className="md:hidden">
+                <AnimatePresence initial={false}>
+                  {mobileExpanded ? (
+                    <motion.div
+                      key="full"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden space-y-5 text-muted-foreground leading-relaxed text-base"
+                    >
+                      {body.paragraphs.map((para, i) => (
+                        <p key={i}>{para}</p>
+                      ))}
+                      <div className="pl-4 border-l-2 border-primary/40 text-foreground font-medium py-1 italic text-base">
+                        &ldquo;{body.quote}&rdquo;
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="preview"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="relative"
+                    >
+                      <p className="text-muted-foreground leading-relaxed text-base line-clamp-3">
+                        {body.paragraphs[0] ?? body.tagline}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <button
+                  type="button"
+                  onClick={() => setMobileExpanded((v) => !v)}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary/30 rounded"
+                >
+                  {mobileExpanded ? (
+                    <>
+                      <ChevronUp className="w-4 h-4" />
+                      Read less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      Read more
+                    </>
+                  )}
+                </button>
+              </div>
+
               <div className="grid grid-cols-2 gap-6 pt-4 border-t border-border/50">
-                <div className="space-y-0.5">
-                  <h4 className="text-2xl md:text-3xl font-serif font-bold text-foreground">500+</h4>
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wide">Events Curated</p>
-                </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-2xl md:text-3xl font-serif font-bold text-foreground">12+</h4>
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wide">Years of Excellence</p>
-                </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-2xl md:text-3xl font-serif font-bold text-foreground">50+</h4>
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wide">Premium Partners</p>
-                </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-2xl md:text-3xl font-serif font-bold text-foreground">98%</h4>
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wide">Client Satisfaction</p>
-                </div>
+                {body.stats.map((stat, i) => (
+                  <div key={i} className="space-y-0.5">
+                    <h4 className="text-2xl md:text-3xl font-serif font-bold text-foreground">{stat.value}</h4>
+                    <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wide">{stat.label}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

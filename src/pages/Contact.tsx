@@ -5,35 +5,46 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { SEO } from "@/components/SEO";
-import { createInquiry } from "@/services/inquiries";
-import { getActiveEvents } from "@/services/events";
+import { createInquiry, isValidPhone10, getNormalizedPhone10 } from "@/services/inquiries";
+import { getVenueOptions, getEventTypeOptions, DEFAULT_EVENT_TYPES, DEFAULT_VENUES } from "@/services/formOptions";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { toast } from "sonner";
 
+const OTHER_LABEL = "Other";
+
 const Contact = () => {
   const { contact } = useSiteConfig();
-  const [eventTypes, setEventTypes] = useState<string[]>(["Wedding", "Birthday", "Engagement", "Other"]);
+  const [eventTypeOptions, setEventTypeOptions] = useState<string[]>([...DEFAULT_EVENT_TYPES, OTHER_LABEL]);
+  const [venueOptions, setVenueOptions] = useState<string[]>([...DEFAULT_VENUES, OTHER_LABEL]);
 
   useEffect(() => {
-    getActiveEvents()
-      .then((events) => {
-        const titles = events.map((e) => e.title);
-        if (titles.length > 0) setEventTypes([...titles, "Other"]);
-      })
-      .catch(() => { });
+    getEventTypeOptions().then(setEventTypeOptions);
+    getVenueOptions().then(setVenueOptions);
   }, []);
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
     eventType: "",
+    eventTypeOther: "",
     eventDate: "",
+    venue: "",
+    venueOther: "",
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const resolvedEventType = formData.eventType === OTHER_LABEL ? formData.eventTypeOther.trim() : formData.eventType;
+  const resolvedVenue = formData.venue === OTHER_LABEL ? formData.venueOther.trim() : formData.venue;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isValidPhone10(formData.phone)) {
+      toast.error("Please enter a valid 10-digit number (with or without +91)");
+      return;
+    }
 
     const messageWithDate = [formData.message, formData.eventDate ? `Event Date: ${formData.eventDate}` : ""].filter(Boolean).join("\n\n");
 
@@ -42,8 +53,9 @@ const Contact = () => {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        event_type: formData.eventType || null,
-        message: messageWithDate || (formData.eventType ? `Inquiry for ${formData.eventType}` : "Inquiry"),
+        event_type: resolvedEventType || null,
+        venue: resolvedVenue || null,
+        message: messageWithDate || (resolvedEventType ? `Inquiry for ${resolvedEventType}` : "Inquiry"),
       });
     } catch (err) {
       toast.error("Failed to save your inquiry", {
@@ -52,23 +64,25 @@ const Contact = () => {
       return;
     }
 
-    const whatsappMessage = `Hello! I have to inquire about ${formData.eventType || "an event"}.
+    const whatsappMessage = `Hello! I have to inquire about ${resolvedEventType || "an event"}.
 
 Name: ${formData.name}
 Phone: ${formData.phone}
 Email: ${formData.email}
-Event Type: ${formData.eventType}
+Event Type: ${resolvedEventType || "—"}
 Event Date: ${formData.eventDate}
+Venue: ${resolvedVenue || "—"}
 ${formData.message ? `Message: ${formData.message}` : ""}`;
 
     const encodedMessage = encodeURIComponent(whatsappMessage);
-    const whatsappUrl = `https://wa.me/${contact.whatsapp}?text=${encodedMessage}`;
+    const whatsappNumber = contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276";
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
 
     setIsSubmitted(true);
     setTimeout(() => {
       setIsSubmitted(false);
-      setFormData({ name: "", phone: "", email: "", eventType: "", eventDate: "", message: "" });
+      setFormData({ name: "", phone: "", email: "", eventType: "", eventTypeOther: "", eventDate: "", venue: "", venueOther: "", message: "" });
     }, 3000);
   };
 
@@ -86,38 +100,19 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
       />
       <div className="min-h-screen bg-background">
         <Navbar />
-        <section className="py-12 sm:py-16 lg:py-24 bg-muted/30 relative overflow-hidden pt-24 sm:pt-28 lg:pt-24 pb-20 sm:pb-24">
-          {/* Background */}
-          <div className="absolute inset-0">
+        <section className="py-12 sm:py-16 lg:py-24 pt-24 sm:pt-28 lg:pt-24 pb-20 sm:pb-24 bg-background relative overflow-hidden">
+          {/* Soft decorative blurs – no flat strip */}
+          <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-20 left-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-primary/5 rounded-full blur-3xl" />
             <div className="absolute bottom-20 right-1/4 w-56 sm:w-80 h-56 sm:h-80 bg-rose-gold/5 rounded-full blur-3xl" />
           </div>
 
           <div className="container mx-auto px-4 relative">
-            {/* Section Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="text-center mb-8 sm:mb-16"
-            >
-              <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                Get In Touch
-              </span>
-              <h2 className="section-title mb-3 sm:mb-4 text-2xl sm:text-3xl md:text-4xl">
-                Let's Plan Your <span className="text-gradient-gold">Dream Event</span>
-              </h2>
-              <p className="section-subtitle text-sm sm:text-base max-w-lg mx-auto">
-                Ready to create something extraordinary? Let's bring your vision to life.
-              </p>
-            </motion.div>
-
             {/* Mobile: Quick Actions */}
             <div className="sm:hidden mb-6">
               <div className="grid grid-cols-2 gap-3">
                 <a
-                  href={`https://wa.me/${contact.whatsapp}?text=Hi! I'm interested in your event services.`}
+                  href={`https://wa.me/${contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276"}?text=Hi! I'm interested in your event services.`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 p-4 rounded-2xl 
@@ -360,7 +355,7 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                                    transition-all duration-300 text-sm sm:text-base"
                           >
                             <option value="">Select Event Type</option>
-                            {eventTypes.map((type) => (
+                            {eventTypeOptions.map((type) => (
                               <option key={type} value={type}>{type}</option>
                             ))}
                           </select>
@@ -373,12 +368,62 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                             value={formData.eventDate}
                             onChange={handleChange}
                             required
+                            min="1900-01-01"
+                            max="2099-12-31"
                             className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
                                    focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
                                    transition-all duration-300 text-sm sm:text-base"
                           />
                         </div>
                       </div>
+
+                      {formData.eventType === OTHER_LABEL && (
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Event type (other)</label>
+                          <input
+                            type="text"
+                            name="eventTypeOther"
+                            value={formData.eventTypeOther}
+                            onChange={handleChange}
+                            className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-background border border-border 
+                                   focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
+                                   transition-all duration-300 text-sm sm:text-base"
+                            placeholder="Specify event type"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Venue</label>
+                        <select
+                          name="venue"
+                          value={formData.venue}
+                          onChange={handleChange}
+                          className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-background border border-border 
+                                 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
+                                 transition-all duration-300 text-sm sm:text-base"
+                        >
+                          <option value="">Select venue</option>
+                          {venueOptions.map((v) => (
+                            <option key={v} value={v}>{v}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {formData.venue === OTHER_LABEL && (
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Venue name (other)</label>
+                          <input
+                            type="text"
+                            name="venueOther"
+                            value={formData.venueOther}
+                            onChange={handleChange}
+                            className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-background border border-border 
+                                   focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
+                                   transition-all duration-300 text-sm sm:text-base"
+                            placeholder="Enter venue name"
+                          />
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Tell Us About Your Vision</label>
@@ -411,6 +456,24 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
               </motion.div>
             </div>
 
+            {/* CTA card – below main content, card-style like collaborations */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-8 sm:py-10 px-6 sm:px-8 mt-10 sm:mt-14"
+            >
+              <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                Get In Touch
+              </span>
+              <h2 className="section-title mb-2 sm:mb-3 text-2xl sm:text-3xl md:text-4xl">
+                Let&apos;s Plan Your <span className="text-gradient-gold">Dream Event</span>
+              </h2>
+              <p className="section-subtitle text-sm sm:text-base max-w-lg mx-auto text-muted-foreground">
+                Ready to create something extraordinary? Let&apos;s bring your vision to life.
+              </p>
+            </motion.div>
           </div>
         </section>
         <Footer />

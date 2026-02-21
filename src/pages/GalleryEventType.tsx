@@ -8,6 +8,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import { getActiveEvents, getEventBySlug, Event } from "@/services/events";
 import { getAllAlbums, getAlbumsByEventId, getAlbumMedia, Album } from "@/services/albums";
 import { logger } from "@/utils/logger";
+import { SEO } from "@/components/SEO";
 
 interface AlbumWithCount extends Album {
   mediaCount?: number;
@@ -135,8 +136,18 @@ const GalleryEventType = () => {
     return <Navigate to="/gallery" replace />;
   }
 
+  const pageTitle = isAllAlbums ? "All Albums" : `${event?.title ?? eventType} Gallery`;
+  const pageDescription = isAllAlbums
+    ? "Browse our complete event photography gallery. Weddings, corporate events, and celebrations in Pune."
+    : `${event?.title ?? eventType} event albums and photos in Pune. Premium event photography by Phoenix Events.`;
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={pageTitle}
+        description={pageDescription}
+        url={eventType ? `/gallery/${eventType}` : "/gallery"}
+      />
       <Navbar />
       
       {/* Hero Section */}

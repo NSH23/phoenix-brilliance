@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, RotateCcw, FileText, Link as LinkIcon, Trophy, Heart, Users, Shield, Loader2, Calendar, ImageIcon, Handshake } from 'lucide-react';
+import { Save, RotateCcw, FileText, Link as LinkIcon, Trophy, Heart, Users, Shield, Loader2, Calendar, ImageIcon, Handshake, UserCircle } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,9 @@ import {
   upsertSocialLink,
   getContactInfoOptional,
   upsertContactInfo,
+  parseAboutSectionDescription,
   type SiteContent,
+  type AboutSectionContent,
 } from '@/services/siteContent';
 import { toast } from 'sonner';
 
@@ -99,6 +101,12 @@ function ensureThree(stats: PageHeroStat[]): PageHeroStat[] {
   return a.slice(0, 3);
 }
 
+function ensureFourStats(stats: { value: string; label: string }[]): { value: string; label: string }[] {
+  const a = [...(stats || [])];
+  while (a.length < 4) a.push({ value: '', label: '' });
+  return a.slice(0, 4);
+}
+
 export default function AdminContent() {
 
   const [eventsPage, setEventsPage] = useState<PageHeroContent | null>(null);
@@ -119,6 +127,10 @@ export default function AdminContent() {
     phone: '',
     address: '',
   });
+  const [aboutForm, setAboutForm] = useState<AboutSectionContent>(() => {
+    const d = parseAboutSectionDescription(null);
+    return { ...d, stats: ensureFourStats(d.stats) };
+  });
 
   useEffect(() => {
     load();
@@ -134,7 +146,7 @@ export default function AdminContent() {
           section_key: 'home-hero',
           title: 'Crafting Moments That Last Forever',
           subtitle: 'Phoenix Events & Production',
-          description: 'From weddings to corporate celebrations, we turn your vision into unforgettable experiences with elegance and precision.',
+          description: 'Your vision, our craft—unforgettable events.',
           cta_text: 'Plan Your Event',
           cta_link: '/contact'
         },
@@ -142,7 +154,21 @@ export default function AdminContent() {
           section_key: 'about',
           title: 'The Art of Crafting Unforgettable Celebrations',
           subtitle: 'About Us',
-          description: 'We believe that celebrations are not simply events — they are chapters in a story that deserves to be told beautifully. Phoenix Events & Production was born from a passion for transforming ordinary spaces into extraordinary experiences.',
+          description: JSON.stringify({
+            tagline: 'Where vision meets emotion, and every detail becomes a memory.',
+            paragraphs: [
+              "Kevin, the visionary behind Phoenix Events & Production, started the company in 2017 with a single-minded commitment to excellence in event décor and production. From day one, his philosophy has been clear: every celebration deserves to be crafted with the same care and creativity that he would want for his own.",
+              "In 2024, he took a decisive step by launching PnP Production, bringing design and production under one roof. This move was driven by a simple goal: to offer clients superior quality and hassle-free execution from concept to completion. By unifying creative design with hands-on production, Phoenix can now deliver more cohesive, timely, and refined outcomes without the friction of coordinating multiple vendors.",
+              "Today, Kevin's leadership and passion have positioned Phoenix Events & Production as a trusted name in the event industry. The company is known not only for beautiful setups and seamless execution but also for the integrity, reliability, and personal touch that he and his team bring to every project.",
+            ],
+            quote: 'We do not just plan events. We design how they are remembered.',
+            stats: [
+              { value: '500+', label: 'Events Curated' },
+              { value: '12+', label: 'Years of Excellence' },
+              { value: '50+', label: 'Premium Partners' },
+              { value: '98%', label: 'Client Satisfaction' },
+            ],
+          }),
           cta_text: 'Read More',
           cta_link: '/about'
         },
@@ -170,6 +196,17 @@ export default function AdminContent() {
       setGalleryPage(g ? { ...g, stats: ensureThree(g.stats) } : { ...DEFAULT_GALLERY });
       setCollaborationsPage(collab ? { ...collab, stats: ensureThree(collab.stats) } : { ...DEFAULT_COLLABORATIONS });
       setContent(c);
+      const aboutSection = c.find((x) => x.section_key === 'about');
+      const parsed = parseAboutSectionDescription(aboutSection?.description ?? null);
+      setAboutForm({
+        ...parsed,
+        paragraphs: (() => {
+          const p = [...parsed.paragraphs];
+          while (p.length < 3) p.push('');
+          return p.slice(0, 3);
+        })(),
+        stats: ensureFourStats(parsed.stats),
+      });
       const socialMap: Record<string, string> = {};
       social.forEach((l) => {
         socialMap[l.platform] = l.url;
@@ -248,6 +285,41 @@ export default function AdminContent() {
     }
   };
 
+  const handleSaveAbout = async () => {
+    setSaving('about');
+    try {
+      const aboutSection = content.find((x) => x.section_key === 'about');
+      if (!aboutSection) {
+        toast.error('About section not found');
+        return;
+      }
+      await updateSiteContent('about', {
+        title: aboutSection.title,
+        subtitle: aboutSection.subtitle,
+        description: JSON.stringify({
+          tagline: aboutForm.tagline,
+          paragraphs: aboutForm.paragraphs.slice(0, 3),
+          quote: aboutForm.quote,
+          stats: ensureFourStats(aboutForm.stats),
+        }),
+        cta_text: aboutSection.cta_text,
+        cta_link: aboutSection.cta_link,
+      });
+      setContent((prev) =>
+        prev.map((s) =>
+          s.section_key === 'about'
+            ? { ...s, title: aboutSection.title, subtitle: aboutSection.subtitle, description: JSON.stringify(aboutForm) }
+            : s
+        )
+      );
+      toast.success('About section saved');
+    } catch (err) {
+      toast.error('Failed to save', { description: (err as Error)?.message });
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const handleContentChange = (sectionKey: string, field: keyof SiteContent, value: string) => {
     setContent((c) => c.map((x) => (x.section_key === sectionKey ? { ...x, [field]: value } : x)));
   };
@@ -256,10 +328,19 @@ export default function AdminContent() {
     setSaving('sections');
     try {
       for (const section of content) {
+        const description =
+          section.section_key === 'about'
+            ? JSON.stringify({
+                tagline: aboutForm.tagline,
+                paragraphs: aboutForm.paragraphs.slice(0, 3),
+                quote: aboutForm.quote,
+                stats: ensureFourStats(aboutForm.stats),
+              })
+            : section.description;
         await updateSiteContent(section.section_key, {
           title: section.title,
           subtitle: section.subtitle,
-          description: section.description,
+          description,
           cta_text: section.cta_text,
           cta_link: section.cta_link,
         });
@@ -336,6 +417,10 @@ export default function AdminContent() {
           <TabsTrigger value="collaborations-page" className="gap-2 flex-1">
             <Handshake className="w-4 h-4" />
             Collaborations
+          </TabsTrigger>
+          <TabsTrigger value="about" className="gap-2 flex-1">
+            <UserCircle className="w-4 h-4" />
+            About
           </TabsTrigger>
           <TabsTrigger value="sections" className="gap-2 flex-1">
             <FileText className="w-4 h-4" />
@@ -557,6 +642,122 @@ export default function AdminContent() {
           </Card>
         </TabsContent>
 
+        {/* About Section (Home page) */}
+        <TabsContent value="about" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>About Us Section (Home)</CardTitle>
+              <CardDescription>Tagline, story paragraphs, quote and stats shown on the home page.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Section Title (heading)</Label>
+                  <Input
+                    value={content.find((s) => s.section_key === 'about')?.title ?? ''}
+                    onChange={(e) => handleContentChange('about', 'title', e.target.value)}
+                    placeholder="The Art of Crafting Unforgettable Celebrations"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Subtitle (eyebrow)</Label>
+                  <Input
+                    value={content.find((s) => s.section_key === 'about')?.subtitle ?? ''}
+                    onChange={(e) => handleContentChange('about', 'subtitle', e.target.value)}
+                    placeholder="About Us"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Tagline</Label>
+                <Input
+                  value={aboutForm.tagline}
+                  onChange={(e) => setAboutForm((f) => ({ ...f, tagline: e.target.value }))}
+                  placeholder="Where vision meets emotion, and every detail becomes a memory."
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Paragraph 1</Label>
+                <Textarea
+                  value={aboutForm.paragraphs[0] ?? ''}
+                  onChange={(e) => {
+                    const p = [...aboutForm.paragraphs];
+                    p[0] = e.target.value;
+                    setAboutForm((f) => ({ ...f, paragraphs: p }));
+                  }}
+                  placeholder="Kevin, the visionary behind Phoenix Events..."
+                  rows={3}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Paragraph 2</Label>
+                <Textarea
+                  value={aboutForm.paragraphs[1] ?? ''}
+                  onChange={(e) => {
+                    const p = [...aboutForm.paragraphs];
+                    p[1] = e.target.value;
+                    setAboutForm((f) => ({ ...f, paragraphs: p }));
+                  }}
+                  placeholder="In 2024, he took a decisive step..."
+                  rows={3}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Paragraph 3</Label>
+                <Textarea
+                  value={aboutForm.paragraphs[2] ?? ''}
+                  onChange={(e) => {
+                    const p = [...aboutForm.paragraphs];
+                    p[2] = e.target.value;
+                    setAboutForm((f) => ({ ...f, paragraphs: p }));
+                  }}
+                  placeholder="Today, Kevin's leadership and passion..."
+                  rows={3}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Quote</Label>
+                <Input
+                  value={aboutForm.quote}
+                  onChange={(e) => setAboutForm((f) => ({ ...f, quote: e.target.value }))}
+                  placeholder="We do not just plan events. We design how they are remembered."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Stats (4)</Label>
+                {ensureFourStats(aboutForm.stats).map((s, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Input
+                      value={s.value}
+                      onChange={(e) => {
+                        const st = ensureFourStats(aboutForm.stats);
+                        st[i] = { ...st[i], value: e.target.value };
+                        setAboutForm((f) => ({ ...f, stats: st }));
+                      }}
+                      placeholder="500+"
+                      className="w-24"
+                    />
+                    <Input
+                      value={s.label}
+                      onChange={(e) => {
+                        const st = ensureFourStats(aboutForm.stats);
+                        st[i] = { ...st[i], label: e.target.value };
+                        setAboutForm((f) => ({ ...f, stats: st }));
+                      }}
+                      placeholder="Events Curated"
+                      className="flex-1"
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button onClick={handleSaveAbout} disabled={saving === 'about'}>
+                {saving === 'about' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Save About Section
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Page Sections Tab */}
         <TabsContent value="sections" className="space-y-6">
           <div className="flex items-center justify-between">
@@ -574,7 +775,7 @@ export default function AdminContent() {
           </div>
 
           <div className="grid gap-6">
-            {content.map((section, index) => (
+            {content.filter((s) => s.section_key !== 'about').map((section, index) => (
               <motion.div key={section.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}>
                 <Card>
                   <CardHeader>

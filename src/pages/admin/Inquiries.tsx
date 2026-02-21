@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/select';
 import { getAllInquiries, updateInquiry, deleteInquiry, type Inquiry } from '@/services/inquiries';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { formatDateTimeLocal } from '@/lib/formatDate';
 import { logger } from '@/utils/logger';
 
 const statusColors: Record<Inquiry['status'], string> = {
@@ -194,10 +194,16 @@ export default function AdminInquiries() {
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          {format(new Date(inquiry.created_at), 'MMM d, yyyy h:mm a')}
+                          {formatDateTimeLocal(inquiry.created_at)}
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-muted-foreground line-clamp-1">{inquiry.message}</p>
+                      {(inquiry.venue || inquiry.instagram_id) && (
+                        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                          {inquiry.venue && <span>Venue: {inquiry.venue}</span>}
+                          {inquiry.instagram_id && <span>IG: {inquiry.instagram_id}</span>}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleViewDetails(inquiry)}>
@@ -247,7 +253,7 @@ export default function AdminInquiries() {
             <DialogTitle>Inquiry Details</DialogTitle>
             <DialogDescription>
               {selectedInquiry &&
-                `Received on ${format(new Date(selectedInquiry.created_at), 'MMMM d, yyyy at h:mm a')}`}
+                `Received on ${formatDateTimeLocal(selectedInquiry.created_at)}`}
             </DialogDescription>
           </DialogHeader>
 
@@ -279,6 +285,17 @@ export default function AdminInquiries() {
                   </a>
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg mt-0 pt-0 border-t-0">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Instagram ID</p>
+                  <p className="text-sm">{selectedInquiry.instagram_id || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Venue Preference</p>
+                  <p className="text-sm">{selectedInquiry.venue || '—'}</p>
+                </div>
+              </div>
+
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Message</p>
                 <p className="text-sm bg-muted/50 p-4 rounded-lg">{selectedInquiry.message}</p>

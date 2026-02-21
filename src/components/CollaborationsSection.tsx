@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { getActiveCollaborations, Collaboration } from "@/services/collaborations";
+import { useLeadCaptureOptional } from "@/contexts/LeadCaptureContext";
 
 const CollaborationsSection = () => {
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
+  const leadCapture = useLeadCaptureOptional();
+  const selectedVenue = leadCapture?.selectedVenue ?? null;
 
   useEffect(() => {
     getActiveCollaborations()
@@ -17,10 +20,18 @@ const CollaborationsSection = () => {
       });
   }, []);
 
-  // Duplicate data for infinite scroll effect
-  const duplicated = [...collaborations, ...collaborations];
+  const displayed = useMemo(() => {
+    if (!selectedVenue || selectedVenue.trim() === "") return collaborations;
+    const v = selectedVenue.trim().toLowerCase();
+    return collaborations.filter((c) => (c.name || "").trim().toLowerCase() === v);
+  }, [collaborations, selectedVenue]);
+
+  // Single card: show once, centered. Multiple: duplicate for infinite scroll
+  const listToRender = displayed.length === 1 ? displayed : [...displayed, ...displayed];
+  const singleCard = displayed.length === 1;
 
   if (collaborations.length === 0) return null;
+  if (displayed.length === 0) return null;
 
   return (
     <section className="pt-4 md:pt-6 lg:pt-8 pb-12 md:pb-16 -mb-24 relative z-20 overflow-hidden bg-background transition-colors duration-500">
@@ -46,21 +57,19 @@ const CollaborationsSection = () => {
         </div>
       </div>
 
-      {/* Horizontal infinite scroll of hotel logos – Full Width */}
-      <div className="w-full overflow-hidden">
-        <div className="collaborations-logo-mask overflow-hidden pt-0 pb-0">
-          <div className="collaborations-logo-track flex gap-6 md:gap-8 px-4">
-            {duplicated.map((venue, index) => (
+      <div className={`w-full overflow-hidden ${singleCard ? "flex justify-center" : ""}`}>
+        <div className={singleCard ? "px-4" : "collaborations-logo-mask overflow-hidden pt-0 pb-0"}>
+          <div className={singleCard ? "flex justify-center" : "collaborations-logo-track flex gap-6 md:gap-8 px-4"}>
+            {listToRender.map((venue, index) => (
               <div
-                key={`${venue.id}-${index}`}
-                // Increased card size significantly as requested
+                key={singleCard ? venue.id : `${venue.id}-${index}`}
                 className="collaborations-logo-item flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] group"
               >
                 <Link to={`/collaborations/${venue.id}`}>
                   <div className="bg-card dark:bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-[0_16px_40px_rgba(232,175,193,0.22)] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:ring-2 hover:ring-primary/20 dark:hover:ring-primary/40 border border-transparent dark:border-white/5">
                     <div className="aspect-[4/3] overflow-hidden">
                       <img
-                        src={venue.logo_url || "/placeholder.svg"} // Fallback image
+                        src={venue.logo_url || "/placeholder.svg"}
                         alt={venue.name}
                         className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                         loading="lazy"

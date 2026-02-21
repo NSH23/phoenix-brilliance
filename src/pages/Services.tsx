@@ -230,7 +230,6 @@ export default function Services() {
   const ctaRef = useRef<HTMLDivElement>(null);
 
   const isTrustInView = useInView(trustRef, { once: true, margin: "-100px" });
-  const isCtaInView = useInView(ctaRef, { once: true, margin: "-100px" });
 
   useEffect(() => {
     getActiveServices()
@@ -510,111 +509,46 @@ export default function Services() {
           </div>
         </section>
 
-        {/* CTA Section – gradient mesh, echoes hero */}
-        <section
-          ref={ctaRef}
-          className="relative py-12 sm:py-14 lg:py-16 overflow-hidden"
-          aria-label="Plan your event"
-        >
-          <div className="absolute inset-0 services-cta-mesh-bg" aria-hidden />
-          {!shouldReduceMotion && (
-            <>
-              <motion.div
-                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-40" : "opacity-65"}`}
-                aria-hidden
-                animate={{
-                  background: isDark
-                    ? [
-                      "radial-gradient(circle at 30% 40%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
-                      "radial-gradient(circle at 60% 70%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
-                      "radial-gradient(circle at 70% 30%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
-                      "radial-gradient(circle at 30% 40%, rgba(183, 110, 121, 0.15) 0%, transparent 50%)",
-                    ]
-                    : [
-                      "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                      "radial-gradient(ellipse 120% 100% at 60% 70%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                      "radial-gradient(ellipse 110% 110% at 70% 30%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                      "radial-gradient(ellipse 100% 120% at 30% 40%, rgba(139, 92, 246, 0.28) 0%, transparent 65%)",
-                    ],
-                }}
-                transition={{ duration: 12, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
-              />
-              <motion.div
-                className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-30" : "opacity-55"}`}
-                aria-hidden
-                animate={{
-                  background: isDark
-                    ? [
-                      "radial-gradient(circle at 70% 60%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
-                      "radial-gradient(circle at 40% 25%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
-                      "radial-gradient(circle at 25% 65%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
-                      "radial-gradient(circle at 70% 60%, rgba(247, 231, 206, 0.12) 0%, transparent 50%)",
-                    ]
-                    : [
-                      "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 120% 110% at 40% 25%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 100% 130% at 25% 65%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 110% 120% at 70% 60%, rgba(99, 102, 241, 0.24) 0%, transparent 70%)",
-                    ],
-                }}
-                transition={{ duration: 14, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 2 }}
-              />
-              {!isDark && (
-                <motion.div
-                  className="absolute inset-0 pointer-events-none opacity-45"
-                  aria-hidden
-                  animate={{
-                    background: [
-                      "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 70%)",
-                      "radial-gradient(ellipse 100% 120% at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%)",
-                    ],
-                  }}
-                  transition={{ duration: 16, repeat: Infinity, ease: [0.4, 0, 0.6, 1], delay: 4 }}
-                />
-              )}
-            </>
-          )}
-          <motion.div
-            initial={shouldReduceMotion ? {} : { opacity: 0, y: 16 }}
-            animate={isCtaInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6 }}
-            className="relative z-10 max-w-[640px] mx-auto px-4 text-center"
-          >
-            <div className="flex justify-center mb-5">
-              <Sparkles className="w-12 h-12 text-primary" aria-hidden />
-            </div>
-            <h2 className={`text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 ${isDark ? "text-white" : "text-foreground"}`}>
-              Ready to create your <span className="text-primary">dream event</span>?
-            </h2>
-            <p className={`text-base sm:text-lg mb-6 max-w-xl mx-auto leading-relaxed ${isDark ? "text-white/90" : "text-muted-foreground"}`}>
-              Tell us about your vision and we will bring it to life with creativity and precision.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/contact"
-                className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-[28px]
-                       bg-primary text-primary-foreground font-semibold text-base
-                       hover:scale-105 hover:shadow-xl transition-all duration-300
-                       focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              >
-                Contact
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <a
-                href="tel:+919876543210"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-[28px] border-2 border-primary 
-                       text-primary font-semibold text-sm
-                       hover:bg-primary/10 transition-all duration-300"
-              >
-                <Phone className="w-4 h-4" />
-                Call Us Now
-              </a>
-            </div>
-            <p className={`mt-4 text-sm ${isDark ? "text-white/70" : "text-muted-foreground"}`}>
-              Response within 24 hours guaranteed
-            </p>
-          </motion.div>
+        {/* CTA Section – card-style like collaborations */}
+        <section ref={ctaRef} className="py-12 sm:py-16 lg:py-20 bg-background" aria-label="Plan your event">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={shouldReduceMotion ? {} : { opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
+            >
+              <div className="flex justify-center mb-4 sm:mb-5">
+                <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-primary" aria-hidden />
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 sm:mb-4 text-foreground">
+                Ready to create your <span className="text-primary">dream event</span>?
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8 max-w-xl mx-auto">
+                Tell us about your vision and we will bring it to life with creativity and precision.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                <Link
+                  to="/contact"
+                  className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-primary text-primary-foreground font-semibold text-base hover:bg-primary/90 hover:shadow-lg transition-all w-full sm:w-auto"
+                >
+                  Contact
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <a
+                  href="tel:+919876543210"
+                  className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 py-3.5 rounded-full border-2 border-primary text-primary font-semibold text-sm hover:bg-primary/10 transition-all w-full sm:w-auto"
+                >
+                  <Phone className="w-4 h-4" />
+                  Call Us Now
+                </a>
+              </div>
+              <p className="mt-4 sm:mt-5 text-sm text-muted-foreground">
+                Response within 24 hours guaranteed
+              </p>
+            </motion.div>
+          </div>
         </section>
 
         <Footer />

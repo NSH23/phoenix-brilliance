@@ -9,6 +9,10 @@ interface SEOProps {
   keywords?: string;
 }
 
+const getBaseUrl = () =>
+  import.meta.env.VITE_SITE_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : '');
+
 export function SEO({ 
   title = 'Phoenix Events & Production',
   description = 'Premium event planning and production services in Pune, Maharashtra',
@@ -17,17 +21,16 @@ export function SEO({
   type = 'website',
   keywords
 }: SEOProps) {
+  const baseUrl = getBaseUrl();
   const fullTitle = title === 'Phoenix Events & Production' 
     ? title 
     : `${title} | Phoenix Events & Production`;
   
-  const fullUrl = url 
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}${url}` 
-    : (typeof window !== 'undefined' ? window.location.href : '');
+  const fullUrl = url ? `${baseUrl}${url}` : baseUrl;
   
   const imageUrl = image.startsWith('http') 
     ? image 
-    : `${typeof window !== 'undefined' ? window.location.origin : ''}${image}`;
+    : `${baseUrl}${image}`;
 
   return (
     <Helmet>

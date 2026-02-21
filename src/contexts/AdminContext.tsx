@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import { createSignedUrl } from '@/services/storage';
 import { logger } from '@/utils/logger';
 
+/** Admin user – avatar is for admin UI only (dashboard sidebar, Settings). Do not use on public routes. */
 interface AdminUser {
   id: string;
   email: string;
@@ -18,6 +20,7 @@ interface AdminContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string; needsVerification?: boolean }>;
   logout: () => Promise<void>;
   resendVerificationEmail: (email: string) => Promise<{ success: boolean; message?: string }>;
+  refreshUser: () => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -47,7 +50,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       // Add timeout to prevent hanging (e.g. when tab is in background)
       const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), 6000); // 6 second timeout
+        setTimeout(() => resolve(null), 4000); // 4 second timeout
       });
 
       const queryPromise = (async () => {
@@ -66,12 +69,25 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         // If admin user exists, return it. Otherwise return null — only users added via
         // Admin Settings can access the panel; no auto-insert.
         if (data) {
+          const rawAvatar = data.avatar_url;
+          let avatar: string | undefined;
+          if (rawAvatar) {
+            if (rawAvatar.startsWith('http://') || rawAvatar.startsWith('https://')) {
+              avatar = rawAvatar;
+            } else {
+              try {
+                avatar = await createSignedUrl('admin-avatars', rawAvatar, 3600);
+              } catch {
+                avatar = supabase.storage.from('admin-avatars').getPublicUrl(rawAvatar).data.publicUrl;
+              }
+            }
+          }
           return {
             id: data.id,
             email: data.email,
             name: data.name,
             role: data.role,
-            avatar: data.avatar_url || undefined,
+            avatar,
           };
         }
         return null;
@@ -94,7 +110,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       if (mounted) {
         setIsLoading(false);
       }
-    }, 3000); // 3 second timeout
+    }, 2000); // 2 second timeout
 
     // Initial session check
     const checkSession = async () => {
@@ -381,6 +397,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const adminUser = await loadAdminUser(session.user);
+        if (adminUser) setUser(adminUser);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   return (
     <AdminContext.Provider
       value={{
@@ -390,6 +418,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         resendVerificationEmail,
+        refreshUser,
       }}
     >
       {children}
