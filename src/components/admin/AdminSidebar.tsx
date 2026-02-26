@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, ChevronLeft } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useSiteConfig } from '@/contexts/SiteConfigContext';
 import { cn } from '@/lib/utils';
 import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
 import AdminUserAvatar from '@/components/admin/AdminUserAvatar';
@@ -15,6 +16,8 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ collapsed = false, onCollapsedChange, mobile = false }: AdminSidebarProps) {
   const location = useLocation();
   const { user, logout } = useAdmin();
+  const { logoUrl } = useSiteConfig();
+  const logoSrc = logoUrl || '/logo.png';
 
   const isActive = (path: string) => {
     if (path === '/admin') {
@@ -45,7 +48,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
               exit={{ opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <img src="/logo.png" alt="Phoenix" className="w-8 h-8 object-contain" />
+              <img src={logoSrc} alt="Phoenix" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
               <span className="font-serif font-bold text-lg">Phoenix Admin</span>
             </motion.div>
           )}

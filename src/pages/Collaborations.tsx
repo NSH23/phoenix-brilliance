@@ -9,6 +9,7 @@ import { HeroBackgroundPattern } from "@/components/ui/HeroBackgroundPattern";
 import { getActiveCollaborations } from "@/services/collaborations";
 import { getPageHeroContent } from "@/services/pageHeroContent";
 import { SEO } from "@/components/SEO";
+import { shortLocationForCard } from "@/lib/addressUtils";
 
 const DEFAULT_STATS = [
   { icon: Building2, value: "25+", label: "Partner Venues" },
@@ -243,7 +244,7 @@ export default function Collaborations() {
                            hover:border-primary/20 dark:hover:border-primary/30 transition-colors duration-300"
               >
                 <stat.icon className="w-8 h-8 text-primary mx-auto mb-3" />
-                <div className="text-3xl md:text-4xl font-serif font-bold mb-1 text-foreground">
+                <div className="text-3xl md:text-4xl font-serif font-semibold mb-1 text-foreground">
                   {stat.value}
                 </div>
                 <div className="text-sm text-muted-foreground">{stat.label}</div>
@@ -325,6 +326,8 @@ export default function Collaborations() {
                                     src={collab.logo_url}
                                     alt={`${collab.name} logo`}
                                     className="w-full h-full object-contain p-2 sm:p-3"
+                                    loading="lazy"
+                                    decoding="async"
                                   />
                                 </div>
                               </div>
@@ -332,7 +335,7 @@ export default function Collaborations() {
                           ) : (
                             /* When no logo, show name prominently */
                             <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
-                              <h3 className="text-sm sm:text-xl md:text-2xl font-serif font-bold text-foreground group-hover/card:text-primary 
+                              <h3 className="text-sm sm:text-xl md:text-2xl font-serif font-semibold text-foreground group-hover/card:text-primary 
                                        transition-colors duration-300 text-center line-clamp-2">
                                 {collab.name}
                               </h3>
@@ -344,7 +347,7 @@ export default function Collaborations() {
                           {/* Name below logo (if logo exists) */}
                           {hasLogo && (
                             <div className="mb-2 sm:mb-3">
-                              <h3 className="text-sm sm:text-lg font-serif font-bold text-foreground group-hover/card:text-primary 
+                              <h3 className="text-sm sm:text-lg font-serif font-semibold text-foreground group-hover/card:text-primary 
                                        transition-colors duration-300 text-center line-clamp-2">
                                 {collab.name}
                               </h3>
@@ -357,7 +360,7 @@ export default function Collaborations() {
                                       bg-muted/50 dark:bg-muted/30 border border-border/50">
                               <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-primary flex-shrink-0 mt-0.5" />
                               <p className="text-muted-foreground text-[10px] sm:text-xs leading-relaxed line-clamp-2">
-                                {collab.location}
+                                {shortLocationForCard(collab.location)}
                               </p>
                             </div>
                           )}
@@ -391,7 +394,7 @@ export default function Collaborations() {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
           >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 sm:mb-4 text-foreground">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold mb-3 sm:mb-4 text-foreground">
               Want to <span className="text-gradient-gold">Partner</span> With Us?
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">

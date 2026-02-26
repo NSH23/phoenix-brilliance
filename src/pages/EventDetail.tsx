@@ -142,6 +142,8 @@ const EventDetail = () => {
             src={event.cover_image || '/placeholder.svg'}
             alt={event.title}
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/placeholder.svg';
             }}
@@ -184,7 +186,7 @@ const EventDetail = () => {
               Event Type
             </motion.span>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold mb-4 text-foreground">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-semibold mb-4 text-foreground">
               {event.title}
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl">
@@ -246,7 +248,7 @@ const EventDetail = () => {
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-foreground">Our Process</span>
               </motion.span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold mb-4">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-4">
                 How We Create Your <span className="text-gradient-gold">{event.title}</span>
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -399,7 +401,7 @@ const EventDetail = () => {
               className="flex items-center justify-between mb-12"
             >
               <div>
-                <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-2">
+                <h2 className="text-3xl sm:text-4xl font-serif font-semibold mb-2">
                   {event.title} <span className="text-gradient-gold">Albums</span>
                 </h2>
                 <p className="text-muted-foreground">Browse our {event.title.toLowerCase()} event galleries</p>
@@ -431,6 +433,8 @@ const EventDetail = () => {
                         src={album.cover_image || '/placeholder.svg'}
                         alt={album.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}
@@ -474,7 +478,7 @@ const EventDetail = () => {
               viewport={{ once: true }}
               className="text-center mb-12"
             >
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">
+              <h2 className="text-3xl sm:text-4xl font-serif font-semibold mb-4">
                 What Our Clients <span className="text-gradient-gold">Say</span>
               </h2>
             </motion.div>
@@ -502,6 +506,8 @@ const EventDetail = () => {
                         src={testimonial.avatar_url}
                         alt={testimonial.name}
                         className="w-10 h-10 rounded-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}
@@ -550,6 +556,8 @@ const EventDetail = () => {
                             src={testimonials[currentTestimonialIndex].avatar_url}
                             alt={testimonials[currentTestimonialIndex].name}
                             className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20"
+                            loading="lazy"
+                            decoding="async"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = '/placeholder.svg';
                             }}
@@ -611,7 +619,7 @@ const EventDetail = () => {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto text-center"
           >
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">
+            <h2 className="text-3xl sm:text-4xl font-serif font-semibold mb-4">
               Ready to Plan Your <span className="text-gradient-gold">{event.title}?</span>
             </h2>
             <p className="text-muted-foreground mb-8">

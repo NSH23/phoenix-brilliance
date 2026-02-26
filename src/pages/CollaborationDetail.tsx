@@ -159,7 +159,7 @@ function GalleryTreeAndContent({
                         preload="none"
                       />
                     ) : (
-                      <img src={mediaSrc} alt={media.caption || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                      <img src={mediaSrc} alt={media.caption || "Collaboration media"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" />
                     )}
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
@@ -255,7 +255,7 @@ export default function CollaborationDetail() {
         <Navbar />
         <main className="flex-1 flex items-center justify-center px-4 py-16">
           <div className="text-center max-w-md">
-            <h1 className="text-2xl font-serif font-bold mb-2 text-foreground">Partner Not Found</h1>
+            <h1 className="text-2xl font-serif font-semibold mb-2 text-foreground">Partner Not Found</h1>
             <p className="text-muted-foreground mb-6">This collaboration may no longer be available.</p>
             <Link
               to="/"
@@ -355,6 +355,8 @@ export default function CollaborationDetail() {
                     })()}
                     alt={collaboration.name}
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
@@ -383,10 +385,12 @@ export default function CollaborationDetail() {
                   src={collaboration.logo_url ? (collaboration.logo_url.startsWith("http") ? collaboration.logo_url : getPublicUrl("partner-logos", collaboration.logo_url)) : "/placeholder.svg"}
                   alt={`${collaboration.name} logo`}
                   className="w-16 h-16 rounded-2xl object-cover border-2 border-border"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div>
                   <span className="text-sm text-primary font-medium">Partner Venue</span>
-                  <h1 className="text-3xl md:text-4xl font-serif font-bold">{collaboration.name}</h1>
+                  <h1 className="text-3xl md:text-4xl font-serif font-semibold">{collaboration.name}</h1>
                 </div>
               </div>
 
@@ -444,7 +448,7 @@ export default function CollaborationDetail() {
               viewport={{ once: true }}
               className="mb-6 md:mb-8"
             >
-              <h2 className="text-xl md:text-2xl font-serif font-bold text-foreground">
+              <h2 className="text-xl md:text-2xl font-serif font-semibold text-foreground">
                 Venue gallery <span className="text-primary">— take a virtual tour</span>
               </h2>
             </motion.div>
@@ -466,7 +470,7 @@ export default function CollaborationDetail() {
                       {(image as CollabImage).media_type === 'video' ? (
                         <video src={mediaSrc} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" playsInline preload="metadata" />
                       ) : (
-                        <img src={mediaSrc} alt={image.caption || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                        <img src={mediaSrc} alt={image.caption || "Collaboration media"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" />
                       )}
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
@@ -488,7 +492,7 @@ export default function CollaborationDetail() {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
           >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-4 sm:mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold mb-4 sm:mb-6">
               Ready to Book <span className="text-gradient-gold">{collaboration.name}</span>?
             </h2>
             <p className="text-muted-foreground mb-6 sm:mb-8 text-sm sm:text-base">
@@ -578,10 +582,12 @@ export default function CollaborationDetail() {
               ) : (
                 <img
                   src={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
-                  alt={images[lightboxIndex].caption || ""}
+                  alt={images[lightboxIndex].caption || "Collaboration media"}
                   className="w-full h-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-lg select-none"
                   draggable={false}
                   style={{ touchAction: 'none' }}
+                  loading="lazy"
+                  decoding="async"
                 />
               )}
               {(images[lightboxIndex].caption || "").trim() && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, RotateCcw, FileText, Link as LinkIcon, Trophy, Heart, Users, Shield, Loader2, Calendar, ImageIcon, Handshake, UserCircle } from 'lucide-react';
+import { Save, RotateCcw, FileText, Link as LinkIcon, Users, Loader2, Calendar, ImageIcon, Handshake, UserCircle } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,12 +43,6 @@ interface ContactInfo {
   phone: string;
   address: string;
 }
-
-const DEFAULT_STATS: PageHeroStat[] = [
-  { value: '', label: '' },
-  { value: '', label: '' },
-  { value: '', label: '' },
-];
 
 const DEFAULT_EVENTS: PageHeroContent = {
   id: '',

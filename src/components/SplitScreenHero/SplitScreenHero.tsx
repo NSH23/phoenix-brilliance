@@ -406,6 +406,7 @@ const SplitScreenHero = ({
                         className="w-full h-full object-cover object-center"
                         loading={i === 0 ? "eager" : "lazy"}
                         fetchPriority={i === 0 ? "high" : "low"}
+                        decoding="async"
                       />
                       
                       {/* Upcoming Event Badge */}

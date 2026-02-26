@@ -116,32 +116,22 @@ const GallerySection = () => {
         <div className="absolute top-1/2 left-1/2 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-champagne/5 rounded-full blur-[50px] sm:blur-[60px] -translate-x-1/2 -translate-y-1/2" />
       </div>
 
-      <div className="container mx-auto px-4 relative">
-        {/* Section Header */}
+      <div className="container px-4 mx-auto max-w-7xl relative">
+        {/* Section Header – aligned with Reels, Partners, Events, etc. */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-10 sm:mb-16"
+          transition={{ duration: 0.5 }}
+          className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1"
         >
-          <motion.span 
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full 
-                     bg-gradient-to-r from-primary/20 to-rose-gold/20 
-                     border border-primary/30 backdrop-blur-sm mb-4 sm:mb-6"
-          >
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs sm:text-sm font-medium text-foreground">Our Portfolio</span>
-          </motion.span>
-          
-          <h2 className="section-title mb-4 sm:mb-6">
-            Moments We've <span className="text-gradient-gold">Captured</span>
+          <p className="text-primary font-sans font-semibold text-xs md:text-sm tracking-[0.2em] uppercase">
+            Our Portfolio
+          </p>
+          <h2 className="font-serif font-medium leading-tight text-3xl md:text-4xl lg:text-5xl text-foreground">
+            Moments We&apos;ve <span className="text-primary">Captured</span>
           </h2>
-          <p className="section-subtitle max-w-2xl mx-auto text-sm sm:text-base">
+          <p className="mt-4 max-w-xl text-muted-foreground text-base md:text-lg leading-relaxed font-sans">
             Every frame tells a story of love, celebration, and unforgettable memories.
           </p>
         </motion.div>
@@ -227,6 +217,7 @@ const GallerySection = () => {
                           className={`w-full h-full object-cover transition-all duration-500 
                                     ${hoveredIndex === index ? 'scale-110 brightness-90' : 'scale-100'}`}
                           loading="lazy"
+                          decoding="async"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/placeholder.svg';
                           }}
@@ -401,6 +392,8 @@ const GallerySection = () => {
                   alt={displayed[lightboxImage].title || 'Gallery image'}
                   draggable={false}
                   className="max-w-full max-h-[75vh] object-contain mx-auto"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/placeholder.svg';
                   }}
@@ -422,7 +415,7 @@ const GallerySection = () => {
                           {displayed[lightboxImage].category}
                         </span>
                       )}
-                      <h3 className="font-serif text-2xl md:text-3xl text-ivory font-bold">
+                      <h3 className="font-serif text-2xl md:text-3xl text-ivory font-semibold">
                         {displayed[lightboxImage].title || 'Untitled'}
                       </h3>
                     </div>
@@ -452,7 +445,7 @@ const GallerySection = () => {
                       : 'opacity-50 hover:opacity-100'
                   }`}
                 >
-                  <img src={img.url || '/placeholder.svg'} alt={img.title || 'Gallery image'} draggable={false} className="w-full h-full object-cover" loading="lazy" />
+                  <img src={img.url || '/placeholder.svg'} alt={img.title || 'Gallery image'} draggable={false} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>

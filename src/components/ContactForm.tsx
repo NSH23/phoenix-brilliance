@@ -56,7 +56,7 @@ export default function ContactForm({ className }: { className?: string }) {
                 <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
                     <CheckCircle className="w-8 h-8 text-emerald-500" />
                 </div>
-                <h4 className="font-serif text-xl font-bold text-foreground mb-2">Thank You!</h4>
+                <h4 className="font-serif text-xl font-semibold text-foreground mb-2">Thank You!</h4>
                 <p className="text-muted-foreground text-sm">We'll get back to you within 24 hours.</p>
             </motion.div>
         );

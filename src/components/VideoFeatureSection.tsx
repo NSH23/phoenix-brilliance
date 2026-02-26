@@ -41,6 +41,7 @@ function CraftVideoCard({
         muted
         loop
         playsInline
+        preload="metadata"
       />
       <div className="absolute inset-0 bg-foreground/20 pointer-events-none" />
       <div className="absolute inset-0 flex items-center justify-center opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -71,16 +72,16 @@ const VideoFeatureSection = () => {
       ref={containerRef}
       className="relative py-12 md:py-16 lg:py-20 overflow-hidden video-feature-section-bg"
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16">
-        {/* Heading: Our Craft / Every Celebration Has a Story */}
+      <div className="container px-4 mx-auto max-w-7xl">
+        {/* Heading – left-aligned editorial (aligned with other section headers) */}
         <motion.div
           style={{ opacity, y }}
-          className="text-center mb-10 md:mb-12"
+          className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1"
         >
-          <p className="text-primary font-sans text-xs tracking-[0.25em] uppercase mb-2 font-medium">
+          <p className="text-primary font-sans font-semibold text-xs md:text-sm tracking-[0.2em] uppercase">
             Our Craft
           </p>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-medium leading-tight text-foreground max-w-2xl mx-auto">
+          <h2 className="font-serif font-medium leading-tight text-3xl md:text-4xl lg:text-5xl text-foreground max-w-2xl">
             Every Celebration
             <br />
             Has a <span className="italic text-primary">Story</span>

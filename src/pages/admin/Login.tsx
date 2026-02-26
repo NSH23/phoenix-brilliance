@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useSiteConfig } from '@/contexts/SiteConfigContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,8 @@ import { supabase } from '@/lib/supabase';
 export default function AdminLogin() {
   const navigate = useNavigate();
   const { login, resendVerificationEmail, isAuthenticated } = useAdmin();
+  const { logoUrl } = useSiteConfig();
+  const logoSrc = logoUrl || '/logo.png';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -111,11 +114,12 @@ export default function AdminLogin() {
       toast.error('Please enter your email address');
       return;
     }
+    const baseUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
     setIsLoading(true);
     setResetSent(false);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/admin/set-password`,
+        redirectTo: `${baseUrl}/admin/set-password`,
       });
       if (error) {
         toast.error('Failed to send reset email', { description: error.message });
@@ -157,7 +161,7 @@ export default function AdminLogin() {
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
               className="inline-flex items-center justify-center mb-4"
             >
-              <img src="/logo.png" alt="Phoenix" className="w-16 h-16 object-contain" />
+              <img src={logoSrc} alt="Phoenix" className="w-16 h-16 object-contain" loading="lazy" decoding="async" />
             </motion.div>
             <h1 className="text-2xl font-serif font-bold text-foreground">Phoenix Admin</h1>
             <p className="text-muted-foreground mt-1">Sign in to your dashboard</p>

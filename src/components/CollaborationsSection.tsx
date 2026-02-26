@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { getPublicUrl } from "@/services/storage";
-import SectionHeading from "@/components/SectionHeading";
+import { shortLocationForCard } from "@/lib/addressUtils";
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { getActiveCollaborations, Collaboration } from "@/services/collaborations";
@@ -41,55 +41,74 @@ const CollaborationsSection = () => {
   if (displayed.length === 0) return null;
 
   return (
-    <section className="pt-4 md:pt-6 lg:pt-8 pb-12 md:pb-16 -mb-24 relative z-20 overflow-hidden bg-background transition-colors duration-500">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background dark:from-primary/10 dark:via-navy dark:to-navy opacity-50 pointer-events-none" />
-      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 relative z-10">
-        <div className="flex flex-col items-center justify-center gap-4 mb-8 text-center">
-          {/* Elegant heading centered */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }}
-            className="w-full"
-          >
-            <p className="text-primary font-sans text-sm md:text-base tracking-[0.25em] uppercase mb-3 font-medium">
-              Our Partners
-            </p>
-            <SectionHeading className="text-foreground font-display font-medium leading-tight text-4xl md:text-5xl">
-              Trusted By <span className="italic text-primary">Elegant Venues</span>
-            </SectionHeading>
-          </motion.div>
-
-        </div>
+    <section className="relative z-20 overflow-x-hidden overflow-y-visible bg-transparent transition-colors duration-500 pt-12 md:pt-16 pb-0 md:pb-1 mb-[-1rem] md:mb-[-1.5rem]" aria-labelledby="partners-heading">
+      {/* Section header – aligned with Reels/About */}
+      <div className="container px-4 mx-auto max-w-7xl relative z-10">
+        <motion.header
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1"
+        >
+          <p className="text-primary font-sans font-semibold text-xs md:text-sm tracking-[0.2em] uppercase">
+            Our Partners
+          </p>
+          <h2 id="partners-heading" className="font-serif font-medium leading-tight text-3xl md:text-4xl lg:text-5xl text-foreground">
+            Trusted By <span className="italic text-primary">Elegant Venues</span>
+          </h2>
+          <p className="mt-4 max-w-xl text-muted-foreground text-base md:text-lg leading-relaxed font-sans">
+            Premium venues and spaces we&apos;re proud to partner with.
+          </p>
+        </motion.header>
       </div>
 
-      <div className={`w-full overflow-hidden ${singleCard ? "flex justify-center" : ""}`}>
-        <div className={singleCard ? "px-4" : "collaborations-logo-mask overflow-hidden pt-0 pb-0"}>
-          <div className={singleCard ? "flex justify-center" : "collaborations-logo-track flex gap-6 md:gap-8 px-4"}>
-            {listToRender.map((venue, index) => (
-              <div
-                key={singleCard ? venue.id : `${venue.id}-${index}`}
-                className="collaborations-logo-item flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] group"
-              >
-                <Link to={`/collaborations/${venue.id}`} replace>
-                  <div className="bg-card dark:bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-[0_16px_40px_rgba(232,175,193,0.22)] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:ring-2 hover:ring-primary/20 dark:hover:ring-primary/40 border border-transparent dark:border-white/5">
-                    <div className="aspect-[4/3] overflow-hidden">
-                      <img
-                        src={resolveLogoUrl(venue.logo_url)}
-                        alt={venue.name}
-                        className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="p-4 text-center">
-                      <p className="text-sm font-display font-medium text-foreground dark:text-white truncate px-1">{venue.name}</p>
-                      <p className="text-[11px] text-muted-foreground dark:text-gray-400 uppercase tracking-wider mt-1">{venue.location || "Partner Venue"}</p>
-                    </div>
+      {/* Cards container – full viewport width; no background image in container */}
+      <div className="w-screen min-w-screen ml-[calc(-50vw+50%)] overflow-hidden">
+        <div className={`relative w-full min-w-0 rounded-none border border-primary/30 dark:border-primary/25 overflow-hidden py-5 md:py-6 shadow-[0_4px_24px_rgba(232,175,193,0.14)] dark:shadow-elevation-1-dark ${singleCard ? "px-4 md:px-6" : "collaborations-logo-mask collaborations-logo-mask-no-fade"} bg-white/55 dark:bg-card/50 backdrop-blur-sm dark:border-white/25`}>
+          <div className="relative z-10">
+          <div className={singleCard ? "flex justify-center" : "collaborations-logo-track flex items-stretch gap-6 md:gap-8"}>
+            {listToRender.map((venue, index) => {
+              const isPremiumCard = singleCard && index === 0;
+              const cardContent = (
+                <>
+                  <div className="aspect-[4/3] flex-shrink-0 overflow-hidden">
+                    <img
+                      src={resolveLogoUrl(venue.logo_url)}
+                      alt={venue.name}
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
-                </Link>
-              </div>
-            ))}
+                  <div className="flex-shrink-0 h-[5rem] flex flex-col items-center justify-center p-5 text-center">
+                    <p className="text-base font-sans font-medium text-foreground dark:text-white truncate w-full px-1">{venue.name}</p>
+                    <p className="text-xs text-muted-foreground dark:text-gray-400 uppercase tracking-wider mt-1.5 truncate w-full">{shortLocationForCard(venue.location)}</p>
+                  </div>
+                </>
+              );
+              return (
+                <div
+                  key={singleCard ? venue.id : `${venue.id}-${index}`}
+                  className="collaborations-logo-item flex-shrink-0 w-[300px] sm:w-[360px] md:w-[420px] flex flex-col group"
+                >
+                  <Link to={`/collaborations/${venue.id}`} replace className="flex flex-col flex-1 min-h-0">
+                    {isPremiumCard ? (
+                      <div className="p-[1px] rounded-2xl bg-gradient-to-r from-primary/30 to-transparent transition-all duration-300 ease-out hover:from-primary/40 flex-1 flex flex-col min-h-0">
+                        <div className="bg-card rounded-2xl overflow-hidden border-0 shadow-elevation-1 dark:shadow-elevation-1-dark hover:shadow-card-hover dark:hover:shadow-card-hover-dark transition-all duration-300 ease-out hover:-translate-y-1 flex-1 flex flex-col min-h-0">
+                          {cardContent}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-card rounded-xl overflow-hidden border border-border dark:border-white/10 shadow-elevation-1 dark:shadow-elevation-1-dark transition-all duration-300 ease-out hover:border-primary/40 dark:hover:border-primary/50 hover:shadow-card-hover dark:hover:shadow-card-hover-dark hover:ring-1 hover:ring-primary/20 hover:-translate-y-1 flex-1 flex flex-col min-h-0">
+                        {cardContent}
+                      </div>
+                    )}
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
           </div>
         </div>
       </div>

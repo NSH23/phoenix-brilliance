@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, Eye, Image, Video, Star, MoreHorizontal, Calendar, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Image, Star, MoreHorizontal, Calendar, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';

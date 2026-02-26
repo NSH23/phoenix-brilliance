@@ -194,7 +194,7 @@ export default function LeadCaptureModal() {
                     <div className="mx-auto w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
                         <Lock className="w-4 h-4 text-primary" />
                     </div>
-                    <DialogTitle className="text-center font-serif text-lg sm:text-xl">
+                    <DialogTitle className="text-center font-serif text-lg sm:text-xl font-semibold">
                         Welcome to Phoenix Events
                     </DialogTitle>
                     <DialogDescription className="text-center text-xs">

@@ -38,20 +38,21 @@ export function TestimonialsSection({
 
     return (
         <section id="testimonials" className={`w-full py-4 md:py-10 lg:py-12 ${className || ""}`}>
-            <div className="container px-4 md:px-6">
-                <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                    <div className="space-y-2">
-                        <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
-                            {badgeText}
-                        </div>
-                        <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
-                            {title}
-                        </h2>
-                        <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed hidden md:block">
+            <div className="container px-4 mx-auto max-w-7xl">
+                {/* Header – editorial left-accent (same as Events, Services, Reels) */}
+                <header className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1">
+                    <p className="text-primary font-sans font-semibold text-xs md:text-sm tracking-[0.2em] uppercase">
+                        {badgeText}
+                    </p>
+                    <h2 className="font-serif font-medium leading-tight text-3xl md:text-4xl lg:text-5xl text-foreground dark:text-white">
+                        {title}
+                    </h2>
+                    {subtitle && (
+                        <p className="mt-4 max-w-xl text-muted-foreground dark:text-white/70 text-base md:text-lg leading-relaxed font-sans">
                             {subtitle}
                         </p>
-                    </div>
-                </div>
+                    )}
+                </header>
 
                 {/* Desktop Grid View - Exact same grid as before */}
                 <div className="hidden md:grid mx-auto max-w-7xl gap-4 py-4 grid-cols-2 lg:grid-cols-3">
@@ -95,11 +96,21 @@ export function TestimonialsSection({
     );
 }
 
+function getInitials(name: string): string {
+    return name
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+}
+
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
     const stars = typeof testimonial.rating === "number" ? testimonial.rating : 5;
+    const hasRealAvatar = testimonial.avatar && !testimonial.avatar.includes("unsplash.com") && !testimonial.avatar.includes("ui-avatars.com");
 
     return (
-        <Card className="flex flex-col h-full bg-rose-50/50 dark:bg-navy/50 border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
+        <Card className="testimonial-card-item flex flex-col h-full rounded-2xl border-2 border-white/50 dark:border-white/20 bg-white/20 dark:bg-card/80 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-elevation-1-dark transition-all duration-300 ease-out hover:border-white/70 dark:hover:border-primary/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.8)] hover:-translate-y-1">
             <CardHeader className="p-4">
                 <div className="flex items-center gap-2">
                     <div className="flex">
@@ -120,11 +131,22 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
             </CardContent>
             <CardFooter className="mt-auto p-4 pt-0">
                 <div className="flex items-center gap-4">
-                    <img
-                        src={testimonial.avatar}
-                        alt={testimonial.name}
-                        className="rounded-full w-10 h-10 object-cover border border-border"
-                    />
+                    {hasRealAvatar ? (
+                        <img
+                            src={testimonial.avatar}
+                            alt={testimonial.name}
+                            className="rounded-full w-10 h-10 object-cover border border-border"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    ) : (
+                        <div
+                            className="rounded-full w-10 h-10 flex items-center justify-center border border-border bg-primary/10 text-primary text-sm font-medium"
+                            aria-hidden
+                        >
+                            {getInitials(testimonial.name)}
+                        </div>
+                    )}
                     <div className="text-left">
                         <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
                         <p className="text-xs text-muted-foreground">{testimonial.role}</p>

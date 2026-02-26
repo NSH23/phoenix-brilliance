@@ -40,7 +40,7 @@ export default function AdminUserAvatar({ avatarUrl, name, className = '', size 
       aria-hidden
     >
       {src ? (
-        <img src={src} alt="" className="w-full h-full object-cover" />
+        <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
       ) : (
         <span className="text-sm">{initial}</span>
       )}

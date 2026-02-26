@@ -225,7 +225,7 @@ export function PremiumTestimonials() {
                     </motion.div>
 
                     <motion.h2
-                        className="text-4xl sm:text-6xl md:text-7xl font-bold mb-8 tracking-tight font-hero"
+                        className="text-4xl sm:text-6xl md:text-7xl font-serif font-semibold mb-8 tracking-tight"
                         variants={fadeInUp}
                     >
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">
@@ -316,6 +316,8 @@ export function PremiumTestimonials() {
                                                         src={testimonials[currentIndex].avatar}
                                                         alt={testimonials[currentIndex].name}
                                                         className="w-full h-full object-cover"
+                                                        loading="lazy"
+                                                        decoding="async"
                                                     />
                                                     <motion.div
                                                         className="absolute inset-0 bg-gradient-to-br from-primary/20 to-rose-400/20"
@@ -335,7 +337,7 @@ export function PremiumTestimonials() {
                                                 />
                                             </motion.div>
 
-                                            <h3 className="text-2xl font-bold text-foreground mb-2">
+                                            <h3 className="text-2xl font-serif font-semibold text-foreground mb-2">
                                                 {testimonials[currentIndex].name}
                                             </h3>
                                             <p className="text-primary mb-1 font-medium">
@@ -454,7 +456,7 @@ export function PremiumTestimonials() {
                             whileHover={{ scale: 1.05 }}
                         >
                             <motion.div
-                                className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-rose-300 bg-clip-text text-transparent mb-2"
+                                className="text-3xl md:text-4xl font-serif font-semibold bg-gradient-to-r from-primary to-rose-300 bg-clip-text text-transparent mb-2"
                                 animate={{ opacity: [0.7, 1, 0.7] }}
                                 transition={{ duration: 2, repeat: Infinity, delay: index * 0.5 }}
                             >

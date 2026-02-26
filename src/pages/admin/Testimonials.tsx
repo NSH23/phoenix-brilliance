@@ -244,7 +244,7 @@ export default function AdminTestimonials() {
                       <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
                         <div className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden bg-muted shrink-0">
                           {t.avatar_url ? (
-                            <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
+                            <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-base">
                               {t.name.charAt(0)}

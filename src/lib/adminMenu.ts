@@ -31,6 +31,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { name: 'Manage Videos', href: '/admin/media', icon: Film, keywords: 'videos hero reels' },
   { name: 'Albums', href: '/admin/albums', icon: FolderOpen, keywords: 'photos folders' },
   { name: 'Services', href: '/admin/services', icon: Wrench, keywords: 'offerings' },
+  { name: 'Why Choose Us', href: '/admin/why-us', icon: Award, keywords: 'why us stats reasons' },
   { name: 'Testimonials', href: '/admin/testimonials', icon: MessageSquareQuote, keywords: 'reviews quotes' },
   { name: 'Inquiries', href: '/admin/inquiries', icon: Mail, keywords: 'messages contact' },
   { name: 'Team', href: '/admin/team', icon: Users, keywords: 'staff employees' },

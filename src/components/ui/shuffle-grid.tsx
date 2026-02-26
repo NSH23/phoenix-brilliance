@@ -27,7 +27,7 @@ const generateSquares = (data: GalleryImage[]) => {
             key={sq.id}
             layout
             transition={{ duration: 1.5, type: "spring" }}
-            className="w-full h-full min-h-[80px] rounded-md overflow-hidden bg-muted shadow-sm"
+            className="relative z-10 w-full aspect-square rounded-xl overflow-hidden bg-muted border-2 border-white/80 dark:border-white/10 shadow-lg dark:shadow-elevation-1-dark ring-1 ring-black/10 dark:ring-white/10"
             style={{
                 backgroundImage: `url(${sq.url})`,
                 backgroundSize: "cover",
@@ -73,9 +73,14 @@ export const ShuffleGrid = () => {
 
     return (
         <div
-            className={`h-full w-full min-h-0 gap-1.5 p-1.5 sm:gap-2 sm:p-2 bg-background/50 backdrop-blur-sm rounded-xl border border-border/20 grid
-                ${isMobile ? "grid-cols-2 grid-rows-2 min-h-[240px]" : "grid-cols-4 grid-rows-3"}`}
+            className={`h-full w-full min-h-0 gap-1.5 p-2 sm:gap-2 sm:p-2.5 rounded-2xl grid relative overflow-hidden
+                border-2 border-primary/40 dark:border-white/30
+                shadow-2xl shadow-black/15 dark:shadow-elevation-1-dark
+                ring-2 ring-primary/15 dark:ring-white/15
+                ${isMobile ? "grid-cols-2 grid-rows-2 min-h-[260px]" : "grid-cols-4 grid-rows-3"}`}
         >
+            {/* Overlay so container reads clearly; grid cells sit on top with borders */}
+            <div className="absolute inset-0 z-0 rounded-2xl bg-white/75 dark:bg-card/80 pointer-events-none" aria-hidden />
             {squares.map((sq) => sq)}
         </div>
     );

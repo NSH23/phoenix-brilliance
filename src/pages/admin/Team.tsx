@@ -77,7 +77,7 @@ function TeamPhotoImg({
   }, [photoUrl, isExternal]);
 
   if (!photoUrl || failed || (!isExternal && !src)) return <>{fallback}</>;
-  return <img src={src!} alt={alt} className={className} />;
+  return <img src={src!} alt={alt} className={className} loading="lazy" decoding="async" />;
 }
 
 const defaultForm: Record<string, string | number | boolean | null> = {
@@ -801,7 +801,7 @@ export default function AdminTeam() {
                           />
                           <div className="w-16 h-16 rounded-full overflow-hidden border bg-muted flex-shrink-0 flex items-center justify-center">
                             {photoFile && photoPreviewUrl ? (
-                              <img src={photoPreviewUrl} alt="Team member photo preview" className="w-full h-full object-cover" />
+                              <img src={photoPreviewUrl} alt="Team member photo preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                             ) : (
                               <Users className="w-7 h-7 text-muted-foreground" />
                             )}

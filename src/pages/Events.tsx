@@ -299,7 +299,7 @@ const Events = () => {
                 key={index}
                 className="flex-1 flex flex-col items-center justify-center py-2 sm:py-6 px-1 sm:px-4"
               >
-                <span className="text-sm sm:text-2xl md:text-3xl font-serif font-bold text-primary mb-0 sm:mb-1">
+                <span className="text-sm sm:text-2xl md:text-3xl font-serif font-semibold text-primary mb-0 sm:mb-1">
                   {isStatFromHero ? (
                     stat.value
                   ) : (
@@ -402,7 +402,7 @@ const Events = () => {
                         {/* Content – bottom */}
                         <div className="absolute inset-x-0 bottom-0 p-2 sm:p-5 z-10 w-full text-center sm:text-left">
                           <h3
-                            className="font-serif font-bold text-white text-[10px] leading-tight sm:text-xl mb-0 sm:mb-2 tracking-tight line-clamp-2"
+                            className="font-serif font-semibold text-white text-[10px] leading-tight sm:text-xl mb-0 sm:mb-2 tracking-tight line-clamp-2"
                             style={{
                               textShadow: "0 2px 16px rgba(0,0,0,0.6)",
                             }}
@@ -446,7 +446,7 @@ const Events = () => {
               viewport={{ once: true }}
               className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
             >
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 sm:mb-4 text-foreground">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold mb-3 sm:mb-4 text-foreground">
                 Don&apos;t See Your Event? Let&apos;s Talk!
               </h2>
               <p className="text-sm sm:text-base md:text-lg text-muted-foreground mb-6 sm:mb-8">

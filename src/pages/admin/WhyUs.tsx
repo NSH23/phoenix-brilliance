@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Star, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Star, Plus, Trash2, Trophy, Heart, Users, Shield } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,35 @@ import {
   updateWhyChooseUsReason,
   createWhyChooseUsReason,
   deleteWhyChooseUsReason,
+  getWhyChooseUsStats,
+  updateWhyChooseUsStat,
+  createWhyChooseUsStat,
+  deleteWhyChooseUsStat,
+  WHY_CHOOSE_US_ICON_KEYS,
   type WhyChooseUsReason,
+  type WhyChooseUsStat,
+  type WhyChooseUsIconKey,
 } from '@/services/whyChooseUs';
-import { getSiteContentByKey, updateSiteContent } from '@/services/siteContent';
+import { getSiteContentByKey, upsertSiteContent } from '@/services/siteContent';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const ICON_OPTIONS: { key: WhyChooseUsIconKey; label: string; Icon: typeof Trophy }[] = [
+  { key: 'trophy', label: 'Trophy', Icon: Trophy },
+  { key: 'heart', label: 'Heart', Icon: Heart },
+  { key: 'users', label: 'Users', Icon: Users },
+  { key: 'shield', label: 'Shield', Icon: Shield },
+];
 
 export default function AdminWhyUs() {
   const [reasons, setReasons] = useState<WhyChooseUsReason[]>([]);
+  const [stats, setStats] = useState<WhyChooseUsStat[]>([]);
   const [header, setHeader] = useState({ title: '', subtitle: '', description: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -29,11 +51,13 @@ export default function AdminWhyUs() {
   const load = async () => {
     try {
       setIsLoading(true);
-      const [r, h] = await Promise.all([
+      const [r, s, h] = await Promise.all([
         getWhyChooseUsReasons(),
+        getWhyChooseUsStats(),
         getSiteContentByKey('why-us').catch(() => null),
       ]);
       setReasons(r);
+      setStats(s);
       if (h) setHeader({ title: h.title || '', subtitle: h.subtitle || '', description: h.description || '' });
     } catch (err: unknown) {
       toast.error('Failed to load', { description: (err as Error)?.message });
@@ -84,12 +108,66 @@ export default function AdminWhyUs() {
   const handleSaveHeader = async () => {
     setSaving('header');
     try {
-      await updateSiteContent('why-us', header);
+      await upsertSiteContent({
+        section_key: 'why-us',
+        title: header.title,
+        subtitle: header.subtitle,
+        description: header.description,
+      });
       toast.success('Section header updated');
     } catch (err: unknown) {
       toast.error('Failed to update header', { description: (err as Error)?.message });
     } finally {
       setSaving(null);
+    }
+  };
+
+  const handleSaveStat = async (id: string, updates: Partial<Pick<WhyChooseUsStat, 'stat_value' | 'stat_label' | 'stat_description' | 'icon_key'>>) => {
+    setSaving(id);
+    try {
+      const updated = await updateWhyChooseUsStat(id, updates);
+      setStats(prev => prev.map(s => (s.id === id ? updated : s)));
+      toast.success('Stat updated');
+    } catch (err: unknown) {
+      toast.error('Failed to update stat', { description: (err as Error)?.message });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleAddStat = async () => {
+    const usedKeys = new Set(stats.map(s => s.icon_key));
+    const nextKey = WHY_CHOOSE_US_ICON_KEYS.find(k => !usedKeys.has(k));
+    if (!nextKey) {
+      toast.error('All four stat icons are already in use (trophy, heart, users, shield).');
+      return;
+    }
+    try {
+      setSaving('add-stat');
+      const created = await createWhyChooseUsStat({
+        stat_value: '0',
+        stat_label: 'New Stat',
+        stat_description: null,
+        icon_key: nextKey,
+        display_order: stats.length,
+      });
+      setStats(prev => [...prev, created].sort((a, b) => a.display_order - b.display_order));
+      toast.success('Stat added');
+    } catch (err: unknown) {
+      toast.error('Failed to add stat', { description: (err as Error)?.message });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleDeleteStat = async (id: string) => {
+    if (!confirm('Remove this stat card?')) return;
+    try {
+      await deleteWhyChooseUsStat(id);
+      setStats(prev => prev.filter(s => s.id !== id));
+      toast.success('Stat removed');
+    } catch (err: unknown) {
+      toast.error('Failed to delete', { description: (err as Error)?.message });
     }
   };
 
@@ -104,7 +182,7 @@ export default function AdminWhyUs() {
   }
 
   return (
-    <AdminLayout title="Why Choose Us" subtitle="Manage Why Phoenix Events section on the homepage">
+    <AdminLayout title="Why Choose Us" subtitle="Manage Why Choose Us section on the homepage (stats + reasons)">
       <div className="space-y-8">
         <Card>
           <CardContent className="p-6">
@@ -139,6 +217,84 @@ export default function AdminWhyUs() {
                 Save Header
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4">Stat Cards (homepage numbers)</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              These appear as the four highlight cards (e.g. 100+ Successful Events). Icon: trophy, heart, users, or shield.
+            </p>
+            <div className="space-y-4">
+              {stats.map(stat => {
+                const iconOpt = ICON_OPTIONS.find(o => o.key === stat.icon_key);
+                const StatIcon = iconOpt?.Icon;
+                return (
+                  <div
+                    key={stat.id}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 p-4 rounded-lg border bg-muted/30"
+                  >
+                    <div className="flex items-center gap-2">
+                      {StatIcon && <StatIcon className="w-5 h-5 text-primary" />}
+                      <Select
+                        value={stat.icon_key}
+                        onValueChange={(v) => handleSaveStat(stat.id, { icon_key: v as WhyChooseUsIconKey })}
+                      >
+                        <SelectTrigger className="w-[130px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ICON_OPTIONS.map(({ key, label }) => (
+                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      placeholder="Value (e.g. 100+)"
+                      value={stat.stat_value}
+                      onChange={e => setStats(prev => prev.map(s => s.id === stat.id ? { ...s, stat_value: e.target.value } : s))}
+                      onBlur={e => {
+                        const v = e.target.value.trim();
+                        if (v !== stat.stat_value) handleSaveStat(stat.id, { stat_value: v });
+                      }}
+                    />
+                    <Input
+                      placeholder="Label (e.g. Successful Events)"
+                      value={stat.stat_label}
+                      onChange={e => setStats(prev => prev.map(s => s.id === stat.id ? { ...s, stat_label: e.target.value } : s))}
+                      onBlur={e => {
+                        const v = e.target.value.trim();
+                        if (v !== stat.stat_label) handleSaveStat(stat.id, { stat_label: v });
+                      }}
+                    />
+                    <Input
+                      placeholder="Description (optional)"
+                      value={stat.stat_description ?? ''}
+                      onChange={e => setStats(prev => prev.map(s => s.id === stat.id ? { ...s, stat_description: e.target.value || null } : s))}
+                      onBlur={e => {
+                        const v = e.target.value.trim() || null;
+                        if (v !== (stat.stat_description ?? '')) handleSaveStat(stat.id, { stat_description: v });
+                      }}
+                      className="md:col-span-2"
+                    />
+                    <div className="flex items-center gap-2">
+                      {saving === stat.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteStat(stat.id)} className="text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {stats.length < 4 && (
+              <Button onClick={handleAddStat} disabled={saving === 'add-stat'} className="mt-4">
+                {saving === 'add-stat' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                Add Stat Card
+              </Button>
+            )}
           </CardContent>
         </Card>
 

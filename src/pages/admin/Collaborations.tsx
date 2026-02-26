@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2, FolderPlus, FolderOpen, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2, FolderPlus, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -40,7 +40,6 @@ import {
   seedCollaborationFolders,
   type Collaboration,
   type CollaborationFolder,
-  type CollaborationImage,
 } from '@/services/collaborations';
 import { getPublicUrl } from '@/services/storage';
 import { toast } from 'sonner';
@@ -385,7 +384,7 @@ export default function AdminCollaborations() {
                     <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
                       <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-muted shrink-0">
                         {c.logo_url ? (
-                          <img src={resolveLogoUrl(c.logo_url)!} alt={c.name} className="w-full h-full object-cover" />
+                          <img src={resolveLogoUrl(c.logo_url)!} alt={c.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-sm">
                             {c.name.charAt(0)}
@@ -638,7 +637,7 @@ export default function AdminCollaborations() {
                           const globalIdx = galleryImages.findIndex(i => i === img);
                           return (
                             <div key={img.id ?? `${globalIdx}-${img.image_url}`} className="relative group w-14 h-14 rounded overflow-hidden border">
-                              <img src={img.image_url} alt="Collaboration gallery image" className="w-full h-full object-cover" />
+                              <img src={img.image_url} alt="Collaboration gallery image" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center">
                                 <Button type="button" variant="secondary" size="icon" className="h-5 w-5" onClick={() => removeImage(globalIdx)}><Trash2 className="w-3 h-3" /></Button>
                               </div>

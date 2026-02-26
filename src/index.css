@@ -1,5 +1,5 @@
-/* Typography (from phoenix-foundation-2): Playfair Display + Cormorant Garamond (headings), Poppins (body) */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+/* Typography: Cormorant Garamond (hero/display), Inter (UI/body). Elegant, refined weights. */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -29,17 +29,19 @@
     --gradient-champagne: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
     --gradient-rose-gold: linear-gradient(135deg, #E8AFC1 0%, #D998AE 100%);
     --gradient-parchment: linear-gradient(135deg, #FFF3F6 0%, #F5DCE3 100%);
-    /* Warm shadows – rgba(232, 175, 193, 0.18), no gray */
-    --shadow-warm: 0 4px 20px rgba(232, 175, 193, 0.18);
-    --shadow-warm-sm: 0 2px 10px rgba(232, 175, 193, 0.12);
-    --shadow-warm-md: 0 4px 20px rgba(232, 175, 193, 0.18);
-    --shadow-warm-lg: 0 8px 32px rgba(232, 175, 193, 0.20);
-    --shadow-warm-xl: 0 12px 48px rgba(232, 175, 193, 0.22);
+    /* Warm shadows – softer layered (ultra-premium) */
+    --shadow-warm: 0 4px 24px rgba(232, 175, 193, 0.15);
+    --shadow-warm-sm: 0 2px 12px rgba(232, 175, 193, 0.10);
+    --shadow-warm-md: 0 4px 24px rgba(232, 175, 193, 0.15);
+    --shadow-warm-lg: 0 8px 32px rgba(232, 175, 193, 0.16);
+    --shadow-warm-xl: 0 12px 48px rgba(232, 175, 193, 0.18);
     --shadow-sm: var(--shadow-warm-sm);
     --shadow-md: var(--shadow-warm-md);
     --shadow-lg: var(--shadow-warm-lg);
     --shadow-xl: var(--shadow-warm-xl);
-    --shadow-gold: 0 8px 24px rgba(232, 175, 193, 0.25);
+    --shadow-gold: 0 8px 24px rgba(232, 175, 193, 0.22);
+    /* Glass card inner highlight */
+    --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
     /* Soft radial rose glow – no white/blur overlay */
     --section-rose-glow: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(232, 175, 193, 0.14) 0%, transparent 55%);
     --section-rose-glow-bottom: radial-gradient(ellipse 100% 60% at 50% 100%, rgba(232, 175, 193, 0.10) 0%, transparent 55%);
@@ -51,12 +53,14 @@
     --card: 0 0% 100%;
     --card-foreground: 0 0% 18%;
 
+    /* Light: surface not used for layering; alias to card for compatibility */
+    --surface: 0 0% 100%;
+
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 18%;
 
-    /* Primary: #E8AFC1, Hover: #D998AE */
-    /* Primary: Rich Rose for better contrast (was 343 58% 80%) */
-    --primary: 340 55% 60%;
+    /* Primary: Dark pink for all pink text (light theme) */
+    --primary: 340 55% 52%;
     --primary-foreground: 0 0% 18%;
 
     /* Secondary: Soft Petal #F5DCE3 */
@@ -97,13 +101,17 @@
     --heading: 0 0% 18%;
     --section-bg: 340 100% 98.6%;
     --section-alt-bg: 340 100% 97.6%;
+    /* Section differentiation – alternating bands (light: Ivory → Champagne → Ivory) */
+    --section-band-1: #FFF8FA;
+    --section-band-2: #FFF3F6;
+    --section-band-3: #FFF8FA;
     --section-about: 340 100% 98%;
     --section-reels: 340 100% 97.5%;
     --section-contact: 340 45% 96%;
     --rose-light: 340 45% 91%;
     --rose-medium: 343 58% 80%;
     --divider: 340 40% 89%;
-    --primary-hover: 340 47% 72%;
+    --primary-hover: 340 55% 45%;
 
     /* Light theme extended – Pink Luxury */
     --light-primary-bg: #FFFFFF;
@@ -266,11 +274,14 @@
     --card: 221 49% 12%;
     --card-foreground: 215 25% 95%;
 
+    /* Third dark tone: between background and card (background < surface < card) */
+    --surface: 221 45% 15%;
+
     --popover: 219 47% 8%;
     --popover-foreground: 215 25% 95%;
 
-    /* Primary: Rose Gold Accent #E8AFC1 */
-    --primary: 343 58% 80%;
+    /* Primary: Dark pink for all pink text (dark theme: use soft pink) */
+    --primary: 343 55% 78%;
     --primary-foreground: 0 0% 18%;
 
     --secondary: 221 49% 14%;
@@ -306,6 +317,10 @@
     --section-bg: 219 47% 8%;
     /* Deep Navy */
     --section-alt-bg: 221 49% 12%;
+    /* Section differentiation – alternating bands (dark): same as footer #0B1220 for all sections except hero */
+    --section-band-1: #0B1220;
+    --section-band-2: #0B1220;
+    --section-band-3: #0B1220;
     /* Section Alternate */
     --section-about: 221 49% 12%;
     --section-reels: 219 47% 8%;
@@ -333,6 +348,11 @@
     --glass-bg: 221 49% 12% / 0.92;
     --glass-border: 343 58% 80% / 0.2;
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(232, 175, 193, 0.06);
+    /* Dark glass inner highlight (subtle) */
+    --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    /* Dark elevation + rose border glow on hover */
+    --elevation-glow-dark: 0 20px 60px rgba(0, 0, 0, 0.6);
+    --rose-border-glow: 0 0 0 1px rgba(232, 175, 193, 0.15);
 
     /* Dark gradients – navy luxury */
     --gradient-gold: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.85));
@@ -394,9 +414,9 @@
 
 @layer base {
   :root {
-    /* Typography scale */
-    --font-heading: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
-    --font-body: 'Poppins', 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    /* Typography scale – Cormorant (hero/display), Inter (body) */
+    --font-heading: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+    --font-body: 'Inter', system-ui, sans-serif;
     --text-hero: clamp(2.5rem, 5vw + 2rem, 5rem);
     --text-section: clamp(2rem, 3vw + 1.5rem, 3.5rem);
     --text-subsection: clamp(1.5rem, 2vw + 1rem, 2.25rem);
@@ -406,12 +426,14 @@
     --text-small: 0.875rem;
     --text-caption: 0.8125rem;
     --leading-heading: 1.25;
-    --leading-body: 1.75;
+    --leading-body: 1.65;
     --leading-tight: 1;
-    --tracking-hero: -0.02em;
+    --tracking-hero: -0.03em;
     --tracking-heading: -0.015em;
     --tracking-body: 0;
     --tracking-uppercase: 0.12em;
+    --tracking-eyebrow: 0.18em;
+    --text-eyebrow: 0.7rem;
   }
 
   * {
@@ -448,34 +470,407 @@
 
 @layer components {
 
-  /* Glass Card – warm shadow, subtle gradient; no heavy blur */
+  /* Glass Card – warm shadow, inner highlight, subtle gradient */
   .glass-card {
     @apply relative overflow-hidden rounded-2xl border;
     background: hsl(var(--glass-bg));
     border-color: hsl(var(--glass-border));
-    box-shadow: var(--glass-shadow);
+    box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
   }
 
-  /* Gold Gradient Text */
+  /* Hero heading – subtle gradient text (light theme) */
+  .hero-heading-gradient {
+    background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--foreground) / 0.92) 50%, hsl(var(--primary) / 0.95) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .dark .hero-heading-gradient {
+    background: linear-gradient(135deg, #F8FAFC 0%, hsl(var(--foreground)) 50%, hsl(var(--primary)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Section depth – layered background (base + gradient + noise + radials + soft blur) */
+  .section-depth-bg {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .section-depth-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    /* Base from band is set by .section-band-*; gradient overlay */
+    background-image:
+      linear-gradient(180deg, rgba(255, 248, 250, 0.4) 0%, transparent 30%, transparent 70%, rgba(255, 243, 246, 0.35) 100%);
+    opacity: 1;
+  }
+
+  .dark .section-depth-bg::before {
+    background-image:
+      linear-gradient(180deg, rgba(11, 18, 32, 0.5) 0%, transparent 25%, transparent 75%, rgba(16, 26, 47, 0.4) 100%);
+  }
+
+  .section-depth-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    /* Radial highlights – top-left and bottom-right (light) */
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% 5%, rgba(255, 248, 250, 0.7) 0%, transparent 45%),
+      radial-gradient(ellipse 70% 40% at 90% 95%, rgba(255, 243, 246, 0.5) 0%, transparent 45%);
+    opacity: 1;
+  }
+
+  .dark .section-depth-bg::after {
+    background-image:
+      radial-gradient(ellipse 60% 40% at 15% 10%, rgba(232, 175, 193, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 30% at 85% 90%, rgba(232, 175, 193, 0.05) 0%, transparent 50%);
+  }
+
+  /* Noise texture overlay (3–5% light, subtle dark) */
+  .section-depth-bg .section-depth-noise {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .dark .section-depth-bg .section-depth-noise {
+    opacity: 0.03;
+  }
+
+  /* Hero section – solid white background (no image) */
+  .hero-bg-wrapper {
+    position: relative;
+    isolation: isolate;
+    background-color: #ffffff;
+  }
+
+  .hero-bg-image {
+    display: none;
+  }
+
+  .hero-bg-overlay {
+    display: none;
+  }
+
+  /* Hero section content above; ensure white behind content */
+  .hero-bg-wrapper .hero-section-content {
+    position: relative;
+    z-index: 10;
+    background: transparent;
+  }
+
+  .dark .hero-bg-wrapper .hero-section-content {
+    background: hsl(var(--background));
+  }
+
+  .dark .hero-bg-wrapper {
+    background-color: hsl(var(--background));
+  }
+
+  /* Section band backgrounds – single colour for all (no gradient, no mismatch) */
+  .section-band-1 {
+    background-color: var(--section-band-1);
+  }
+
+  .section-band-2 {
+    background-color: var(--section-band-1);
+  }
+
+  .section-band-3 {
+    background-color: var(--section-band-1);
+  }
+
+  /* Flat sections: no gradient overlay, no noise – same colour everywhere */
+  .section-flat.section-depth-bg::before,
+  .section-flat.section-depth-bg::after {
+    opacity: 0;
+  }
+  .section-flat .section-depth-noise {
+    opacity: 0;
+  }
+
+  /* Defined border between sections */
+  .section-border-t {
+    border-top: 1px solid hsl(var(--border));
+  }
+  .dark .section-border-t {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Collaborations section – dark theme only: bg12.jpg as section background */
+  .section-collaborations-bg-image {
+    display: none;
+  }
+
+  .dark .section-collaborations .section-collaborations-bg-image {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image: url('/bg12.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.4;
+  }
+
+  /* About section – dark theme: dt1.jpg background */
+  .section-about-bg-image {
+    display: none;
+  }
+
+  .dark .section-about .section-about-bg-image {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image: url('/dt1.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.5;
+  }
+
+  .section-about-overlay {
+    display: none;
+  }
+
+  .dark .section-about .section-about-overlay {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(11, 18, 32, 0.7) 0%, rgba(11, 18, 32, 0.8) 100%);
+  }
+
+  /* Why Choose Us – dark theme: no bg image, solid section band only */
+  .section-why-choose-us-bg-image {
+    display: none;
+  }
+
+  .dark .section-why-choose-us .section-why-choose-us-bg-image {
+    display: none;
+  }
+
+  .section-why-choose-us > section {
+    position: relative;
+    z-index: 10;
+  }
+
+  .section-why-choose-us-overlay {
+    display: none;
+  }
+
+  .dark .section-why-choose-us .section-why-choose-us-overlay {
+    display: none;
+  }
+
+  /* Reels section: same as section-flat (kept for backwards compatibility) */
+  .section-reels.section-depth-bg::before,
+  .section-reels.section-depth-bg::after {
+    opacity: 0;
+  }
+  .section-reels .section-depth-noise {
+    opacity: 0;
+  }
+
+  /* Reels (Moments We've Crafted) – no background image in light or dark */
+  .section-reels-bg-image,
+  .dark .section-reels .section-reels-bg-image {
+    display: none;
+  }
+
+  /* Ensure reels content (header + carousel) stays visible above section background */
+  .section-reels > section {
+    position: relative;
+    z-index: 10;
+  }
+
+  .section-reels-overlay {
+    display: none;
+  }
+
+  .dark .section-reels .section-reels-overlay {
+    display: none;
+  }
+
+  /* Event Categories – no section background; container bg is in EventsSection */
+  .section-events.section-band-1 {
+    background-color: var(--section-band-1);
+  }
+
+  .section-events .section-events-bg-image,
+  .section-events .section-events-overlay {
+    display: none;
+  }
+
+  /* In light theme, hide depth gradients (handled by section-flat) */
+  .section-events.section-depth-bg::before,
+  .section-events.section-depth-bg::after {
+    opacity: 0;
+  }
+
+  .dark .section-events.section-depth-bg::before,
+  .dark .section-events.section-depth-bg::after {
+    opacity: 0;
+  }
+
+  .section-events > section {
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Testimonials – same flat band; dark theme: dt1.jpg background */
+  .section-testimonials-bg-image {
+    display: none;
+  }
+
+  .dark .section-testimonials-bg-image {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image: url('/dt1.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.5;
+  }
+
+  .dark .section-testimonials .section-testimonials-overlay {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(11, 18, 32, 0.72) 0%, rgba(11, 18, 32, 0.82) 100%);
+  }
+
+  .section-testimonials-overlay {
+    display: none;
+  }
+
+  .section-testimonials.section-depth-bg::before,
+  .section-testimonials.section-depth-bg::after {
+    opacity: 0;
+  }
+
+  .dark .section-testimonials.section-depth-bg::before,
+  .dark .section-testimonials.section-depth-bg::after {
+    opacity: 0;
+  }
+
+  .section-testimonials.section-band-1 {
+    background-color: var(--section-band-1);
+  }
+
+  .dark .section-testimonials.section-band-1 {
+    background-color: var(--section-band-1);
+  }
+
+  .section-testimonials section,
+  .section-testimonials > div.relative {
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Testimonial cards – solid background and defined border (no gradient) */
+  .section-testimonials .testimonial-card-item {
+    background-color: hsl(var(--card));
+    background-image: none;
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .section-testimonials .testimonial-card-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .section-testimonials .testimonial-card-item .text-foreground,
+  .section-testimonials .testimonial-card-item [class*="text-foreground"] {
+    color: var(--testimonial-name);
+  }
+
+  .section-testimonials .testimonial-card-item .text-muted-foreground,
+  .section-testimonials .testimonial-card-item [class*="text-muted"] {
+    color: var(--testimonial-desc);
+  }
+
+  .dark .section-testimonials .testimonial-card-item {
+    background-image: none;
+    background-color: var(--testimonial-card-bg);
+    border-color: var(--testimonial-card-border);
+    box-shadow: var(--testimonial-card-shadow);
+  }
+
+  .dark .section-testimonials .testimonial-card-item:hover {
+    box-shadow: var(--testimonial-card-hover-shadow);
+  }
+
+  /* Global grain overlay – cinematic feel (on top of everything) */
+  .global-grain-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    mix-blend-mode: overlay;
+  }
   .text-gradient-gold {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-gold);
   }
 
-  /* Elegant Button Styles */
+  /* Elegant Button Styles – ultra-premium */
   .btn-primary {
-    @apply relative overflow-hidden bg-primary text-primary-foreground px-8 py-4 rounded-full font-medium transition-all duration-300 hover:shadow-lg hover:scale-105;
-    box-shadow: 0 4px 20px hsl(var(--gold) / 0.3);
+    @apply relative overflow-hidden bg-primary text-primary-foreground rounded-full font-medium transition-all duration-300 hover:scale-[1.03];
+    padding: 0.625rem 1.5rem;
+    box-shadow:
+      0 4px 24px hsl(var(--gold) / 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
 
   .btn-primary:hover {
-    box-shadow: 0 8px 30px hsl(var(--gold) / 0.5);
+    box-shadow:
+      0 6px 28px hsl(var(--gold) / 0.4),
+      0 0 24px hsl(var(--primary) / 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 
   .btn-secondary {
-    @apply relative overflow-hidden border-2 border-primary text-primary bg-transparent px-8 py-4 rounded-full font-medium transition-all duration-300 hover:bg-primary hover:text-primary-foreground;
+    @apply relative overflow-hidden border-2 border-primary text-primary bg-transparent rounded-full font-medium transition-all duration-300 hover:bg-primary hover:text-primary-foreground;
+    padding: 0.625rem 1.5rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  /* Light theme only: solid primary buttons/badges → white bg, dark pink text + soft dark border (e.g. Plan Your Event, Client Love) */
+  html:not(.dark) .bg-primary.text-primary-foreground:not([role="checkbox"]) {
+    background-color: #ffffff !important;
+    color: hsl(var(--primary)) !important;
+    border: 2px solid #4A4A4A;
+  }
+  html:not(.dark) .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
+    background-color: hsl(var(--primary) / 0.12) !important;
+    color: hsl(var(--primary)) !important;
   }
 
   /* Photo Frame Effect – warm shadow */
@@ -511,6 +906,13 @@
       radial-gradient(ellipse 80% 60% at 80% 50%, rgba(232, 175, 193, 0.04) 0%, transparent 45%),
       radial-gradient(ellipse 80% 60% at 20% 80%, hsl(var(--primary) / 0.02) 0%, transparent 45%);
     background-attachment: scroll;
+  }
+
+  /* Homepage: no vertical margin between section wrappers or sections – bands touch */
+  .main-page-flow main > *,
+  .main-page-flow main section {
+    margin-top: 0;
+    margin-bottom: 0;
   }
 
   .dark .main-page-flow {
@@ -564,12 +966,13 @@
   .btn-glow-hover:focus-visible,
   button[class*="bg-primary"]:hover,
   a[class*="bg-primary"]:hover {
-    box-shadow: 0 6px 24px hsl(var(--primary) / 0.35), 0 0 20px hsl(var(--primary) / 0.15);
+    box-shadow: 0 6px 28px hsl(var(--primary) / 0.35), 0 0 24px hsl(var(--primary) / 0.12);
+    transform: scale(1.03);
   }
 
   button[class*="bg-primary"]:hover,
   a[class*="bg-primary"]:hover {
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.03);
   }
 
   /* Links: underline animation */
@@ -603,7 +1006,7 @@
 
   .card-lift:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(232, 175, 193, 0.18);
+    box-shadow: 0 4px 24px rgba(232, 175, 193, 0.15);
   }
 
   /* Section headings: reveal animation (use with Framer whileInView or add .in-view via JS) */
@@ -1126,24 +1529,24 @@
     background-size: 100% 70%, 100% 70%, auto;
   }
 
-  /* Eyebrow – 13px, uppercase, 2–3px letter-spacing (light: gold; dark: unchanged) */
+  /* Eyebrow – smaller, refined (0.7rem, wider letter-spacing) */
   .section-eyebrow {
     font-family: var(--font-body);
-    font-size: var(--text-caption);
+    font-size: var(--text-eyebrow);
     font-weight: 500;
-    letter-spacing: var(--tracking-uppercase);
+    letter-spacing: var(--tracking-eyebrow);
     @apply uppercase text-primary dark:text-muted-foreground mb-3;
   }
 
   .section-eyebrow-on-dark {
     font-family: var(--font-body);
-    font-size: var(--text-caption);
+    font-size: var(--text-eyebrow);
     font-weight: 500;
-    letter-spacing: var(--tracking-uppercase);
+    letter-spacing: var(--tracking-eyebrow);
     @apply uppercase text-ivory/70 mb-3;
   }
 
-  /* Section heading – 48–56px desktop, 32px mobile */
+  /* Section heading – increased contrast */
   .section-heading {
     font-family: var(--font-heading);
     font-size: var(--text-section);
@@ -1151,6 +1554,11 @@
     line-height: var(--leading-heading);
     letter-spacing: var(--tracking-heading);
     @apply text-foreground mb-4;
+    color: hsl(0 0% 15%);
+  }
+
+  .dark .section-heading {
+    color: hsl(var(--foreground));
   }
 
   .section-heading-on-dark {
@@ -1269,13 +1677,15 @@
     }
   }
 
-  /* Scrollbar Styling */
+  /* Scrollbar: normal, always visible when content overflows */
   ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
     background: hsl(var(--muted));
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
@@ -1285,6 +1695,12 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary));
+  }
+
+  /* Firefox: thin scrollbar, always visible */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.5) hsl(var(--muted));
   }
 
   /* Hide scrollbar for Chrome, Safari and Opera */
@@ -1364,6 +1780,12 @@
   .collaborations-logo-mask {
     mask-image: linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%);
+  }
+
+  /* Collaborations section: no edge fade so no whitish strips on left/right */
+  .collaborations-logo-mask-no-fade {
+    mask-image: none;
+    -webkit-mask-image: none;
   }
 
   .collaborations-logo-track {

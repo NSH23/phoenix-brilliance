@@ -13,11 +13,13 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const { contact } = useSiteConfig();
+  const { contact, logoUrl } = useSiteConfig();
+  const logoSrc = logoUrl || '/logo.png';
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [isDark, setIsDark] = useState(false);
+  const [showDesktopNumber, setShowDesktopNumber] = useState(false);
   const lastScrollY = useRef(0);
 
   // Detect dark theme
@@ -95,16 +97,18 @@ export default function Navbar() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
+            <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
               <div className="relative">
                 <img
-                  src="/logo.png"
+                  src={logoSrc}
                   alt="Phoenix Events & Production Logo"
-                  className="w-9 h-9 sm:w-11 sm:h-11 object-contain transition-all duration-300 group-hover:scale-105 opacity-100"
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain transition-all duration-300 group-hover:scale-105 opacity-100"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
-              <div className="flex flex-col">
-                <span className={`font-serif text-base sm:text-xl font-bold transition-colors duration-300
+              <div className="flex flex-col leading-tight">
+                <span className={`font-serif text-xl sm:text-2xl font-semibold tracking-tight transition-colors duration-300
                                ${scrolled
                     ? isDark
                       ? 'text-white'
@@ -114,7 +118,7 @@ export default function Navbar() {
                       : 'text-[#1A1A2E]'}`}>
                   Phoenix
                 </span>
-                <span className={`text-[10px] sm:text-xs tracking-widest uppercase transition-colors duration-300
+                <span className={`text-xs sm:text-sm tracking-[0.14em] uppercase font-sans font-medium transition-colors duration-300
                                ${scrolled
                     ? isDark
                       ? 'text-primary'
@@ -133,7 +137,7 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className={`relative px-4 py-2 rounded-full text-sm font-medium tracking-wide 
+                  className={`relative px-4 py-2 rounded-full text-sm font-medium font-sans tracking-[0.02em] 
                               transition-all duration-300 group
                               ${scrolled
                       ? isDark
@@ -155,22 +159,23 @@ export default function Navbar() {
             <div className="flex items-center gap-2 sm:gap-3">
               <ThemeToggle />
 
-              <a
-                href={`tel:${contact.phone.replace(/\s/g, '')}`}
+              {/* Desktop: show "Contact" until clicked, then show number; mobile: tel link in menu */}
+              <button
+                type="button"
+                onClick={() => setShowDesktopNumber(true)}
                 className={`hidden md:flex items-center gap-2 px-7 py-3 rounded-[30px] 
-                          font-semibold text-sm tracking-[0.5px] transition-all duration-300 
-                          hover:shadow-[0_6px_24px_hsl(var(--primary)_/_0.35)] group
+                          font-medium text-sm font-sans tracking-[0.02em] transition-all duration-300 
                           ${scrolled
                     ? isDark
-                      ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40'
-                      : 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35'
+                      ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/30'
+                      : 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/25'
                     : isDark
-                      ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40'
-                      : 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35'}`}
+                      ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/30'
+                      : 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/25'}`}
               >
-                <Phone className="w-4 h-4 group-hover:animate-pulse" />
-                <span>Contact</span>
-              </a>
+                <Phone className="w-4 h-4" />
+                <span>{showDesktopNumber ? contact.phone : "Contact"}</span>
+              </button>
 
               {/* Mobile Menu Button */}
               <button
@@ -249,7 +254,7 @@ export default function Navbar() {
                       to={link.href}
                       onClick={() => setIsOpen(false)}
                       className="flex items-center justify-between py-4 px-4 rounded-xl
-                                 text-xl font-serif font-medium text-foreground 
+                                 text-xl font-sans font-medium text-foreground 
                                  hover:bg-primary/10 hover:text-primary transition-all duration-300
                                  border-b border-border/30 group"
                     >
@@ -273,7 +278,7 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center gap-3 w-full px-6 py-4 
                            bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
-                           rounded-2xl font-semibold text-lg shadow-xl shadow-primary/30
+                           rounded-2xl font-medium font-sans text-lg tracking-[0.02em] shadow-xl shadow-primary/30
                            hover:shadow-2xl hover:scale-[1.02] transition-all duration-300"
                 >
                   <Phone className="w-5 h-5" />
@@ -288,8 +293,8 @@ export default function Navbar() {
                 transition={{ delay: 0.5, duration: 0.3 }}
                 className="mt-auto pt-8 flex items-center justify-center gap-2 text-muted-foreground"
               >
-                <img src="/logo.png" alt="Phoenix" className="w-6 h-6 object-contain" />
-                <span className="text-sm">Creating Magical Moments</span>
+                <img src={logoSrc} alt="Phoenix" className="w-6 h-6 object-contain" loading="lazy" decoding="async" />
+                <span className="text-sm font-sans text-muted-foreground">Creating Magical Moments</span>
               </motion.div>
             </motion.div>
           </motion.div>

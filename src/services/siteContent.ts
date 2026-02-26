@@ -187,6 +187,38 @@ export async function updateSiteSetting(key: string, value: string) {
   return data as SiteSetting;
 }
 
+/** About section 3D flip cards: 6 front + 6 back image URLs (managed in admin Gallery) */
+export const ABOUT_SECTION_FLIP_KEY = 'about_section_flip_images';
+
+export interface AboutSectionFlipImages {
+  front: string[];
+  back: string[];
+}
+
+export async function getAboutSectionFlipImagesOptional(): Promise<AboutSectionFlipImages | null> {
+  const raw = await getSiteSettingOptional(ABOUT_SECTION_FLIP_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { front?: unknown; back?: unknown };
+    const front = Array.isArray(parsed.front)
+      ? parsed.front.filter((u): u is string => typeof u === 'string').slice(0, 6)
+      : [];
+    const back = Array.isArray(parsed.back)
+      ? parsed.back.filter((u): u is string => typeof u === 'string').slice(0, 6)
+      : [];
+    if (front.length === 0 && back.length === 0) return null;
+    return { front, back };
+  } catch {
+    return null;
+  }
+}
+
+export async function upsertAboutSectionFlipImages(payload: AboutSectionFlipImages): Promise<void> {
+  const front = (payload.front || []).slice(0, 6);
+  const back = (payload.back || []).slice(0, 6);
+  await upsertSiteSetting(ABOUT_SECTION_FLIP_KEY, JSON.stringify({ front, back }), 'json');
+}
+
 // Social Links
 export async function getActiveSocialLinks() {
   const { data, error } = await supabase

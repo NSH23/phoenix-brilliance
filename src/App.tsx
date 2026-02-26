@@ -51,6 +51,7 @@ const AdminContentMedia = lazy(() => import("./pages/admin/ContentMedia"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminTeam = lazy(() => import("./pages/admin/Team"));
 const AdminSetPassword = lazy(() => import("./pages/admin/SetPassword"));
+const AdminWhyUs = lazy(() => import("./pages/admin/WhyUs"));
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 
 // Loading component for Suspense fallback
@@ -121,6 +122,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <AdminServices />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/why-us"
+            element={
+              <ProtectedRoute>
+                <AdminWhyUs />
               </ProtectedRoute>
             }
           />
@@ -203,6 +212,7 @@ const App = () => (
             <LeadCaptureProvider>
               <ScrollToTop />
               <GlobalBackground />
+              <div className="global-grain-overlay" aria-hidden />
               <LeadCaptureModal />
               <AppRoutes />
             </LeadCaptureProvider>

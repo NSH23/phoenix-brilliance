@@ -359,11 +359,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const resendVerificationEmail = async (email: string): Promise<{ success: boolean; message?: string }> => {
     try {
+      const baseUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/admin`,
+          emailRedirectTo: `${baseUrl}/admin`,
         },
       });
 

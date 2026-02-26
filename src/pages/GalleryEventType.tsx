@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getActiveEvents, getEventBySlug, Event } from "@/services/events";
-import { getAllAlbums, getAlbumsByEventId, getAlbumMedia, Album } from "@/services/albums";
+import { getAllAlbums, getAlbumMedia, Album } from "@/services/albums";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
 
@@ -160,6 +160,8 @@ const GalleryEventType = () => {
                 src={event.cover_image || '/placeholder.svg'}
                 alt={event.title}
                 className="w-full h-full object-cover opacity-20"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/placeholder.svg';
                 }}
@@ -208,7 +210,7 @@ const GalleryEventType = () => {
               </span>
             </motion.span>
 
-            <h1 className="text-4xl sm:text-5xl font-serif font-bold mb-4">
+            <h1 className="text-4xl sm:text-5xl font-serif font-semibold mb-4">
               {isAllAlbums ? (
                 <>All <span className="text-gradient-gold">Albums</span></>
               ) : (
@@ -246,7 +248,7 @@ const GalleryEventType = () => {
               className="text-center py-16"
             >
               <Images className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-              <h3 className="text-xl font-serif font-bold mb-2">No Albums Yet</h3>
+              <h3 className="text-xl font-serif font-semibold mb-2">No Albums Yet</h3>
               <p className="text-muted-foreground mb-6">
                 We're still adding albums to this category. Check back soon!
               </p>
@@ -287,6 +289,8 @@ const GalleryEventType = () => {
                           alt={album.title}
                           className={`w-full h-full object-cover transition-all duration-700
                                     ${hoveredAlbum === album.id ? 'scale-110' : 'scale-100'}`}
+                          loading="lazy"
+                          decoding="async"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/placeholder.svg';
                           }}
@@ -368,7 +372,7 @@ const GalleryEventType = () => {
       {!isAllAlbums && allEvents.length > 1 && (
         <section className="py-12 sm:py-16 bg-muted/30">
           <div className="container mx-auto px-4">
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-8 text-center">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-8 text-center">
               Explore Other <span className="text-gradient-gold">Categories</span>
             </h2>
             <div className="flex flex-wrap justify-center gap-3">

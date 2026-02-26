@@ -10,7 +10,8 @@ export type BucketName =
   | 'admin-avatars'
   | 'team-photos'
   | 'team-documents'
-  | 'service-images';
+  | 'service-images'
+  | 'site-logo';
 
 /**
  * Upload a file to Supabase Storage

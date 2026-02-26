@@ -189,6 +189,7 @@ function TestimonialCard({
           alt={testimonial.name}
           className="w-8 h-8 rounded-full object-cover border-2 border-card shadow-sm flex-shrink-0"
           loading="lazy"
+          decoding="async"
           onError={(e) => {
             (e.target as HTMLImageElement).src = getAvatarUrl(testimonial.name);
           }}
@@ -264,11 +265,11 @@ const TestimonialsSection = () => {
 
         <div className="flex flex-wrap justify-center gap-5 mb-5">
           <div className="text-center">
-            <p className="text-xl font-bold text-primary">500+</p>
+            <p className="text-xl font-serif font-semibold text-primary">500+</p>
             <p className="text-xs text-muted-foreground">Happy Clients</p>
           </div>
           <div className="text-center">
-            <p className="text-xl font-bold text-primary">4.9/5.0</p>
+            <p className="text-xl font-serif font-semibold text-primary">4.9/5.0</p>
             <p className="text-xs text-muted-foreground">Average Rating</p>
           </div>
         </div>

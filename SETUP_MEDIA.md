@@ -8,7 +8,8 @@ To support the new "Manage Videos" feature and other dynamic content, you need t
 4.  Enter the name: `content-media`.
 5.  **Toggle "Public bucket" to ON**.
 6.  Click **Save**.
-7.  After creating the bucket, **run the SQL migration** `supabase/migrations/20240215_create_content_media.sql` in the **SQL Editor** to create the table and apply the storage policies.
+7.  **Optional but recommended for video uploads:** Open the `content-media` bucket → **Settings** → under **Allowed MIME types** add: `video/mp4`, `video/webm`, `image/jpeg`, `image/png`, `image/webp`, `image/gif`. (Or leave empty to allow all.)
+8.  After creating the bucket, **run the SQL migration** `supabase/migrations/20240215_create_content_media.sql` in the **SQL Editor** to create the table and apply the storage policies.
 
 ## Existing Buckets Reminder
 Ensure these buckets also exist and are public:

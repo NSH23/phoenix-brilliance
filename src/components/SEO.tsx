@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useSiteConfig } from '@/contexts/SiteConfigContext';
 
 interface SEOProps {
   title?: string;
@@ -13,24 +14,27 @@ const getBaseUrl = () =>
   import.meta.env.VITE_SITE_URL ||
   (typeof window !== 'undefined' ? window.location.origin : '');
 
-export function SEO({ 
+export function SEO({
   title = 'Phoenix Events & Production',
   description = 'Premium event planning and production services in Pune, Maharashtra',
-  image = '/logo.png',
+  image,
   url,
   type = 'website',
   keywords
 }: SEOProps) {
   const baseUrl = getBaseUrl();
+  const { logoUrl } = useSiteConfig();
+  const defaultImage = logoUrl || '/logo.png';
+  const imageProp = image ?? defaultImage;
   const fullTitle = title === 'Phoenix Events & Production' 
     ? title 
     : `${title} | Phoenix Events & Production`;
   
   const fullUrl = url ? `${baseUrl}${url}` : baseUrl;
-  
-  const imageUrl = image.startsWith('http') 
-    ? image 
-    : `${baseUrl}${image}`;
+
+  const imageUrl = imageProp.startsWith('http')
+    ? imageProp
+    : `${baseUrl}${imageProp}`;
 
   return (
     <Helmet>

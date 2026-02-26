@@ -26,17 +26,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { getAllEvents, createEvent, updateEvent, deleteEvent, Event } from '@/services/events';
 import { getEventImages, setEventImages } from '@/services/eventImages';
-import { getSiteSettingOptional, upsertSiteSetting } from '@/services/siteContent';
-import { GALLERY_FRAME_TEMPLATES, type GalleryFrameTemplateId } from '@/lib/galleryFrames';
 import { toast } from 'sonner';
 
 const MIN_EVENT_IMAGES = 3;
@@ -260,6 +251,8 @@ export default function AdminEvents() {
                         src={event.cover_image || '/placeholder.svg'}
                         alt={event.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}

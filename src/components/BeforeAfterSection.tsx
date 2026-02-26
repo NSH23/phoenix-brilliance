@@ -72,6 +72,8 @@ function ImageCompareSlider({
         alt={alt}
         className="absolute inset-0 w-full h-full object-cover"
         draggable={false}
+        loading="lazy"
+        decoding="async"
         onError={(e) => {
           (e.target as HTMLImageElement).src = "/placeholder.svg";
         }}
@@ -87,6 +89,8 @@ function ImageCompareSlider({
           alt={alt}
           className="absolute inset-0 w-full h-full object-cover"
           draggable={false}
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
             (e.target as HTMLImageElement).src = "/placeholder.svg";
           }}

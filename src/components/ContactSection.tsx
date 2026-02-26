@@ -1,8 +1,19 @@
+import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
-
 import ContactForm from "./ContactForm";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
+
+const MAP_ADDRESS = "Shop no 1, Phoenix Events and Production, Kailas kondiba Dange Plot, Unit 4, Dange Chowk Rd, nr. CBI Crime Branch, nr. Maruti Suzuki Showroom, Pune, Maharashtra 411033";
+const CONTACT_EMAIL = "Phoenixeventsandproduction@gmail.com";
+const CONTACT_PHONE = "+91 70667 63276";
+const CONTACT_PHONE_2 = "+91 97667 97234";
+const WHATSAPP_NUM = "917066763276";
+const INSTAGRAM_URL = "https://www.instagram.com/phoenix_events_and_production?igsh=MW1nMDh4dmg2ZWNvNA==";
 
 const ContactSection = () => {
+  const { contact } = useSiteConfig();
+  const phone = contact?.phone || CONTACT_PHONE;
+  const whatsappNum = (contact?.phone?.replace(/\D/g, '') || WHATSAPP_NUM);
 
   return (
     <section id="contact" className="py-12 sm:py-16 lg:py-24 pb-24 sm:pb-24 bg-background relative overflow-hidden">
@@ -19,15 +30,15 @@ const ContactSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-8 sm:py-10 px-6 sm:px-8 mb-8 sm:mb-12"
+          className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-elevation-1 dark:shadow-elevation-1-dark py-8 sm:py-10 px-6 sm:px-8 mb-8 sm:mb-12"
         >
-          <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+          <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium font-sans mb-3 sm:mb-4">
             Get In Touch
           </span>
-          <h2 className="section-title mb-2 sm:mb-3 text-2xl sm:text-3xl md:text-4xl">
+          <h2 className="section-title font-serif font-semibold mb-2 sm:mb-3 text-2xl sm:text-3xl md:text-4xl text-foreground">
             Let's Plan Your <span className="text-gradient-gold">Dream Event</span>
           </h2>
-          <p className="section-subtitle text-sm sm:text-base max-w-lg mx-auto text-muted-foreground">
+          <p className="section-subtitle text-sm sm:text-base max-w-lg mx-auto text-muted-foreground font-sans leading-relaxed">
             Ready to create something extraordinary? Let's bring your vision to life.
           </p>
         </motion.div>
@@ -36,7 +47,7 @@ const ContactSection = () => {
         <div className="sm:hidden mb-6">
           <div className="grid grid-cols-2 gap-3">
             <a
-              href="https://wa.me/1234567890?text=Hi! I'm interested in your event services."
+              href={`https://wa.me/${whatsappNum}?text=Hi! I'm interested in your event services.`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 p-4 rounded-2xl 
@@ -49,7 +60,7 @@ const ContactSection = () => {
               <span>WhatsApp</span>
             </a>
             <a
-              href="tel:+1234567890"
+              href={`tel:${phone.replace(/\s/g, '')}`}
               className="flex items-center justify-center gap-2 p-4 rounded-2xl 
                        bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                        font-semibold text-sm shadow-lg active:scale-95 transition-transform"
@@ -73,21 +84,21 @@ const ContactSection = () => {
             <div className="sm:hidden mb-4">
               <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory">
                 {[
-                  { icon: MapPin, title: "Visit Us", info: "Mumbai, Maharashtra" },
-                  { icon: Phone, title: "Call Us", info: "+91 98765 43210" },
-                  { icon: Mail, title: "Email Us", info: "hello@phoenixevents.com" },
+                  { icon: MapPin, title: "Visit Us", info: "Pune, Maharashtra" },
+                  { icon: Phone, title: "Call Us", info: CONTACT_PHONE },
+                  { icon: Mail, title: "Email Us", info: CONTACT_EMAIL },
                   { icon: Clock, title: "Working Hours", info: "Mon-Sat: 10AM-8PM" },
                 ].map((item, idx) => (
                   <div
                     key={item.title}
                     className="flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-2xl 
-                             bg-card border border-border/50 min-w-[140px] max-w-[140px] text-center snap-start"
+                             bg-card border border-border shadow-elevation-1 dark:shadow-elevation-1-dark min-w-[140px] max-w-[140px] text-center snap-start"
                   >
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
                       <item.icon className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="font-medium text-foreground text-xs">{item.title}</p>
-                    <p className="text-muted-foreground text-[10px] mt-0.5">{item.info}</p>
+                    <p className="font-medium text-foreground text-xs font-sans">{item.title}</p>
+                    <p className="text-muted-foreground text-[10px] mt-0.5 font-sans">{item.info}</p>
                   </div>
                 ))}
               </div>
@@ -96,7 +107,7 @@ const ContactSection = () => {
             {/* Mobile: Map with square size */}
             <div className="sm:hidden glass-card overflow-hidden rounded-2xl aspect-square w-full">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241316.6433282176!2d72.74109978826069!3d19.082502009547596!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c6306644edc1%3A0x5da4ed8f8d648c69!2sMumbai%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1699999999999!5m2!1sen!2sin"
+                src="https://www.google.com/maps?q=Shop+no+1,+Phoenix+Events+and+Production,+Kailas+kondiba+Dange+Plot,+Unit+4,+Dange+Chowk+Rd,+nr.+CBI+Crime+Branch,+nr.+Maruti+Suzuki+Showroom,+Pune,+Maharashtra+411033&output=embed&zoom=17"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -109,7 +120,7 @@ const ContactSection = () => {
 
             {/* Desktop: Full contact card */}
             <div className="hidden sm:block glass-card p-5 lg:p-6">
-              <h3 className="font-serif text-xl lg:text-2xl font-bold text-foreground mb-5 lg:mb-6">Contact Information</h3>
+              <h3 className="font-serif text-xl lg:text-2xl font-semibold text-foreground mb-5 lg:mb-6">Contact Information</h3>
 
               <div className="space-y-4 lg:space-y-5">
                 <div className="flex items-start gap-3 lg:gap-4">
@@ -117,8 +128,8 @@ const ContactSection = () => {
                     <MapPin className="w-4 h-4 lg:w-5 lg:h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground text-sm lg:text-base">Visit Us</p>
-                    <p className="text-muted-foreground text-xs lg:text-sm">123 Event Plaza, Creative District<br />Mumbai, Maharashtra 400001</p>
+                    <p className="font-medium text-foreground text-sm lg:text-base font-sans">Visit Us</p>
+                    <p className="text-muted-foreground text-xs lg:text-sm whitespace-pre-line font-sans">{contact?.address || MAP_ADDRESS}</p>
                   </div>
                 </div>
 
@@ -127,8 +138,12 @@ const ContactSection = () => {
                     <Phone className="w-4 h-4 lg:w-5 lg:h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground text-sm lg:text-base">Call Us</p>
-                    <p className="text-muted-foreground text-xs lg:text-sm">+91 98765 43210<br />+91 87654 32109</p>
+                    <p className="font-medium text-foreground text-sm lg:text-base font-sans">Call Us</p>
+                    <p className="text-muted-foreground text-xs lg:text-sm font-sans">
+                      <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-primary">{phone}</a>
+                      <br />
+                      <a href="tel:+919766797234" className="hover:text-primary">{CONTACT_PHONE_2}</a>
+                    </p>
                   </div>
                 </div>
 
@@ -137,8 +152,10 @@ const ContactSection = () => {
                     <Mail className="w-4 h-4 lg:w-5 lg:h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground text-sm lg:text-base">Email Us</p>
-                    <p className="text-muted-foreground text-xs lg:text-sm">hello@phoenixevents.com<br />bookings@phoenixevents.com</p>
+                    <p className="font-medium text-foreground text-sm lg:text-base font-sans">Email Us</p>
+                    <p className="text-muted-foreground text-xs lg:text-sm font-sans">
+                      <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-primary">{CONTACT_EMAIL}</a>
+                    </p>
                   </div>
                 </div>
 
@@ -147,8 +164,8 @@ const ContactSection = () => {
                     <Clock className="w-4 h-4 lg:w-5 lg:h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground text-sm lg:text-base">Working Hours</p>
-                    <p className="text-muted-foreground text-xs lg:text-sm">Mon - Sat: 10:00 AM - 8:00 PM<br />Sunday: By Appointment</p>
+                    <p className="font-medium text-foreground text-sm lg:text-base font-sans">Working Hours</p>
+                    <p className="text-muted-foreground text-xs lg:text-sm font-sans">Mon - Sat: 10:00 AM - 8:00 PM<br />Sunday: By Appointment</p>
                   </div>
                 </div>
               </div>
@@ -157,7 +174,7 @@ const ContactSection = () => {
             {/* Map - Hidden on mobile */}
             <div className="hidden sm:block glass-card overflow-hidden h-40 lg:h-48">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241316.6433282176!2d72.74109978826069!3d19.082502009547596!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c6306644edc1%3A0x5da4ed8f8d648c69!2sMumbai%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1699999999999!5m2!1sen!2sin"
+                src="https://www.google.com/maps?q=Shop+no+1,+Phoenix+Events+and+Production,+Kailas+kondiba+Dange+Plot,+Unit+4,+Dange+Chowk+Rd,+nr.+CBI+Crime+Branch,+nr.+Maruti+Suzuki+Showroom,+Pune,+Maharashtra+411033&output=embed&zoom=17"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -178,7 +195,7 @@ const ContactSection = () => {
             className="lg:col-span-3"
           >
             <div className="glass-card p-3 sm:p-6 lg:p-8">
-              <h3 className="font-serif text-base sm:text-xl lg:text-2xl font-bold text-foreground mb-3 sm:mb-6">
+              <h3 className="font-serif text-base sm:text-xl lg:text-2xl font-semibold text-foreground mb-3 sm:mb-6">
                 Request a Quote
               </h3>
               <ContactForm />

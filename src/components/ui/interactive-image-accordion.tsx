@@ -42,6 +42,7 @@ const InteractiveImageAccordion = ({
                 alt={item.alt}
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
+                decoding="async"
               />
 
               {/* Overlay */}
@@ -117,6 +118,7 @@ const InteractiveImageAccordion = ({
               alt={item.alt}
               className="absolute inset-0 w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
 
             {/* Overlay */}

@@ -36,7 +36,8 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
               src={image}
               alt={title}
               loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-700 
+              decoding="async"
+              className="w-full h-full object-cover transition-transform duration-700
                        group-hover:scale-110"
             />
             
@@ -111,7 +112,7 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
             </button>
             
             <div className="aspect-[16/10] sm:aspect-video">
-              <img src={image} alt={title} className="w-full h-full object-cover" />
+              <img src={image} alt={title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
             </div>
             
             <div className="p-5 sm:p-6 md:p-8">

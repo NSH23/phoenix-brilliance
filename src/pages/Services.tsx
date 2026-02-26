@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { SEO } from "@/components/SEO";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { getActiveServices, Service } from "@/services/services";
 import { getServiceIcon } from "@/lib/serviceIcons";
 
@@ -136,7 +137,7 @@ function ServiceCard({ service, index }: ServiceCardProps) {
         </div>
 
         {/* Title */}
-        <h3 className="font-serif font-bold text-foreground text-xl sm:text-[22px] mb-3 leading-tight
+        <h3 className="font-serif font-semibold text-foreground text-xl sm:text-[22px] mb-3 leading-tight
                        group-hover:text-primary transition-colors duration-300">
           {service.title}
         </h3>
@@ -221,6 +222,7 @@ function TrustItem({ icon, title, description }: TrustItemProps) {
 }
 
 export default function Services() {
+  const { contact } = useSiteConfig();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDark, setIsDark] = useState(false);
@@ -522,7 +524,7 @@ export default function Services() {
               <div className="flex justify-center mb-4 sm:mb-5">
                 <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-primary" aria-hidden />
               </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 sm:mb-4 text-foreground">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold mb-3 sm:mb-4 text-foreground">
                 Ready to create your <span className="text-primary">dream event</span>?
               </h2>
               <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8 max-w-xl mx-auto">
@@ -537,7 +539,7 @@ export default function Services() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
-                  href="tel:+919876543210"
+                  href={`tel:${(contact?.phone || "+917066763276").replace(/\s/g, "")}`}
                   className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 py-3.5 rounded-full border-2 border-primary text-primary font-semibold text-sm hover:bg-primary/10 transition-all w-full sm:w-auto"
                 >
                   <Phone className="w-4 h-4" />

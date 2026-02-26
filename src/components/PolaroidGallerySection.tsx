@@ -114,6 +114,7 @@ function FrameImage({ src, alt, category, frameId }: FrameImageProps) {
               alt={alt}
               className="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
               onError={() => setImgError(true)}
             />
           ) : (

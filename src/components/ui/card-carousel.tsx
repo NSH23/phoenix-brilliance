@@ -22,6 +22,12 @@ interface CarouselProps {
     showNavigation?: boolean
     title?: string
     description?: string
+    /** When true, title and description are not rendered (e.g. when section provides its own header) */
+    showHeader?: boolean
+    /** When true, container spans full width (no max-width constraint) */
+    fullWidth?: boolean
+    /** When true, adds extra space above pagination dots (~1cm) */
+    paginationSpaced?: boolean
 }
 
 interface VideoSlideProps {
@@ -133,7 +139,10 @@ export const CardCarousel: React.FC<CarouselProps> = ({
     showPagination = true,
     showNavigation = true,
     title = "Card Carousel",
-    description = "Seamless Images carousel animation."
+    description = "Seamless Images carousel animation.",
+    showHeader = true,
+    fullWidth = false,
+    paginationSpaced = false,
 }) => {
     const swiperRef = useRef<SwiperType | null>(null)
     const [activeIndex, setActiveIndex] = useState(0)
@@ -189,7 +198,8 @@ export const CardCarousel: React.FC<CarouselProps> = ({
     }, [])
 
     const css = `
-  .swiper { width: 100%; padding-bottom: 50px; }
+  .swiper { width: 100%; padding-bottom: 24px; }
+  .swiper.reels-pagination-spaced { padding-bottom: 56px; }
   .swiper-slide { background-position: center; background-size: cover; width: 420px; }
   @media (max-width: 768px) { .swiper-slide { width: 300px; } }
   .swiper-slide img, .swiper-slide video { display: block; width: 100%; }
@@ -197,21 +207,24 @@ export const CardCarousel: React.FC<CarouselProps> = ({
   `
 
     return (
-        <section className="w-full space-y-4">
+        <section className="w-full space-y-2">
             <style>{css}</style>
-            <div className="mx-auto w-full rounded-[24px] border border-black/5 p-2 shadow-sm md:rounded-t-[44px]">
-                <div className="relative mx-auto flex w-full flex-col rounded-[24px] border border-black/5 bg-neutral-800/5 p-2 shadow-sm md:items-start md:gap-8 md:rounded-b-[20px] md:rounded-t-[40px] md:p-2">
-                    <div className="flex flex-col justify-center pb-2 pl-4 pt-14 md:items-center w-full">
-                        <div className="flex gap-2 text-center">
-                            <div>
-                                <h3 className="text-4xl md:text-5xl font-bold tracking-tight text-primary mb-2">{title}</h3>
-                                <p className="text-lg md:text-xl text-muted-foreground dark:text-muted-foreground/80 max-w-2xl mx-auto">{description}</p>
+            <div className={`mx-auto w-full rounded-2xl border border-border/60 bg-card/40 dark:bg-card/20 backdrop-blur-sm p-4 md:p-6 shadow-elevation-1 dark:shadow-elevation-1-dark ${fullWidth ? "max-w-none" : "max-w-6xl"}`}>
+                <div className="relative mx-auto flex w-full flex-col gap-4 md:gap-6">
+                    {showHeader && (title || description) && (
+                        <div className="flex flex-col justify-center pb-1 pl-0 pt-0 md:items-center w-full">
+                            <div className="flex gap-2 text-center">
+                                <div>
+                                    <h3 className="text-4xl md:text-5xl font-serif font-semibold tracking-tight text-primary mb-2">{title}</h3>
+                                    <p className="text-lg md:text-xl text-muted-foreground dark:text-muted-foreground/80 max-w-2xl mx-auto">{description}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                     <div className="flex w-full items-center justify-center gap-4">
                         <div className="w-full">
                             <Swiper
+                                className={paginationSpaced ? "reels-pagination-spaced" : undefined}
                                 onSwiper={(swiper) => { swiperRef.current = swiper }}
                                 onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
                                 spaceBetween={50}
@@ -240,10 +253,12 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                 }
                                 modules={[EffectCoverflow, Autoplay, Pagination, Navigation]}
                             >
-                                {images.map((image, index) => (
-                                    <SwiperSlide key={index}>
-                                        <div className="size-full rounded-3xl overflow-hidden aspect-[3/4] relative bg-black">
-                                            {image.src.match(/\.(mp4|webm)$/i) ? (
+                                {images.map((image, index) => {
+                                    const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(image.src) || image.src.includes('/video') || image.src.includes('content-media');
+                                    return (
+                                    <SwiperSlide key={`${index}-${image.src}`}>
+                                        <div className="group size-full rounded-3xl overflow-hidden aspect-[3/4] relative bg-black/80 border border-border/50 dark:border-white/10 shadow-elevation-1 dark:shadow-elevation-1-dark">
+                                            {isVideo ? (
                                                 <VideoSlide
                                                     src={image.src}
                                                     index={index}
@@ -254,12 +269,12 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                                     swiperRef={swiperRef}
                                                 />
                                             ) : (
-                                                <img src={image.src} className="size-full object-cover rounded-xl" alt={image.alt} />
+                                                <img src={image.src} className="size-full object-cover rounded-xl" alt={image.alt} loading="lazy" decoding="async" />
                                             )}
-                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all duration-300 pointer-events-none" />
+                                            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-all duration-300 pointer-events-none" />
                                         </div>
                                     </SwiperSlide>
-                                ))}
+                                ); })}
                             </Swiper>
                         </div>
                     </div>

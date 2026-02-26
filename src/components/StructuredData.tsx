@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useSiteConfig } from '@/contexts/SiteConfigContext';
 
 const getBaseUrl = () =>
   import.meta.env.VITE_SITE_URL ||
@@ -7,12 +8,14 @@ const getBaseUrl = () =>
 /** EventPlanningBusiness schema for local SEO (homepage). */
 export function EventPlanningBusinessSchema() {
   const baseUrl = getBaseUrl();
+  const { logoUrl } = useSiteConfig();
+  const imageUrl = logoUrl || `${baseUrl}/logo.png`;
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'EventPlanningBusiness',
     name: 'Phoenix Events & Production',
     url: baseUrl,
-    image: `${baseUrl}/logo.png`,
+    image: imageUrl,
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Pune',
@@ -56,8 +59,9 @@ export function OrganizationSchema({
   sameAs
 }: OrganizationSchemaProps) {
   const baseUrl = getBaseUrl();
+  const { logoUrl } = useSiteConfig();
   const finalUrl = url || baseUrl;
-  const finalLogo = logo || `${baseUrl}/logo.png`;
+  const finalLogo = logo || logoUrl || `${baseUrl}/logo.png`;
 
   const schema = {
     '@context': 'https://schema.org',

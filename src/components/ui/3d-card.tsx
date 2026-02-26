@@ -41,6 +41,8 @@ const PhotoCard = ({ src, alt, rotation, text, index, style = {} }: PhotoCardPro
                     alt={alt}
                     className="w-full h-full object-cover transition-transform duration-300"
                     style={{ transform: isHovered ? 'scale(1.02)' : 'scale(1)' }}
+                    loading="lazy"
+                    decoding="async"
                     onLoad={() => setIsLoaded(true)}
                     onError={(e) => {
                         // @ts-ignore

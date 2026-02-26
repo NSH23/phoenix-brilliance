@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle, Instagram } from "lucide-react";
+import { MapPin, Phone, Clock, Send, CheckCircle, Instagram } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -163,23 +163,19 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                 {/* Mobile: Compact vertical list */}
                 <div className="sm:hidden mb-8">
                   <div className="space-y-6 text-center">
-                    <h3 className="font-serif text-xl font-bold text-foreground">Contact Information</h3>
+                    <h3 className="font-serif text-xl font-semibold text-foreground">Contact Information</h3>
 
                     <div>
                       <h4 className="text-primary font-medium text-sm mb-1 uppercase tracking-wide">Visit Us</h4>
                       <p className="text-foreground text-sm whitespace-pre-line">
-                        Phoenix Events, 123 Event Street, Mumbai, Maharashtra 400001
+                        Shop no 1, Phoenix Events and Production, Kailas kondiba Dange Plot, Unit 4, Dange Chowk Rd, nr. CBI Crime Branch, nr. Maruti Suzuki Showroom, Pune, Maharashtra 411033
                       </p>
                     </div>
 
                     <div>
                       <h4 className="text-primary font-medium text-sm mb-1 uppercase tracking-wide">Call Us</h4>
-                      <p className="text-foreground text-sm">+91 98765 43210</p>
-                    </div>
-
-                    <div>
-                      <h4 className="text-primary font-medium text-sm mb-1 uppercase tracking-wide">Email Us</h4>
-                      <p className="text-foreground text-sm">info@phoenixevents.com</p>
+                      <p className="text-foreground text-sm">+91 70667 63276</p>
+                      <p className="text-foreground text-sm">+91 97667 97234</p>
                     </div>
 
                     <div>
@@ -190,11 +186,11 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                     <div>
                       <h4 className="text-primary font-medium text-sm mb-1 uppercase tracking-wide">Follow Us</h4>
                       <div className="flex flex-col gap-1 items-center">
-                        <a href="https://instagram.com/pnp.production.house" target="_blank" rel="noopener noreferrer" className="text-foreground text-sm hover:text-primary transition-colors">
-                          @pnp.production.house
-                        </a>
-                        <a href="https://instagram.com/phoenix_events_and_production" target="_blank" rel="noopener noreferrer" className="text-foreground text-sm hover:text-primary transition-colors">
+                        <a href="https://www.instagram.com/phoenix_events_and_production?igsh=MW1nMDh4dmg2ZWNvNA==" target="_blank" rel="noopener noreferrer" className="text-foreground text-sm hover:text-primary transition-colors">
                           @phoenix_events_and_production
+                        </a>
+                        <a href="mailto:Phoenixeventsandproduction@gmail.com" className="text-foreground text-sm hover:text-primary transition-colors">
+                          Phoenixeventsandproduction@gmail.com
                         </a>
                       </div>
                     </div>
@@ -203,7 +199,7 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
 
                 {/* Desktop: Full contact card */}
                 <div className="hidden sm:block glass-card p-5 lg:p-6">
-                  <h3 className="font-serif text-xl lg:text-2xl font-bold text-foreground mb-5 lg:mb-6">Contact Information</h3>
+                  <h3 className="font-serif text-xl lg:text-2xl font-semibold text-foreground mb-5 lg:mb-6">Contact Information</h3>
 
                   <div className="space-y-4 lg:space-y-5">
                     <div className="flex items-start gap-3 lg:gap-4">
@@ -213,7 +209,7 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                       <div>
                         <p className="font-medium text-foreground text-sm lg:text-base">Visit Us</p>
                         <p className="text-muted-foreground text-xs lg:text-sm whitespace-pre-line">
-                          {contact.address || "Pune, Maharashtra"}
+                          Shop no 1, Phoenix Events and Production, Kailas kondiba Dange Plot, Unit 4, Dange Chowk Rd, nr. CBI Crime Branch, nr. Maruti Suzuki Showroom, Pune, Maharashtra 411033
                         </p>
                       </div>
                     </div>
@@ -224,17 +220,8 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                       </div>
                       <div>
                         <p className="font-medium text-foreground text-sm lg:text-base">Call Us</p>
-                        <p className="text-muted-foreground text-xs lg:text-sm">{contact.phone}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 lg:gap-4">
-                      <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Mail className="w-4 h-4 lg:w-5 lg:h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground text-sm lg:text-base">Email Us</p>
-                        <p className="text-muted-foreground text-xs lg:text-sm">{contact.email}</p>
+                        <p className="text-muted-foreground text-xs lg:text-sm">+91 70667 63276</p>
+                        <p className="text-muted-foreground text-xs lg:text-sm">+91 97667 97234</p>
                       </div>
                     </div>
 
@@ -255,11 +242,11 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                       <div>
                         <p className="font-medium text-foreground text-sm lg:text-base">Follow Us</p>
                         <div className="text-muted-foreground text-xs lg:text-sm space-y-1">
-                          <a href="https://instagram.com/pnp.production.house" target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">
-                            @pnp.production.house
-                          </a>
-                          <a href="https://instagram.com/phoenix_events_and_production" target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">
+                          <a href="https://www.instagram.com/phoenix_events_and_production?igsh=MW1nMDh4dmg2ZWNvNA==" target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">
                             @phoenix_events_and_production
+                          </a>
+                          <a href="mailto:Phoenixeventsandproduction@gmail.com" className="block hover:text-primary transition-colors">
+                            Phoenixeventsandproduction@gmail.com
                           </a>
                         </div>
                       </div>
@@ -278,9 +265,17 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                 className="lg:col-span-3 w-full"
               >
                 <div className="glass-card p-4 sm:p-6 lg:p-8">
-                  <h3 className="font-serif text-lg sm:text-xl lg:text-2xl font-bold text-foreground mb-4 sm:mb-6">
+                  <h3 className="font-serif text-lg sm:text-xl lg:text-2xl font-semibold text-foreground mb-4 sm:mb-6">
                     Request a Quote
                   </h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    <span className="font-medium text-foreground">Call:</span> +91 70667 63276, +91 97667 97234
+                    <br />
+                    <span className="font-medium text-foreground">Email:</span>{' '}
+                    <a href="mailto:Phoenixeventsandproduction@gmail.com" className="text-primary hover:underline">
+                      Phoenixeventsandproduction@gmail.com
+                    </a>
+                  </p>
 
                   {isSubmitted ? (
                     <motion.div
@@ -291,7 +286,7 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald/10 flex items-center justify-center mb-4 sm:mb-6">
                         <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-emerald" />
                       </div>
-                      <h4 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-2">Thank You!</h4>
+                      <h4 className="font-serif text-xl sm:text-2xl font-semibold text-foreground mb-2">Thank You!</h4>
                       <p className="text-muted-foreground text-sm sm:text-base">Your inquiry has been saved. We&apos;ve opened WhatsApp so you can reach us directly. We&apos;ll get back to you soon!</p>
                     </motion.div>
                   ) : (
@@ -308,7 +303,7 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                             className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
                                    focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
                                    transition-all duration-300 text-sm sm:text-base"
-                            placeholder="John Doe"
+                            placeholder="Name"
                           />
                         </div>
                         <div>
@@ -322,7 +317,7 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                             className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-xl bg-background border border-border 
                                    focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
                                    transition-all duration-300 text-sm sm:text-base"
-                            placeholder="+91 70667 63276"
+                            placeholder="Number"
                           />
                         </div>
                       </div>

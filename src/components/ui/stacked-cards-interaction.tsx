@@ -26,6 +26,8 @@ const Card = ({
             src={image}
             alt="card"
             className="object-cover mt-0 w-full h-full"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       )}

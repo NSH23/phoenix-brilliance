@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { uploadFile, uploadFiles, type BucketName } from '@/services/storage';
@@ -287,6 +287,8 @@ export default function ImageUpload({
                         'w-full h-full object-cover',
                         previewClassName
                       )}
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
                       <Button

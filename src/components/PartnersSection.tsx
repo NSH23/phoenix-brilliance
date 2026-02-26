@@ -113,6 +113,8 @@ const PartnersSection = () => {
                     src={resolveLogoUrl(partner.logo_url)!}
                     alt={partner.name}
                     className="w-full h-full object-contain filter grayscale-0 transition-all duration-300"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="text-center">

@@ -16,8 +16,8 @@ Use this before going live. Fix **Must-fix** items; **Should-fix** and **Nice-to
 
 ### 2. Sitemap and robots.txt (production domain)
 
-- [ ] **`public/sitemap.xml`**: Replace `https://yourdomain.com` with your real domain (e.g. `https://phoenixevents.com`) in every `<loc>`.
-- [ ] **`public/robots.txt`**: Replace `https://yourdomain.com/sitemap.xml` in the `Sitemap:` line with your real domain.
+- [ ] **`public/sitemap.xml`**: Use production domain in every `<loc>` (e.g. `https://phoenixeventsandproduction.com`).
+- [ ] **`public/robots.txt`**: Set `Sitemap:` to production domain (e.g. `https://phoenixeventsandproduction.com/sitemap.xml`).
 
 Optional: add a build step or config (e.g. `VITE_SITE_URL`) to generate these from env so you don’t edit by hand per environment.
 
@@ -27,7 +27,7 @@ Optional: add a build step or config (e.g. `VITE_SITE_URL`) to generate these fr
   - `20260220_inquiries_drop_and_create.sql` (if table doesn’t exist or you’re ok resetting)
   - `20260220_inquiries_anon_insert_only.sql` (so anon can INSERT; no SELECT for anon)
 - [ ] Confirm **RLS** is enabled on `inquiries` and anon has **INSERT** only; admin access uses `admin_users` and auth.
-- [ ] In Supabase → Authentication → URL Configuration, add your **production site URL** and **redirect URLs** (e.g. `https://yourdomain.com`, `https://yourdomain.com/admin`).
+- [ ] In Supabase → Authentication → URL Configuration, set **Site URL** to `https://phoenixeventsandproduction.com` and add **Redirect URLs** (e.g. `https://phoenixeventsandproduction.com/admin/set-password`). Do not use localhost or vercel.app for production.
 
 ---
 

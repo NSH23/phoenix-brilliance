@@ -376,6 +376,8 @@ const Gallery = () => {
                                   ? "scale-110"
                                   : "scale-100"
                                   }`}
+                                loading="lazy"
+                                decoding="async"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = "none";
                                   const fallback = (e.target as HTMLElement).parentElement?.querySelector(".icon-fallback");
@@ -528,6 +530,8 @@ const Gallery = () => {
                                     src={album.cover_image ?? "/placeholder.svg"}
                                     alt={album.title}
                                     className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover/album:scale-105 brightness-[0.92] group-hover/album:brightness-100"
+                                    loading="lazy"
+                                    decoding="async"
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).src = "/placeholder.svg";
                                     }}
@@ -607,7 +611,7 @@ const Gallery = () => {
               viewport={{ once: true }}
               className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
             >
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-3 sm:mb-4 text-foreground">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold mb-3 sm:mb-4 text-foreground">
                 Ready to Create Your Own <span className="text-primary">Story?</span>
               </h2>
               <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">

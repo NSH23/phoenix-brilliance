@@ -157,6 +157,8 @@ const GalleryAlbum = () => {
             src={album.cover_image || '/placeholder.svg'}
             alt={album.title}
             className="w-full h-full object-cover opacity-15"
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/placeholder.svg';
             }}
@@ -205,7 +207,7 @@ const GalleryAlbum = () => {
                   </motion.span>
                 )}
 
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold mb-4">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-4">
                   {album.title}
                 </h1>
                 <p className="text-lg text-muted-foreground mb-4">
@@ -291,7 +293,7 @@ const GalleryAlbum = () => {
             photos.length === 0 ? (
               <div className="text-center py-16">
                 <Images className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-                <h3 className="text-xl font-serif font-bold mb-2">No Photos Yet</h3>
+                <h3 className="text-xl font-serif font-semibold mb-2">No Photos Yet</h3>
                 <p className="text-muted-foreground">Photos will appear here once they're added to this album.</p>
               </div>
             ) : (
@@ -316,6 +318,7 @@ const GalleryAlbum = () => {
                         draggable={false}
                         className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}
@@ -362,7 +365,7 @@ const GalleryAlbum = () => {
             videos.length === 0 ? (
               <div className="text-center py-16">
                 <Play className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-                <h3 className="text-xl font-serif font-bold mb-2">No Videos Yet</h3>
+                <h3 className="text-xl font-serif font-semibold mb-2">No Videos Yet</h3>
                 <p className="text-muted-foreground">Videos will appear here once they're added to this album.</p>
               </div>
             ) : (
@@ -536,6 +539,7 @@ const GalleryAlbum = () => {
                         draggable={false}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}

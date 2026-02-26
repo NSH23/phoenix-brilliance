@@ -4,14 +4,14 @@ import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
-import { getHeroVideos } from "@/services/contentMedia";
+import { getHeroMedia } from "@/services/contentMedia";
 import { StackedCards } from "@/components/ui/stacked-cards";
 import { HeroBackgroundPattern } from "@/components/ui/HeroBackgroundPattern";
 import { getSiteContentByKey } from "@/services/siteContent";
 
 const HeroSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
-  const [heroVideos, setHeroVideos] = useState<string[]>([]);
+  const [heroItems, setHeroItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDesktop, setIsDesktop] = useState(false);
   const [heroContent, setHeroContent] = useState<{
@@ -33,19 +33,26 @@ const HeroSection = () => {
   const y1 = useTransform(scrollY, [0, 500], [0, 100]);
   const y2 = useTransform(scrollY, [0, 500], [0, -50]);
 
-  // Fetch Videos & Content
+  // Fetch Hero media: 1 video + 2 images (getHeroMedia) and site content
   useEffect(() => {
     async function fetchData() {
       try {
-        const [videos, content] = await Promise.all([
-          getHeroVideos(),
+        const [media, content] = await Promise.all([
+          getHeroMedia(),
           getSiteContentByKey('home-hero').catch(() => null)
         ]);
 
-        if (videos && videos.length > 0) {
-          setHeroVideos(videos.map(v => v.url));
+        const items: string[] = [];
+        if (media.videoUrl) items.push(media.videoUrl);
+        if (media.imageUrls.length >= 2) {
+          items.push(media.imageUrls[0], media.imageUrls[1]);
+        } else if (media.imageUrls.length === 1) {
+          items.push(media.imageUrls[0], media.imageUrls[0]);
+        }
+        if (items.length > 0) {
+          setHeroItems(items);
         } else {
-          setHeroVideos(["/1.mp4", "/reel 1.mp4", "/3.MP4"]);
+          setHeroItems(["/1.mp4"]);
         }
 
         if (content) {
@@ -61,7 +68,7 @@ const HeroSection = () => {
         }
       } catch (error) {
         console.error("Failed to fetch hero data:", error);
-        setHeroVideos(["/1.mp4", "/reel 1.mp4", "/3.MP4"]);
+        setHeroItems(["/1.mp4"]);
       } finally {
         setLoading(false);
       }
@@ -86,7 +93,7 @@ const HeroSection = () => {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[90vh] md:min-h-screen flex items-center justify-center overflow-hidden md:overflow-visible bg-background pt-24 pb-0 text-foreground"
+      className="relative min-h-[90vh] md:min-h-screen flex items-center justify-center overflow-hidden md:overflow-visible bg-transparent pt-24 pb-0 text-foreground hero-section-content"
       aria-label="Hero"
     >
       <HeroBackgroundPattern />
@@ -104,20 +111,12 @@ const HeroSection = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="space-y-4"
           >
-            <h1 className="font-hero text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-medium tracking-tight leading-[1.15] text-foreground dark:text-white">
+            <h1 className="font-serif text-5xl md:text-6xl xl:text-7xl font-medium tracking-hero leading-[1.1] hero-heading-gradient">
               {isDefaultTitle ? (
                 <>
                   Crafting Moments <br />
                   That Last <br />
-                  <span className="italic relative inline-block text-primary">
-                    Forever
-                    <motion.span
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ delay: 0.8, duration: 1, ease: "circOut" }}
-                      className="absolute bottom-0 left-0 w-full h-[3px] md:h-[5px] bg-primary/40 rounded-full origin-left"
-                    />
-                  </span>
+                  <span className="italic text-primary">Forever</span>
                 </>
               ) : (
                 (heroContent?.title || "").split('\n').map((line, i) => (
@@ -130,23 +129,23 @@ const HeroSection = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.35, duration: 0.7 }}
-              className="text-lg md:text-xl text-muted-foreground dark:text-white/80 font-light leading-relaxed"
+              className="font-sans text-lg md:text-xl font-light tracking-normal leading-relaxed text-muted-foreground dark:text-white/80"
             >
               {heroContent?.description?.trim() || "Your vision, our craft—unforgettable events."}
             </motion.p>
           </motion.div>
 
-          {/* Founder story – left side hero (elegant serif for refined, simple look) */}
+          {/* Founder story – refined label + body */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.7 }}
-            className="pl-0 lg:pl-4 border-l-0 lg:border-l-2 border-primary/30 lg:border-primary/40 font-serif"
+            className="pl-0 lg:pl-4 border-l-0 lg:border-l-2 border-primary/30 lg:border-primary/40"
           >
-            <h2 className="font-hero text-sm font-semibold tracking-[0.15em] uppercase text-primary mb-2">
+            <h2 className="font-sans text-[0.7rem] font-medium tracking-eyebrow uppercase text-primary mb-2">
               The Visionary Behind Phoenix
             </h2>
-            <p className="text-sm md:text-base text-muted-foreground dark:text-white/75 font-light leading-relaxed tracking-[0.01em] font-serif">
+            <p className="font-sans text-sm md:text-base text-muted-foreground dark:text-white/75 font-normal leading-relaxed tracking-normal">
               Kevin started Phoenix Events & Production in 2017 with a commitment to excellence in event décor and production. Known for his attention to detail and creative approach, he believes every event should reflect elegance and individuality. With the launch of PnP Production in 2024, he brought design and production under one roof — ensuring superior quality and hassle-free execution. His leadership and passion have made the company a trusted name in the event industry.
             </p>
           </motion.div>
@@ -157,12 +156,12 @@ const HeroSection = () => {
             transition={{ delay: 0.6, duration: 0.8 }}
             className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
           >
-            <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-warm-lg hover:shadow-warm-xl transition-all duration-300" asChild>
+            <Button size="lg" className="font-sans font-medium tracking-[0.02em] h-14 px-8 text-lg rounded-full shadow-warm-lg hover:shadow-warm-xl transition-all duration-300" asChild>
               <Link to={heroContent?.cta_link || "/contact"}>
                 {heroContent?.cta_text || "Plan Your Event"}
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full border-2 border-primary/50 text-foreground hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 group font-medium" asChild>
+            <Button variant="outline" size="lg" className="font-sans font-medium tracking-[0.02em] h-14 px-8 text-lg rounded-full border-2 border-primary/50 text-foreground hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 group" asChild>
               <Link to="/gallery">
                 View Our Work <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -177,18 +176,18 @@ const HeroSection = () => {
             className="flex items-center gap-6 sm:gap-8 justify-center lg:justify-start pt-6 border-t border-border/40"
           >
             <div className="text-center lg:text-left">
-              <p className="text-2xl md:text-3xl font-display font-semibold text-primary">500+</p>
-              <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Events</p>
+              <p className="font-serif text-3xl md:text-4xl font-semibold text-primary tabular-nums">500+</p>
+              <p className="font-sans text-xs text-muted-foreground uppercase tracking-[0.15em] mt-2">Events</p>
             </div>
             <div className="w-px h-10 bg-border/60" />
             <div className="text-center lg:text-left">
-              <p className="text-2xl md:text-3xl font-display font-semibold text-primary">12+</p>
-              <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Years</p>
+              <p className="font-serif text-3xl md:text-4xl font-semibold text-primary tabular-nums">12+</p>
+              <p className="font-sans text-xs text-muted-foreground uppercase tracking-[0.15em] mt-2">Years</p>
             </div>
             <div className="w-px h-10 bg-border/60" />
             <div className="text-center lg:text-left">
-              <p className="text-2xl md:text-3xl font-display font-semibold text-primary">98%</p>
-              <p className="text-xs text-muted-foreground font-sans mt-0.5 tracking-wider uppercase">Satisfaction</p>
+              <p className="font-serif text-3xl md:text-4xl font-semibold text-primary tabular-nums">98%</p>
+              <p className="font-sans text-xs text-muted-foreground uppercase tracking-[0.15em] mt-2">Satisfaction</p>
             </div>
           </motion.div>
         </motion.div>
@@ -198,11 +197,11 @@ const HeroSection = () => {
           style={{ y: isDesktop ? y2 : 0 }}
           className="relative w-full max-w-[400px] md:max-w-[480px] lg:max-w-[560px] aspect-[9/14] md:aspect-[10/9] mx-auto perspective-1000 mt-2 md:mt-8 lg:-mt-14 flex items-center justify-center p-4 overflow-hidden md:overflow-visible" // Added overflow handling for mobile
         >
-          {heroVideos.length > 0 ? (
-            <StackedCards items={heroVideos} autoplay={true} />
+          {heroItems.length > 0 ? (
+            <StackedCards items={heroItems} autoplay={true} heroMode />
           ) : (
             <div className="w-full h-full bg-neutral-100/10 rounded-[2rem] animate-pulse border-4 border-white/5 flex items-center justify-center">
-              <span className="text-white/20 font-serif italic">Loading specific moments...</span>
+              <span className="font-sans text-white/20 text-sm">Loading specific moments...</span>
             </div>
           )}
         </motion.div>

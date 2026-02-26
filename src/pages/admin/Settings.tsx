@@ -21,7 +21,8 @@ import {
 import { useAdmin } from '@/contexts/AdminContext';
 import { updateAdminUser, getAdminUsers, type AdminUserRow } from '@/services/adminUsers';
 import { supabase } from '@/lib/supabase';
-import { createSignedUrl } from '@/services/storage';
+import { getSiteSettingOptional, upsertSiteSetting } from '@/services/siteContent';
+import { getPublicUrl } from '@/services/storage';
 import { toast } from 'sonner';
 
 const NOTIFICATION_STORAGE_KEY = 'admin_notification_preferences';
@@ -79,6 +80,8 @@ export default function AdminSettings() {
   const [otpResendCooldown, setOtpResendCooldown] = useState(0);
   const [notificationsSaving, setNotificationsSaving] = useState(false);
   const [siteSaving, setSiteSaving] = useState(false);
+  const [siteLogoUrl, setSiteLogoUrl] = useState('');
+  const [siteLogoSaving, setSiteLogoSaving] = useState(false);
   const oldSessionRef = useRef<{ access_token: string; refresh_token: string } | null>(null);
 
   useEffect(() => {
@@ -158,6 +161,10 @@ export default function AdminSettings() {
       .finally(() => setAdminUsersLoading(false));
   }, []);
 
+  useEffect(() => {
+    getSiteSettingOptional('site_logo_url').then((v) => setSiteLogoUrl(v || '')).catch(() => {});
+  }, []);
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserEmail?.trim()) {
@@ -166,16 +173,26 @@ export default function AdminSettings() {
     }
     setAddUserLoading(true);
     try {
+      const baseUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.signInWithOtp({
         email: newUserEmail.trim(),
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/admin/set-password`,
+          emailRedirectTo: `${baseUrl}/admin/set-password`,
         },
       });
       if (error) {
-        const msg = error.message?.toLowerCase() || '';
-        if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
+        const msg = (error.message || '').toLowerCase();
+        const isServerError = error.message?.includes('500') || msg.includes('internal') || msg.includes('server') || msg.includes('network');
+        if (isServerError) {
+          toast.error(
+            'Email could not be sent (server error)',
+            {
+              description: 'Check SMTP in Supabase: Project Settings → Auth → SMTP. See docs/SUPABASE_OTP_EMAIL_SETUP.md for 500 troubleshooting.',
+              duration: 8000,
+            }
+          );
+        } else if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
           toast.error('An account with this email may already exist. Use a different email or have them sign in.');
         } else {
           toast.error(error.message || 'Failed to send OTP');
@@ -190,7 +207,16 @@ export default function AdminSettings() {
       setTimeout(() => clearInterval(t), 60000);
       toast.success('OTP sent', { description: `A 6-digit code was sent to ${newUserEmail}. The new user should provide it to you.` });
     } catch (err: unknown) {
-      toast.error('Failed to send OTP', { description: (err as Error)?.message });
+      const msg = (err as Error)?.message?.toLowerCase() || '';
+      const is500 = msg.includes('500') || msg.includes('internal') || msg.includes('server');
+      if (is500) {
+        toast.error(
+          'Email could not be sent (server error)',
+          { description: 'Check Supabase SMTP and email config. See docs/SUPABASE_OTP_EMAIL_SETUP.md', duration: 8000 }
+        );
+      } else {
+        toast.error('Failed to send OTP', { description: (err as Error)?.message });
+      }
     } finally {
       setAddUserLoading(false);
     }
@@ -382,6 +408,20 @@ export default function AdminSettings() {
       toast.error('Failed to save settings');
     } finally {
       setSiteSaving(false);
+    }
+  };
+
+  const handleSiteLogoChange = async (value: string | string[]) => {
+    const url = typeof value === 'string' ? value : Array.isArray(value) ? value[0] ?? '' : '';
+    setSiteLogoSaving(true);
+    try {
+      await upsertSiteSetting('site_logo_url', url, 'text');
+      setSiteLogoUrl(url);
+      toast.success(url ? 'Site logo updated. It will appear across the site.' : 'Site logo cleared. Default logo will be used.');
+    } catch (err) {
+      toast.error('Failed to save logo', { description: (err as Error)?.message });
+    } finally {
+      setSiteLogoSaving(false);
     }
   };
 
@@ -891,6 +931,33 @@ export default function AdminSettings() {
                       <SelectItem value="system">System</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Site Logo</CardTitle>
+                <CardDescription>
+                  Logo used in the navbar, footer, admin sidebar, and SEO. Upload to storage or leave empty to use the default /logo.png.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-2">
+                  <Label>Logo image</Label>
+                  <ImageUpload
+                    value={siteLogoUrl ? (siteLogoUrl.startsWith('http') ? siteLogoUrl : getPublicUrl('site-logo', siteLogoUrl)) : ''}
+                    onChange={handleSiteLogoChange}
+                    multiple={false}
+                    bucket="site-logo"
+                    uploadOnSelect={true}
+                    previewClassName="object-contain max-h-24"
+                  />
+                  {siteLogoSaving && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Saving…
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -7,7 +7,7 @@ const DEFAULT_TESTIMONIALS = [
     author: {
       name: "Aarav & Meera",
       handle: "Wedding Reception",
-      avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=600&auto=format&fit=crop"
+      avatar: ""
     },
     text: "Phoenix curated every detail of our wedding with so much heart. The décor, flow, and emotions they created are memories we will cherish forever.",
   },
@@ -15,7 +15,7 @@ const DEFAULT_TESTIMONIALS = [
     author: {
       name: "Riya Sharma",
       handle: "Sangeet & Mehendi",
-      avatar: "https://images.unsplash.com/photo-1524504388940-1e4fd709849c?q=80&w=600&auto=format&fit=crop"
+      avatar: ""
     },
     text: "From our first meeting to the last goodbye, the team handled everything with calm precision. We could truly be present with our families.",
   },
@@ -23,7 +23,7 @@ const DEFAULT_TESTIMONIALS = [
     author: {
       name: "Karan & Diya",
       handle: "Intimate Wedding",
-      avatar: "https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?q=80&w=600&auto=format&fit=crop"
+      avatar: ""
     },
     text: "They transformed a simple venue into a dreamscape. Every corner felt intentional and beautifully aligned with our story.",
   },
@@ -31,7 +31,7 @@ const DEFAULT_TESTIMONIALS = [
     author: {
       name: "Rohit Verma",
       handle: "Corporate Gala",
-      avatar: "https://images.unsplash.com/photo-1525130413817-d45c1d127c42?q=80&w=600&auto=format&fit=crop"
+      avatar: ""
     },
     text: "Our corporate gala felt warm, elevated, and absolutely seamless. Guests still talk about the ambience and experience.",
   },
@@ -39,7 +39,7 @@ const DEFAULT_TESTIMONIALS = [
     author: {
       name: "Ishita & Nikhil",
       handle: "Wedding Celebrations",
-      avatar: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=600&auto=format&fit=crop"
+      avatar: ""
     },
     text: "They balanced traditions and modern design perfectly. The pheras, the décor, the music — everything felt like us.",
   },
@@ -47,49 +47,95 @@ const DEFAULT_TESTIMONIALS = [
     author: {
       name: "Saurabh & Anjali",
       handle: "Destination Wedding",
-      avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=600&auto=format&fit=crop"
+      avatar: ""
     },
     text: "Planning a destination wedding from abroad was stressful until we found Phoenix. They handled every logistic perfectly.",
   },
 ];
 
 const TestimonialsSectionWrapper = () => {
-  const [testimonials, setTestimonials] = useState<any[]>(DEFAULT_TESTIMONIALS);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Optional: Fetch testimonials if needed, matching the format
-    getFeaturedTestimonials(10).then(data => {
-      if (data && data.length > 0) {
-        setTestimonials(data.map(t => ({
-          author: {
-            name: t.name || "Happy Client",
-            handle: t.role || "Client",
-            avatar: t.avatar || "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=600&auto=format&fit=crop"
-          },
-          text: t.content || "Amazing experience working with Phoenix Events."
-        })));
-      }
-    }).catch(err => console.error(err));
+    getFeaturedTestimonials(10)
+      .then((data) => {
+        if (data && data.length > 0) {
+          setTestimonials(
+            data.map((t) => ({
+              author: {
+                name: t.name || "Happy Client",
+                handle: t.role || "Client",
+                avatar: t.avatar || "",
+              },
+              text: t.content || "Amazing experience working with Phoenix Events.",
+            }))
+          );
+        } else {
+          setTestimonials(DEFAULT_TESTIMONIALS);
+        }
+      })
+      .catch(() => setTestimonials(DEFAULT_TESTIMONIALS))
+      .finally(() => setIsLoading(false));
   }, []);
 
   // Transform data for the new component
-  const formattedTestimonials = testimonials.map(t => ({
+  const formattedTestimonials = testimonials.map((t) => ({
     name: t.author.name,
     role: t.author.handle,
     text: t.text,
     avatar: t.author.avatar,
-    rating: 5 // Default rating
+    rating: 5,
   }));
 
+  if (isLoading) {
+    return (
+      <div className="relative bg-transparent overflow-hidden py-12 md:py-16">
+        <div className="relative z-10">
+          <section id="testimonials" className="w-full py-0">
+            <div className="container px-4 mx-auto max-w-7xl">
+              <header className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1">
+                <div className="h-4 w-24 bg-primary/20 rounded animate-pulse" />
+                <div className="h-9 w-72 bg-muted rounded animate-pulse" />
+                <div className="mt-4 h-5 max-w-xl bg-muted/60 rounded animate-pulse" />
+              </header>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-8">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl border border-border dark:border-white/10 bg-card shadow-elevation-1 dark:shadow-elevation-1-dark p-6 animate-pulse h-48"
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  if (formattedTestimonials.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="relative bg-background dark:bg-navy overflow-hidden">
+      <div className="relative bg-transparent overflow-hidden py-12 md:py-16">
+      {/* Light theme only: lgt4.jpg; dark theme: no section background */}
+      <div
+        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat bg-[url('/lgt4.jpg')] dark:bg-none"
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0 -z-[5] bg-white/35 dark:bg-transparent"
+        aria-hidden
+      />
       <div className="relative z-10">
         <TestimonialsSection
           title="Kind Words from Our Clients"
           subtitle="Stories from weddings, celebrations, and experiences crafted with heart by Phoenix Events & Production."
           badgeText="Client Love"
           testimonials={formattedTestimonials}
-          className="bg-transparent"
+          className="bg-transparent py-0"
         />
       </div>
     </div>
