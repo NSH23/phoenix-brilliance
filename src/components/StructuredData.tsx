@@ -5,11 +5,13 @@ const getBaseUrl = () =>
   import.meta.env.VITE_SITE_URL ||
   (typeof window !== 'undefined' ? window.location.origin : '');
 
+const PRODUCTION_LOGO = 'https://phoenixeventsandproduction.com/logo-photoaidcom-cropped.jpg';
+
 /** EventPlanningBusiness schema for local SEO (homepage). */
 export function EventPlanningBusinessSchema() {
   const baseUrl = getBaseUrl();
   const { logoUrl } = useSiteConfig();
-  const imageUrl = logoUrl || `${baseUrl}/logo.png`;
+  const imageUrl = logoUrl || PRODUCTION_LOGO;
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'EventPlanningBusiness',
@@ -61,7 +63,7 @@ export function OrganizationSchema({
   const baseUrl = getBaseUrl();
   const { logoUrl } = useSiteConfig();
   const finalUrl = url || baseUrl;
-  const finalLogo = logo || logoUrl || `${baseUrl}/logo.png`;
+  const finalLogo = logo || logoUrl || PRODUCTION_LOGO;
 
   const schema = {
     '@context': 'https://schema.org',
