@@ -11,6 +11,7 @@ interface AdminUser {
   name: string;
   role: 'admin' | 'moderator';
   avatar?: string;
+  must_change_password?: boolean;
 }
 
 interface AdminContextType {
@@ -33,6 +34,7 @@ function fallbackAdminUserFromAuth(authUser: User): AdminUser {
     email: authUser.email || '',
     name: (meta.name as string) || authUser.email?.split('@')[0] || 'User',
     role: (meta.role as 'admin' | 'moderator') || 'moderator',
+    must_change_password: false,
   };
 }
 
@@ -88,6 +90,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             name: data.name,
             role: data.role,
             avatar,
+            must_change_password: !!data.must_change_password,
           };
         }
         return null;

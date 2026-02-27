@@ -27,7 +27,7 @@ export async function deleteAdminUser(id: string): Promise<void> {
 
 export async function updateAdminUser(
   id: string,
-  updates: { name?: string; avatar_url?: string | null }
+  updates: { name?: string; avatar_url?: string | null; must_change_password?: boolean }
 ): Promise<AdminUserRow> {
   const { data, error } = await supabase
     .from('admin_users')

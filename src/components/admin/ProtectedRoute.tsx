@@ -26,6 +26,11 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <Navigate to="/admin" state={{ from: location }} replace />;
   }
 
+  // Must change password on first login (e.g. after add via SQL with default password)
+  if (user?.must_change_password && location.pathname !== '/admin/set-password') {
+    return <Navigate to="/admin/set-password" replace />;
+  }
+
   // Check role if required
   if (requiredRole === 'admin' && user?.role !== 'admin') {
     return (

@@ -1,20 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
+import { useAdmin } from '@/contexts/AdminContext';
+import { updateAdminUser } from '@/services/adminUsers';
 import { toast } from 'sonner';
 
 export default function AdminSetPassword() {
   const navigate = useNavigate();
+  const { refreshUser } = useAdmin();
   const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(true);
   const [sessionReady, setSessionReady] = useState(false);
+  /** True when user landed here with existing session (must-change-password), not from magic link. */
+  const isFirstLoginChangeRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -40,10 +45,14 @@ export default function AdminSetPassword() {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted && session) {
           setSessionReady(true);
+          isFirstLoginChangeRef.current = true;
         } else if (mounted && window.location.hash) {
           await new Promise((r) => setTimeout(r, 500));
           const { data: { session: s2 } } = await supabase.auth.getSession();
-          if (mounted) setSessionReady(!!s2);
+          if (mounted) {
+            setSessionReady(!!s2);
+            if (s2) isFirstLoginChangeRef.current = true;
+          }
         }
       }
       if (mounted) setVerifying(false);
@@ -71,7 +80,11 @@ export default function AdminSetPassword() {
         setLoading(false);
         return;
       }
-      if (u) {
+      if (u && isFirstLoginChangeRef.current) {
+        await updateAdminUser(u.id, { must_change_password: false });
+        await refreshUser();
+      }
+      if (u && !isFirstLoginChangeRef.current) {
         await supabase.rpc('create_admin_user', {
           user_id: u.id,
           user_email: u.email ?? '',
