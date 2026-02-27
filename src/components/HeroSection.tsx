@@ -142,11 +142,17 @@ const HeroSection = () => {
             transition={{ delay: 0.5, duration: 0.7 }}
             className="pl-0 lg:pl-4 border-l-0 lg:border-l-2 border-primary/30 lg:border-primary/40"
           >
-            <h2 className="font-sans text-[0.7rem] font-medium tracking-eyebrow uppercase text-primary mb-2">
-              The Visionary Behind Phoenix
+            <h2 className="font-serif text-2xl md:text-3xl font-medium tracking-tight text-foreground mb-1">
+              Kevin
             </h2>
+            <p className="font-sans text-[0.7rem] font-medium tracking-eyebrow uppercase text-primary mb-3">
+              Founder & Creative Director
+            </p>
             <p className="font-sans text-sm md:text-base text-muted-foreground dark:text-white/75 font-normal leading-relaxed tracking-normal">
-              Kevin started Phoenix Events & Production in 2017 with a commitment to excellence in event décor and production. Known for his attention to detail and creative approach, he believes every event should reflect elegance and individuality. With the launch of PnP Production in 2024, he brought design and production under one roof — ensuring superior quality and hassle-free execution. His leadership and passion have made the company a trusted name in the event industry.
+              A visionary in event design, Kevin transforms ideas into elegant, unforgettable experiences. Since 2017, his passion for perfection and eye for detail have shaped Phoenix into a trusted name in premium celebrations.
+            </p>
+            <p className="font-sans text-sm md:text-base font-medium text-primary/90 dark:text-primary mt-3 italic">
+              Where creativity meets flawless execution
             </p>
           </motion.div>
 

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getEventsForHomepage } from "@/services/events";
 import { Loader2 } from "lucide-react";
 import { StackedCards } from "@/components/ui/stacked-cards";
+import { EVENT_CATEGORY_DESCRIPTIONS } from "@/data/eventCategoryCopy";
 
 /* Event Categories: Three-column layout - left (StackedCards), center (categories), right (StackedCards).
  */
@@ -44,7 +45,7 @@ const EventsSection = () => {
           return {
             title: e.title,
             slug: e.slug,
-            description: e.short_description || e.description || "",
+            description: EVENT_CATEGORY_DESCRIPTIONS[e.slug] || e.short_description || e.description || "",
             images: imgs.slice(0, 6),
             powered_by: e.powered_by?.trim() || null,
           };

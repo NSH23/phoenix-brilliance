@@ -187,7 +187,7 @@ const ServicesSection = () => {
             Our Services
           </h2>
           <p className="mt-4 max-w-xl text-muted-foreground dark:text-white/70 text-base md:text-lg leading-relaxed font-sans">
-            Full-service event design, planning, and execution tailored to your vision.
+            Comprehensive event design, meticulous planning, and flawless execution — thoughtfully tailored to transform your vision into an extraordinary experience.
           </p>
         </header>
 

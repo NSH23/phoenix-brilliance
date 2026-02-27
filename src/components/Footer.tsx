@@ -39,7 +39,8 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-xs md:text-sm text-footer/90 italic leading-relaxed text-center lg:text-left max-w-[280px] md:max-w-none font-sans">
-              Turning your dreams into magnificent celebrations. Every moment, a cherished memory.
+              Not just events — timeless experiences crafted with purpose and perfection.
+              <span className="block mt-1">Where vision transforms into unforgettable celebration.</span>
             </p>
             <div className="flex gap-3 justify-center lg:justify-start shrink-0 pt-1">
               <a

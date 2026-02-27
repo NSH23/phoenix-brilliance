@@ -62,7 +62,7 @@ export default function WhyChooseUsSection() {
   }>({
     title: "Why Phoenix Events?",
     subtitle: "Why Choose Us",
-    description: "We create experiences that become cherished memories. With over a decade of expertise, we bring your dreams to life.",
+    description: "We craft experiences that transcend moments and become cherished memories. With over a decade of expertise, we transform visions into beautifully executed realities — defined by creativity, precision, and uncompromising attention to detail.",
   });
   const [loading, setLoading] = useState(true);
 

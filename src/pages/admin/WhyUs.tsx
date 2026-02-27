@@ -209,7 +209,7 @@ export default function AdminWhyUs() {
                 <Input
                   value={header.description}
                   onChange={e => setHeader(h => ({ ...h, description: e.target.value }))}
-                  placeholder="We create experiences that become cherished memories."
+                  placeholder="We craft experiences that transcend moments and become cherished memories."
                 />
               </div>
               <Button onClick={handleSaveHeader} disabled={saving === 'header'}>

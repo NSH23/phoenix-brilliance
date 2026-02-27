@@ -219,7 +219,7 @@ export function PremiumTestimonials() {
                             <Sparkles className="h-4 w-4 text-primary" />
                         </motion.div>
                         <span className="text-sm font-medium text-foreground/80">
-                            ✨ Client Love Stories
+                            Client Love Stories
                         </span>
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                     </motion.div>
