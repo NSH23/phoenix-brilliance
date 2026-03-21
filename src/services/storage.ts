@@ -1,18 +1,10 @@
 import { supabase } from '@/lib/supabase';
-
-export type BucketName =
-  | 'event-images'
-  | 'album-images'
-  | 'partner-logos'
-  | 'gallery-images'
-  | 'before-after-images'
-  | 'testimonial-avatars'
-  | 'admin-avatars'
-  | 'team-photos'
-  | 'team-documents'
-  | 'service-images'
-  | 'site-logo'
-  | 'content-media';
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+  resolveMediaUrl,
+  type BucketName,
+} from '@/lib/cloudinary';
 
 /**
  * Upload a file to Supabase Storage
@@ -31,33 +23,7 @@ export async function uploadFile(
   path?: string,
   options?: UploadFileOptions
 ): Promise<string> {
-  const fileName = path || `${Date.now()}-${file.name}`;
-  const filePath = fileName.replace(/[^a-zA-Z0-9._/-]/g, '_');
-
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: options?.upsert ?? false,
-    });
-
-  if (error) {
-    const msg = error.message ?? '';
-    if (/mime type .* is not supported/i.test(msg)) {
-      throw new Error(
-        `File type not allowed for this bucket. ${msg} ` +
-        'Ask an admin to add this type in Storage → bucket → Settings → Allowed MIME types.'
-      );
-    }
-    throw new Error(`Failed to upload file: ${msg}`);
-  }
-
-  // Get public URL (not used for private buckets like team-documents)
-  const { data: urlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(data.path);
-
-  return urlData.publicUrl;
+  return uploadToCloudinary(file, bucket);
 }
 
 /**
@@ -72,14 +38,7 @@ export async function uploadFiles(
   files: File[],
   pathPrefix?: string
 ): Promise<string[]> {
-  const uploadPromises = files.map((file, index) => {
-    const fileName = pathPrefix
-      ? `${pathPrefix}/${Date.now()}-${index}-${file.name}`
-      : `${Date.now()}-${index}-${file.name}`;
-    return uploadFile(bucket, file, fileName);
-  });
-
-  return Promise.all(uploadPromises);
+  return Promise.all(files.map((file) => uploadToCloudinary(file, bucket)));
 }
 
 /**
@@ -88,6 +47,10 @@ export async function uploadFiles(
  * @param path - The path/filename in the bucket
  */
 export async function deleteFile(bucket: BucketName, path: string): Promise<void> {
+  if (/^https?:\/\//i.test(path)) {
+    await deleteFromCloudinary(path);
+    return;
+  }
   const { error } = await supabase.storage
     .from(bucket)
     .remove([path]);
@@ -103,12 +66,8 @@ export async function deleteFile(bucket: BucketName, path: string): Promise<void
  * @param paths - Array of paths/filenames to delete
  */
 export async function deleteFiles(bucket: BucketName, paths: string[]): Promise<void> {
-  const { error } = await supabase.storage
-    .from(bucket)
-    .remove(paths);
-
-  if (error) {
-    throw new Error(`Failed to delete files: ${error.message}`);
+  for (const p of paths) {
+    await deleteFile(bucket, p);
   }
 }
 
@@ -119,6 +78,7 @@ export async function deleteFiles(bucket: BucketName, paths: string[]): Promise<
  * @returns The public URL
  */
 export function getPublicUrl(bucket: BucketName, path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
   const { data } = supabase.storage
     .from(bucket)
     .getPublicUrl(path);
@@ -153,7 +113,7 @@ export function resolvePublicStorageUrl(pathOrUrl: string | null | undefined, fa
   const raw = (pathOrUrl ?? '').trim();
   if (!raw) return '';
   if (/^https?:\/\//i.test(raw)) {
-    return rewriteSupabaseStoragePublicUrlToCurrentProject(raw);
+    return resolveMediaUrl(raw);
   }
   return getPublicUrl(fallbackBucket, raw);
 }
@@ -197,6 +157,7 @@ export async function createSignedUrl(
   path: string,
   expiresIn = 60
 ): Promise<string> {
+  if (/^https?:\/\//i.test(path)) return path;
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
   if (error) throw new Error(`Failed to create signed URL: ${error.message}`);
   if (!data?.signedUrl) throw new Error('No signed URL returned');
@@ -208,21 +169,7 @@ export async function createSignedUrl(
  * Returns the storage path (store in team.photo_url); use createSignedUrl for display.
  */
 export async function uploadTeamPhoto(teamId: string, file: File): Promise<string> {
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const safeExt = ext || 'jpg';
-  const path = `${teamId}/avatar.${safeExt}`;
-
-  const existing = await listFiles('team-photos', teamId);
-  if (existing.length > 0) {
-    await deleteFiles('team-photos', existing);
-  }
-
-  const { error } = await supabase.storage
-    .from('team-photos')
-    .upload(path, file, { cacheControl: '3600', upsert: true });
-
-  if (error) throw new Error(`Failed to upload photo: ${error.message}`);
-  return path;
+  return uploadToCloudinary(file, 'team-photos');
 }
 
 /**
@@ -241,15 +188,7 @@ export async function uploadTeamDocument(
   file: File,
   displayName?: string
 ): Promise<{ path: string; name: string; fileType: string | null }> {
-  const uid = crypto.randomUUID();
-  const base = (file.name || 'document').replace(/[^a-zA-Z0-9.-]/g, '_').slice(0, 80);
-  const path = `${teamId}/${uid}-${base}`;
-
-  const { error } = await supabase.storage
-    .from('team-documents')
-    .upload(path, file, { cacheControl: '3600', upsert: false });
-
-  if (error) throw new Error(`Failed to upload document: ${error.message}`);
+  const path = await uploadToCloudinary(file, 'team-documents');
 
   const fileType = file.type || (file.name && file.name.includes('.') ? file.name.split('.').pop()! : null);
   return { path, name: displayName?.trim() || file.name || 'Document', fileType: fileType || null };

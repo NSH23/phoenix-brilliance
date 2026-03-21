@@ -1,6 +1,6 @@
 // Trigger Vercel rebuild
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
@@ -45,36 +45,8 @@ const isVideoUrl = (url: string) => /\.(mp4|webm|mov)(\?|$)/i.test(url);
 const CONTENT_MEDIA_BUCKET = 'content-media';
 
 /** Upload a video/image file to content-media bucket. Returns public URL. */
-async function uploadContentMediaFile(file: File, folder: string): Promise<string> {
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
-    const fileName = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}.${ext}`;
-    const filePath = `${folder}/${fileName}`;
-
-    const isVideo = file.type.startsWith('video/');
-    const contentType = file.type || (isVideo ? (ext === 'webm' ? 'video/webm' : 'video/mp4') : 'image/jpeg');
-
-    const { data, error } = await supabase.storage.from(CONTENT_MEDIA_BUCKET).upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType,
-    });
-
-    if (error) {
-        const msg = error.message || '';
-        if (msg.includes('row-level security') || msg.includes('policy')) {
-            throw new Error('Storage access denied. Make sure you are logged in as an admin and the content-media bucket allows uploads.');
-        }
-        if (msg.includes('File size limit') || msg.includes('too large')) {
-            throw new Error('File is too large. Use a direct Video URL instead, or use a smaller file.');
-        }
-        if (/mime type .* is not supported/i.test(msg)) {
-            throw new Error('This file type is not allowed. In Supabase Dashboard go to Storage → content-media → Settings and add allowed MIME types: video/mp4, video/webm.');
-        }
-        throw new Error(msg || 'Upload failed');
-    }
-
-    const { data: urlData } = supabase.storage.from(CONTENT_MEDIA_BUCKET).getPublicUrl(data.path);
-    return urlData.publicUrl;
+async function uploadContentMediaFile(file: File): Promise<string> {
+    return uploadToCloudinary(file, CONTENT_MEDIA_BUCKET as typeof CONTENT_MEDIA_BUCKET);
 }
 
 function HeroSlotCard({
@@ -316,7 +288,7 @@ export default function ContentMedia() {
         setUploading(true);
         setUploadSuccess(false);
         try {
-            const url = await uploadContentMediaFile(file, activeTab);
+            const url = await uploadContentMediaFile(file);
             setValue('url', url);
             setUploadSuccess(true);
             toast.success('Video uploaded. Click Save to add it.');
@@ -335,7 +307,7 @@ export default function ContentMedia() {
         setUploading(true);
         setUploadSuccess(false);
         try {
-            const url = await uploadContentMediaFile(file, activeTab);
+            const url = await uploadContentMediaFile(file);
             setValue('url', url);
             setUploadSuccess(true);
             toast.success('Image uploaded. Click Save to add it.');
@@ -358,7 +330,7 @@ export default function ContentMedia() {
             if (file && !mediaUrl) {
                 setUploading(true);
                 try {
-                    mediaUrl = await uploadContentMediaFile(file, activeTab);
+                    mediaUrl = await uploadContentMediaFile(file);
                 } finally {
                     setUploading(false);
                 }

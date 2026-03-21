@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { uploadFile, uploadFiles, type BucketName } from '@/services/storage';
+import { uploadToCloudinary, type BucketName } from '@/lib/cloudinary';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 
@@ -40,11 +40,21 @@ export default function ImageUpload({
 
   const images = Array.isArray(value) ? value : value ? [value] : [];
 
+  const fileMatchesAccept = (file: File): boolean => {
+    if (!accept || accept === '*/*') return true;
+    return accept.split(',').some((token) => {
+      const t = token.trim().toLowerCase();
+      if (!t) return false;
+      if (t.endsWith('/*')) return file.type.toLowerCase().startsWith(t.slice(0, -1));
+      return file.type.toLowerCase() === t;
+    });
+  };
+
   const handleFileSelect = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     const fileArray = Array.from(files).slice(0, multiple ? maxFiles - images.length : 1);
-    const validFiles = fileArray.filter(file => file.type.startsWith('image/'));
+    const validFiles = fileArray.filter(fileMatchesAccept);
     
     if (validFiles.length === 0) {
       toast.error('Please select valid image files');
@@ -56,11 +66,11 @@ export default function ImageUpload({
       setIsUploading(true);
       try {
         if (multiple) {
-          const urls = await uploadFiles(bucket, validFiles);
+          const urls = await Promise.all(validFiles.map((f) => uploadToCloudinary(f, bucket)));
           onChange([...images, ...urls]);
           toast.success(`${urls.length} image(s) uploaded successfully`);
         } else {
-          const url = await uploadFile(bucket, validFiles[0]);
+          const url = await uploadToCloudinary(validFiles[0], bucket);
           onChange(url);
           toast.success('Image uploaded successfully');
         }
@@ -189,7 +199,7 @@ export default function ImageUpload({
           return;
         }
 
-        const urls = await uploadFiles(bucket, filesToUpload);
+        const urls = await Promise.all(filesToUpload.map((f) => uploadToCloudinary(f, bucket)));
         pendingFilesRef.current = [];
         setPreviews([]);
         onChange([...images, ...urls]);
@@ -202,7 +212,7 @@ export default function ImageUpload({
           return;
         }
 
-        const url = await uploadFile(bucket, file);
+        const url = await uploadToCloudinary(file, bucket);
         pendingFilesRef.current = [];
         setPreviews([]);
         onChange(url);
