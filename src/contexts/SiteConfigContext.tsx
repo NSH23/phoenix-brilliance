@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getContactInfoOptional, getSiteSettingOptional } from '@/services/siteContent';
 import { getActiveSocialLinks } from '@/services/siteContent';
-import { getPublicUrl } from '@/services/storage';
+import { resolvePublicStorageUrl } from '@/services/storage';
 
 export interface SiteContact {
   phone: string;
@@ -86,10 +86,8 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
         }
         setSocialLinks(socialMap);
 
-        // Logo: use full URL as-is; if it's a path (no http), resolve from site-logo bucket
         if (logoValue && logoValue.trim()) {
-          const url = logoValue.startsWith('http') ? logoValue : getPublicUrl('site-logo', logoValue.trim());
-          setLogoUrl(url);
+          setLogoUrl(resolvePublicStorageUrl(logoValue.trim(), 'site-logo'));
         }
       } catch {
         // Keep defaults on error

@@ -2,12 +2,11 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getActiveCollaborations } from "@/services/collaborations";
-import { getPublicUrl } from "@/services/storage";
+import { resolvePublicStorageUrl } from "@/services/storage";
 
 function resolveLogoUrl(url: string | null): string | null {
   if (!url) return null;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return getPublicUrl("partner-logos", url);
+  return resolvePublicStorageUrl(url, "partner-logos");
 }
 
 const PartnersSection = () => {

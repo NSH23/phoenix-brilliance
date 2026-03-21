@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { resolvePublicStorageUrl } from '@/services/storage';
 
 export interface BeforeAfter {
   id: string;
@@ -12,6 +13,14 @@ export interface BeforeAfter {
   updated_at: string;
 }
 
+function normalizeBeforeAfterRow(row: BeforeAfter): BeforeAfter {
+  return {
+    ...row,
+    before_image_url: resolvePublicStorageUrl(row.before_image_url, 'before-after-images'),
+    after_image_url: resolvePublicStorageUrl(row.after_image_url, 'before-after-images'),
+  };
+}
+
 export async function getActiveBeforeAfter(): Promise<BeforeAfter[]> {
   const { data, error } = await supabase
     .from('before_after')
@@ -21,7 +30,7 @@ export async function getActiveBeforeAfter(): Promise<BeforeAfter[]> {
     .limit(4);
 
   if (error) throw error;
-  return (data || []) as BeforeAfter[];
+  return ((data || []) as BeforeAfter[]).map(normalizeBeforeAfterRow);
 }
 
 export async function getAllBeforeAfter(): Promise<BeforeAfter[]> {
@@ -31,7 +40,7 @@ export async function getAllBeforeAfter(): Promise<BeforeAfter[]> {
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return (data || []) as BeforeAfter[];
+  return ((data || []) as BeforeAfter[]).map(normalizeBeforeAfterRow);
 }
 
 export async function createBeforeAfter(

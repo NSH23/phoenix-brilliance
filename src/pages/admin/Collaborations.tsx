@@ -41,13 +41,12 @@ import {
   type Collaboration,
   type CollaborationFolder,
 } from '@/services/collaborations';
-import { getPublicUrl } from '@/services/storage';
+import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
 
 function resolveLogoUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return getPublicUrl('partner-logos', url);
+  return resolvePublicStorageUrl(url, 'partner-logos');
 }
 
 export default function AdminCollaborations() {

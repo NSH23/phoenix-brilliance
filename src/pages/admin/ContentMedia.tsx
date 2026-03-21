@@ -134,20 +134,21 @@ function HeroSlotCard({
                     </div>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                    {item ? (
-                        <>
-                            <Button size="sm" variant="ghost" onClick={() => onEdit(item)}>
-                                <Pencil size={16} /> <span className="sm:hidden ml-2">Edit</span>
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => onDelete(item)}>
-                                <Trash2 size={16} /> <span className="sm:hidden ml-2">Delete</span>
-                            </Button>
-                        </>
-                    ) : (
-                        <Button size="sm" onClick={() => onAdd(slotIndex, mediaType)}>
-                            <Plus size={16} className="mr-2" /> Add
-                        </Button>
-                    )}
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => (item ? onEdit(item) : onAdd(slotIndex, mediaType))}
+                    >
+                        <Pencil size={16} /> <span className="ml-2">Select</span>
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={!item}
+                        onClick={() => item && onDelete(item)}
+                    >
+                        <Trash2 size={16} /> <span className="ml-2">Delete</span>
+                    </Button>
                 </div>
             </CardContent>
         </Card>
@@ -204,11 +205,11 @@ function MediaList({
                             </div>
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 mt-2 sm:mt-0">
-                            <Button size="sm" variant="ghost" onClick={() => onEdit(item)}>
-                                <Pencil size={16} /> <span className="sm:hidden ml-2">Edit</span>
+                            <Button size="sm" variant="outline" onClick={() => onEdit(item)}>
+                                <Pencil size={16} /> <span className="ml-2">Select</span>
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => onDelete(item)}>
-                                <Trash2 size={16} /> <span className="sm:hidden ml-2">Delete</span>
+                            <Button size="sm" variant="destructive" onClick={() => onDelete(item)}>
+                                <Trash2 size={16} /> <span className="ml-2">Delete</span>
                             </Button>
                         </div>
                     </CardContent>
@@ -230,6 +231,7 @@ export default function ContentMedia() {
     const [uploadSuccess, setUploadSuccess] = useState(false);
 
     const { register, handleSubmit, reset, setValue, watch } = useForm<Partial<ContentMedia> & { file?: FileList }>();
+    const currentUrl = watch('url');
 
     useEffect(() => {
         loadData();
@@ -297,6 +299,15 @@ export default function ContentMedia() {
             console.error('Failed to delete', error);
             toast.error('Failed to delete');
         }
+    };
+
+    const clearFormMedia = () => {
+        setValue('url', '');
+        setUploadSuccess(false);
+        const vid = document.getElementById('video-upload') as HTMLInputElement | null;
+        const img = document.getElementById('image-upload') as HTMLInputElement | null;
+        if (vid) vid.value = '';
+        if (img) img.value = '';
     };
 
     const handleVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -511,6 +522,13 @@ export default function ContentMedia() {
                                 <div className="space-y-2">
                                     <Label>Or Video URL</Label>
                                     <Input {...register('url')} placeholder="https://example.com/video.mp4" />
+                                    {!!currentUrl && (
+                                        <div className="flex justify-end">
+                                            <Button type="button" variant="outline" size="sm" onClick={clearFormMedia}>
+                                                Remove Video
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         ) : (
@@ -539,6 +557,13 @@ export default function ContentMedia() {
                                 <div className="space-y-2">
                                     <Label>Or Image URL</Label>
                                     <Input {...register('url')} placeholder="https://example.com/image.jpg" />
+                                    {!!currentUrl && (
+                                        <div className="flex justify-end">
+                                            <Button type="button" variant="outline" size="sm" onClick={clearFormMedia}>
+                                                Remove Image
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         )}
@@ -565,6 +590,19 @@ export default function ContentMedia() {
                             </div>
                         )}
                         <DialogFooter>
+                            {editingItem && (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={async () => {
+                                        await handleDelete(editingItem);
+                                        setIsDialogOpen(false);
+                                        setEditingSlot(null);
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                            )}
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                             <Button type="submit" disabled={isDeploying || uploading}>
                                 {(isDeploying || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

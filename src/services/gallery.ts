@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { resolvePublicStorageUrl } from '@/services/storage';
 
 export interface GalleryImage {
   id: string;
@@ -82,12 +83,10 @@ export async function getGalleryImagesByRows(maxRows = 10) {
   return byRow;
 }
 
-/** Resolve url to a full public URL; if it's a storage path, use gallery-images bucket public URL. */
+/** Resolve url to a full public URL; paths use gallery-images; full URLs are rewritten to the current project if needed. */
 function resolveGalleryImageUrl(url: string | null | undefined): string {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  const { data } = supabase.storage.from('gallery-images').getPublicUrl(url);
-  return data.publicUrl;
+  return resolvePublicStorageUrl(url, 'gallery-images');
 }
 
 // Normalize gallery image (row_index may be missing in older DB; url may be path)

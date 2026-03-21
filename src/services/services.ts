@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { resolvePublicStorageUrl } from '@/services/storage';
 
 export interface Service {
   id: string;
@@ -13,6 +14,13 @@ export interface Service {
   updated_at: string;
 }
 
+function normalizeServiceRow(row: Service): Service {
+  return {
+    ...row,
+    image_url: row.image_url ? resolvePublicStorageUrl(row.image_url, 'service-images') : null,
+  };
+}
+
 // Get all active services
 export async function getActiveServices() {
   const { data, error } = await supabase
@@ -22,7 +30,7 @@ export async function getActiveServices() {
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return data as Service[];
+  return ((data || []) as Service[]).map(normalizeServiceRow);
 }
 
 // Get all services (admin)
@@ -33,7 +41,7 @@ export async function getAllServices() {
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return data as Service[];
+  return ((data || []) as Service[]).map(normalizeServiceRow);
 }
 
 // Create service

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { resolvePublicStorageUrl } from '@/services/storage';
 
 /** Ensure the current session is present (required for admin-only RLS on collaboration_images). */
 async function requireSession(): Promise<void> {
@@ -64,7 +65,11 @@ export async function getActiveCollaborations() {
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return data as Collaboration[];
+  return ((data || []) as Collaboration[]).map((c) => ({
+    ...c,
+    logo_url: c.logo_url ? resolvePublicStorageUrl(c.logo_url, 'partner-logos') : null,
+    banner_url: c.banner_url ? resolvePublicStorageUrl(c.banner_url, 'gallery-images') : null,
+  }));
 }
 
 // Get all collaborations (admin)
@@ -75,7 +80,11 @@ export async function getAllCollaborations() {
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return data as Collaboration[];
+  return ((data || []) as Collaboration[]).map((c) => ({
+    ...c,
+    logo_url: c.logo_url ? resolvePublicStorageUrl(c.logo_url, 'partner-logos') : null,
+    banner_url: c.banner_url ? resolvePublicStorageUrl(c.banner_url, 'gallery-images') : null,
+  }));
 }
 
 // Get collaboration by ID with images, folders, and steps.
@@ -110,9 +119,15 @@ export async function getCollaborationById(id: string) {
     ? [...steps].sort((a: { step_number?: number }, b: { step_number?: number }) => (a?.step_number ?? 0) - (b?.step_number ?? 0))
     : [];
 
+  const collab = data as Collaboration;
   return {
     ...data,
-    collaboration_images: imagesArr,
+    logo_url: collab.logo_url ? resolvePublicStorageUrl(collab.logo_url, 'partner-logos') : null,
+    banner_url: collab.banner_url ? resolvePublicStorageUrl(collab.banner_url, 'gallery-images') : null,
+    collaboration_images: imagesArr.map((img: CollaborationImage) => ({
+      ...img,
+      image_url: resolvePublicStorageUrl(img.image_url, 'gallery-images'),
+    })),
     collaboration_folders: foldersArr,
     collaboration_steps: stepsArr,
   };

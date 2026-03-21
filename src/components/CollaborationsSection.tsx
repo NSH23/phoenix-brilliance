@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { getPublicUrl } from "@/services/storage";
+import { resolvePublicStorageUrl } from "@/services/storage";
 import { shortLocationForCard } from "@/lib/addressUtils";
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -8,8 +8,7 @@ import { useLeadCaptureOptional } from "@/contexts/LeadCaptureContext";
 
 function resolveLogoUrl(url: string | null | undefined): string {
   if (!url) return "/placeholder.svg";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return getPublicUrl("partner-logos", url);
+  return resolvePublicStorageUrl(url, "partner-logos");
 }
 
 const CollaborationsSection = () => {

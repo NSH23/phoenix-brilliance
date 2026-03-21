@@ -1,4 +1,37 @@
 import { supabase } from '@/lib/supabase';
+import { resolvePublicStorageUrl } from '@/services/storage';
+
+function normEventCover(url: string | null | undefined): string | null {
+  if (url == null || url === '') return null;
+  return resolvePublicStorageUrl(url, 'event-images') || null;
+}
+
+function normEventImageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  return resolvePublicStorageUrl(url, 'event-images');
+}
+
+type EventWithImages = Event & {
+  event_images?: { id: string; url: string; display_order: number }[];
+};
+
+function normalizeEventRow<T extends EventWithImages>(e: T): T {
+  return {
+    ...e,
+    cover_image: normEventCover(e.cover_image),
+    event_images: e.event_images?.map((img) => ({
+      ...img,
+      url: normEventImageUrl(img.url),
+    })),
+  };
+}
+
+function normalizeEventStep(step: EventStep): EventStep {
+  return {
+    ...step,
+    image_url: step.image_url ? resolvePublicStorageUrl(step.image_url, 'event-images') : null,
+  };
+}
 
 export interface Event {
   id: string;
@@ -35,7 +68,7 @@ export async function getActiveEvents() {
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return data as Event[];
+  return ((data || []) as Event[]).map((row) => normalizeEventRow(row as EventWithImages));
 }
 
 // Get events for homepage (top N by display_order, with images)
@@ -48,7 +81,7 @@ export async function getEventsForHomepage(limit: number) {
     .limit(limit);
 
   if (error) throw error;
-  return (data || []) as (Event & { event_images: { id: string; url: string; display_order: number }[] })[];
+  return ((data || []) as EventWithImages[]).map(normalizeEventRow);
 }
 
 // Get all events (admin)
@@ -59,7 +92,7 @@ export async function getAllEvents() {
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return data as Event[];
+  return ((data || []) as Event[]).map((row) => normalizeEventRow(row as EventWithImages));
 }
 
 // Get event by ID
@@ -71,7 +104,7 @@ export async function getEventById(id: string) {
     .single();
 
   if (error) throw error;
-  return data as Event;
+  return normalizeEventRow(data as EventWithImages);
 }
 
 // Get event by slug
@@ -84,7 +117,7 @@ export async function getEventBySlug(slug: string) {
     .single();
 
   if (error) throw error;
-  return data as Event;
+  return normalizeEventRow(data as EventWithImages);
 }
 
 // Get event with steps
@@ -100,7 +133,13 @@ export async function getEventWithSteps(slug: string) {
     .single();
 
   if (error) throw error;
-  return data;
+  if (!data) return data;
+  const row = data as EventWithImages & { event_steps?: EventStep[] };
+  const steps = row.event_steps || [];
+  return {
+    ...normalizeEventRow(row),
+    event_steps: steps.map(normalizeEventStep),
+  };
 }
 
 // Create event
@@ -147,7 +186,7 @@ export async function getEventSteps(eventId: string) {
     .order('step_number', { ascending: true });
 
   if (error) throw error;
-  return data as EventStep[];
+  return ((data || []) as EventStep[]).map(normalizeEventStep);
 }
 
 // Create event step

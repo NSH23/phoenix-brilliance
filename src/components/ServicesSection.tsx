@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExpandingCards, CardItem } from "@/components/ui/expanding-cards";
 import { getActiveServices } from "@/services/services";
-import { getPublicUrl } from "@/services/storage";
+import { resolvePublicStorageUrl } from "@/services/storage";
 import {
   Crown,
   Palette,
@@ -124,7 +124,7 @@ const ServicesSection = () => {
             const IconComponent = (s.icon && ICON_MAP[s.icon as string]) ? ICON_MAP[s.icon as string] : Sparkles;
 
             const imgSrc = s.image_url
-              ? (s.image_url.startsWith("http") ? s.image_url : getPublicUrl("service-images", s.image_url))
+              ? resolvePublicStorageUrl(s.image_url, "service-images")
               : "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80";
             return {
               id: s.id,

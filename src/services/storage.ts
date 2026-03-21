@@ -11,7 +11,8 @@ export type BucketName =
   | 'team-photos'
   | 'team-documents'
   | 'service-images'
-  | 'site-logo';
+  | 'site-logo'
+  | 'content-media';
 
 /**
  * Upload a file to Supabase Storage
@@ -123,6 +124,38 @@ export function getPublicUrl(bucket: BucketName, path: string): string {
     .getPublicUrl(path);
 
   return data.publicUrl;
+}
+
+/**
+ * Rebuild a Supabase Storage *public* object URL so it uses the current project (VITE_SUPABASE_URL).
+ * After migrating to a new Supabase project, rows often still contain full URLs from the old project;
+ * the browser would otherwise keep requesting the old hostname. Non-Supabase URLs are returned unchanged.
+ */
+export function rewriteSupabaseStoragePublicUrlToCurrentProject(url: string): string {
+  const trimmed = (url || '').trim();
+  if (!trimmed) return '';
+  const base = trimmed.split('?')[0];
+  const m = base.match(/^https?:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/i);
+  if (!m) return trimmed;
+  const bucket = m[1];
+  let objectPath = m[2];
+  try {
+    objectPath = decodeURIComponent(objectPath);
+  } catch {
+    /* keep encoded */
+  }
+  const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+  return data.publicUrl;
+}
+
+/** Storage path or full legacy Supabase URL → public URL for this project. */
+export function resolvePublicStorageUrl(pathOrUrl: string | null | undefined, fallbackBucket: BucketName): string {
+  const raw = (pathOrUrl ?? '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) {
+    return rewriteSupabaseStoragePublicUrlToCurrentProject(raw);
+  }
+  return getPublicUrl(fallbackBucket, raw);
 }
 
 /**

@@ -32,7 +32,7 @@ import {
   deleteService,
   type Service,
 } from '@/services/services';
-import { getPublicUrl } from '@/services/storage';
+import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
 
 export default function AdminServices() {
@@ -203,7 +203,7 @@ export default function AdminServices() {
                     <div className="flex items-center gap-2 text-muted-foreground bg-muted p-1.5 md:p-2 rounded-lg">
                       {s.image_url ? (
                         <img
-                          src={s.image_url.startsWith('http') ? s.image_url : getPublicUrl('service-images', s.image_url)}
+                          src={resolvePublicStorageUrl(s.image_url, 'service-images')}
                           alt={s.title}
                           className="w-8 h-8 md:w-10 md:h-10 object-cover rounded-md"
                           loading="lazy"

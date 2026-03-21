@@ -1,14 +1,12 @@
 import { supabase } from '@/lib/supabase';
+import { resolvePublicStorageUrl } from '@/services/storage';
 
-const CONTENT_MEDIA_BUCKET = 'content-media';
+const CONTENT_MEDIA_BUCKET = 'content-media' as const;
 
-/** If url is a storage path (no protocol), return full public URL; otherwise return as-is. */
+/** Storage path or full URL (including legacy project URLs) → public URL for current project. */
 export function resolveContentMediaUrl(url: string | null | undefined): string {
     if (!url || typeof url !== 'string') return '';
-    const trimmed = url.trim();
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-    const { data } = supabase.storage.from(CONTENT_MEDIA_BUCKET).getPublicUrl(trimmed);
-    return data.publicUrl;
+    return resolvePublicStorageUrl(url.trim(), CONTENT_MEDIA_BUCKET);
 }
 
 export interface ContentMedia {

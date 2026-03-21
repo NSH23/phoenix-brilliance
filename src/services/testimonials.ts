@@ -1,4 +1,13 @@
 import { supabase } from '@/lib/supabase';
+import { resolvePublicStorageUrl } from '@/services/storage';
+
+function normalizeTestimonialRow(row: Testimonial): Testimonial {
+  if (!row.avatar_url?.trim()) return row;
+  return {
+    ...row,
+    avatar_url: resolvePublicStorageUrl(row.avatar_url, 'testimonial-avatars'),
+  };
+}
 
 export interface Testimonial {
   id: string;
@@ -23,7 +32,7 @@ export async function getAllTestimonials() {
     .order('rating', { ascending: false });
 
   if (error) throw error;
-  return data as Testimonial[];
+  return ((data || []) as Testimonial[]).map(normalizeTestimonialRow);
 }
 
 // Get featured testimonials
@@ -37,7 +46,7 @@ export async function getFeaturedTestimonials(limit = 6) {
     .limit(limit);
 
   if (error) throw error;
-  return data as Testimonial[];
+  return ((data || []) as Testimonial[]).map(normalizeTestimonialRow);
 }
 
 // Get testimonials by event type
@@ -50,7 +59,7 @@ export async function getTestimonialsByEventType(eventType: string) {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data as Testimonial[];
+  return ((data || []) as Testimonial[]).map(normalizeTestimonialRow);
 }
 
 // Create testimonial

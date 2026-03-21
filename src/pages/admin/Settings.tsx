@@ -21,7 +21,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { updateAdminUser } from '@/services/adminUsers';
 import { supabase } from '@/lib/supabase';
 import { getSiteSettingOptional, upsertSiteSetting } from '@/services/siteContent';
-import { getPublicUrl, createSignedUrl } from '@/services/storage';
+import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
 
 const NOTIFICATION_STORAGE_KEY = 'admin_notification_preferences';
@@ -40,14 +40,6 @@ const defaultSiteSettings = {
   defaultTheme: 'system',
   maintenanceMode: false,
 };
-
-/** Avatar may be stored as full URL or storage path; return a URL suitable for <img src>. */
-function resolveAvatarDisplayUrl(avatar: string | undefined): string {
-  if (!avatar) return '';
-  if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
-  const { data } = supabase.storage.from('admin-avatars').getPublicUrl(avatar);
-  return data.publicUrl;
-}
 
 export default function AdminSettings() {
   const { user, refreshUser } = useAdmin();
@@ -82,27 +74,13 @@ export default function AdminSettings() {
     }));
   }, [user]);
 
-  // Resolve avatar for display (preview + img): full URL use as-is; path → signed URL so it works for private bucket
   useEffect(() => {
     const raw = profileData.avatar;
     if (!raw) {
       setAvatarDisplayUrl('');
       return;
     }
-    if (raw.startsWith('http://') || raw.startsWith('https://')) {
-      setAvatarDisplayUrl(raw);
-      return;
-    }
-    let cancelled = false;
-    createSignedUrl('admin-avatars', raw, 3600)
-      .then((url) => { if (!cancelled) setAvatarDisplayUrl(url); })
-      .catch(() => {
-        if (!cancelled) {
-          const { data } = supabase.storage.from('admin-avatars').getPublicUrl(raw);
-          setAvatarDisplayUrl(data.publicUrl);
-        }
-      });
-    return () => { cancelled = true; };
+    setAvatarDisplayUrl(resolvePublicStorageUrl(raw, 'admin-avatars'));
   }, [profileData.avatar]);
 
   useEffect(() => {
@@ -279,7 +257,7 @@ export default function AdminSettings() {
                   <Label>Profile Avatar</Label>
                   <ImageUpload
                     key={profileData.avatar || 'no-avatar'}
-                    value={avatarDisplayUrl || resolveAvatarDisplayUrl(profileData.avatar)}
+                    value={avatarDisplayUrl || resolvePublicStorageUrl(profileData.avatar, 'admin-avatars')}
                     onChange={(v) => setProfileData((p) => ({ ...p, avatar: (v as string) || '' }))}
                     multiple={false}
                     previewClassName="object-cover"
@@ -549,7 +527,7 @@ export default function AdminSettings() {
                 <div className="grid gap-2">
                   <Label>Logo image</Label>
                   <ImageUpload
-                    value={siteLogoUrl ? (siteLogoUrl.startsWith('http') ? siteLogoUrl : getPublicUrl('site-logo', siteLogoUrl)) : ''}
+                    value={siteLogoUrl ? resolvePublicStorageUrl(siteLogoUrl, 'site-logo') : ''}
                     onChange={handleSiteLogoChange}
                     multiple={false}
                     bucket="site-logo"

@@ -9,14 +9,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getCollaborationById } from "@/services/collaborations";
-import { getPublicUrl } from "@/services/storage";
+import { resolvePublicStorageUrl } from "@/services/storage";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 
-/** Resolve collaboration media URL: use as-is if full URL, else resolve from gallery-images bucket. */
 function resolveCollaborationMediaUrl(urlOrPath: string): string {
-  if (urlOrPath.startsWith("http://") || urlOrPath.startsWith("https://")) return urlOrPath;
-  return getPublicUrl("gallery-images", urlOrPath);
+  return resolvePublicStorageUrl(urlOrPath, "gallery-images");
 }
 
 type CollaborationDetail = Awaited<ReturnType<typeof getCollaborationById>>;
@@ -349,8 +347,8 @@ export default function CollaborationDetail() {
                     src={(() => {
                       const b = collaboration.banner_url || images[0]?.image_url;
                       const logo = collaboration.logo_url;
-                      if (b) return b.startsWith("http") ? b : getPublicUrl("gallery-images", b);
-                      if (logo) return logo.startsWith("http") ? logo : getPublicUrl("partner-logos", logo);
+                      if (b) return resolvePublicStorageUrl(b, "gallery-images");
+                      if (logo) return resolvePublicStorageUrl(logo, "partner-logos");
                       return "/placeholder.svg";
                     })()}
                     alt={collaboration.name}
@@ -382,7 +380,7 @@ export default function CollaborationDetail() {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={collaboration.logo_url ? (collaboration.logo_url.startsWith("http") ? collaboration.logo_url : getPublicUrl("partner-logos", collaboration.logo_url)) : "/placeholder.svg"}
+                  src={collaboration.logo_url ? resolvePublicStorageUrl(collaboration.logo_url, "partner-logos") : "/placeholder.svg"}
                   alt={`${collaboration.name} logo`}
                   className="w-16 h-16 rounded-2xl object-cover border-2 border-border"
                   loading="lazy"

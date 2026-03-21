@@ -66,7 +66,7 @@ const TestimonialsSectionWrapper = () => {
               author: {
                 name: t.name || "Happy Client",
                 handle: t.role || "Client",
-                avatar: t.avatar || "",
+                avatar: t.avatar_url || "",
               },
               text: t.content || "Amazing experience working with Phoenix Events.",
             }))

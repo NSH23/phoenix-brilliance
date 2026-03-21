@@ -30,7 +30,7 @@ import { getAllEvents, createEvent, updateEvent, deleteEvent, Event } from '@/se
 import { getEventImages, setEventImages } from '@/services/eventImages';
 import { toast } from 'sonner';
 
-const MIN_EVENT_IMAGES = 3;
+const MIN_EVENT_IMAGES = 0;
 const MAX_EVENT_IMAGES = 5;
 
 export default function AdminEvents() {
@@ -131,9 +131,9 @@ export default function AdminEvents() {
       return;
     }
 
-    if (eventImages.length < MIN_EVENT_IMAGES || eventImages.length > MAX_EVENT_IMAGES) {
+    if (eventImages.length > MAX_EVENT_IMAGES) {
       toast.error('Event images required', {
-        description: `Add between ${MIN_EVENT_IMAGES} and ${MAX_EVENT_IMAGES} images for homepage display.`,
+        description: `Add up to ${MAX_EVENT_IMAGES} images for homepage display.`,
       });
       return;
     }
@@ -401,6 +401,18 @@ export default function AdminEvents() {
                 uploadOnSelect={true}
               />
               {formData.cover_image && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, cover_image: '' })}
+                  >
+                    Remove Cover Image
+                  </Button>
+                </div>
+              )}
+              {formData.cover_image && (
                 <Input
                   id="coverImage"
                   value={formData.cover_image}
@@ -413,9 +425,9 @@ export default function AdminEvents() {
 
             <div className="grid gap-2">
               <Label>
-                Event Images (Homepage) *
+                Event Images (Homepage)
                 <span className="text-muted-foreground font-normal ml-2">
-                  {MIN_EVENT_IMAGES}–{MAX_EVENT_IMAGES} images required
+                  0–{MAX_EVENT_IMAGES} images
                 </span>
               </Label>
               <p className="text-xs text-muted-foreground">
@@ -431,14 +443,19 @@ export default function AdminEvents() {
                 uploadOnSelect={true}
               />
               {eventImages.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {eventImages.length} / {MAX_EVENT_IMAGES} images
-                  {eventImages.length < MIN_EVENT_IMAGES && (
-                    <span className="text-destructive ml-1">
-                      (add {MIN_EVENT_IMAGES - eventImages.length} more)
-                    </span>
-                  )}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {eventImages.length} / {MAX_EVENT_IMAGES} images
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEventImagesForm([])}
+                  >
+                    Remove All Event Images
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -474,7 +491,6 @@ export default function AdminEvents() {
               onClick={handleSave}
               disabled={
                 isSaving ||
-                eventImages.length < MIN_EVENT_IMAGES ||
                 eventImages.length > MAX_EVENT_IMAGES
               }
             >

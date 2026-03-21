@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
-import { createSignedUrl } from '@/services/storage';
+import { resolvePublicStorageUrl } from '@/services/storage';
 import { logger } from '@/utils/logger';
 
 /** Admin user – avatar is for admin UI only (dashboard sidebar, Settings). Do not use on public routes. */
@@ -74,15 +74,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           const rawAvatar = data.avatar_url;
           let avatar: string | undefined;
           if (rawAvatar) {
-            if (rawAvatar.startsWith('http://') || rawAvatar.startsWith('https://')) {
-              avatar = rawAvatar;
-            } else {
-              try {
-                avatar = await createSignedUrl('admin-avatars', rawAvatar, 3600);
-              } catch {
-                avatar = supabase.storage.from('admin-avatars').getPublicUrl(rawAvatar).data.publicUrl;
-              }
-            }
+            avatar = resolvePublicStorageUrl(rawAvatar, 'admin-avatars');
           }
           return {
             id: data.id,

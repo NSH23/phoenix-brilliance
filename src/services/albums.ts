@@ -1,4 +1,25 @@
 import { supabase } from '@/lib/supabase';
+import { resolvePublicStorageUrl } from '@/services/storage';
+
+function normAlbumCover(url: string | null | undefined): string | null {
+  if (url == null || url === '') return null;
+  return resolvePublicStorageUrl(url, 'album-images') || null;
+}
+
+function normalizeAlbumMedia(m: AlbumMedia): AlbumMedia {
+  return {
+    ...m,
+    url: m.url ? resolvePublicStorageUrl(m.url, 'album-images') : null,
+  };
+}
+
+function normalizeAlbum<T extends Album & { album_media?: AlbumMedia[] }>(row: T): T {
+  return {
+    ...row,
+    cover_image: normAlbumCover(row.cover_image),
+    album_media: row.album_media?.map(normalizeAlbumMedia),
+  };
+}
 
 export interface Album {
   id: string;
@@ -37,7 +58,7 @@ export async function getAllAlbums() {
     .order('event_date', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return (data || []).map((row) => normalizeAlbum(row as Album & { album_media?: AlbumMedia[] }));
 }
 
 // Get albums by event ID
@@ -49,7 +70,7 @@ export async function getAlbumsByEventId(eventId: string) {
     .order('event_date', { ascending: false });
 
   if (error) throw error;
-  return data as Album[];
+  return ((data || []) as Album[]).map((row) => normalizeAlbum(row));
 }
 
 // Get featured albums
@@ -66,7 +87,7 @@ export async function getFeaturedAlbums(limit = 6) {
     .limit(limit);
 
   if (error) throw error;
-  return data;
+  return (data || []).map((row) => normalizeAlbum(row as Album & { album_media?: AlbumMedia[] }));
 }
 
 // Get album by ID
@@ -81,7 +102,7 @@ export async function getAlbumById(id: string) {
     .single();
 
   if (error) throw error;
-  return data;
+  return normalizeAlbum(data as Album & { events?: unknown; album_media?: AlbumMedia[] });
 }
 
 // Get album with media
@@ -97,7 +118,7 @@ export async function getAlbumWithMedia(id: string) {
     .single();
 
   if (error) throw error;
-  return data;
+  return normalizeAlbum(data as Album & { events?: unknown; album_media?: AlbumMedia[] });
 }
 
 // Create album
@@ -144,7 +165,7 @@ export async function getAlbumMedia(albumId: string) {
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return data as AlbumMedia[];
+  return ((data || []) as AlbumMedia[]).map(normalizeAlbumMedia);
 }
 
 // Create album media
