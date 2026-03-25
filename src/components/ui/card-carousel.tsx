@@ -16,6 +16,8 @@ import {
 import type { Swiper as SwiperType } from "swiper"
 import { getYouTubeEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube"
 
+const EXCLUSIVE_VIDEO_EVENT = "reels-exclusive-play"
+
 interface CarouselProps {
     images: { src: string; alt: string }[]
     autoplayDelay?: number
@@ -44,6 +46,7 @@ interface VideoSlideProps {
 const VideoSlide = ({ src, index, isCenter, requestPlay, onPlayStarted, onEnded, swiperRef }: VideoSlideProps) => {
     const videoRef = useRef<HTMLVideoElement>(null)
     const [isPlaying, setIsPlaying] = useState(false)
+    const slideId = `${index}-${src}`
 
     // When parent requests play (e.g. after previous video ended), play this video
     useEffect(() => {
@@ -51,6 +54,7 @@ const VideoSlide = ({ src, index, isCenter, requestPlay, onPlayStarted, onEnded,
         const video = videoRef.current
         if (!video) return
         window.dispatchEvent(new CustomEvent('video-exclusive-play', { detail: { origin: 'reels-carousel' } }))
+        window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
         const allVideos = document.querySelectorAll('.swiper-slide video')
         allVideos.forEach((v) => {
             if (v !== video) (v as HTMLVideoElement).pause()
@@ -71,6 +75,7 @@ const VideoSlide = ({ src, index, isCenter, requestPlay, onPlayStarted, onEnded,
 
         if (video.paused) {
             window.dispatchEvent(new CustomEvent('video-exclusive-play', { detail: { origin: 'reels-carousel' } }))
+            window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
             const allVideos = document.querySelectorAll('.swiper-slide video')
             allVideos.forEach((v) => {
                 if (v !== video) (v as HTMLVideoElement).pause()
@@ -138,14 +143,39 @@ interface YouTubeSlideProps {
     src: string
     alt: string
     isCenter: boolean
+    index: number
 }
 
-const YouTubeSlide = ({ src, alt, isCenter }: YouTubeSlideProps) => {
+const YouTubeSlide = ({ src, alt, isCenter, index }: YouTubeSlideProps) => {
     const [isPlaying, setIsPlaying] = useState(false)
     const thumbnailSrc = getYouTubeThumbnail(src)
+    const slideId = `${index}-${src}`
+
+    useEffect(() => {
+        if (!isCenter) setIsPlaying(false)
+    }, [isCenter])
+
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const customEvent = e as CustomEvent
+            const incomingSlideId = customEvent.detail?.slideId as string | undefined
+            if (!incomingSlideId) return
+            if (incomingSlideId !== slideId) setIsPlaying(false)
+        }
+        window.addEventListener(EXCLUSIVE_VIDEO_EVENT, handler)
+        return () => window.removeEventListener(EXCLUSIVE_VIDEO_EVENT, handler)
+    }, [slideId])
 
     const handleClick = () => {
-        setIsPlaying((prev) => !prev)
+        setIsPlaying((prev) => {
+            const next = !prev
+            if (next) {
+                window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
+                // Pause any HTML5 videos currently playing in the carousel.
+                window.dispatchEvent(new CustomEvent("video-exclusive-play", { detail: { origin: "youtube-slide" } }))
+            }
+            return next
+        })
     }
 
     return (
@@ -314,10 +344,11 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                         <div className="group size-full rounded-3xl overflow-hidden aspect-[3/4] relative bg-black/80 border border-border/50 dark:border-white/10 shadow-elevation-1 dark:shadow-elevation-1-dark">
                                             {isVideo ? (
                                                 isYouTube ? (
-                                                    <YouTubeSlide
+                                                <YouTubeSlide
                                                         src={image.src}
                                                         alt={image.alt}
                                                         isCenter={activeIndex === index}
+                                                        index={index}
                                                     />
                                                 ) : (
                                                     <VideoSlide

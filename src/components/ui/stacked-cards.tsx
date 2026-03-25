@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getYouTubeEmbedUrl, isYouTubeValue } from "@/lib/youtube";
+import { getYouTubeEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 
 interface StackedCardsProps {
   /** First item = video URL, rest = image URLs. In hero mode only one video is used and it loops. */
@@ -24,7 +24,9 @@ const isVideoFile = (src: string) => {
 /** Hero mode: 1 video (front, loops) + 2 images (back). No cycling. Optimized for smooth playback. */
 export const StackedCards = ({ items, className, autoplay = true, heroMode = false }: StackedCardsProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(true); // Start muted so autoplay works (browser policy)
+  // Start with sound by default. If the browser blocks autoplay with sound,
+  // we fall back to muted automatically.
+  const [isMuted, setIsMuted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -56,16 +58,18 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
   // Hero mode: only one video (index 0), back cards are always images
   const isBackImage = (src: string, index: number) => heroMode ? index > 0 : !(isVideoFile(src) || isYouTubeValue(src));
 
-  // Reliable autoplay: start muted (required by browsers), play when video is ready and in view
+  // Reliable autoplay: try playing with the current mute state.
   const tryPlay = useRef(() => {
     const video = frontVideoRef.current;
     if (!video || !activeIsVideoFile || !effectiveAutoplay) return;
-    video.muted = true; // Required for autoplay without user gesture
+    video.muted = isMuted;
     const p = video.play();
     if (p && typeof p.then === "function") {
       p.catch(() => {
+        // Browser blocked autoplay with sound; fall back to muted.
         video.muted = true;
         video.play().catch(() => {});
+        setIsMuted(true);
       });
     }
   });
@@ -74,10 +78,11 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
     tryPlay.current = () => {
       const video = frontVideoRef.current;
       if (!video || !activeIsVideoFile || !effectiveAutoplay) return;
-      video.muted = playWithSoundAttempted.current ? isMuted : true;
+      video.muted = isMuted;
       video.play().then(() => {
         if (!video.muted) setIsMuted(false);
       }).catch(() => {
+        // Browser blocked autoplay with sound; fall back to muted.
         video.muted = true;
         video.play().catch(() => {});
         setIsMuted(true);
@@ -135,8 +140,11 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
     const handleExclusivePlay = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail?.origin !== "hero-stacked-cards") {
-        setIsMuted(true);
-        if (frontVideoRef.current) frontVideoRef.current.muted = true;
+        // Keep default volume preference: don't force mute when another player starts.
+        // If the browser blocks autoplay with sound, our play() catch handler will
+        // automatically fall back to muted.
+        setIsMuted(false);
+        if (frontVideoRef.current) frontVideoRef.current.muted = false;
       }
     };
     window.addEventListener("video-exclusive-play", handleExclusivePlay);
