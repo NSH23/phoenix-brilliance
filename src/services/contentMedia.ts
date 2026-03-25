@@ -1,12 +1,17 @@
 import { supabase } from '@/lib/supabase';
 import { resolvePublicStorageUrl } from '@/services/storage';
+import { getYouTubeId, isYouTubeValue } from '@/lib/youtube';
 
 const CONTENT_MEDIA_BUCKET = 'content-media' as const;
 
 /** Storage path or full URL (including legacy project URLs) → public URL for current project. */
 export function resolveContentMediaUrl(url: string | null | undefined): string {
     if (!url || typeof url !== 'string') return '';
-    return resolvePublicStorageUrl(url.trim(), CONTENT_MEDIA_BUCKET);
+    const trimmed = url.trim();
+    // YouTube migrations store only the YouTube ID (or sometimes a full YouTube URL) in `url`.
+    // In that case, don't treat it as a Supabase storage path.
+    if (isYouTubeValue(trimmed)) return getYouTubeId(trimmed);
+    return resolvePublicStorageUrl(trimmed, CONTENT_MEDIA_BUCKET);
 }
 
 export interface ContentMedia {
@@ -52,7 +57,8 @@ export async function getHeroMedia(): Promise<HeroMedia> {
 
     if (error) throw error;
     const list = (data || []) as { url: string; media_type?: string; display_order: number }[];
-    const firstVideo = list.find((m) => m.media_type === 'video' || isVideoUrl(m.url));
+    // Some legacy rows may not have media_type set; detect YouTube IDs/URLs via url.
+    const firstVideo = list.find((m) => m.media_type === 'video' || isVideoUrl(m.url) || isYouTubeValue(m.url));
     const imageList = list.filter((m) => m.media_type === 'image' || isImageUrl(m.url));
     return {
         videoUrl: firstVideo?.url ? resolveContentMediaUrl(firstVideo.url) : null,

@@ -14,6 +14,7 @@ import {
 } from "swiper/modules"
 
 import type { Swiper as SwiperType } from "swiper"
+import { getYouTubeEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube"
 
 interface CarouselProps {
     images: { src: string; alt: string }[]
@@ -133,6 +134,58 @@ const VideoSlide = ({ src, index, isCenter, requestPlay, onPlayStarted, onEnded,
     )
 }
 
+interface YouTubeSlideProps {
+    src: string
+    alt: string
+    isCenter: boolean
+}
+
+const YouTubeSlide = ({ src, alt, isCenter }: YouTubeSlideProps) => {
+    const [isPlaying, setIsPlaying] = useState(false)
+    const thumbnailSrc = getYouTubeThumbnail(src)
+
+    const handleClick = () => {
+        setIsPlaying((prev) => !prev)
+    }
+
+    return (
+        <div className="relative w-full h-full group" onClick={handleClick}>
+            {isPlaying ? (
+                <iframe
+                    src={getYouTubeEmbedUrl(src)}
+                    className="size-full object-cover rounded-xl"
+                    style={{ border: "none" }}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    title={alt || "YouTube video"}
+                />
+            ) : (
+                <>
+                    {thumbnailSrc ? (
+                        <img
+                            src={thumbnailSrc}
+                            className="size-full object-cover rounded-xl pointer-events-none"
+                            alt={alt || "YouTube thumbnail"}
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    ) : (
+                        <div className="size-full rounded-xl bg-black/20 pointer-events-none" />
+                    )}
+
+                    {isCenter && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px] transition-all duration-300 group-hover:bg-black/20 z-20 cursor-pointer">
+                            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-black/30 backdrop-blur-md border-2 border-white/30 shadow-xl transition-transform duration-300 group-hover:scale-105 group-active:scale-95">
+                                <Play className="w-7 h-7 text-white fill-white ml-0.5" />
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    )
+}
+
 export const CardCarousel: React.FC<CarouselProps> = ({
     images,
     autoplayDelay = 1500,
@@ -202,7 +255,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
   .swiper.reels-pagination-spaced { padding-bottom: 56px; }
   .swiper-slide { background-position: center; background-size: cover; width: 420px; }
   @media (max-width: 768px) { .swiper-slide { width: 300px; } }
-  .swiper-slide img, .swiper-slide video { display: block; width: 100%; }
+  .swiper-slide img, .swiper-slide video, .swiper-slide iframe { display: block; width: 100%; }
   .swiper-3d .swiper-slide-shadow-left, .swiper-3d .swiper-slide-shadow-right { background: none; }
   `
 
@@ -254,20 +307,29 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                 modules={[EffectCoverflow, Autoplay, Pagination, Navigation]}
                             >
                                 {images.map((image, index) => {
-                                    const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(image.src) || image.src.includes('/video') || image.src.includes('content-media');
+                                    const isYouTube = isYouTubeValue(image.src)
+                                    const isVideo = isYouTube || /\.(mp4|webm|mov)(\?|$)/i.test(image.src) || image.src.includes('/video') || image.src.includes('content-media');
                                     return (
                                     <SwiperSlide key={`${index}-${image.src}`}>
                                         <div className="group size-full rounded-3xl overflow-hidden aspect-[3/4] relative bg-black/80 border border-border/50 dark:border-white/10 shadow-elevation-1 dark:shadow-elevation-1-dark">
                                             {isVideo ? (
-                                                <VideoSlide
-                                                    src={image.src}
-                                                    index={index}
-                                                    isCenter={activeIndex === index}
-                                                    requestPlay={nextShouldPlayIndex === index}
-                                                    onPlayStarted={handlePlayStarted}
-                                                    onEnded={handleVideoEnded}
-                                                    swiperRef={swiperRef}
-                                                />
+                                                isYouTube ? (
+                                                    <YouTubeSlide
+                                                        src={image.src}
+                                                        alt={image.alt}
+                                                        isCenter={activeIndex === index}
+                                                    />
+                                                ) : (
+                                                    <VideoSlide
+                                                        src={image.src}
+                                                        index={index}
+                                                        isCenter={activeIndex === index}
+                                                        requestPlay={nextShouldPlayIndex === index}
+                                                        onPlayStarted={handlePlayStarted}
+                                                        onEnded={handleVideoEnded}
+                                                        swiperRef={swiperRef}
+                                                    />
+                                                )
                                             ) : (
                                                 <img src={image.src} className="size-full object-cover rounded-xl" alt={image.alt} loading="lazy" decoding="async" />
                                             )}

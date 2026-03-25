@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getYouTubeEmbedUrl, isYouTubeValue } from "@/lib/youtube";
 
 interface StackedCardsProps {
   /** First item = video URL, rest = image URLs. In hero mode only one video is used and it loops. */
@@ -14,7 +15,7 @@ interface StackedCardsProps {
   heroMode?: boolean;
 }
 
-const isVideo = (src: string) => {
+const isVideoFile = (src: string) => {
   if (!src) return false;
   const lower = src.toLowerCase();
   return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".mov");
@@ -48,15 +49,17 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
 
   const effectiveAutoplay = autoplay && !prefersReducedMotion;
   const activeSrc = items[activeIndex];
-  const activeIsVideo = activeSrc && isVideo(activeSrc);
+  const activeIsYouTube = !!activeSrc && isYouTubeValue(activeSrc);
+  const activeIsVideoFile = !!activeSrc && isVideoFile(activeSrc);
+  const activeIsVideo = activeIsYouTube || activeIsVideoFile;
 
   // Hero mode: only one video (index 0), back cards are always images
-  const isBackImage = (src: string, index: number) => heroMode ? index > 0 : !isVideo(src);
+  const isBackImage = (src: string, index: number) => heroMode ? index > 0 : !(isVideoFile(src) || isYouTubeValue(src));
 
   // Reliable autoplay: start muted (required by browsers), play when video is ready and in view
   const tryPlay = useRef(() => {
     const video = frontVideoRef.current;
-    if (!video || !activeIsVideo || !effectiveAutoplay) return;
+    if (!video || !activeIsVideoFile || !effectiveAutoplay) return;
     video.muted = true; // Required for autoplay without user gesture
     const p = video.play();
     if (p && typeof p.then === "function") {
@@ -70,7 +73,7 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
   useEffect(() => {
     tryPlay.current = () => {
       const video = frontVideoRef.current;
-      if (!video || !activeIsVideo || !effectiveAutoplay) return;
+      if (!video || !activeIsVideoFile || !effectiveAutoplay) return;
       video.muted = playWithSoundAttempted.current ? isMuted : true;
       video.play().then(() => {
         if (!video.muted) setIsMuted(false);
@@ -80,7 +83,7 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
         setIsMuted(true);
       });
     };
-  }, [activeIsVideo, effectiveAutoplay, isMuted]);
+  }, [activeIsVideoFile, effectiveAutoplay, isMuted]);
 
   // When video is ready to play (has enough data), start playback
   const handleCanPlay = () => {
@@ -94,17 +97,17 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
 
   // Initial play attempt after mount (video may already be in view)
   useEffect(() => {
-    if (!items?.length || !activeIsVideo || !effectiveAutoplay) return;
+    if (!items?.length || !activeIsVideoFile || !effectiveAutoplay) return;
     const video = frontVideoRef.current;
     if (!video) return;
     const t = setTimeout(() => tryPlay.current(), 100);
     return () => clearTimeout(t);
-  }, [activeIndex, effectiveAutoplay, activeSrc]);
+  }, [activeIndex, effectiveAutoplay, activeSrc, activeIsVideoFile]);
 
   // Pause when out of view, play when in view
   useEffect(() => {
     const video = frontVideoRef.current;
-    if (!video || !activeIsVideo) return;
+    if (!video || !activeIsVideoFile) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -119,14 +122,14 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
     );
     observer.observe(video);
     return () => observer.disconnect();
-  }, [activeIsVideo, effectiveAutoplay]);
+  }, [activeIsVideoFile, effectiveAutoplay]);
 
   // Hero mode: pause video when it's on the side (user clicked an image to front)
   useEffect(() => {
-    if (!heroMode || activeIsVideo) return;
+    if (!heroMode || activeIsVideoFile) return;
     const video = frontVideoRef.current;
     if (video) video.pause();
-  }, [heroMode, activeIsVideo, activeIndex]);
+  }, [heroMode, activeIsVideoFile, activeIndex]);
 
   useEffect(() => {
     const handleExclusivePlay = (e: Event) => {
@@ -142,6 +145,7 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (activeIsYouTube) return;
     if (frontVideoRef.current) {
       const next = !frontVideoRef.current.muted;
       frontVideoRef.current.muted = next;
@@ -160,6 +164,7 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
 
   const handleFrontVideoEnded = () => {
     if (heroMode) return; // Hero: video loops, no cycling
+    if (!activeIsVideoFile) return;
     setActiveIndex((prev) => (prev + 1) % items.length);
   };
 
@@ -220,7 +225,7 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
               onClick={() => handleItemClick(index)}
             >
               {isFirst ? (
-                activeIsVideo ? (
+                activeIsVideoFile ? (
                   <video
                     ref={frontVideoRef}
                     key={activeSrc}
@@ -237,21 +242,51 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                     disablePictureInPicture
                     disableRemotePlayback
                   />
+                ) : activeIsYouTube ? (
+                  <div className="relative w-full h-full">
+                    <img
+                      src={getYouTubeThumbnail(activeSrc)}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <iframe
+                      key={activeSrc}
+                      src={getYouTubeEmbedUrl(activeSrc)}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ border: "none" }}
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                      title="YouTube video"
+                    />
+                  </div>
                 ) : (
                   <img src={activeSrc} alt="Gallery" className="w-full h-full object-cover" loading="eager" decoding="async" />
                 )
               ) : renderAsImage ? (
                 <img src={src} alt="Gallery image" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               ) : (
-                <video
-                  ref={heroMode && index === 0 ? frontVideoRef : undefined}
-                  src={src}
-                  className="w-full h-full object-cover"
-                  muted
-                  playsInline
-                  preload="none"
-                  aria-hidden
-                />
+                isYouTubeValue(src) ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(src).replace("autoplay=1", "autoplay=0")}
+                    className="w-full h-full object-cover"
+                    style={{ border: "none" }}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    title="YouTube video"
+                  />
+                ) : (
+                  <video
+                    ref={heroMode && index === 0 ? frontVideoRef : undefined}
+                    src={src}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                    preload="none"
+                    aria-hidden
+                  />
+                )
               )}
               {!isFirst && <div className="absolute inset-0 bg-black/20 pointer-events-none" />}
 

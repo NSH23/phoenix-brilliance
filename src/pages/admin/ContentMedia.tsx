@@ -39,6 +39,7 @@ import {
     type ContentMedia
 } from '@/services/contentMedia';
 import { logger } from '@/utils/logger';
+import { getYouTubeId, getYouTubeThumbnail, isYouTubeValue } from '../../lib/youtube';
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov)(\?|$)/i.test(url);
 
@@ -73,16 +74,26 @@ function HeroSlotCard({
                     <div className="w-full sm:w-32 h-40 sm:h-20 bg-black/10 rounded-lg overflow-hidden relative flex-shrink-0">
                         {item?.url ? (
                             mediaType === 'video' ? (
-                                <video
-                                    src={item.url}
-                                    className="w-full h-full object-cover"
-                                    muted
-                                    loop
-                                    playsInline
-                                    preload="metadata"
-                                    onMouseOver={e => e.currentTarget.play()}
-                                    onMouseOut={e => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
-                                />
+                                isYouTubeValue(item.url) ? (
+                                    <img
+                                        src={getYouTubeThumbnail(item.url)}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                ) : (
+                                    <video
+                                        src={item.url}
+                                        className="w-full h-full object-cover"
+                                        muted
+                                        loop
+                                        playsInline
+                                        preload="metadata"
+                                        onMouseOver={e => e.currentTarget.play()}
+                                        onMouseOut={e => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
+                                    />
+                                )
                             ) : (
                                 <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                             )
@@ -151,13 +162,23 @@ function MediaList({
                     <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1 w-full">
                             <div className="w-full sm:w-32 h-40 sm:h-20 bg-black/10 rounded-lg overflow-hidden relative flex-shrink-0">
-                                <video
-                                    src={item.url}
-                                    className="w-full h-full object-cover"
-                                    muted
-                                    playsInline
-                                    preload="metadata"
-                                />
+                                {isYouTubeValue(item.url) ? (
+                                    <img
+                                        src={getYouTubeThumbnail(item.url)}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                ) : (
+                                    <video
+                                        src={item.url}
+                                        className="w-full h-full object-cover"
+                                        muted
+                                        playsInline
+                                        preload="metadata"
+                                    />
+                                )}
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
                                     <Film className="text-white/80" size={24} />
                                 </div>
@@ -213,9 +234,7 @@ export default function ContentMedia() {
         if (isDialogOpen) {
             setUploadSuccess(false);
             const t = setTimeout(() => {
-                const vid = document.getElementById('video-upload') as HTMLInputElement;
                 const img = document.getElementById('image-upload') as HTMLInputElement;
-                if (vid) vid.value = '';
                 if (img) img.value = '';
             }, 0);
             return () => clearTimeout(t);
@@ -237,7 +256,7 @@ export default function ContentMedia() {
 
     const heroSlots = (() => {
         const list = items.filter(i => i.category === 'hero');
-        const slot0 = list.find(i => i.display_order === 0 && (i.media_type === 'video' || isVideoUrl(i.url)));
+        const slot0 = list.find(i => i.display_order === 0 && (i.media_type === 'video' || isVideoUrl(i.url) || isYouTubeValue(i.url)));
         const slot1 = list.find(i => i.display_order === 1);
         const slot2 = list.find(i => i.display_order === 2);
         return [slot0 ?? null, slot1 ?? null, slot2 ?? null];
@@ -276,29 +295,8 @@ export default function ContentMedia() {
     const clearFormMedia = () => {
         setValue('url', '');
         setUploadSuccess(false);
-        const vid = document.getElementById('video-upload') as HTMLInputElement | null;
         const img = document.getElementById('image-upload') as HTMLInputElement | null;
-        if (vid) vid.value = '';
         if (img) img.value = '';
-    };
-
-    const handleVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !file.type.startsWith('video/')) return;
-        setUploading(true);
-        setUploadSuccess(false);
-        try {
-            const url = await uploadContentMediaFile(file);
-            setValue('url', url);
-            setUploadSuccess(true);
-            toast.success('Video uploaded. Click Save to add it.');
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Upload failed';
-            toast.error('Upload failed', { description: msg });
-        } finally {
-            setUploading(false);
-            e.target.value = '';
-        }
     };
 
     const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,20 +323,36 @@ export default function ContentMedia() {
             setIsDeploying(true);
             let mediaUrl = (data.url ?? '').trim();
 
-            const fileInput = document.getElementById(editingSlot?.mediaType === 'image' ? 'image-upload' : 'video-upload') as HTMLInputElement;
-            const file = fileInput?.files?.[0];
-            if (file && !mediaUrl) {
-                setUploading(true);
-                try {
-                    mediaUrl = await uploadContentMediaFile(file);
-                } finally {
-                    setUploading(false);
-                }
-            }
+            const submittingMediaType: 'video' | 'image' = editingSlot?.mediaType ?? (editingItem?.media_type === 'image' ? 'image' : 'video');
 
-            if (!mediaUrl) {
-                toast.error('Please upload a file or enter a video/image URL.');
-                return;
+            if (submittingMediaType === 'video') {
+                if (!mediaUrl) {
+                    toast.error('Please enter a YouTube video URL or video ID.');
+                    return;
+                }
+                const extractedId = getYouTubeId(mediaUrl);
+                const isValidId = /^[a-zA-Z0-9_-]{11}$/.test(extractedId);
+                if (!isValidId) {
+                    toast.error('Please enter a valid YouTube URL or video ID.');
+                    return;
+                }
+                mediaUrl = extractedId;
+            } else {
+                const fileInput = document.getElementById('image-upload') as HTMLInputElement | null;
+                const file = fileInput?.files?.[0];
+                if (file && !mediaUrl) {
+                    setUploading(true);
+                    try {
+                        mediaUrl = await uploadContentMediaFile(file);
+                    } finally {
+                        setUploading(false);
+                    }
+                }
+
+                if (!mediaUrl) {
+                    toast.error('Please upload an image file or enter an image URL.');
+                    return;
+                }
             }
 
             const payload: Partial<ContentMedia> = {
@@ -365,6 +379,7 @@ export default function ContentMedia() {
                     media_type: payload.media_type ?? 'video',
                     title: payload.title ?? null,
                     url: payload.url!,
+                    thumbnail_url: payload.thumbnail_url ?? null,
                     is_active: payload.is_active ?? true,
                     display_order: payload.display_order ?? 0,
                 };
@@ -386,6 +401,8 @@ export default function ContentMedia() {
 
     const isHeroDialog = activeTab === 'hero' && (editingItem?.category === 'hero' || editingSlot);
     const slotMediaType = editingSlot?.mediaType ?? (editingItem?.media_type === 'image' ? 'image' : 'video');
+    const youtubeIdPreview = getYouTubeId(currentUrl ?? '');
+    const isValidYouTubeIdPreview = /^[a-zA-Z0-9_-]{11}$/.test(youtubeIdPreview);
 
     return (
         <AdminLayout title="Manage Videos" subtitle="Hero: 1 video + 2 background images. Moments: reels for Moments We've Crafted.">
@@ -470,38 +487,35 @@ export default function ContentMedia() {
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
                         {slotMediaType === 'video' ? (
                             <>
-                                <div className="space-y-2">
-                                    <Label>Video File</Label>
-                                    <Input
-                                        id="video-upload"
-                                        type="file"
-                                        accept="video/mp4,video/webm,video/quicktime"
-                                        className="cursor-pointer"
-                                        onChange={handleVideoFileChange}
-                                        disabled={uploading}
-                                    />
-                                    {uploading && (
-                                        <p className="text-sm text-primary flex items-center gap-2">
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Uploading video… please wait (do not close).
-                                        </p>
-                                    )}
-                                    {uploadSuccess && (
-                                        <p className="text-sm text-green-600 dark:text-green-400">Upload complete. Click Save below to add this video.</p>
-                                    )}
-                                    <p className="text-xs text-muted-foreground">MP4 or WebM. Video uploads as soon as you select a file. For very large files (50MB+), paste a direct Video URL below instead.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Or Video URL</Label>
-                                    <Input {...register('url')} placeholder="https://example.com/video.mp4" />
-                                    {!!currentUrl && (
-                                        <div className="flex justify-end">
-                                            <Button type="button" variant="outline" size="sm" onClick={clearFormMedia}>
-                                                Remove Video
-                                            </Button>
+                                        <div className="space-y-2">
+                                            <Label>YouTube URL or Video ID</Label>
+                                            <Input {...register('url')} placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ" disabled={uploading || isDeploying} />
+
+                                            {!!currentUrl && (
+                                                <div className="flex justify-end">
+                                                    <Button type="button" variant="outline" size="sm" onClick={clearFormMedia}>
+                                                        Remove Video
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {isValidYouTubeIdPreview && (
+                                                <div className="space-y-2 pt-2">
+                                                    <div className="text-xs text-muted-foreground">YouTube thumbnail preview</div>
+                                                    <img
+                                                        src={getYouTubeThumbnail(currentUrl)}
+                                                        alt=""
+                                                        className="w-full aspect-video object-cover rounded-lg border border-border/60"
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <p className="text-xs text-muted-foreground">
+                                                Videos are embedded from YouTube. Paste a full link or the 11-character video ID.
+                                            </p>
                                         </div>
-                                    )}
-                                </div>
                             </>
                         ) : (
                             <>
@@ -539,6 +553,22 @@ export default function ContentMedia() {
                                 </div>
                             </>
                         )}
+                        <div className="space-y-2">
+                            <Label>Thumbnail URL (Optional)</Label>
+                            <Input {...register('thumbnail_url')} placeholder="https://..." />
+                            {!!watch('thumbnail_url') && (
+                                <img
+                                    src={String(watch('thumbnail_url'))}
+                                    alt=""
+                                    className="w-full aspect-video object-cover rounded-lg border border-border/60"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                                Optional preview image. For YouTube you can use: https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg
+                            </p>
+                        </div>
                         <div className="space-y-2">
                             <Label>Title (Optional)</Label>
                             <Input {...register('title')} placeholder="e.g. Hero video" />
