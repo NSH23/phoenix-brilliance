@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getYouTubeEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 
@@ -30,8 +29,9 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+  const [playbackLockedByOtherVideo, setPlaybackLockedByOtherVideo] = useState(false);
   const frontVideoRef = useRef<HTMLVideoElement | null>(null);
-  const playWithSoundAttempted = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -103,11 +103,12 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
   // Initial play attempt after mount (video may already be in view)
   useEffect(() => {
     if (!items?.length || !activeIsVideoFile || !effectiveAutoplay) return;
+    if (playbackLockedByOtherVideo) return;
     const video = frontVideoRef.current;
     if (!video) return;
     const t = setTimeout(() => tryPlay.current(), 100);
     return () => clearTimeout(t);
-  }, [activeIndex, effectiveAutoplay, activeSrc, activeIsVideoFile]);
+  }, [activeIndex, effectiveAutoplay, activeSrc, activeIsVideoFile, playbackLockedByOtherVideo]);
 
   // Pause when out of view, play when in view
   useEffect(() => {
@@ -117,17 +118,19 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
       (entries) => {
         const entry = entries[0];
         if (!entry) return;
+        setIsInView(entry.isIntersecting);
         if (!entry.isIntersecting) {
           video.pause();
-        } else if (effectiveAutoplay) {
+        } else if (effectiveAutoplay && !playbackLockedByOtherVideo) {
           tryPlay.current();
         }
       },
-      { threshold: 0.2, rootMargin: "80px" }
+      // Pause when the hero is mostly off-screen.
+      { threshold: 0.4, rootMargin: "0px" }
     );
     observer.observe(video);
     return () => observer.disconnect();
-  }, [activeIsVideoFile, effectiveAutoplay]);
+  }, [activeIsVideoFile, effectiveAutoplay, playbackLockedByOtherVideo]);
 
   // Hero mode: pause video when it's on the side (user clicked an image to front)
   useEffect(() => {
@@ -139,31 +142,25 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
   useEffect(() => {
     const handleExclusivePlay = (e: Event) => {
       const customEvent = e as CustomEvent;
-      if (customEvent.detail?.origin !== "hero-stacked-cards") {
-        // Keep default volume preference: don't force mute when another player starts.
-        // If the browser blocks autoplay with sound, our play() catch handler will
-        // automatically fall back to muted.
-        setIsMuted(false);
-        if (frontVideoRef.current) frontVideoRef.current.muted = false;
-      }
+      if (customEvent.detail?.origin === "hero-stacked-cards") return;
+      setPlaybackLockedByOtherVideo(true);
+      const video = frontVideoRef.current;
+      if (video) video.pause();
     };
     window.addEventListener("video-exclusive-play", handleExclusivePlay);
     return () => window.removeEventListener("video-exclusive-play", handleExclusivePlay);
   }, []);
 
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (activeIsYouTube) return;
-    if (frontVideoRef.current) {
-      const next = !frontVideoRef.current.muted;
-      frontVideoRef.current.muted = next;
-      setIsMuted(next);
-      playWithSoundAttempted.current = true;
-      if (!next) {
-        window.dispatchEvent(new CustomEvent("video-exclusive-play", { detail: { origin: "hero-stacked-cards" } }));
-      }
-    }
-  };
+  useEffect(() => {
+    if (!heroMode) return;
+    const onRelease = () => {
+      setPlaybackLockedByOtherVideo(false);
+      if (!effectiveAutoplay || !activeIsVideoFile || !isInView) return;
+      tryPlay.current();
+    };
+    window.addEventListener("video-exclusive-release", onRelease);
+    return () => window.removeEventListener("video-exclusive-release", onRelease);
+  }, [heroMode, effectiveAutoplay, activeIsVideoFile, isInView]);
 
   const handleItemClick = (index: number) => {
     if (index === activeIndex) return;
@@ -259,15 +256,17 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                       loading="lazy"
                       decoding="async"
                     />
-                    <iframe
-                      key={activeSrc}
-                      src={getYouTubeEmbedUrl(activeSrc)}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      style={{ border: "none" }}
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                      title="YouTube video"
-                    />
+                    {!playbackLockedByOtherVideo && (
+                      <iframe
+                        key={activeSrc}
+                        src={getYouTubeEmbedUrl(activeSrc)}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ border: "none" }}
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen
+                        title="YouTube video"
+                      />
+                    )}
                   </div>
                 ) : (
                   <img src={activeSrc} alt="Gallery" className="w-full h-full object-cover" loading="eager" decoding="async" />
@@ -301,14 +300,6 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
               {isFirst && activeIsVideo && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
-                  <button
-                    type="button"
-                    onClick={toggleMute}
-                    className="pointer-events-auto absolute bottom-6 right-6 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 z-20 hover:scale-110"
-                    aria-label={isMuted ? "Unmute video" : "Mute video"}
-                  >
-                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                  </button>
                 </div>
               )}
             </motion.div>

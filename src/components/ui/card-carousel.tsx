@@ -14,9 +14,68 @@ import {
 } from "swiper/modules"
 
 import type { Swiper as SwiperType } from "swiper"
-import { getYouTubeEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube"
+import { getYouTubeId, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube"
 
 const EXCLUSIVE_VIDEO_EVENT = "reels-exclusive-play"
+/** Fired when a page-level reel/hero handoff is done so another player may resume (e.g. hero after a reel ends). */
+const VIDEO_EXCLUSIVE_RELEASE = "video-exclusive-release"
+
+let youTubeApiPromise: Promise<void> | null = null
+
+// Ensure YT iframe matches our card frame sizing/styling.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeYouTubeIframe(player: any) {
+    const iframe = player?.getIframe?.() as HTMLIFrameElement | undefined
+    if (!iframe) return
+    iframe.style.width = "100%"
+    iframe.style.height = "100%"
+    iframe.style.display = "block"
+    iframe.style.border = "none"
+    iframe.style.borderRadius = "0.75rem"
+}
+
+function ensureYouTubeIframeApiLoaded(): Promise<void> {
+    if (youTubeApiPromise) return youTubeApiPromise
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any
+    if (w.YT?.Player) {
+        youTubeApiPromise = Promise.resolve()
+        return youTubeApiPromise
+    }
+
+    youTubeApiPromise = new Promise((resolve) => {
+        // If script already exists, just resolve on callback.
+        const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]') as HTMLScriptElement | null
+        if (!existing) {
+            const script = document.createElement("script")
+            script.src = "https://www.youtube.com/iframe_api"
+            script.async = true
+            document.body.appendChild(script)
+        }
+
+        // YouTube calls this global once the API is ready.
+        w.onYouTubeIframeAPIReady = () => resolve()
+    })
+
+    return youTubeApiPromise
+}
+
+function lockCarouselPlayback(swiper: SwiperType | null) {
+    if (!swiper) return
+    swiper.autoplay.stop()
+    const idx = swiper.realIndex
+    swiper.slideToLoop(idx, 0)
+    swiper.allowTouchMove = false
+}
+
+function unlockCarouselPlayback(swiper: SwiperType | null) {
+    if (!swiper) return
+    swiper.allowTouchMove = true
+}
+
+function emitVideoExclusiveRelease() {
+    window.dispatchEvent(new CustomEvent(VIDEO_EXCLUSIVE_RELEASE))
+}
 
 interface CarouselProps {
     images: { src: string; alt: string }[]
@@ -37,13 +96,14 @@ interface VideoSlideProps {
     src: string
     index: number
     isCenter: boolean
+    sequenceActive: boolean
     requestPlay: boolean
     onPlayStarted: () => void
     onEnded: () => void
     swiperRef: React.MutableRefObject<SwiperType | null>
 }
 
-const VideoSlide = ({ src, index, isCenter, requestPlay, onPlayStarted, onEnded, swiperRef }: VideoSlideProps) => {
+const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayStarted, onEnded, swiperRef }: VideoSlideProps) => {
     const videoRef = useRef<HTMLVideoElement>(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const slideId = `${index}-${src}`
@@ -59,17 +119,24 @@ const VideoSlide = ({ src, index, isCenter, requestPlay, onPlayStarted, onEnded,
         allVideos.forEach((v) => {
             if (v !== video) (v as HTMLVideoElement).pause()
         })
-        if (swiperRef.current?.autoplay?.running) swiperRef.current.autoplay.stop()
+        lockCarouselPlayback(swiperRef.current)
         video.muted = false
         video.currentTime = 0
         video.play().then(() => {
             setIsPlaying(true)
             onPlayStarted()
-        }).catch(() => {})
+        }).catch(() => {
+            unlockCarouselPlayback(swiperRef.current)
+            emitVideoExclusiveRelease()
+        })
     }, [requestPlay, isCenter, onPlayStarted, swiperRef])
 
     const handleClick = () => {
-        if (!isCenter) return
+        if (!isCenter) {
+            // If a reel is currently playing, clicking another one should bring it to center.
+            if (sequenceActive) swiperRef.current?.slideToLoop(index, 2000)
+            return
+        }
         const video = videoRef.current
         if (!video) return
 
@@ -80,16 +147,20 @@ const VideoSlide = ({ src, index, isCenter, requestPlay, onPlayStarted, onEnded,
             allVideos.forEach((v) => {
                 if (v !== video) (v as HTMLVideoElement).pause()
             })
-            if (swiperRef.current?.autoplay?.running) swiperRef.current.autoplay.stop()
+            lockCarouselPlayback(swiperRef.current)
             video.muted = false
             video.currentTime = 0
-            video.play().then(() => setIsPlaying(true)).catch(() => {})
+            video.play().then(() => setIsPlaying(true)).catch(() => {
+                unlockCarouselPlayback(swiperRef.current)
+                emitVideoExclusiveRelease()
+            })
         } else {
             video.pause()
             setIsPlaying(false)
-            if (swiperRef.current?.autoplay && !swiperRef.current.autoplay.running) {
-                swiperRef.current.autoplay.start()
-            }
+            unlockCarouselPlayback(swiperRef.current)
+            // User intentionally stopped the reel; move forward and start the next one.
+            video.currentTime = 0
+            onEnded()
         }
     }
 
@@ -99,6 +170,7 @@ const VideoSlide = ({ src, index, isCenter, requestPlay, onPlayStarted, onEnded,
         setIsPlaying(false)
         video.currentTime = 0
         video.pause()
+        unlockCarouselPlayback(swiperRef.current)
         onEnded()
     }
 
@@ -144,20 +216,39 @@ interface YouTubeSlideProps {
     alt: string
     isCenter: boolean
     index: number
+    sequenceActive: boolean
+    requestPlay: boolean
+    onPlayStarted: () => void
+    onEnded: () => void
+    swiperRef: React.MutableRefObject<SwiperType | null>
 }
 
-const YouTubeSlide = ({ src, alt, isCenter, index }: YouTubeSlideProps) => {
+const YouTubeSlide = ({ src, alt, isCenter, index, sequenceActive, requestPlay, onPlayStarted, onEnded, swiperRef }: YouTubeSlideProps) => {
     const [isPlaying, setIsPlaying] = useState(false)
     const thumbnailSrc = getYouTubeThumbnail(src)
     const slideId = `${index}-${src}`
+    const mountRef = useRef<HTMLDivElement | null>(null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const playerRef = useRef<any>(null)
+    const endedHandledRef = useRef(false)
+    const videoId = getYouTubeId(src)
 
     useEffect(() => {
-        if (!isCenter) setIsPlaying(false)
-    }, [isCenter])
+        endedHandledRef.current = false
+    }, [slideId])
 
     useEffect(() => {
         const handler = (e: Event) => {
             const customEvent = e as CustomEvent
+            if (customEvent.detail?.closeAll) {
+                try {
+                    playerRef.current?.stopVideo?.()
+                } catch {
+                    // ignore
+                }
+                setIsPlaying(false)
+                return
+            }
             const incomingSlideId = customEvent.detail?.slideId as string | undefined
             if (!incomingSlideId) return
             if (incomingSlideId !== slideId) setIsPlaying(false)
@@ -166,13 +257,120 @@ const YouTubeSlide = ({ src, alt, isCenter, index }: YouTubeSlideProps) => {
         return () => window.removeEventListener(EXCLUSIVE_VIDEO_EVENT, handler)
     }, [slideId])
 
+    useEffect(() => {
+        if (!isCenter) {
+            setIsPlaying((wasPlaying) => {
+                if (wasPlaying) {
+                    try {
+                        playerRef.current?.pauseVideo?.()
+                    } catch {
+                        // ignore
+                    }
+                    unlockCarouselPlayback(swiperRef.current)
+                }
+                return false
+            })
+        }
+    }, [isCenter, swiperRef])
+
+    // When this YouTube iframe is playing, use the IFrame API to detect "ended"
+    // and auto-advance to the next reel.
+    useEffect(() => {
+        if (!isPlaying || !videoId) return
+        if (!mountRef.current) return
+
+        let cancelled = false
+        const w = window as any
+
+        ensureYouTubeIframeApiLoaded()
+            .then(() => {
+                if (cancelled) return
+                if (!mountRef.current) return
+
+                endedHandledRef.current = false
+
+                if (!playerRef.current) {
+                    playerRef.current = new w.YT.Player(mountRef.current, {
+                        videoId,
+                        playerVars: {
+                            autoplay: 1,
+                            playsinline: 1,
+                            rel: 0,
+                            controls: 0,
+                        },
+                        events: {
+                            onReady: () => {
+                                normalizeYouTubeIframe(playerRef.current)
+                            },
+                            onStateChange: (ev: any) => {
+                                const isEnded = ev?.data === w.YT.PlayerState.ENDED
+                                if (!isEnded) return
+                                if (endedHandledRef.current) return
+                                endedHandledRef.current = true
+
+                                setIsPlaying(false)
+                                unlockCarouselPlayback(swiperRef.current)
+                                onEnded()
+                            },
+                        },
+                    })
+                } else {
+                    // Reuse existing player instance.
+                    try {
+                        normalizeYouTubeIframe(playerRef.current)
+                        playerRef.current.loadVideoById(videoId)
+                        playerRef.current.playVideo()
+                    } catch {
+                        // ignore
+                    }
+                }
+            })
+            .catch(() => {
+                // If API fails, we still render the iframe with autoplay=1;
+                // but auto-advance on END won't be available.
+            })
+
+        return () => {
+            cancelled = true
+            try {
+                playerRef.current?.pauseVideo?.()
+            } catch {
+                // ignore
+            }
+        }
+    }, [isPlaying, videoId, slideId, onEnded, swiperRef])
+
+    // Auto-start this YouTube reel when the parent requests it (e.g. after previous reel ends,
+    // or when the user navigates to the next slide while a reel is playing).
+    useEffect(() => {
+        if (!requestPlay || !isCenter) return
+        setIsPlaying((prev) => {
+            if (prev) return prev
+            window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
+            window.dispatchEvent(new CustomEvent("video-exclusive-play", { detail: { origin: "youtube-slide" } }))
+            document.querySelectorAll(".swiper-slide video").forEach((v) => (v as HTMLVideoElement).pause())
+            lockCarouselPlayback(swiperRef.current)
+            onPlayStarted()
+            return true
+        })
+    }, [requestPlay, isCenter, slideId, onPlayStarted, swiperRef])
+
     const handleClick = () => {
+        if (!isCenter) {
+            if (sequenceActive) swiperRef.current?.slideToLoop(index, 2000)
+            return
+        }
         setIsPlaying((prev) => {
             const next = !prev
             if (next) {
                 window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
-                // Pause any HTML5 videos currently playing in the carousel.
                 window.dispatchEvent(new CustomEvent("video-exclusive-play", { detail: { origin: "youtube-slide" } }))
+                document.querySelectorAll(".swiper-slide video").forEach((v) => (v as HTMLVideoElement).pause())
+                lockCarouselPlayback(swiperRef.current)
+                onPlayStarted()
+            } else {
+                unlockCarouselPlayback(swiperRef.current)
+                onEnded()
             }
             return next
         })
@@ -180,16 +378,10 @@ const YouTubeSlide = ({ src, alt, isCenter, index }: YouTubeSlideProps) => {
 
     return (
         <div className="relative w-full h-full group" onClick={handleClick}>
-            {isPlaying ? (
-                <iframe
-                    src={getYouTubeEmbedUrl(src)}
-                    className="size-full object-cover rounded-xl"
-                    style={{ border: "none" }}
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                    title={alt || "YouTube video"}
-                />
-            ) : (
+            {/* YouTube IFrame API will create and manage its own iframe inside this mount div. */}
+            <div ref={mountRef} className="absolute inset-0" />
+
+            {!isPlaying && (
                 <>
                     {thumbnailSrc ? (
                         <img
@@ -230,6 +422,8 @@ export const CardCarousel: React.FC<CarouselProps> = ({
     const swiperRef = useRef<SwiperType | null>(null)
     const [activeIndex, setActiveIndex] = useState(0)
     const [nextShouldPlayIndex, setNextShouldPlayIndex] = useState<number | null>(null)
+    // When a reel is actively playing, user slide navigation should auto-start the newly centered reel.
+    const [reelsSequenceActive, setReelsSequenceActive] = useState(false)
 
     const handleVideoEnded = () => {
         const n = images.length
@@ -241,19 +435,20 @@ export const CardCarousel: React.FC<CarouselProps> = ({
 
     const handlePlayStarted = () => {
         setNextShouldPlayIndex(null)
+        setReelsSequenceActive(true)
     }
 
     useEffect(() => {
         const handleExclusivePlay = (e: Event) => {
             const customEvent = e as CustomEvent
-            if (customEvent.detail?.origin !== 'reels-carousel') {
+            if (customEvent.detail?.origin !== 'reels-carousel' && customEvent.detail?.origin !== 'youtube-slide') {
+                window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { closeAll: true } }))
                 const allVideos = document.querySelectorAll('.swiper-slide video')
                 allVideos.forEach((v) => {
                     (v as HTMLVideoElement).pause()
                 })
-                if (swiperRef.current?.autoplay && !swiperRef.current.autoplay.running) {
-                    swiperRef.current.autoplay.start()
-                }
+                unlockCarouselPlayback(swiperRef.current)
+                setReelsSequenceActive(false)
             }
         }
         window.addEventListener('video-exclusive-play', handleExclusivePlay)
@@ -268,6 +463,10 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                     if (!entry.isIntersecting) {
                         if (swiper?.autoplay?.running) swiper.autoplay.stop()
                         document.querySelectorAll('.swiper-slide video').forEach((v) => (v as HTMLVideoElement).pause())
+                        window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { closeAll: true } }))
+                        unlockCarouselPlayback(swiper ?? null)
+                        setReelsSequenceActive(false)
+                        emitVideoExclusiveRelease()
                     } else {
                         if (swiper?.autoplay && !swiper.autoplay.running) swiper.autoplay.start()
                     }
@@ -309,14 +508,26 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                             <Swiper
                                 className={paginationSpaced ? "reels-pagination-spaced" : undefined}
                                 onSwiper={(swiper) => { swiperRef.current = swiper }}
-                                onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
+                                onSlideChange={(swiper) => {
+                                    const nextRealIndex = swiper.realIndex
+                                    setActiveIndex(nextRealIndex)
+                                    if (reelsSequenceActive && nextRealIndex !== activeIndex) {
+                                        setNextShouldPlayIndex(nextRealIndex)
+                                    }
+                                }}
                                 spaceBetween={50}
                                 autoplay={{
                                     delay: 0,
                                     disableOnInteraction: false,
                                     pauseOnMouseEnter: true,
                                 }}
-                                speed={8000}
+                                speed={
+                                    !reelsSequenceActive
+                                        ? 8000
+                                        : nextShouldPlayIndex === null
+                                            ? 0
+                                            : 2000
+                                }
                                 effect="coverflow"
                                 grabCursor={true}
                                 centeredSlides={true}
@@ -349,12 +560,18 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                                         alt={image.alt}
                                                         isCenter={activeIndex === index}
                                                         index={index}
+                                                        sequenceActive={reelsSequenceActive}
+                                                        requestPlay={nextShouldPlayIndex === index}
+                                                        onPlayStarted={handlePlayStarted}
+                                                        onEnded={handleVideoEnded}
+                                                        swiperRef={swiperRef}
                                                     />
                                                 ) : (
                                                     <VideoSlide
                                                         src={image.src}
                                                         index={index}
                                                         isCenter={activeIndex === index}
+                                                        sequenceActive={reelsSequenceActive}
                                                         requestPlay={nextShouldPlayIndex === index}
                                                         onPlayStarted={handlePlayStarted}
                                                         onEnded={handleVideoEnded}
