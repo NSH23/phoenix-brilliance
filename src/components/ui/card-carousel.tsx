@@ -397,6 +397,18 @@ const YouTubeSlide = ({
     )
 }
 
+const CAROUSEL_CSS = `
+  .embla-reels { width: 100%; padding-bottom: 24px; }
+  .embla-reels.embla-reels--pagination-spaced { padding-bottom: 56px; }
+  .embla-reels__viewport { overflow: hidden; width: 100%; }
+  .embla-reels__container { display: flex; flex-direction: row; margin-left: -50px; }
+  .embla-reels__slide { flex: 0 0 420px; min-width: 0; padding-left: 50px; background-position: center; background-size: cover; }
+  @media (max-width: 768px) {
+    .embla-reels__slide { flex-basis: 300px; }
+  }
+  .embla-reels__slide img, .embla-reels__slide video, .embla-reels__slide iframe { display: block; width: 100%; }
+  `
+
 export const CardCarousel: React.FC<CarouselProps> = ({
     images,
     showPagination = true,
@@ -524,17 +536,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
 
     const scrollSnaps = emblaApi?.scrollSnapList() ?? []
 
-    const css = `
-  .embla-reels { width: 100%; padding-bottom: 24px; }
-  .embla-reels.embla-reels--pagination-spaced { padding-bottom: 56px; }
-  .embla-reels__viewport { overflow: hidden; width: 100%; }
-  .embla-reels__container { display: flex; flex-direction: row; margin-left: -50px; }
-  .embla-reels__slide { flex: 0 0 420px; min-width: 0; padding-left: 50px; background-position: center; background-size: cover; }
-  @media (max-width: 768px) {
-    .embla-reels__slide { flex-basis: 300px; }
-  }
-  .embla-reels__slide img, .embla-reels__slide video, .embla-reels__slide iframe { display: block; width: 100%; }
-  `
+    const css = CAROUSEL_CSS
 
     return (
         <section ref={sectionRef} className="w-full space-y-2">

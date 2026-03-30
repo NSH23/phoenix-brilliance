@@ -587,11 +587,24 @@
   }
 
   .section-band-2 {
-    background-color: var(--section-band-1);
+    background-color: var(--section-band-2);
   }
 
   .section-band-3 {
-    background-color: var(--section-band-1);
+    background-color: var(--section-band-3);
+  }
+
+  /* Homepage above-the-fold section backgrounds (avoid inline style recreation). */
+  .homepage-bg-3 {
+    background-image: url('/3.jpg');
+  }
+
+  .homepage-bg-9 {
+    background-image: url('/9.jpg');
+  }
+
+  .homepage-bg-5 {
+    background-image: url('/5.jpg');
   }
 
   /* Flat sections: no gradient overlay, no noise – same colour everywhere */
@@ -935,6 +948,8 @@
         transparent 100%);
     background-size: 200% 100%;
     animation: separator-shimmer 8s ease-in-out infinite;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   @keyframes separator-shimmer {
@@ -1028,17 +1043,19 @@
     0%,
     100% {
       opacity: 0;
-      transform: scale(0);
+      transform: translateZ(0) scale(0);
     }
 
     50% {
       opacity: 1;
-      transform: scale(1);
+      transform: translateZ(0) scale(var(--sparkle-peak-scale, 1));
     }
   }
 
   .sparkle {
     animation: sparkle 2s ease-in-out infinite;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   /* Floating Animation */
@@ -1080,6 +1097,8 @@
     background: var(--hero-bg);
     background-size: 200% 200%;
     animation: heroMeshFloat 18s ease-in-out infinite;
+    will-change: transform, opacity, background-position;
+    transform: translateZ(0);
   }
 
   /* Home hero: gradient mesh behind content (champagne, no over-white) */
@@ -1124,6 +1143,8 @@
     background: var(--events-hero-mesh-light-base);
     background-size: 220% 220%;
     animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    will-change: transform, opacity, background-position;
+    transform: translateZ(0);
   }
 
   .dark .events-page-mesh-bg {
@@ -1425,6 +1446,8 @@
   @media (min-width: 1024px) {
     .stat-card-float {
       animation: stat-float 5s ease-in-out infinite;
+      will-change: transform, opacity;
+      transform: translateZ(0);
     }
 
     .stat-card-float:nth-child(1) {
@@ -1452,11 +1475,11 @@
 
     0%,
     100% {
-      transform: translateY(0);
+      transform: translateY(0) translateZ(0);
     }
 
     50% {
-      transform: translateY(-6px);
+      transform: translateY(-6px) translateZ(0);
     }
   }
 
@@ -1746,6 +1769,8 @@
   .reel-strip-track {
     animation: reel-strip-scroll 40s linear infinite;
     width: max-content;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .reel-strip-mask:hover .reel-strip-track {
@@ -1754,11 +1779,11 @@
 
   @keyframes reel-strip-scroll {
     0% {
-      transform: translateX(0);
+      transform: translateX(0) translateZ(0);
     }
 
     100% {
-      transform: translateX(-50%);
+      transform: translateX(-50%) translateZ(0);
     }
   }
 
@@ -1791,6 +1816,8 @@
   .collaborations-logo-track {
     animation: collaborations-logo-scroll 50s linear infinite;
     width: max-content;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   /* Homepage collaborations: JS-driven scroll (auto + drag); same width as animated track */
@@ -1804,11 +1831,11 @@
 
   @keyframes collaborations-logo-scroll {
     0% {
-      transform: translateX(0);
+      transform: translateX(0) translateZ(0);
     }
 
     100% {
-      transform: translateX(-50%);
+      transform: translateX(-50%) translateZ(0);
     }
   }
 
@@ -1886,11 +1913,11 @@
 
     0%,
     100% {
-      transform: translate(0, 0) rotate(0deg);
+      transform: translate3d(0, 0, 0) rotate(0deg);
     }
 
     50% {
-      transform: translate(0, -28px) rotate(1.5deg);
+      transform: translate3d(0, -28px, 0) rotate(1.5deg);
     }
   }
 
@@ -1898,11 +1925,11 @@
 
     0%,
     100% {
-      transform: translate(0, 0) rotate(0deg);
+      transform: translate3d(0, 0, 0) rotate(0deg);
     }
 
     50% {
-      transform: translate(14px, 24px) rotate(-2deg);
+      transform: translate3d(14px, 24px, 0) rotate(-2deg);
     }
   }
 
@@ -1910,11 +1937,11 @@
 
     0%,
     100% {
-      transform: translate(0, 0) rotate(0deg);
+      transform: translate3d(0, 0, 0) rotate(0deg);
     }
 
     50% {
-      transform: translate(-14px, -24px) rotate(2.5deg);
+      transform: translate3d(-14px, -24px, 0) rotate(2.5deg);
     }
   }
 
@@ -1922,11 +1949,11 @@
 
     0%,
     100% {
-      transform: translate(0, 0) rotate(0deg);
+      transform: translate3d(0, 0, 0) rotate(0deg);
     }
 
     50% {
-      transform: translate(16px, -22px) rotate(-1.2deg);
+      transform: translate3d(16px, -22px, 0) rotate(-1.2deg);
     }
   }
 
@@ -1934,11 +1961,11 @@
 
     0%,
     100% {
-      transform: translate(0, 0) rotate(0deg);
+      transform: translate3d(0, 0, 0) rotate(0deg);
     }
 
     50% {
-      transform: translate(-14px, 26px) rotate(2deg);
+      transform: translate3d(-14px, 26px, 0) rotate(2deg);
     }
   }
 
@@ -1946,11 +1973,11 @@
 
     0%,
     100% {
-      transform: translate(0, 0) rotate(0deg);
+      transform: translate3d(0, 0, 0) rotate(0deg);
     }
 
     50% {
-      transform: translate(12px, -24px) rotate(-2.5deg);
+      transform: translate3d(12px, -24px, 0) rotate(-2.5deg);
     }
   }
 
@@ -1958,36 +1985,48 @@
     z-index: 1;
     animation: testimonial-float-1 10s ease-in-out infinite;
     transition: z-index 0s;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .testimonial-float-card-2 {
     z-index: 2;
     animation: testimonial-float-2 12s ease-in-out infinite;
     transition: z-index 0s;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .testimonial-float-card-3 {
     z-index: 3;
     animation: testimonial-float-3 8s ease-in-out infinite;
     transition: z-index 0s;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .testimonial-float-card-4 {
     z-index: 4;
     animation: testimonial-float-4 14s ease-in-out infinite;
     transition: z-index 0s;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .testimonial-float-card-5 {
     z-index: 5;
     animation: testimonial-float-5 9s ease-in-out infinite;
     transition: z-index 0s;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .testimonial-float-card-6 {
     z-index: 6;
     animation: testimonial-float-6 11s ease-in-out infinite;
     transition: z-index 0s;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .testimonial-float-card-1:hover,

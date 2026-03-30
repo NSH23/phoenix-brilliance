@@ -24,6 +24,11 @@
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://phoenixeventsandproduction.com/logo-photoaidcom-cropped.jpg" />
+
+    <!-- Performance: preload above-the-fold critical assets -->
+    <link rel="preload" href="/logo.png" as="image" />
+    <link rel="preload" href="/bg.jpg" as="image" />
+    <link rel="modulepreload" href="/src/main.tsx" />
   </head>
 
   <body>

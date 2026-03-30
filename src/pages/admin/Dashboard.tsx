@@ -43,6 +43,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const quickActions = [
   { title: 'Add New Event', href: '/admin/events?add=1', icon: Calendar },
@@ -77,41 +78,42 @@ function formatChange(stats: DashboardStats, key: keyof DashboardStats, changeKe
 
 export default function AdminDashboard() {
   const { user: currentUser } = useAdmin();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([]);
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-  const [siteOverview, setSiteOverview] = useState<SiteOverview | null>(null);
-  const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [removeTarget, setRemoveTarget] = useState<AdminUserRow | null>(null);
   const [removePassword, setRemovePassword] = useState('');
   const [removeLoading, setRemoveLoading] = useState(false);
 
-  useEffect(() => {
-    load();
-  }, []);
+  const queryClient = useQueryClient();
+  const dashboardQuery = useQuery({
+    queryKey: ['dashboard-data'],
+    queryFn: getDashboardData,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: false,
+  });
 
-  const load = async () => {
-    try {
-      setIsLoading(true);
-      const [data, users] = await Promise.all([
-        getDashboardData(),
-        getAdminUsers().catch(() => []),
-      ]);
-      setStats(data.stats);
-      setRecentInquiries(data.recentInquiries);
-      setRecentActivity(data.recentActivity);
-      setSiteOverview(data.siteOverview);
-      setAdminUsers(users);
-    } catch (e: unknown) {
-      logger.error('Dashboard load error', e, { component: 'AdminDashboard', action: 'load' });
-      toast.error('Failed to load dashboard', {
-        description: e instanceof Error ? e.message : 'Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const adminUsersQuery = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: () => getAdminUsers().catch(() => []),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  const isLoading = dashboardQuery.isPending || adminUsersQuery.isPending;
+  const stats = dashboardQuery.data?.stats ?? null;
+  const recentInquiries = dashboardQuery.data?.recentInquiries ?? [];
+  const recentActivity = dashboardQuery.data?.recentActivity ?? [];
+  const siteOverview = dashboardQuery.data?.siteOverview ?? null;
+  const adminUsers = adminUsersQuery.data ?? [];
+
+  useEffect(() => {
+    if (!dashboardQuery.isError) return;
+    const e = dashboardQuery.error;
+    logger.error('Dashboard load error', e, { component: 'AdminDashboard', action: 'load' });
+    toast.error('Failed to load dashboard', {
+      description: e instanceof Error ? e.message : 'Please try again.',
+    });
+  }, [dashboardQuery.isError, dashboardQuery.error]);
 
   const handleRemoveUser = async () => {
     if (!removeTarget || !currentUser?.email) return;
@@ -135,7 +137,9 @@ export default function AdminDashboard() {
         return;
       }
       await deleteAdminUser(removeTarget.id);
-      setAdminUsers((prev) => prev.filter((u) => u.id !== removeTarget.id));
+      queryClient.setQueryData<AdminUserRow[]>(['admin-users'], (prev) =>
+        (prev ?? []).filter((u) => u.id !== removeTarget.id)
+      );
       setRemoveTarget(null);
       setRemovePassword('');
       toast.success(`${removeTarget.email} has been removed from admin users.`);

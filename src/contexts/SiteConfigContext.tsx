@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { getContactInfoOptional, getSiteSettingOptional } from '@/services/siteContent';
 import { getActiveSocialLinks } from '@/services/siteContent';
 import { resolvePublicStorageUrl } from '@/services/storage';
@@ -43,6 +43,9 @@ const DEFAULT_CONTACT: SiteContact = {
 
 const DEFAULT_SOCIAL: SiteSocialLinks = {};
 
+const SITE_CONFIG_STALE_MS = 10 * 60 * 1000; // 10 minutes
+let siteConfigCache: { fetchedAt: number; value: SiteConfigContextType } | null = null;
+
 const SiteConfigContext = createContext<SiteConfigContextType | undefined>(undefined);
 
 export function SiteConfigProvider({ children }: { children: ReactNode }) {
@@ -54,6 +57,16 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const load = async () => {
       try {
+        const now = Date.now();
+        if (siteConfigCache && now - siteConfigCache.fetchedAt < SITE_CONFIG_STALE_MS) {
+          const cached = siteConfigCache.value;
+          setContact(cached.contact);
+          setSocialLinks(cached.socialLinks);
+          setLogoUrl(cached.logoUrl);
+          setIsLoading(false);
+          return;
+        }
+
         const [contactData, socialData, logoValue] = await Promise.all([
           getContactInfoOptional().catch(() => null),
           getActiveSocialLinks().catch(() => []),
@@ -68,27 +81,42 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
         const whatsappUrl = socialMap.whatsapp || '';
         const whatsappNum = whatsappUrl.replace(/\D/g, '') || '917066763276';
 
-        if (contactData) {
-          const address = contactData.address && !isPlaceholderAddress(contactData.address)
-            ? contactData.address
-            : DEFAULT_CONTACT.address;
-          setContact({
-            phone: contactData.phone || DEFAULT_CONTACT.phone,
-            email: contactData.email || DEFAULT_CONTACT.email,
-            address,
-            whatsapp: whatsappNum,
-          });
-        } else {
-          setContact({
-            ...DEFAULT_CONTACT,
-            whatsapp: whatsappNum,
-          });
-        }
-        setSocialLinks(socialMap);
+        const nextContact: SiteContact = contactData
+          ? (() => {
+              const address =
+                contactData.address && !isPlaceholderAddress(contactData.address)
+                  ? contactData.address
+                  : DEFAULT_CONTACT.address;
+              return {
+                phone: contactData.phone || DEFAULT_CONTACT.phone,
+                email: contactData.email || DEFAULT_CONTACT.email,
+                address,
+                whatsapp: whatsappNum,
+              };
+            })()
+          : {
+              ...DEFAULT_CONTACT,
+              whatsapp: whatsappNum,
+            };
 
-        if (logoValue && logoValue.trim()) {
-          setLogoUrl(resolvePublicStorageUrl(logoValue.trim(), 'site-logo'));
-        }
+        const nextSocialLinks: SiteSocialLinks = socialMap;
+
+        const nextLogoUrl =
+          logoValue && logoValue.trim() ? resolvePublicStorageUrl(logoValue.trim(), 'site-logo') : '';
+
+        setContact(nextContact);
+        setSocialLinks(nextSocialLinks);
+        setLogoUrl(nextLogoUrl);
+
+        siteConfigCache = {
+          fetchedAt: Date.now(),
+          value: {
+            contact: nextContact,
+            socialLinks: Object.keys(nextSocialLinks).length > 0 ? nextSocialLinks : DEFAULT_SOCIAL,
+            logoUrl: nextLogoUrl,
+            isLoading: false,
+          },
+        };
       } catch {
         // Keep defaults on error
       } finally {
@@ -98,12 +126,14 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
     load();
   }, []);
 
-  const value: SiteConfigContextType = {
-    contact: contact ?? DEFAULT_CONTACT,
-    socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : DEFAULT_SOCIAL,
-    logoUrl,
-    isLoading,
-  };
+  const value = useMemo<SiteConfigContextType>(() => {
+    return {
+      contact: contact ?? DEFAULT_CONTACT,
+      socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : DEFAULT_SOCIAL,
+      logoUrl,
+      isLoading,
+    };
+  }, [contact, socialLinks, logoUrl, isLoading]);
 
   return <SiteConfigContext.Provider value={value}>{children}</SiteConfigContext.Provider>;
 }

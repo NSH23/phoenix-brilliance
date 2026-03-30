@@ -33,7 +33,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { getAllAlbums, createAlbum, updateAlbum, deleteAlbum, Album } from '@/services/albums';
+import { getAllAlbums, createAlbum, updateAlbum, deleteAlbum, Album, getAllAlbumMediaCounts } from '@/services/albums';
 import { getAllEvents, Event } from '@/services/events';
 import { getAlbumMedia } from '@/services/albums';
 import { toast } from 'sonner';
@@ -78,35 +78,21 @@ export default function AdminAlbums() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [albumsData, eventsData] = await Promise.all([
+      const [albumsData, eventsData, mediaCounts] = await Promise.all([
         getAllAlbums(),
-        getAllEvents()
+        getAllEvents(),
+        getAllAlbumMediaCounts(),
       ]);
 
       setEvents(eventsData);
-
-      // Load media count for each album
-      const albumsWithCounts = await Promise.all(
-        albumsData.map(async (album: any) => {
-          try {
-            const media = await getAlbumMedia(album.id);
-            const event = eventsData.find(e => e.id === album.event_id);
-            return {
-              ...album,
-              mediaCount: media.length,
-              eventTitle: event?.title || 'Unknown Event',
-            };
-          } catch (error) {
-            logger.error('Error loading media for album', error, { component: 'AdminAlbums', action: 'loadAlbumMedia', albumId: album.id });
-            const event = eventsData.find(e => e.id === album.event_id);
-            return {
-              ...album,
-              mediaCount: 0,
-              eventTitle: event?.title || 'Unknown Event',
-            };
-          }
-        })
-      );
+      const albumsWithCounts = albumsData.map((album: any) => {
+        const event = eventsData.find(e => e.id === album.event_id);
+        return {
+          ...album,
+          mediaCount: mediaCounts[album.id] ?? 0,
+          eventTitle: event?.title || 'Unknown Event',
+        };
+      });
 
       setAlbums(albumsWithCounts);
     } catch (error: any) {

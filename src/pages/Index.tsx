@@ -84,8 +84,7 @@ const Index = () => {
                 aria-hidden
               >
                 <div
-                  className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                  style={{ backgroundImage: "url('/3.jpg')" }}
+                  className="absolute inset-0 bg-cover bg-center bg-no-repeat homepage-bg-3"
                 />
                 <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
               </div>
@@ -119,8 +118,7 @@ const Index = () => {
                 aria-hidden
               >
                 <div
-                  className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                  style={{ backgroundImage: "url('/9.jpg')" }}
+                  className="absolute inset-0 bg-cover bg-center bg-no-repeat homepage-bg-9"
                 />
                 <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
               </div>
@@ -148,8 +146,7 @@ const Index = () => {
                 aria-hidden
               >
                 <div
-                  className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                  style={{ backgroundImage: "url('/5.jpg')" }}
+                  className="absolute inset-0 bg-cover bg-center bg-no-repeat homepage-bg-5"
                 />
                 <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
               </div>

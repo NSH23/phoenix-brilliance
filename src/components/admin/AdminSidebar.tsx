@@ -1,5 +1,4 @@
 import { Link, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, ChevronLeft } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useSiteConfig } from '@/contexts/SiteConfigContext';
@@ -18,6 +17,8 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
   const { user, logout } = useAdmin();
   const { logoUrl } = useSiteConfig();
   const logoSrc = logoUrl || '/logo.png';
+  const sidebarWidth = collapsed ? 80 : 280;
+  const showLabels = !collapsed || mobile;
 
   const isActive = (path: string) => {
     if (path === '/admin') {
@@ -32,27 +33,25 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
   );
 
   return (
-    <motion.aside
-      initial={false}
-      animate={mobile ? undefined : { width: collapsed ? 80 : 280 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
+    <aside
       className={sidebarClasses}
+      style={mobile ? undefined : { width: sidebarWidth, transition: 'width 0.3s ease' }}
     >
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border">
-        <AnimatePresence mode="wait">
-          {(!collapsed || mobile) && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center gap-2"
-            >
-              <img src={logoSrc} alt="Phoenix" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
-              <span className="font-serif font-bold text-lg">Phoenix Admin</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div
+          className="flex items-center gap-2"
+          style={{
+            opacity: showLabels ? 1 : 0,
+            width: showLabels ? 'auto' : 0,
+            overflow: 'hidden',
+            transition: 'opacity 0.2s ease, width 0.2s ease',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <img src={logoSrc} alt="Phoenix" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
+          <span className="font-serif font-bold text-lg">Phoenix Admin</span>
+        </div>
         {!mobile && (
           <button
             onClick={() => onCollapsedChange?.(!collapsed)}
@@ -88,18 +87,17 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
               "w-5 h-5 flex-shrink-0",
               isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
             )} />
-            <AnimatePresence mode="wait">
-              {(!collapsed || mobile) && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="font-medium whitespace-nowrap overflow-hidden"
-                >
-                  {item.name}
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <span
+              className="font-medium whitespace-nowrap overflow-hidden"
+              style={{
+                opacity: showLabels ? 1 : 0,
+                width: showLabels ? 'auto' : 0,
+                transition: 'opacity 0.2s ease, width 0.2s ease',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {item.name}
+            </span>
           </Link>
         ))}
       </nav>
@@ -111,19 +109,19 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
           (collapsed && !mobile) && "justify-center"
         )}>
           <AdminUserAvatar avatarUrl={user?.avatar} name={user?.name} size="md" className="w-10 h-10" />
-          <AnimatePresence mode="wait">
-            {(!collapsed || mobile) && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="font-medium text-sm truncate">{user?.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div
+            className="flex-1 min-w-0"
+            style={{
+              opacity: showLabels ? 1 : 0,
+              width: showLabels ? 'auto' : 0,
+              overflow: 'hidden',
+              transition: 'opacity 0.2s ease, width 0.2s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <p className="font-medium text-sm truncate">{user?.name}</p>
+            <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+          </div>
         </div>
         <button
           onClick={logout}
@@ -135,20 +133,20 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
           )}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          <AnimatePresence mode="wait">
-            {(!collapsed || mobile) && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="font-medium"
-              >
-                Sign Out
-              </motion.span>
-            )}
-          </AnimatePresence>
+          <span
+            className="font-medium"
+            style={{
+              opacity: showLabels ? 1 : 0,
+              width: showLabels ? 'auto' : 0,
+              overflow: 'hidden',
+              transition: 'opacity 0.2s ease, width 0.2s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Sign Out
+          </span>
         </button>
       </div>
-    </motion.aside>
+    </aside>
   );
 }

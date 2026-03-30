@@ -1,6 +1,7 @@
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
@@ -11,16 +12,44 @@ import { getSiteContentByKey } from "@/services/siteContent";
 
 const HeroSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
-  const [heroItems, setHeroItems] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [heroContent, setHeroContent] = useState<{
-    title: string;
-    subtitle: string;
-    description: string;
-    cta_text: string;
-    cta_link: string;
-  } | null>(null);
+
+  const { data: heroMedia } = useQuery({
+    queryKey: ["hero-media"],
+    queryFn: async () => {
+      try {
+        return await getHeroMedia();
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  const { data: heroContent } = useQuery({
+    queryKey: ["hero-content"],
+    queryFn: async () => {
+      try {
+        const content = await getSiteContentByKey("home-hero").catch(() => null);
+        if (!content) return null;
+
+        const desc = content.description?.trim() || "";
+        const isOldLongCopy = desc.includes("From weddings to corporate celebrations");
+        return {
+          title: content.title || "Crafting Moments That Last Forever",
+          subtitle: content.subtitle || "Phoenix Events & Production",
+          description: isOldLongCopy ? "" : desc,
+          cta_text: content.cta_text || "Plan Your Event",
+          cta_link: content.cta_link || "/contact",
+        };
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
 
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
@@ -33,48 +62,22 @@ const HeroSection = () => {
   const y1 = useTransform(scrollY, [0, 500], [0, 100]);
   const y2 = useTransform(scrollY, [0, 500], [0, -50]);
 
-  // Fetch Hero media: 1 video + 2 images (getHeroMedia) and site content
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [media, content] = await Promise.all([
-          getHeroMedia(),
-          getSiteContentByKey('home-hero').catch(() => null)
-        ]);
+  const heroItems = (() => {
+    // Keep the same initial UI behavior: render the placeholder until query resolves.
+    if (heroMedia === undefined) return [];
 
-        const items: string[] = [];
-        if (media.videoUrl) items.push(media.videoUrl);
-        if (media.imageUrls.length >= 2) {
-          items.push(media.imageUrls[0], media.imageUrls[1]);
-        } else if (media.imageUrls.length === 1) {
-          items.push(media.imageUrls[0], media.imageUrls[0]);
-        }
-        if (items.length > 0) {
-          setHeroItems(items);
-        } else {
-          setHeroItems(["/1.mp4"]);
-        }
+    const media = heroMedia;
+    const items: string[] = [];
 
-        if (content) {
-          const desc = content.description?.trim() || "";
-          const isOldLongCopy = desc.includes("From weddings to corporate celebrations");
-          setHeroContent({
-            title: content.title || "Crafting Moments That Last Forever",
-            subtitle: content.subtitle || "Phoenix Events & Production",
-            description: isOldLongCopy ? "" : desc,
-            cta_text: content.cta_text || "Plan Your Event",
-            cta_link: content.cta_link || "/contact"
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch hero data:", error);
-        setHeroItems(["/1.mp4"]);
-      } finally {
-        setLoading(false);
-      }
+    if (media?.videoUrl) items.push(media.videoUrl);
+    if (media?.imageUrls?.length >= 2) {
+      items.push(media.imageUrls[0], media.imageUrls[1]);
+    } else if (media?.imageUrls?.length === 1) {
+      items.push(media.imageUrls[0], media.imageUrls[0]);
     }
-    fetchData();
-  }, []);
+
+    return items.length > 0 ? items : ["/1.mp4"];
+  })();
 
   // Non-blocking load: we render the structure immediately and let the video component handle the empty/loading state gracefully.
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, Bell, Search, Moon, Sun } from 'lucide-react';
@@ -38,6 +38,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   // Notification State
   const [notifications, setNotifications] = useState<Inquiry[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const prevCountRef = useRef(0);
 
   useEffect(() => {
     localStorage.setItem('adminSidebarCollapsed', JSON.stringify(sidebarCollapsed));
@@ -50,28 +51,51 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const [list, count] = await Promise.all([
         getUnreadInquiriesForNotifications(10),
         getUnreadInquiriesCount(),
       ]);
       setNotifications(list);
-      setUnreadCount(count);
+      prevCountRef.current = count;
+      setUnreadCount(prev => (prev === count ? prev : count));
     } catch (error) {
       console.error('Failed to fetch notifications', error);
     }
-  };
-
-  // Defer notifications so layout paints immediately; fetch after first paint
-  useEffect(() => {
-    if (typeof window.requestIdleCallback === 'function') {
-      const id = requestIdleCallback(() => fetchNotifications(), { timeout: 500 });
-      return () => cancelIdleCallback(id);
-    }
-    const id = setTimeout(fetchNotifications, 0);
-    return () => clearTimeout(id);
   }, []);
+
+  const upsertNotification = useCallback((row: Inquiry) => {
+    setNotifications(prev => [row, ...prev.filter(i => i.id !== row.id)].slice(0, 10));
+  }, []);
+
+  const incrementUnread = useCallback(() => {
+    const newCount = prevCountRef.current + 1;
+    prevCountRef.current = newCount;
+    setUnreadCount(prev => (prev === newCount ? prev : newCount));
+  }, []);
+
+  // Defer notifications so layout paints immediately; fetch after first paint.
+  // Debounce by 500ms to avoid bursts causing repeated layout work.
+  useEffect(() => {
+    let timeoutId: number | undefined;
+
+    if (typeof window.requestIdleCallback === 'function') {
+      const idleId = requestIdleCallback(() => {
+        timeoutId = window.setTimeout(fetchNotifications, 500);
+      }, { timeout: 500 });
+
+      return () => {
+        cancelIdleCallback(idleId);
+        if (timeoutId) window.clearTimeout(timeoutId);
+      };
+    }
+
+    timeoutId = window.setTimeout(fetchNotifications, 500);
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [fetchNotifications]);
 
   // Real-time: new inquiries
   useEffect(() => {
@@ -79,8 +103,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       .channel('inquiries-inserts')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inquiries' }, (payload) => {
         const row = payload.new as Inquiry;
-        setNotifications(prev => [row, ...prev.filter(i => i.id !== row.id)].slice(0, 10));
-        setUnreadCount(prev => prev + 1);
+        upsertNotification(row);
+        incrementUnread();
         toast.success('New inquiry', {
           description: `${row.name} – ${row.event_type || 'Inquiry'}`,
           action: { label: 'View', onClick: () => navigate('/admin/inquiries') },
@@ -93,15 +117,17 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     };
   }, [navigate]);
 
-  const handleMarkAsRead = async (id: string) => {
+  const handleMarkAsRead = useCallback(async (id: string) => {
     try {
       await markInquiryAsRead(id);
       setNotifications(prev => prev.filter(i => i.id !== id));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      const nextCount = Math.max(0, prevCountRef.current - 1);
+      prevCountRef.current = nextCount;
+      setUnreadCount(prev => (prev === nextCount ? prev : nextCount));
     } catch (e) {
       console.error('Failed to mark as read', e);
     }
-  };
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);

@@ -56,7 +56,7 @@ function TeamPhotoImg({
 }) {
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const isExternal = photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://'));
+  const isFullUrl = photoUrl ? /^https?:\/\//i.test(photoUrl) : false;
 
   useEffect(() => {
     if (!photoUrl) {
@@ -64,7 +64,9 @@ function TeamPhotoImg({
       setFailed(false);
       return;
     }
-    if (isExternal) {
+    // If this is already a full public URL (Cloudinary/external/supabase public),
+    // do not create a signed URL.
+    if (isFullUrl) {
       setSrc(photoUrl);
       setFailed(false);
       return;
@@ -74,7 +76,7 @@ function TeamPhotoImg({
     getTeamPhotoUrl(photoUrl, 3600)
       .then(setSrc)
       .catch(() => setFailed(true));
-  }, [photoUrl, isExternal]);
+  }, [photoUrl, isFullUrl]);
 
   if (!photoUrl || failed || (!isExternal && !src)) return <>{fallback}</>;
   return <img src={src!} alt={alt} className={className} loading="lazy" decoding="async" />;

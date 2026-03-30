@@ -238,3 +238,22 @@ export async function updateMediaDisplayOrder(updates: { id: string; display_ord
     throw errors[0].error;
   }
 }
+
+/**
+ * Get media counts for all albums in a single query.
+ * Avoids N+1 queries where the admin Albums page fetches album_media per-album.
+ */
+export async function getAllAlbumMediaCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from('album_media')
+    .select('album_id');
+
+  if (error || !data) return {};
+
+  return (data as Array<{ album_id?: string }>).reduce((acc, row) => {
+    const albumId = row.album_id;
+    if (!albumId) return acc;
+    acc[albumId] = (acc[albumId] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+}
