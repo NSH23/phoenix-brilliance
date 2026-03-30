@@ -408,7 +408,7 @@ export default function AdminTeam() {
             >
               <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full relative group">
                 <CardContent className="p-3 md:p-6 flex flex-col items-center text-center h-full">
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10">
+                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 max-md:hidden">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8">
@@ -460,6 +460,27 @@ export default function AdminTeam() {
                       {m.email && <Mail className="w-3 h-3" />}
                       {m.phone && <Phone className="w-3 h-3" />}
                     </div>
+                  </div>
+
+                  <div className="hidden max-md:grid grid-cols-2 gap-2 w-full mt-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="max-md:h-11"
+                      onClick={() => openDialog(m)}
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="max-md:h-11"
+                      onClick={() => handleDelete(m.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -572,8 +593,15 @@ export default function AdminTeam() {
                               <FileText className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                               {d.name}
                             </span>
-                            <Button type="button" size="sm" variant="ghost" onClick={() => handleDownloadDoc(d)}>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="max-md:h-11 max-md:px-4"
+                              onClick={() => handleDownloadDoc(d)}
+                            >
                               <Download className="w-3.5 h-3.5" />
+                              <span className="hidden max-md:inline ml-2">Download</span>
                             </Button>
                           </li>
                         ))}
@@ -853,11 +881,25 @@ export default function AdminTeam() {
                               {d.name}
                             </span>
                             <div className="flex gap-1 flex-shrink-0">
-                              <Button type="button" size="sm" variant="ghost" onClick={() => handleDownloadDoc(d)}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="max-md:h-11 max-md:px-4"
+                                onClick={() => handleDownloadDoc(d)}
+                              >
                                 <Download className="w-3.5 h-3.5" />
+                                <span className="hidden max-md:inline ml-2">Download</span>
                               </Button>
-                              <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => handleDeleteDoc(d.id)}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive max-md:h-11 max-md:px-4"
+                                onClick={() => handleDeleteDoc(d.id)}
+                              >
                                 <Trash2 className="w-3.5 h-3.5" />
+                                <span className="hidden max-md:inline ml-2">Delete</span>
                               </Button>
                             </div>
                           </li>
@@ -896,8 +938,15 @@ export default function AdminTeam() {
                             <FileText className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                             {p.name}
                           </span>
-                          <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => handleRemovePendingDoc(p.id)}>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive max-md:h-11 max-md:px-4"
+                            onClick={() => handleRemovePendingDoc(p.id)}
+                          >
                             <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden max-md:inline ml-2">Delete</span>
                           </Button>
                         </li>
                       ))}

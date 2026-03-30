@@ -230,7 +230,7 @@ export default function AdminTestimonials() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
             {filteredTestimonials.map((t, i) => (
               <motion.div
                 key={t.id}
@@ -258,7 +258,7 @@ export default function AdminTestimonials() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 -mr-1 md:-mr-2">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:-mr-2">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -312,7 +312,7 @@ export default function AdminTestimonials() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
               <div className="grid gap-2">
                 <Label htmlFor="name">Client Name</Label>
                 <Input
@@ -342,7 +342,7 @@ export default function AdminTestimonials() {
                 rows={4}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
               <div className="grid gap-2">
                 <Label>Event Type</Label>
                 <Select value={formData.eventType} onValueChange={v => setFormData({ ...formData, eventType: v })}>
@@ -373,7 +373,7 @@ export default function AdminTestimonials() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
               <div className="grid gap-2">
                 <Label htmlFor="display_order">Display Order</Label>
                 <Input
@@ -417,9 +417,9 @@ export default function AdminTestimonials() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>
+          <DialogFooter className="max-md:flex-col max-md:items-stretch max-md:gap-2">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:w-full max-md:h-10">Cancel</Button>
+            <Button onClick={handleSave} disabled={saving} className="max-md:w-full max-md:h-11">
               {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving... </> : (editingTestimonial ? 'Save Changes' : 'Add Testimonial')}
             </Button>
           </DialogFooter>

@@ -197,8 +197,8 @@ export default function AdminServices() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
-                <CardContent className="p-3 md:p-6 flex flex-col h-full">
+                <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
+                <CardContent className="p-3 md:p-6 flex flex-col h-full max-md:min-h-[140px]">
                   <div className="flex items-start justify-between mb-2 md:mb-4">
                     <div className="flex items-center gap-2 text-muted-foreground bg-muted p-1.5 md:p-2 rounded-lg">
                       {s.image_url ? (
@@ -215,7 +215,7 @@ export default function AdminServices() {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 -mr-1 md:-mr-2">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:-mr-2">
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -251,7 +251,7 @@ export default function AdminServices() {
                       <Switch
                         checked={s.is_active}
                         onCheckedChange={() => handleToggleActive(s)}
-                        className="scale-75 md:scale-100 origin-left"
+                        className="scale-75 md:scale-100 origin-left max-md:scale-100"
                       />
                     </div>
                     <Badge variant={s.is_active ? 'default' : 'secondary'} className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">
@@ -349,9 +349,9 @@ export default function AdminServices() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>
+          <DialogFooter className="max-md:flex-col max-md:items-stretch max-md:gap-2">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:w-full max-md:h-10">Cancel</Button>
+            <Button onClick={handleSave} disabled={saving} className="max-md:w-full max-md:h-11">
               {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : (editingService ? 'Save Changes' : 'Create Service')}
             </Button>
           </DialogFooter>

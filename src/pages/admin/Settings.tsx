@@ -220,20 +220,20 @@ export default function AdminSettings() {
   return (
     <AdminLayout title="Settings" subtitle="Manage your account and site settings">
       <Tabs defaultValue="profile" className="space-y-8">
-        <TabsList className="flex flex-col sm:flex-row h-auto p-2 gap-2 w-full bg-muted/50">
-          <TabsTrigger value="profile" className="gap-2 flex-1">
+        <TabsList className="flex flex-col sm:flex-row h-auto p-2 gap-2 w-full bg-muted/50 max-md:flex-row max-md:overflow-x-auto max-md:flex-nowrap max-md:pb-2">
+          <TabsTrigger value="profile" className="gap-2 flex-1 max-md:flex-none max-md:px-4 max-md:py-2 max-md:rounded-full max-md:whitespace-nowrap">
             <User className="w-4 h-4" />
             Profile
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2 flex-1">
+          <TabsTrigger value="security" className="gap-2 flex-1 max-md:flex-none max-md:px-4 max-md:py-2 max-md:rounded-full max-md:whitespace-nowrap">
             <Shield className="w-4 h-4" />
             Security
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2 flex-1">
+          <TabsTrigger value="notifications" className="gap-2 flex-1 max-md:flex-none max-md:px-4 max-md:py-2 max-md:rounded-full max-md:whitespace-nowrap">
             <Bell className="w-4 h-4" />
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="site" className="gap-2 flex-1">
+          <TabsTrigger value="site" className="gap-2 flex-1 max-md:flex-none max-md:px-4 max-md:py-2 max-md:rounded-full max-md:whitespace-nowrap">
             <Globe className="w-4 h-4" />
             Site
           </TabsTrigger>
@@ -253,7 +253,7 @@ export default function AdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-md:gap-4">
                   <Label>Profile Avatar</Label>
                   <ImageUpload
                     key={profileData.avatar || 'no-avatar'}
@@ -261,6 +261,7 @@ export default function AdminSettings() {
                     onChange={(v) => setProfileData((p) => ({ ...p, avatar: (v as string) || '' }))}
                     multiple={false}
                     previewClassName="object-cover"
+                    previewWrapperClassName="max-md:w-24 max-md:h-24 max-md:aspect-auto max-md:flex max-md:items-center max-md:justify-center max-md:mx-auto"
                     bucket="admin-avatars"
                     uploadOnSelect={true}
                   />
@@ -269,36 +270,38 @@ export default function AdminSettings() {
                     value={profileData.avatar}
                     onChange={(e) => setProfileData((p) => ({ ...p, avatar: e.target.value }))}
                     placeholder="https://... or path from storage"
+                    className="max-md:h-11"
                   />
                 </div>
 
                 <Separator />
 
                 <div className="grid gap-4">
-                  <div className="grid gap-2">
+                  <div className="grid gap-2 max-md:gap-4">
                     <Label htmlFor="name">Full Name</Label>
                     <Input
                       id="name"
                       value={profileData.name}
                       onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                      className="max-md:h-11"
                     />
                   </div>
 
-                  <div className="grid gap-2">
+                  <div className="grid gap-2 max-md:gap-4">
                     <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
                       type="email"
                       value={profileData.email}
                       disabled
-                      className="bg-muted"
+                      className="bg-muted max-md:h-11"
                     />
                     <p className="text-xs text-muted-foreground">Email cannot be changed from this panel.</p>
                   </div>
 
-                  <div className="grid gap-2">
+                  <div className="grid gap-2 max-md:gap-4">
                     <Label>Role</Label>
-                    <Input value={user?.role || 'Admin'} disabled className="bg-muted" />
+                    <Input value={user?.role || 'Admin'} disabled className="bg-muted max-md:h-11" />
                     <p className="text-xs text-muted-foreground">
                       Role cannot be changed from this panel.
                     </p>
@@ -306,7 +309,7 @@ export default function AdminSettings() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveProfile} disabled={profileSaving}>
+                  <Button onClick={handleSaveProfile} disabled={profileSaving} className="max-md:w-full max-md:h-11 max-md:px-4">
                     {profileSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                     Save Profile
                   </Button>
@@ -330,38 +333,41 @@ export default function AdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-md:gap-4">
                   <Label htmlFor="currentPassword">Current Password</Label>
                   <Input
                     id="currentPassword"
                     type="password"
                     value={profileData.currentPassword}
                     onChange={(e) => setProfileData({ ...profileData, currentPassword: e.target.value })}
+                    className="max-md:h-11"
                   />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-md:gap-4">
                   <Label htmlFor="newPassword">New Password</Label>
                   <Input
                     id="newPassword"
                     type="password"
                     value={profileData.newPassword}
                     onChange={(e) => setProfileData({ ...profileData, newPassword: e.target.value })}
+                    className="max-md:h-11"
                   />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-md:gap-4">
                   <Label htmlFor="confirmPassword">Confirm New Password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     value={profileData.confirmPassword}
                     onChange={(e) => setProfileData({ ...profileData, confirmPassword: e.target.value })}
+                    className="max-md:h-11"
                   />
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleUpdatePassword} disabled={passwordSaving}>
+                  <Button onClick={handleUpdatePassword} disabled={passwordSaving} className="max-md:w-full max-md:h-11 max-md:px-4">
                     {passwordSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Shield className="w-4 h-4 mr-2" />}
                     Update Password
                   </Button>
@@ -454,7 +460,7 @@ export default function AdminSettings() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveNotifications} disabled={notificationsSaving}>
+                  <Button onClick={handleSaveNotifications} disabled={notificationsSaving} className="max-md:w-full max-md:h-11 max-md:px-4">
                     {notificationsSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                     Save Preferences
                   </Button>
@@ -479,31 +485,33 @@ export default function AdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-md:gap-4">
                   <Label htmlFor="siteName">Site Name</Label>
                   <Input
                     id="siteName"
                     value={siteSettings.siteName}
                     onChange={(e) => setSiteSettings({ ...siteSettings, siteName: e.target.value })}
+                    className="max-md:h-11"
                   />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-md:gap-4">
                   <Label htmlFor="tagline">Tagline</Label>
                   <Input
                     id="tagline"
                     value={siteSettings.tagline}
                     onChange={(e) => setSiteSettings({ ...siteSettings, tagline: e.target.value })}
+                    className="max-md:h-11"
                   />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-md:gap-4">
                   <Label htmlFor="theme">Default Theme</Label>
                   <Select
                     value={siteSettings.defaultTheme}
                     onValueChange={(value) => setSiteSettings({ ...siteSettings, defaultTheme: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="max-md:h-11">
                       <SelectValue placeholder="Select theme" />
                     </SelectTrigger>
                     <SelectContent>
@@ -524,7 +532,7 @@ export default function AdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-md:gap-4">
                   <Label>Logo image</Label>
                   <ImageUpload
                     value={siteLogoUrl ? resolvePublicStorageUrl(siteLogoUrl, 'site-logo') : ''}
@@ -533,6 +541,7 @@ export default function AdminSettings() {
                     bucket="site-logo"
                     uploadOnSelect={true}
                     previewClassName="object-contain max-h-24"
+                    previewWrapperClassName="max-md:w-24 max-md:h-24 max-md:aspect-auto max-md:flex max-md:items-center max-md:justify-center max-md:mx-auto"
                   />
                   {siteLogoSaving && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -611,7 +620,7 @@ export default function AdminSettings() {
             </Card>
 
             <div className="flex justify-end">
-              <Button onClick={handleSaveSiteSettings} disabled={siteSaving}>
+              <Button onClick={handleSaveSiteSettings} disabled={siteSaving} className="max-md:w-full max-md:h-11 max-md:px-4">
                 {siteSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                 Save Settings
               </Button>

@@ -447,7 +447,7 @@ export default function AdminCollaborations() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
           {filteredCollaborations.map((c, i) => (
             <motion.div
               key={c.id}
@@ -455,7 +455,20 @@ export default function AdminCollaborations() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+            <Card
+              className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col max-md:flex-row max-md:items-center max-md:gap-3 max-md:cursor-pointer"
+              onClick={() => {
+                // Mobile-only: tapping the card should open edit dialog.
+                if (window.innerWidth < 768) handleOpenDialog(c);
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (window.innerWidth < 768) handleOpenDialog(c);
+                }
+              }}
+            >
                 <div className="p-3 md:p-6 flex-1">
                   <div className="flex items-start justify-between mb-2 md:mb-4">
                     <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
@@ -478,7 +491,12 @@ export default function AdminCollaborations() {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 -mr-1 md:mr-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:mr-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -512,6 +530,7 @@ export default function AdminCollaborations() {
                   <Switch
                     checked={c.is_active}
                     onCheckedChange={() => handleToggleActive(c)}
+                    onClick={(e) => e.stopPropagation()}
                     className="h-4 w-8 md:h-6 md:w-11"
                   />
                 </div>
@@ -650,7 +669,7 @@ export default function AdminCollaborations() {
                 <div className="grid gap-4 sm:grid-cols-[minmax(0,220px)_1fr]">
                   <div className="rounded-lg border bg-card overflow-hidden">
                     <div className="p-2 border-b bg-muted/50 text-xs font-medium text-muted-foreground">Folders</div>
-                    <div className="max-h-[280px] overflow-y-auto">
+                    <div className="max-h-[280px] overflow-y-auto max-md:max-h-none max-md:overflow-visible">
                       {rootFolders.length === 0 && (
                         <div className="px-2 py-3 border-b mb-1">
                           <p className="text-sm text-muted-foreground mb-2">
@@ -674,7 +693,7 @@ export default function AdminCollaborations() {
                             </button>
                             <FolderOpen className="w-4 h-4 text-primary shrink-0" />
                             <span className="text-sm font-medium truncate flex-1">{f.name}</span>
-                            <Switch checked={f.is_enabled} onCheckedChange={() => toggleFolderEnabled(f.id)} onClick={e => e.stopPropagation()} className="h-3.5 w-7 shrink-0" />
+                          <Switch checked={f.is_enabled} onCheckedChange={() => toggleFolderEnabled(f.id)} onClick={e => e.stopPropagation()} className="h-3.5 w-7 shrink-0 max-md:h-5 max-md:w-9" />
                           </div>
                           {expandedFolderIds.has(f.id) && getChildFolders(f.id).map((sub) => (
                             <div
@@ -684,7 +703,7 @@ export default function AdminCollaborations() {
                             >
                               <FolderOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                               <span className="text-sm truncate flex-1">{sub.name}</span>
-                              <Switch checked={sub.is_enabled} onCheckedChange={() => toggleFolderEnabled(sub.id)} onClick={e => e.stopPropagation()} className="h-3.5 w-7 shrink-0" />
+                                <Switch checked={sub.is_enabled} onCheckedChange={() => toggleFolderEnabled(sub.id)} onClick={e => e.stopPropagation()} className="h-3.5 w-7 shrink-0 max-md:h-5 max-md:w-9" />
                             </div>
                           ))}
                         </div>
@@ -775,7 +794,7 @@ export default function AdminCollaborations() {
                       </div>
                     )}
 
-                    <div className="flex flex-wrap gap-2 mt-3">
+                      <div className="flex flex-wrap gap-2 mt-3 max-md:grid max-md:grid-cols-3 max-md:gap-2">
                       {galleryImages
                         .map((img, globalIdx) => ({ img, globalIdx }))
                         .filter(({ img }) => (img.folder_id ?? null) === selectedFolderId)

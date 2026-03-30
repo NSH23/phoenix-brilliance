@@ -116,10 +116,11 @@ function HeroSlotCard({
                         )}
                     </div>
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end max-md:flex-col max-md:items-stretch">
                     <Button
                         size="sm"
                         variant="outline"
+                        className="max-md:w-full max-md:h-10"
                         onClick={() => (item ? onEdit(item) : onAdd(slotIndex, mediaType))}
                     >
                         <Pencil size={16} /> <span className="ml-2">Select</span>
@@ -128,6 +129,7 @@ function HeroSlotCard({
                         size="sm"
                         variant="destructive"
                         disabled={!item}
+                        className="max-md:w-full max-md:h-10"
                         onClick={() => item && onDelete(item)}
                     >
                         <Trash2 size={16} /> <span className="ml-2">Delete</span>
@@ -191,17 +193,17 @@ function MediaList({
                                     )}
                                 </div>
                                 <p className="text-sm text-muted-foreground truncate font-mono">{item.url}</p>
-                                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                                     <span>Order: {item.display_order}</span>
                                     <span>{formatDateTimeLocal(item.created_at)}</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 mt-2 sm:mt-0">
-                            <Button size="sm" variant="outline" onClick={() => onEdit(item)}>
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 mt-2 sm:mt-0 max-md:flex-col max-md:items-stretch max-md:gap-2 max-md:border-t-0 max-md:pt-0">
+                            <Button size="sm" variant="outline" onClick={() => onEdit(item)} className="max-md:w-full max-md:h-10">
                                 <Pencil size={16} /> <span className="ml-2">Select</span>
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => onDelete(item)}>
+                            <Button size="sm" variant="destructive" onClick={() => onDelete(item)} className="max-md:w-full max-md:h-10">
                                 <Trash2 size={16} /> <span className="ml-2">Delete</span>
                             </Button>
                         </div>
@@ -489,7 +491,12 @@ export default function ContentMedia() {
                             <>
                                         <div className="space-y-2">
                                             <Label>YouTube URL or Video ID</Label>
-                                            <Input {...register('url')} placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ" disabled={uploading || isDeploying} />
+                                            <Input
+                                                {...register('url')}
+                                                placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                                                disabled={uploading || isDeploying}
+                                                className="max-md:w-full max-md:h-11"
+                                            />
 
                                             {!!currentUrl && (
                                                 <div className="flex justify-end">
@@ -574,7 +581,7 @@ export default function ContentMedia() {
                             <Input {...register('title')} placeholder="e.g. Hero video" />
                         </div>
                         {activeTab === 'moment' && (
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
                                 <div className="space-y-2">
                                     <Label>Display Order</Label>
                                     <Input type="number" {...register('display_order', { valueAsNumber: true })} />
@@ -591,11 +598,12 @@ export default function ContentMedia() {
                                 <Switch id="is-active-hero" checked={watch('is_active')} onCheckedChange={(c) => setValue('is_active', c)} />
                             </div>
                         )}
-                        <DialogFooter>
+                        <DialogFooter className="max-md:flex-col max-md:items-stretch max-md:gap-2">
                             {editingItem && (
                                 <Button
                                     type="button"
                                     variant="destructive"
+                                    className="max-md:w-full max-md:h-10"
                                     onClick={async () => {
                                         await handleDelete(editingItem);
                                         setIsDialogOpen(false);
@@ -605,8 +613,15 @@ export default function ContentMedia() {
                                     Delete
                                 </Button>
                             )}
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isDeploying || uploading}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsDialogOpen(false)}
+                                className="max-md:w-full max-md:h-10"
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={isDeploying || uploading} className="max-md:w-full max-md:h-11">
                                 {(isDeploying || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {uploading ? 'Uploading video…' : isDeploying ? 'Saving…' : 'Save'}
                             </Button>

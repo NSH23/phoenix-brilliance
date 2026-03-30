@@ -74,11 +74,14 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
             key={item.name}
             to={item.href}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
+              "flex items-center gap-3 rounded-xl transition-all duration-200",
               "hover:bg-primary/10 group",
               isActive(item.href)
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "text-muted-foreground hover:text-foreground"
+                ? mobile
+                  ? "border-l-4 border-primary bg-primary/10 text-primary-foreground pl-2 shadow-md"
+                  : "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground",
+              mobile ? "py-3 px-4 text-base" : "px-3 py-2.5"
             )}
           >
             <item.icon className={cn(
@@ -102,7 +105,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
       </nav>
 
       {/* User Profile */}
-      <div className="p-3 border-t border-border">
+      <div className={cn("border-t border-border", mobile ? "py-3 px-3" : "p-3")}>
         <div className={cn(
           "flex items-center gap-3 p-3 rounded-xl bg-muted/50",
           (collapsed && !mobile) && "justify-center"
@@ -127,6 +130,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
           className={cn(
             "w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors",
             "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+            mobile ? "py-3" : "py-2.5",
             (collapsed && !mobile) && "justify-center"
           )}
         >

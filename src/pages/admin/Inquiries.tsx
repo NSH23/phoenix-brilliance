@@ -129,11 +129,11 @@ export default function AdminInquiries() {
             placeholder="Search inquiries..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 max-md:h-11"
           />
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] max-md:w-full max-md:h-11">
             <Filter className="w-4 h-4 mr-2" />
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -147,7 +147,7 @@ export default function AdminInquiries() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 max-md:grid-cols-1">
         {(['new', 'contacted', 'converted', 'closed'] as const).map(status => (
           <Card key={status} className="p-4">
             <div className="flex items-center justify-between">
@@ -175,7 +175,7 @@ export default function AdminInquiries() {
               transition={{ delay: i * 0.05 }}
             >
               <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+                <CardContent className="p-6 max-md:p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
@@ -206,7 +206,12 @@ export default function AdminInquiries() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleViewDetails(inquiry)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="max-md:h-11 max-md:px-4"
+                        onClick={() => handleViewDetails(inquiry)}
+                      >
                         <Eye className="w-4 h-4 mr-2" />
                         View
                       </Button>
@@ -248,7 +253,7 @@ export default function AdminInquiries() {
       )}
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-xl max-md:w-full max-md:max-h-[90vh] max-md:overflow-y-auto max-md:p-4">
           <DialogHeader>
             <DialogTitle>Inquiry Details</DialogTitle>
             <DialogDescription>
@@ -308,6 +313,7 @@ export default function AdminInquiries() {
                       key={status}
                       variant={selectedInquiry.status === status ? 'default' : 'outline'}
                       size="sm"
+                      className="max-md:h-11 max-md:px-4"
                       onClick={() => {
                         handleUpdateStatus(selectedInquiry.id, status);
                         setSelectedInquiry(prev => (prev ? { ...prev, status } : null));
@@ -322,11 +328,11 @@ export default function AdminInquiries() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="max-md:w-full max-md:h-11 max-md:px-4">
               Close
             </Button>
             {selectedInquiry && (
-              <Button variant="destructive" onClick={() => handleDelete(selectedInquiry.id)}>
+              <Button variant="destructive" onClick={() => handleDelete(selectedInquiry.id)} className="max-md:w-full max-md:h-11 max-md:px-4">
                 Delete Inquiry
               </Button>
             )}

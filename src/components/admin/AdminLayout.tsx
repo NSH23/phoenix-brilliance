@@ -142,11 +142,11 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
             <div className="md:hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  <button className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted">
+                  <button className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-muted">
                     <Menu className="w-5 h-5" />
                   </button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-[280px]">
+                <SheetContent side="left" className="p-0 w-[85vw] max-w-[320px]">
                   <SheetTitle className="sr-only">Navigation</SheetTitle>
                   <SheetDescription className="sr-only">Mobile navigation menu</SheetDescription>
                   <AdminSidebar mobile />
@@ -166,7 +166,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 md:px-4 py-2 w-auto md:w-80 text-left hover:bg-muted/70 transition-colors min-w-[44px] md:min-w-0"
+                    className="sm:flex max-md:hidden items-center gap-2 bg-muted/50 rounded-xl px-3 md:px-4 py-2 w-auto md:w-80 text-left hover:bg-muted/70 transition-colors min-w-[44px] md:min-w-0"
                 >
                   <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                   <span className="text-muted-foreground text-sm hidden md:inline">Search...</span>
@@ -209,7 +209,11 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
             {/* Notifications */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative rounded-xl">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative rounded-xl max-md:h-11 max-md:w-11 max-md:min-h-[44px] max-md:min-w-[44px]"
+                >
                   <Bell className="w-5 h-5" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-medium rounded-full">
@@ -266,7 +270,12 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
               </PopoverContent>
             </Popover>
 
-            <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="rounded-xl">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleDarkMode}
+              className="rounded-xl max-md:h-11 max-md:w-11 max-md:min-h-[44px] max-md:min-w-[44px]"
+            >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
           </div>

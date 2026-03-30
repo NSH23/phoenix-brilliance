@@ -260,7 +260,7 @@ export default function AdminAlbums() {
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
+        <Button onClick={() => handleOpenDialog()} className="gap-2 max-md:w-full">
           <Plus className="w-4 h-4" />
           Create Album
         </Button>
@@ -289,7 +289,7 @@ export default function AdminAlbums() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+            <div className="grid grid-cols-3 gap-2 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
               {filteredAlbums.map((album, index) => (
                 <motion.div
                   key={album.id}
@@ -297,8 +297,8 @@ export default function AdminAlbums() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col">
-                    <div className="relative h-24 md:h-52 overflow-hidden shrink-0">
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col max-md:flex-row max-md:items-center max-md:gap-3">
+                    <div className="relative h-24 md:h-52 overflow-hidden shrink-0 max-md:h-20 max-md:w-20 max-md:rounded-lg">
                       <img
                         src={album.cover_image || '/placeholder.svg'}
                         alt={album.title}
@@ -326,8 +326,8 @@ export default function AdminAlbums() {
                       {/* Actions */}
                       <div className="absolute top-1 right-1 md:top-3 md:right-3">
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="secondary" size="icon" className="h-6 w-6 md:h-8 md:w-8 bg-black/50 border-0 text-white hover:bg-black/70 text-white">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" size="icon" className="h-6 w-6 md:h-8 md:w-8 bg-black/50 border-0 text-white hover:bg-black/70 text-white max-md:h-10 max-md:w-10">
                               <MoreHorizontal className="w-3 h-3 md:w-4 md:h-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -492,11 +492,11 @@ export default function AdminAlbums() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSaving}>
+          <DialogFooter className="max-md:flex-col max-md:items-stretch max-md:gap-2">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="max-md:w-full">
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving} className="max-md:w-full max-md:h-11">
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

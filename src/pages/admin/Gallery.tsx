@@ -89,18 +89,18 @@ export default function AdminGallery() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <Label className="text-sm font-medium mb-2 block">Front (6 cards)</Label>
+            <Label className="text-sm font-medium mb-2 block max-md:text-lg max-md:font-semibold max-md:mb-3">Front (6 cards)</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {aboutFront.map((url, i) => (
                 <div key={`f-${i}`} className="space-y-1">
-                  <div className="aspect-square rounded-lg border bg-muted overflow-hidden">
+                  <div className="aspect-square rounded-lg border bg-muted overflow-hidden max-md:min-h-[120px]">
                     {url ? (
                       <img src={url} alt={`Front ${i + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.src = '')} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">Slot {i + 1}</div>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 max-md:flex max-md:flex-col max-md:gap-2">
                     <Button
                       type="button"
                       variant="outline"
@@ -125,19 +125,20 @@ export default function AdminGallery() {
               ))}
             </div>
           </div>
+          <div className="md:hidden h-px bg-border/60" />
           <div>
-            <Label className="text-sm font-medium mb-2 block">Back (6 cards)</Label>
+            <Label className="text-sm font-medium mb-2 block max-md:text-lg max-md:font-semibold max-md:mb-3">Back (6 cards)</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {aboutBack.map((url, i) => (
                 <div key={`b-${i}`} className="space-y-1">
-                  <div className="aspect-square rounded-lg border bg-muted overflow-hidden">
+                  <div className="aspect-square rounded-lg border bg-muted overflow-hidden max-md:min-h-[120px]">
                     {url ? (
                       <img src={url} alt={`Back ${i + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.src = '')} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">Slot {i + 1}</div>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 max-md:flex max-md:flex-col max-md:gap-2">
                     <Button
                       type="button"
                       variant="outline"

@@ -17,6 +17,7 @@ interface ImageUploadProps {
   className?: string;
   label?: string;
   previewClassName?: string;
+  previewWrapperClassName?: string;
   bucket?: BucketName; // Supabase storage bucket name
   uploadOnSelect?: boolean; // If true, upload immediately on file select
 }
@@ -31,6 +32,7 @@ export default function ImageUpload({
   className,
   label,
   previewClassName,
+  previewWrapperClassName,
   bucket,
   uploadOnSelect = false,
 }: ImageUploadProps) {
@@ -328,7 +330,10 @@ export default function ImageUpload({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
+                    className={cn(
+                      "relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted",
+                      previewWrapperClassName,
+                    )}
                   >
                       {isBulkDeleteEnabled && (
                         <label
