@@ -80,7 +80,7 @@ export function getYouTubeEmbedUrl(urlOrId: string): string {
   // Shorts should still embed via /embed/VIDEO_ID (not /shorts/VIDEO_ID).
   // We rely on correct ID extraction above.
   // Note: browsers may still block autoplay with sound depending on user interaction/policies.
-  return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
+  return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1`;
 }
 
 export function isYouTubeValue(urlOrId: string): boolean {

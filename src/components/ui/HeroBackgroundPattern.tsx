@@ -1,5 +1,4 @@
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 // Number of particles to generate
 const PARTICLE_COUNT = 60;
@@ -42,30 +41,21 @@ export function HeroBackgroundPattern() {
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
             {particles.map((particle) => (
-                <motion.div
+                <div
                     key={particle.id}
-                    // Light Theme: Deep Rose Wine (#9F1239) with 40% opacity - elegant & visible
-                    // Dark Theme: White/Foreground with 15% opacity (unchanged)
-                    className="absolute rounded-full bg-[#9F1239] dark:bg-foreground opacity-[0.4] dark:opacity-[0.15]"
-                    style={{
-                        left: `${particle.left}%`,
-                        top: `${particle.top}%`,
-                        width: particle.size,
-                        height: particle.size,
-                    }}
-                    animate={{
-                        y: [0, particle.yDrift],
-                        x: [0, particle.xDrift],
-                        opacity: [0.05, 0.15, 0.05], // Breathing opacity
-                        scale: [1, 1.5, 0.8, 1], // Breathing size
-                    }}
-                    transition={{
-                        duration: particle.duration,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: particle.delay,
-                        repeatType: "reverse", // Makes it float back and forth elegantly
-                    }}
+                    className="absolute rounded-full bg-[#9F1239] dark:bg-foreground opacity-[0.4] dark:opacity-[0.15] animate-hero-particle-drift"
+                    style={
+                        {
+                            left: `${particle.left}%`,
+                            top: `${particle.top}%`,
+                            width: particle.size,
+                            height: particle.size,
+                            "--dx": `${particle.xDrift}px`,
+                            "--dy": `${particle.yDrift}px`,
+                            "--hero-dur": `${particle.duration}s`,
+                            animationDelay: `${particle.delay}s`,
+                        } as CSSProperties
+                    }
                 />
             ))}
         </div>

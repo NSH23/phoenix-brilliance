@@ -1,9 +1,25 @@
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
 const FinalCTASection = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setInView(true);
+      },
+      { once: true, rootMargin: "-80px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <section
       id="final-cta"
@@ -11,12 +27,11 @@ const FinalCTASection = () => {
       aria-labelledby="final-cta-heading"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }}
-          className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto"
+        <div
+          ref={ref}
+          className={`flex flex-col items-center justify-center text-center max-w-3xl mx-auto transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] ${
+            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+          }`}
         >
           <h2
             id="final-cta-heading"
@@ -48,7 +63,7 @@ const FinalCTASection = () => {
               </Link>
             </Button>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

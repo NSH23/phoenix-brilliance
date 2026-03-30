@@ -13,6 +13,11 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  // Desktop keeps the original links; mobile gets an extra "Venues" link.
+  const mobileNavLinks = [
+    ...navLinks,
+    { name: "Venues", href: "/collaborations" },
+  ];
   const { contact, logoUrl } = useSiteConfig();
   const logoSrc = logoUrl || '/logo.png';
   const [isOpen, setIsOpen] = useState(false);
@@ -243,7 +248,7 @@ export default function Navbar() {
 
               {/* Navigation Links */}
               <nav className="flex flex-col gap-2 relative">
-                {navLinks.map((link, index) => (
+                {mobileNavLinks.map((link, index) => (
                   <motion.div
                     key={link.name}
                     initial={{ opacity: 0, x: -30 }}

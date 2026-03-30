@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { MessageCircle, Phone, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
@@ -8,12 +7,7 @@ const MobileCTA = () => {
   const whatsappNumber = contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276";
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Hi! I'm interested in your event services.`;
   return (
-    <motion.div
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 1.5, duration: 0.5 }}
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
-    >
+    <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden opacity-0 animate-mobile-cta-in">
       {/* Instagram-style bottom action bar */}
       <div className="bg-background/95 backdrop-blur-xl border-t border-border 
                     px-4 py-3 shadow-[0_-4px_24px_rgba(28,25,23,0.08)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.25)]">
@@ -55,7 +49,7 @@ const MobileCTA = () => {
           </Link>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

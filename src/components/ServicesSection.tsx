@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExpandingCards, CardItem } from "@/components/ui/expanding-cards";
-import { getActiveServices } from "@/services/services";
+import { getActiveServices, type Service } from "@/services/services";
 import { resolvePublicStorageUrl } from "@/services/storage";
 import {
   Crown,
@@ -109,38 +109,45 @@ const MobileServiceCarousel = ({ services }: { services: CardItem[] }) => {
   );
 };
 
-const ServicesSection = () => {
+function mapServicesToCards(data: Service[]): CardItem[] {
+  if (!data.length) return [];
+  return data.map((s) => {
+    const IconComponent = s.icon && ICON_MAP[s.icon as string] ? ICON_MAP[s.icon as string] : Sparkles;
+    const imgSrc = s.image_url
+      ? resolvePublicStorageUrl(s.image_url, "service-images")
+      : "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80";
+    return {
+      id: s.id,
+      title: s.title,
+      description: s.description || "",
+      imgSrc,
+      icon: <IconComponent size={24} />,
+      linkHref: "/services",
+      fallbackImgSrc: DEFAULT_SERVICE_IMAGE,
+    };
+  });
+}
+
+type ServicesSectionProps = {
+  prefetchedServices?: Service[];
+  homepageDataPending?: boolean;
+};
+
+const ServicesSection = ({ prefetchedServices, homepageDataPending }: ServicesSectionProps = {}) => {
   const [services, setServices] = useState<CardItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (homepageDataPending) return;
+
     async function fetchServices() {
       try {
-        const data = await getActiveServices();
-        if (data && data.length > 0) {
-          // Map DB items to Card items
-          const mapped = data.map((s) => {
-            // If icon name is stored in 'icon' field, try to map it, else default
-            const IconComponent = (s.icon && ICON_MAP[s.icon as string]) ? ICON_MAP[s.icon as string] : Sparkles;
-
-            const imgSrc = s.image_url
-              ? resolvePublicStorageUrl(s.image_url, "service-images")
-              : "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80";
-            return {
-              id: s.id,
-              title: s.title,
-              description: s.description || "",
-              imgSrc,
-              icon: <IconComponent size={24} />,
-              linkHref: "/services",
-              fallbackImgSrc: DEFAULT_SERVICE_IMAGE,
-            };
-          });
-          setServices(mapped);
-        } else {
-          // Fallback / Default data if DB is empty
-          // ... (We could keep the hardcoded constants as fallback, but for brevity I'll assume DB works or empty)
+        if (prefetchedServices !== undefined) {
+          setServices(mapServicesToCards(prefetchedServices));
+          return;
         }
+        const data = await getActiveServices();
+        setServices(mapServicesToCards(data || []));
       } catch (error) {
         console.error("Failed to fetch services", error);
       } finally {
@@ -148,7 +155,7 @@ const ServicesSection = () => {
       }
     }
     fetchServices();
-  }, []);
+  }, [homepageDataPending, prefetchedServices]);
 
   // Split into rows? Or just pass all? The expanding cards might handle it.
   // The original code split into 2 rows of 4.

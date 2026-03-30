@@ -25,52 +25,73 @@ type EventCategory = {
   powered_by: string | null;
 };
 
-const EventsSection = () => {
+type HomepageEventRow = Awaited<ReturnType<typeof getEventsForHomepage>>[number];
+
+function buildEventCategories(eventsData: HomepageEventRow[]): EventCategory[] {
+  return (eventsData || []).map((e) => {
+    const imgs = (e.event_images || [])
+      .sort((a, b) => a.display_order - b.display_order)
+      .map((i) => i.url);
+    while (imgs.length < 6) {
+      imgs.push(e.cover_image || FALLBACK_IMAGES[imgs.length % FALLBACK_IMAGES.length]);
+    }
+    return {
+      title: e.title,
+      slug: e.slug,
+      description: EVENT_CATEGORY_DESCRIPTIONS[e.slug] || e.short_description || e.description || "",
+      images: imgs.slice(0, 6),
+      powered_by: e.powered_by?.trim() || null,
+    };
+  });
+}
+
+function preloadCategoryImages(cats: EventCategory[]) {
+  if (!cats.length) return;
+  cats.forEach((cat) => {
+    cat.images.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  });
+}
+
+type EventsSectionProps = {
+  prefetchedEvents?: Awaited<ReturnType<typeof getEventsForHomepage>>;
+  homepageDataPending?: boolean;
+};
+
+const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionProps = {}) => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [selectedSlug, setSelectedSlug] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (homepageDataPending) return;
+
+    if (prefetchedEvents !== undefined) {
+      const cats = buildEventCategories(prefetchedEvents);
+      setCategories(cats);
+      setSelectedSlug((prev) => (cats.find((c) => c.slug === prev) ? prev : cats[0]?.slug || ""));
+      preloadCategoryImages(cats);
+      setIsLoading(false);
+      return;
+    }
+
     const limit = 6;
     getEventsForHomepage(limit)
       .then((eventsData) => {
-        const cats: EventCategory[] = (eventsData || []).map((e) => {
-          const imgs = (e.event_images || [])
-            .sort((a, b) => a.display_order - b.display_order)
-            .map((i) => i.url);
-          while (imgs.length < 6) {
-            imgs.push(e.cover_image || FALLBACK_IMAGES[imgs.length % FALLBACK_IMAGES.length]);
-          }
-          return {
-            title: e.title,
-            slug: e.slug,
-            description: EVENT_CATEGORY_DESCRIPTIONS[e.slug] || e.short_description || e.description || "",
-            images: imgs.slice(0, 6),
-            powered_by: e.powered_by?.trim() || null,
-          };
-        });
+        const cats = buildEventCategories(eventsData || []);
         setCategories(cats);
-        setSelectedSlug((prev) =>
-          cats.find((c) => c.slug === prev) ? prev : cats[0]?.slug || ""
-        );
-
-        // Preload images for smoother transitions
-        if (cats && cats.length > 0) {
-          cats.forEach(cat => {
-            cat.images.forEach(src => {
-              const img = new Image();
-              img.src = src;
-            });
-          });
-        }
+        setSelectedSlug((prev) => (cats.find((c) => c.slug === prev) ? prev : cats[0]?.slug || ""));
+        preloadCategoryImages(cats);
       })
       .catch(() => {
         setCategories([]);
         setSelectedSlug("");
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [prefetchedEvents, homepageDataPending]);
 
   const displayCategories = categories;
   const selectedCategory = displayCategories.find((c) => c.slug === selectedSlug) || displayCategories[0];

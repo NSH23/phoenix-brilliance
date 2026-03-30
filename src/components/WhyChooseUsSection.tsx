@@ -8,6 +8,7 @@ import {
   type WhyChooseUsIconKey,
 } from "@/services/whyChooseUs";
 import { getSiteContentByKey } from "@/services/siteContent";
+import type { SiteContent } from "@/services/siteContent";
 import {
   Trophy,
   Heart,
@@ -29,6 +30,13 @@ const DEFAULT_STATS: WhyChooseUsStat[] = [
   { id: 'fb-3', stat_value: '50+', stat_label: 'Trusted Partners', stat_description: 'Premium partner network', icon_key: 'users', display_order: 3, created_at: '', updated_at: '' },
   { id: 'fb-4', stat_value: '100%', stat_label: 'Quality Assurance', stat_description: 'Commitment to excellence', icon_key: 'shield', display_order: 4, created_at: '', updated_at: '' },
 ];
+
+const DEFAULT_WHY_HEADER = {
+  title: "Why Phoenix Events?",
+  subtitle: "Why Choose Us",
+  description:
+    "We craft experiences that transcend moments and become cherished memories. With over a decade of expertise, we transform visions into beautifully executed realities — defined by creativity, precision, and uncompromising attention to detail.",
+};
 
 const DEFAULT_REASONS: WhyChooseUsReason[] = [
   { id: 'fb-r1', text: 'Custom Themes Tailored to Your Vision', display_order: 1, created_at: '', updated_at: '' },
@@ -52,21 +60,45 @@ const item = {
   visible: { opacity: 1, y: 0 },
 };
 
-export default function WhyChooseUsSection() {
+type WhyChooseUsSectionProps = {
+  prefetchedWhyStats?: WhyChooseUsStat[];
+  prefetchedWhyReasons?: WhyChooseUsReason[];
+  prefetchedWhyContent?: SiteContent | null;
+  homepageDataPending?: boolean;
+};
+
+export default function WhyChooseUsSection({
+  prefetchedWhyStats,
+  prefetchedWhyReasons,
+  prefetchedWhyContent,
+  homepageDataPending,
+}: WhyChooseUsSectionProps = {}) {
   const [stats, setStats] = useState<WhyChooseUsStat[]>([]);
   const [reasons, setReasons] = useState<WhyChooseUsReason[]>([]);
   const [header, setHeader] = useState<{
     title: string;
     subtitle: string;
     description: string | null;
-  }>({
-    title: "Why Phoenix Events?",
-    subtitle: "Why Choose Us",
-    description: "We craft experiences that transcend moments and become cherished memories. With over a decade of expertise, we transform visions into beautifully executed realities — defined by creativity, precision, and uncompromising attention to detail.",
-  });
+  }>(DEFAULT_WHY_HEADER);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (homepageDataPending) return;
+
+    if (prefetchedWhyStats !== undefined && prefetchedWhyReasons !== undefined) {
+      setStats(prefetchedWhyStats.length > 0 ? prefetchedWhyStats : DEFAULT_STATS);
+      setReasons(prefetchedWhyReasons.length > 0 ? prefetchedWhyReasons : DEFAULT_REASONS);
+      if (prefetchedWhyContent) {
+        setHeader({
+          title: prefetchedWhyContent.title || DEFAULT_WHY_HEADER.title,
+          subtitle: prefetchedWhyContent.subtitle || DEFAULT_WHY_HEADER.subtitle,
+          description: prefetchedWhyContent.description || null,
+        });
+      }
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       try {
         const [statsRes, reasonsRes, contentRes] = await Promise.all([
@@ -78,8 +110,8 @@ export default function WhyChooseUsSection() {
         setReasons(reasonsRes.length > 0 ? reasonsRes : DEFAULT_REASONS);
         if (contentRes) {
           setHeader({
-            title: contentRes.title || header.title,
-            subtitle: contentRes.subtitle || header.subtitle,
+            title: contentRes.title || DEFAULT_WHY_HEADER.title,
+            subtitle: contentRes.subtitle || DEFAULT_WHY_HEADER.subtitle,
             description: contentRes.description || null,
           });
         }
@@ -91,7 +123,7 @@ export default function WhyChooseUsSection() {
       }
     }
     load();
-  }, []);
+  }, [homepageDataPending, prefetchedWhyStats, prefetchedWhyReasons, prefetchedWhyContent]);
 
   if (loading) return null;
 

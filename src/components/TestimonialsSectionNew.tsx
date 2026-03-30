@@ -1,5 +1,6 @@
 import { TestimonialsSection } from "@/components/ui/testimonials-1";
 import { getFeaturedTestimonials } from "@/services/testimonials";
+import type { Testimonial } from "@/services/testimonials";
 import { useEffect, useState } from "react";
 
 const DEFAULT_TESTIMONIALS = [
@@ -53,11 +54,40 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
-const TestimonialsSectionWrapper = () => {
+type TestimonialsSectionNewProps = {
+  prefetchedTestimonials?: Testimonial[];
+  homepageDataPending?: boolean;
+};
+
+const TestimonialsSectionWrapper = ({
+  prefetchedTestimonials,
+  homepageDataPending,
+}: TestimonialsSectionNewProps = {}) => {
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (homepageDataPending) return;
+
+    if (prefetchedTestimonials !== undefined) {
+      if (prefetchedTestimonials.length > 0) {
+        setTestimonials(
+          prefetchedTestimonials.map((t) => ({
+            author: {
+              name: t.name || "Happy Client",
+              handle: t.role || "Client",
+              avatar: t.avatar_url || "",
+            },
+            text: t.content || "Amazing experience working with Phoenix Events.",
+          }))
+        );
+      } else {
+        setTestimonials(DEFAULT_TESTIMONIALS);
+      }
+      setIsLoading(false);
+      return;
+    }
+
     getFeaturedTestimonials(10)
       .then((data) => {
         if (data && data.length > 0) {
@@ -77,7 +107,7 @@ const TestimonialsSectionWrapper = () => {
       })
       .catch(() => setTestimonials(DEFAULT_TESTIMONIALS))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [homepageDataPending, prefetchedTestimonials]);
 
   // Transform data for the new component
   const formattedTestimonials = testimonials.map((t) => ({

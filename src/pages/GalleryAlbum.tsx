@@ -504,6 +504,8 @@ const GalleryAlbum = () => {
                 alt={photos[lightboxIndex].caption || 'Photo'}
                 draggable={false}
                 className="max-w-full max-h-full object-contain rounded-lg"
+                loading="lazy"
+                decoding="async"
                 onClick={(e) => e.stopPropagation()}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/placeholder.svg';

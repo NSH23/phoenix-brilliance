@@ -217,6 +217,18 @@ export default {
           "0%": { transform: "translateX(-50%)" },
           "100%": { transform: "translateX(0)" },
         },
+        "hero-particle-drift": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "50%": { transform: "translate(var(--dx), var(--dy)) scale(1.5)" },
+        },
+        "wa-pop-in": {
+          "0%": { opacity: "0", transform: "scale(0)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        "mobile-cta-in": {
+          "0%": { opacity: "0", transform: "translateY(100px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -235,6 +247,10 @@ export default {
         "polaroid-scroll-left": "polaroid-scroll-left 45s linear infinite",
         "polaroid-scroll-right": "polaroid-scroll-right 50s linear infinite",
         marquee: "marquee var(--duration) linear infinite",
+        "hero-particle-drift":
+          "hero-particle-drift var(--hero-dur, 20s) ease-in-out infinite alternate",
+        "wa-pop-in": "wa-pop-in 0.5s ease-out 2s forwards",
+        "mobile-cta-in": "mobile-cta-in 0.5s ease-out 1.5s forwards",
       },
       backgroundImage: {
         "gradient-gold": "var(--gradient-gold)",

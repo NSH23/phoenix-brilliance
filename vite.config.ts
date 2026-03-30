@@ -28,24 +28,14 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
     },
     build: {
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
           manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'ui-vendor': [
-              '@radix-ui/react-dialog',
-              '@radix-ui/react-dropdown-menu',
-              '@radix-ui/react-select',
-              '@radix-ui/react-tabs',
-              '@radix-ui/react-toast',
-              '@radix-ui/react-popover',
-              '@radix-ui/react-accordion',
-            ],
-            'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
-            'motion-vendor': ['framer-motion'],
-            'supabase-vendor': ['@supabase/supabase-js'],
-            'query-vendor': ['@tanstack/react-query'],
+            "react-vendor": ["react", "react-dom", "react-router-dom"],
+            "supabase-vendor": ["@supabase/supabase-js"],
+            "motion-vendor": ["framer-motion"],
+            "query-vendor": ["@tanstack/react-query"],
           },
         },
       },

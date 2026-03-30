@@ -1793,6 +1793,11 @@
     width: max-content;
   }
 
+  /* Homepage collaborations: JS-driven scroll (auto + drag); same width as animated track */
+  .collaborations-logo-track-static {
+    width: max-content;
+  }
+
   .collaborations-logo-mask:hover .collaborations-logo-track {
     animation-play-state: paused;
   }

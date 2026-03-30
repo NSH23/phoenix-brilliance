@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ interface ImageUploadProps {
   value: string | string[];
   onChange: (value: string | string[]) => void;
   multiple?: boolean;
+  enableBulkDelete?: boolean;
   maxFiles?: number;
   accept?: string;
   className?: string;
@@ -24,6 +25,7 @@ export default function ImageUpload({
   value,
   onChange,
   multiple = false,
+  enableBulkDelete,
   maxFiles = 10,
   accept = 'image/*',
   className,
@@ -39,6 +41,13 @@ export default function ImageUpload({
   const [isUploading, setIsUploading] = useState(false);
 
   const images = Array.isArray(value) ? value : value ? [value] : [];
+  const isBulkDeleteEnabled = multiple && enableBulkDelete !== false;
+  const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    // Clear selection whenever the underlying set of items changes.
+    setSelectedIndexes(new Set());
+  }, [images.length, previews.length, multiple]);
 
   const fileMatchesAccept = (file: File): boolean => {
     if (!accept || accept === '*/*') return true;
@@ -159,6 +168,7 @@ export default function ImageUpload({
   }, []);
 
   const removeImage = (index: number) => {
+    if (!window.confirm('Delete this image?')) return;
     if (index < images.length) {
       // Removing an existing image
       if (multiple) {
@@ -180,6 +190,36 @@ export default function ImageUpload({
         pendingFilesRef.current = [];
       }
     }
+
+    // If the user removed something manually, clear bulk selection state.
+    setSelectedIndexes(new Set());
+  };
+
+  const toggleSelectedIndex = (index: number) => {
+    setSelectedIndexes((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const deleteSelected = () => {
+    const count = selectedIndexes.size;
+    if (!count) return;
+    if (!window.confirm(`Delete ${count} selected image(s)? This will remove them from the current form.`)) return;
+
+    const newImages = images.filter((_, i) => !selectedIndexes.has(i));
+    const newPreviews = previews.filter((_, i) => !selectedIndexes.has(images.length + i));
+
+    pendingFilesRef.current = pendingFilesRef.current.filter(
+      (_, i) => !selectedIndexes.has(images.length + i)
+    );
+
+    setPreviews(newPreviews);
+    setSelectedIndexes(new Set());
+    onChange(multiple ? newImages : '');
+    toast.success(`${count} image(s) deleted`);
   };
 
   // Manual upload function (when uploadOnSelect is false)
@@ -290,6 +330,22 @@ export default function ImageUpload({
                     exit={{ opacity: 0, scale: 0.9 }}
                     className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
                   >
+                      {isBulkDeleteEnabled && (
+                        <label
+                          className={`absolute top-2 left-2 z-10 rounded bg-background/80 dark:bg-background/60 backdrop-blur px-2 py-1 flex items-center gap-2 border ${
+                            selectedIndexes.has(index) ? 'border-primary/60' : 'border-border/50'
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            aria-label="Select image for bulk deletion"
+                            checked={selectedIndexes.has(index)}
+                            onChange={() => toggleSelectedIndex(index)}
+                          />
+                          <span className="text-[10px] text-muted-foreground">Select</span>
+                        </label>
+                      )}
                     <img
                       src={image}
                       alt={`Preview ${index + 1}`}
@@ -330,6 +386,14 @@ export default function ImageUpload({
                 </motion.div>
               )}
             </div>
+
+            {isBulkDeleteEnabled && selectedIndexes.size > 0 && (
+              <div className="mt-4 flex items-center justify-end">
+                <Button type="button" variant="destructive" onClick={deleteSelected}>
+                  Delete selected
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

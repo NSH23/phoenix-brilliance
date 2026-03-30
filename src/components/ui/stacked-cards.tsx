@@ -269,7 +269,13 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                     )}
                   </div>
                 ) : (
-                  <img src={activeSrc} alt="Gallery" className="w-full h-full object-cover" loading="eager" decoding="async" />
+                  <img
+                    src={activeSrc}
+                    alt="Gallery"
+                    className="w-full h-full object-cover"
+                    loading={heroMode ? "eager" : "lazy"}
+                    decoding="async"
+                  />
                 )
               ) : renderAsImage ? (
                 <img src={src} alt="Gallery image" className="w-full h-full object-cover" loading="lazy" decoding="async" />

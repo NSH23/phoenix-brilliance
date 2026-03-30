@@ -7,6 +7,7 @@ import MobileCTA from "@/components/MobileCTA";
 import { SEO } from "@/components/SEO";
 import { EventPlanningBusinessSchema, OrganizationSchema } from "@/components/StructuredData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { useHomepageData } from "@/hooks/useHomepageData";
 
 // Lazy Load Below-the-Fold Sections
 const ReelsSection = lazy(() => import("@/components/ReelsSection"));
@@ -19,6 +20,8 @@ const AboutSection = lazy(() => import("@/components/AboutSection"));
 
 const Index = () => {
   const { contact, socialLinks } = useSiteConfig();
+  const { data: homepageData, isPending: homepageDataPending, isSuccess: homepageDataSuccess } =
+    useHomepageData();
 
   const sameAs: string[] = [];
   if (socialLinks.facebook) sameAs.push(socialLinks.facebook);
@@ -87,7 +90,10 @@ const Index = () => {
                 <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
               </div>
               <div className="section-collaborations-bg-image" aria-hidden />
-              <CollaborationsSection />
+              <CollaborationsSection
+                homepageDataPending={homepageDataPending}
+                prefetchedCollaborations={homepageDataSuccess ? homepageData?.collaborations : undefined}
+              />
             </div>
 
             {/* Reels (Moments We've Crafted) – no background image */}
@@ -118,13 +124,19 @@ const Index = () => {
                 />
                 <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
               </div>
-              <EventsSection />
+              <EventsSection
+                homepageDataPending={homepageDataPending}
+                prefetchedEvents={homepageDataSuccess ? homepageData?.events : undefined}
+              />
             </div>
 
             {/* Services */}
             <div id="services" className="my-0 section-band-1 section-depth-bg section-flat section-border-t">
               <div className="section-depth-noise" aria-hidden />
-              <ServicesSection />
+              <ServicesSection
+                homepageDataPending={homepageDataPending}
+                prefetchedServices={homepageDataSuccess ? homepageData?.services : undefined}
+              />
             </div>
 
             {/* Why Choose Us – light: 5.jpg + overlay; dark: solid band */}
@@ -143,7 +155,12 @@ const Index = () => {
               </div>
               <div className="section-why-choose-us-bg-image" aria-hidden />
               <div className="section-why-choose-us-overlay" aria-hidden />
-              <WhyChooseUsSection />
+              <WhyChooseUsSection
+                homepageDataPending={homepageDataPending}
+                prefetchedWhyStats={homepageDataSuccess ? homepageData?.whyStats : undefined}
+                prefetchedWhyReasons={homepageDataSuccess ? homepageData?.whyReasons : undefined}
+                prefetchedWhyContent={homepageDataSuccess ? homepageData?.whyContent : undefined}
+              />
             </div>
 
             {/* Testimonials */}
@@ -151,7 +168,10 @@ const Index = () => {
               <div className="section-depth-noise" aria-hidden />
               <div className="section-testimonials-bg-image" aria-hidden />
               <div className="section-testimonials-overlay" aria-hidden />
-              <TestimonialsSection />
+              <TestimonialsSection
+                homepageDataPending={homepageDataPending}
+                prefetchedTestimonials={homepageDataSuccess ? homepageData?.testimonials : undefined}
+              />
             </div>
 
           </Suspense>

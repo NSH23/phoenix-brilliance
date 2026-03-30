@@ -303,6 +303,8 @@ export default function AdminAlbums() {
                         src={album.cover_image || '/placeholder.svg'}
                         alt={album.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}
@@ -471,6 +473,8 @@ export default function AdminAlbums() {
                   src={formData.cover_image}
                   alt="Preview"
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/placeholder.svg';
                   }}

@@ -332,6 +332,7 @@ export async function createCollaborationFolder(folder: Omit<CollaborationFolder
     parent_id: folder.parent_id ?? null,
     name: String(folder.name).trim() || 'Unnamed folder',
     display_order: Number(folder.display_order) || 0,
+    is_enabled: folder.is_enabled,
   };
   const { data, error } = await supabase
     .from('collaboration_folders')

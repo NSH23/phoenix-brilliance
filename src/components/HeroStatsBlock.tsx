@@ -1,4 +1,3 @@
-import { motion, useInView, useReducedMotion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { Trophy, Heart, Handshake, Shield, type LucideIcon } from "lucide-react";
 import CountUp from "./CountUp";
@@ -17,15 +16,6 @@ const DEFAULT_STATS = [
   { value: 100, suffix: "%", label: "Quality Assurance", iconKey: "shield" as const },
 ];
 
-function parseStatValue(statValue: string): { value: number; suffix: string } {
-  const match = statValue.trim().match(/^(\d+)(.*)$/);
-  if (!match) return { value: 0, suffix: "" };
-  return {
-    value: parseInt(match[1], 10),
-    suffix: match[2]?.trim() ?? "",
-  };
-}
-
 type DisplayStat = { value: number; suffix: string; label: string; Icon: LucideIcon };
 
 
@@ -33,8 +23,8 @@ type DisplayStat = { value: number; suffix: string; label: string; Icon: LucideI
 /** Stats overlay: equal-height cards with icon, number, label (no podium bar) */
 const HeroStatsBlock = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: "-50px" });
-  const reducedMotion = useReducedMotion();
+  const [isInView, setIsInView] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [stats, setStats] = useState<DisplayStat[]>(() =>
     DEFAULT_STATS.map((d) => ({
@@ -42,6 +32,27 @@ const HeroStatsBlock = () => {
       Icon: ICON_MAP[d.iconKey] ?? Trophy,
     }))
   );
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setIsInView(true);
+      },
+      { once: true, rootMargin: "-50px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const checkTheme = () => {
@@ -78,17 +89,10 @@ const HeroStatsBlock = () => {
     >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4" role="list">
         {stats.map((stat, index) => (
-          <motion.div
+          <div
             key={stat.label}
             role="listitem"
             aria-label={`${stat.value}${stat.suffix} ${stat.label}`}
-            initial={{ opacity: 0, y: 24 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{
-              duration: reducedMotion ? 0 : 0.5,
-              delay: reducedMotion ? 0 : 0.08 * index,
-              ease: [0.25, 0.46, 0.45, 0.94],
-            }}
             className="group relative flex flex-col rounded-xl border dark:border-white/10 py-4 px-3 sm:py-5 sm:px-4 text-center overflow-hidden transition-all duration-300 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-primary/30 dark:focus-within:ring-white/30 focus-within:ring-offset-2 focus-within:ring-offset-transparent hero-stats dark:bg-black/60 dark:backdrop-blur-md"
             style={{
               border: isDark
@@ -99,7 +103,13 @@ const HeroStatsBlock = () => {
                 : 'linear-gradient(135deg, rgba(255,251,248,0.95) 0%, rgba(255,245,240,0.92) 100%)',
               boxShadow: isDark
                 ? undefined
-                : '0 4px 20px rgba(232, 175, 193, 0.18)'
+                : '0 4px 20px rgba(232, 175, 193, 0.18)',
+              opacity: isInView ? 1 : 0,
+              transform: isInView ? 'translateY(0)' : 'translateY(24px)',
+              transitionProperty: 'opacity, transform',
+              transitionDuration: reducedMotion ? '0ms' : '500ms',
+              transitionDelay: reducedMotion ? '0ms' : `${0.08 * index}s`,
+              transitionTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             }}
             onMouseEnter={(e) => {
               if (!isDark) {
@@ -154,7 +164,7 @@ const HeroStatsBlock = () => {
             >
               {stat.label}
             </p>
-          </motion.div>
+          </div>
         ))}
       </div>
     </div>
