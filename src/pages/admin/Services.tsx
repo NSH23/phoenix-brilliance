@@ -175,10 +175,10 @@ export default function AdminServices() {
             placeholder="Search services..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 max-md:h-11"
           />
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
+        <Button onClick={() => handleOpenDialog()} className="gap-2 max-md:h-11">
           <Plus className="w-4 h-4" />
           Add Service
         </Button>
@@ -189,7 +189,7 @@ export default function AdminServices() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
           {filteredServices.map((s, i) => (
             <motion.div
               key={s.id}
@@ -231,30 +231,33 @@ export default function AdminServices() {
                   </div>
 
                   <div className="flex-1">
-                    <h3 className="text-sm md:text-lg font-serif font-bold mb-1 md:mb-2 line-clamp-1">{s.title}</h3>
+                    <h3 className="text-base md:text-lg font-serif font-bold mb-1 md:mb-2 line-clamp-1">{s.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 md:hidden">
+                      {s.description || '—'}
+                    </p>
                     <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 hidden md:block">
                       {s.description || '—'}
                     </p>
                     <div className="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-0">
                       {(s.features || []).slice(0, 2).map((f, j) => (
-                        <Badge key={j} variant="outline" className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">{f}</Badge>
+                        <Badge key={j} variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">{f}</Badge>
                       ))}
                       {(s.features || []).length > 2 && (
-                        <Badge variant="outline" className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">+{s.features.length - 2}</Badge>
+                        <Badge variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">+{s.features.length - 2}</Badge>
                       )}
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between gap-1 mt-auto pt-2 border-t text-xs">
                     <div className="flex items-center gap-1 md:gap-2">
-                      <span className="text-[10px] md:text-xs text-muted-foreground hidden md:inline">Order: {s.display_order ?? 0}</span>
+                      <span className="text-xs text-muted-foreground">Order: {s.display_order ?? 0}</span>
                       <Switch
                         checked={s.is_active}
                         onCheckedChange={() => handleToggleActive(s)}
-                        className="scale-75 md:scale-100 origin-left max-md:scale-100"
+                        className="h-6 w-11"
                       />
                     </div>
-                    <Badge variant={s.is_active ? 'default' : 'secondary'} className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">
+                    <Badge variant={s.is_active ? 'default' : 'secondary'} className="text-xs px-1.5 py-0.5 h-auto">
                       {s.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
@@ -350,7 +353,7 @@ export default function AdminServices() {
           </div>
 
           <DialogFooter className="max-md:flex-col max-md:items-stretch max-md:gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:w-full max-md:h-10">Cancel</Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:w-full max-md:h-11">Cancel</Button>
             <Button onClick={handleSave} disabled={saving} className="max-md:w-full max-md:h-11">
               {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : (editingService ? 'Save Changes' : 'Create Service')}
             </Button>

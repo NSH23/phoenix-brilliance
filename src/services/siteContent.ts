@@ -38,6 +38,10 @@ export interface ContactInfo {
   created_at: string;
   updated_at: string;
 }
+const SITE_CONTENT_COLUMNS = 'id, section_key, title, subtitle, description, cta_text, cta_link, created_at, updated_at';
+const SITE_SETTINGS_COLUMNS = 'id, key, value, type, created_at, updated_at';
+const SOCIAL_LINK_COLUMNS = 'id, platform, url, is_active, created_at, updated_at';
+const CONTACT_INFO_COLUMNS = 'id, email, phone, address, created_at, updated_at';
 
 /** About section extended content (stored as JSON in site_content.description for section_key 'about') */
 export interface AboutSectionContent {
@@ -86,7 +90,7 @@ export function parseAboutSectionDescription(description: string | null): AboutS
 export async function getAllSiteContent() {
   const { data, error } = await supabase
     .from('site_content')
-    .select('*')
+    .select(SITE_CONTENT_COLUMNS)
     .order('section_key', { ascending: true });
 
   if (error) throw error;
@@ -96,7 +100,7 @@ export async function getAllSiteContent() {
 export async function getSiteContentByKey(sectionKey: string) {
   const { data, error } = await supabase
     .from('site_content')
-    .select('*')
+    .select(SITE_CONTENT_COLUMNS)
     .eq('section_key', sectionKey)
     .single();
 
@@ -131,7 +135,7 @@ export async function upsertSiteContent(content: Partial<SiteContent> & { sectio
 export async function getAllSiteSettings() {
   const { data, error } = await supabase
     .from('site_settings')
-    .select('*')
+    .select(SITE_SETTINGS_COLUMNS)
     .order('key', { ascending: true });
 
   if (error) throw error;
@@ -141,7 +145,7 @@ export async function getAllSiteSettings() {
 export async function getSiteSetting(key: string) {
   const { data, error } = await supabase
     .from('site_settings')
-    .select('*')
+    .select(SITE_SETTINGS_COLUMNS)
     .eq('key', key)
     .single();
 
@@ -187,7 +191,7 @@ export async function updateSiteSetting(key: string, value: string) {
   return data as SiteSetting;
 }
 
-/** About section 3D flip cards: 6 front + 6 back image URLs (managed in admin Gallery) */
+/** About section 3D flip cards: 4 front + 4 back image URLs (managed in admin Gallery) */
 export const ABOUT_SECTION_FLIP_KEY = 'about_section_flip_images';
 
 export interface AboutSectionFlipImages {
@@ -201,10 +205,10 @@ export async function getAboutSectionFlipImagesOptional(): Promise<AboutSectionF
   try {
     const parsed = JSON.parse(raw) as { front?: unknown; back?: unknown };
     const front = Array.isArray(parsed.front)
-      ? parsed.front.filter((u): u is string => typeof u === 'string').slice(0, 6)
+      ? parsed.front.filter((u): u is string => typeof u === 'string').slice(0, 4)
       : [];
     const back = Array.isArray(parsed.back)
-      ? parsed.back.filter((u): u is string => typeof u === 'string').slice(0, 6)
+      ? parsed.back.filter((u): u is string => typeof u === 'string').slice(0, 4)
       : [];
     if (front.length === 0 && back.length === 0) return null;
     return { front, back };
@@ -214,8 +218,8 @@ export async function getAboutSectionFlipImagesOptional(): Promise<AboutSectionF
 }
 
 export async function upsertAboutSectionFlipImages(payload: AboutSectionFlipImages): Promise<void> {
-  const front = (payload.front || []).slice(0, 6);
-  const back = (payload.back || []).slice(0, 6);
+  const front = (payload.front || []).slice(0, 4);
+  const back = (payload.back || []).slice(0, 4);
   await upsertSiteSetting(ABOUT_SECTION_FLIP_KEY, JSON.stringify({ front, back }), 'json');
 }
 
@@ -223,7 +227,7 @@ export async function upsertAboutSectionFlipImages(payload: AboutSectionFlipImag
 export async function getActiveSocialLinks() {
   const { data, error } = await supabase
     .from('social_links')
-    .select('*')
+    .select(SOCIAL_LINK_COLUMNS)
     .eq('is_active', true)
     .order('platform', { ascending: true });
 
@@ -234,7 +238,7 @@ export async function getActiveSocialLinks() {
 export async function getAllSocialLinks() {
   const { data, error } = await supabase
     .from('social_links')
-    .select('*')
+    .select(SOCIAL_LINK_COLUMNS)
     .order('platform', { ascending: true });
 
   if (error) throw error;
@@ -257,7 +261,7 @@ export async function updateSocialLink(platform: string, updates: Partial<Social
 export async function getContactInfo() {
   const { data, error } = await supabase
     .from('contact_info')
-    .select('*')
+    .select(CONTACT_INFO_COLUMNS)
     .limit(1)
     .single();
 
@@ -268,7 +272,7 @@ export async function getContactInfo() {
 export async function getContactInfoOptional(): Promise<ContactInfo | null> {
   const { data, error } = await supabase
     .from('contact_info')
-    .select('*')
+    .select(CONTACT_INFO_COLUMNS)
     .limit(1)
     .maybeSingle();
 

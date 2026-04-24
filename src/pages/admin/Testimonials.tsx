@@ -204,11 +204,11 @@ export default function AdminTestimonials() {
             placeholder="Search testimonials..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 max-md:h-11"
           />
         </div>
         <Select value={filterEvent} onValueChange={setFilterEvent}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] max-md:w-full max-md:h-11">
             <SelectValue placeholder="Filter by event" />
           </SelectTrigger>
           <SelectContent>
@@ -218,7 +218,7 @@ export default function AdminTestimonials() {
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
+        <Button onClick={() => handleOpenDialog()} className="gap-2 max-md:h-11">
           <Plus className="w-4 h-4" />
           Add Testimonial
         </Button>
@@ -252,8 +252,8 @@ export default function AdminTestimonials() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-semibold text-xs md:text-sm truncate">{t.name}</h3>
-                          <p className="text-[10px] md:text-xs text-muted-foreground truncate">{t.role || '—'}</p>
+                          <h3 className="font-semibold text-sm md:text-sm truncate">{t.name}</h3>
+                          <p className="text-xs md:text-xs text-muted-foreground truncate">{t.role || '—'}</p>
                         </div>
                       </div>
                       <DropdownMenu>
@@ -280,12 +280,12 @@ export default function AdminTestimonials() {
                         />
                       ))}
                     </div>
-                    <p className="text-[10px] md:text-sm text-muted-foreground flex-1 mb-2 md:mb-4 italic line-clamp-3 md:line-clamp-none">
+                    <p className="text-xs md:text-sm text-muted-foreground flex-1 mb-2 md:mb-4 italic line-clamp-3 md:line-clamp-none">
                       "{t.content}"
                     </p>
                     <div className="flex flex-wrap items-center gap-1 md:gap-2">
-                      <Badge variant="outline" className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto line-clamp-1 max-w-[80px] md:max-w-none">{t.event_type || '—'}</Badge>
-                      <Badge variant="secondary" className="text-[10px] md:text-xs px-1 py-0 h-4 md:h-auto">Order: {t.display_order ?? 0}</Badge>
+                      <Badge variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto line-clamp-1 max-w-[120px] md:max-w-none">{t.event_type || '—'}</Badge>
+                      <Badge variant="secondary" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">Order: {t.display_order ?? 0}</Badge>
                       {t.is_featured && (
                         <Badge className="gap-0.5 px-1 py-0 md:gap-1 md:px-2.5 md:py-0.5 bg-primary/90 text-[10px] md:text-xs">
                           <Star className="w-2 h-2 md:w-3 md:h-3 fill-current" /> <span className="hidden md:inline">Featured</span>
@@ -418,7 +418,7 @@ export default function AdminTestimonials() {
             </div>
           </div>
           <DialogFooter className="max-md:flex-col max-md:items-stretch max-md:gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:w-full max-md:h-10">Cancel</Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:w-full max-md:h-11">Cancel</Button>
             <Button onClick={handleSave} disabled={saving} className="max-md:w-full max-md:h-11">
               {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving... </> : (editingTestimonial ? 'Save Changes' : 'Add Testimonial')}
             </Button>

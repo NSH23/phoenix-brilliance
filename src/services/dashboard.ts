@@ -1,13 +1,3 @@
-import {
-  getAllEvents,
-  getAllAlbums,
-  getAllGalleryImages,
-  getAllInquiries,
-  getInquiryStats,
-  getAllCollaborations,
-  getAllTestimonials,
-  getAllServices,
-} from '@/services';
 import { getTeamStats } from '@/services/team';
 import { getRecentAlbumMedia } from '@/services/albums';
 import { supabase } from '@/lib/supabase';
@@ -16,8 +6,6 @@ const startOfThisMonth = () => {
   const n = new Date();
   return new Date(n.getFullYear(), n.getMonth(), 1);
 };
-
-const isThisMonth = (dateStr: string) => new Date(dateStr) >= startOfThisMonth();
 
 export interface DashboardStats {
   events: { total: number; thisMonth: number };
@@ -52,6 +40,14 @@ export interface SiteOverview {
   employees: number;
 }
 
+async function getTableCount(table: string): Promise<number> {
+  const { count, error } = await supabase
+    .from(table)
+    .select('*', { count: 'exact', head: true });
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export function relativeTime(dateStr: string): string {
   const d = new Date(dateStr);
   const now = new Date();
@@ -69,31 +65,57 @@ export function relativeTime(dateStr: string): string {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const [events, albums, gallery, inquiries, inquiryStats, teamStats] = await Promise.all([
-    getAllEvents(),
-    getAllAlbums(),
-    getAllGalleryImages(),
-    getAllInquiries(),
-    getInquiryStats(),
+  const start = startOfThisMonth().toISOString();
+  const [
+    eventsTotal,
+    eventsThisMonth,
+    albumsTotal,
+    albumsThisMonth,
+    galleryTotal,
+    galleryThisMonth,
+    inquiriesTotal,
+    inquiriesNew,
+    teamStats,
+  ] = await Promise.all([
+    getTableCount('events'),
+    supabase.from('events').select('*', { count: 'exact', head: true }).gte('created_at', start).then(({ count, error }) => {
+      if (error) throw error;
+      return count ?? 0;
+    }),
+    getTableCount('event_albums'),
+    supabase.from('event_albums').select('*', { count: 'exact', head: true }).gte('created_at', start).then(({ count, error }) => {
+      if (error) throw error;
+      return count ?? 0;
+    }),
+    getTableCount('gallery'),
+    supabase.from('gallery').select('*', { count: 'exact', head: true }).gte('created_at', start).then(({ count, error }) => {
+      if (error) throw error;
+      return count ?? 0;
+    }),
+    getTableCount('inquiries'),
+    supabase.from('inquiries').select('*', { count: 'exact', head: true }).eq('status', 'new').then(({ count, error }) => {
+      if (error) throw error;
+      return count ?? 0;
+    }),
     getTeamStats().catch(() => ({ total: 0, active: 0, thisMonth: 0 })),
   ]);
 
   return {
     events: {
-      total: events.length,
-      thisMonth: events.filter((e) => isThisMonth(e.created_at)).length,
+      total: eventsTotal,
+      thisMonth: eventsThisMonth,
     },
     albums: {
-      total: Array.isArray(albums) ? albums.length : 0,
-      thisMonth: Array.isArray(albums) ? albums.filter((a: { created_at: string }) => isThisMonth(a.created_at)).length : 0,
+      total: albumsTotal,
+      thisMonth: albumsThisMonth,
     },
     galleryImages: {
-      total: gallery.length,
-      thisMonth: gallery.filter((g) => isThisMonth(g.created_at)).length,
+      total: galleryTotal,
+      thisMonth: galleryThisMonth,
     },
     inquiries: {
-      total: inquiryStats.total,
-      new: inquiryStats.new,
+      total: inquiriesTotal,
+      new: inquiriesNew,
     },
     team: {
       total: teamStats.total,
@@ -104,8 +126,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function getRecentInquiries(limit = 4): Promise<RecentInquiry[]> {
-  const data = await getAllInquiries();
-  return data.slice(0, limit).map((i) => ({
+  const { data, error } = await supabase
+    .from('inquiries')
+    .select('id, name, event_type, status, created_at, message')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  const rows = data || [];
+  return rows.map((i) => ({
     id: i.id,
     name: i.name,
     event: i.event_type || 'General',
@@ -115,7 +143,6 @@ export async function getRecentInquiries(limit = 4): Promise<RecentInquiry[]> {
 }
 
 export async function getRecentActivity(limit = 5): Promise<RecentActivity[]> {
-  const now = new Date();
   const items: RecentActivity[] = [];
 
   // Albums: "New album created"
@@ -189,20 +216,20 @@ export async function getRecentActivity(limit = 5): Promise<RecentActivity[]> {
 
 export async function getSiteOverview(): Promise<SiteOverview> {
   const [events, albums, partners, testimonials, services, teamStats] = await Promise.all([
-    getAllEvents(),
-    getAllAlbums(),
-    getAllCollaborations(),
-    getAllTestimonials(),
-    getAllServices(),
+    getTableCount('events'),
+    getTableCount('event_albums'),
+    getTableCount('collaborations'),
+    getTableCount('testimonials'),
+    getTableCount('services'),
     getTeamStats().catch(() => ({ total: 0 })),
   ]);
 
   return {
-    eventTypes: events.length,
-    albums: Array.isArray(albums) ? albums.length : 0,
-    partners: partners.length,
-    testimonials: testimonials.length,
-    services: services.length,
+    eventTypes: events,
+    albums,
+    partners,
+    testimonials,
+    services,
     employees: teamStats.total,
   };
 }

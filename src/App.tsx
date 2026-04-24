@@ -48,6 +48,7 @@ const AdminContent = lazy(() => import("./pages/admin/Content"));
 
 
 const AdminContentMedia = lazy(() => import("./pages/admin/ContentMedia"));
+const AdminBackgroundImages = lazy(() => import("./pages/admin/BackgroundImages"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminTeam = lazy(() => import("./pages/admin/Team"));
 const AdminSetPassword = lazy(() => import("./pages/admin/SetPassword"));
@@ -172,6 +173,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <AdminContentMedia />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/background-images"
+            element={
+              <ProtectedRoute>
+                <AdminBackgroundImages />
               </ProtectedRoute>
             }
           />

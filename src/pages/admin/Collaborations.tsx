@@ -433,10 +433,10 @@ export default function AdminCollaborations() {
             placeholder="Search collaborations..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 max-md:h-11"
           />
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
+        <Button onClick={() => handleOpenDialog()} className="gap-2 max-md:h-11">
           <Plus className="w-4 h-4" />
           Add Partner
         </Button>
@@ -456,7 +456,7 @@ export default function AdminCollaborations() {
               transition={{ delay: i * 0.05 }}
             >
             <Card
-              className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col max-md:flex-row max-md:items-center max-md:gap-3 max-md:cursor-pointer"
+              className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col max-md:flex-row max-md:items-start max-md:gap-3 max-md:cursor-pointer"
               onClick={() => {
                 // Mobile-only: tapping the card should open edit dialog.
                 if (window.innerWidth < 768) handleOpenDialog(c);
@@ -482,8 +482,8 @@ export default function AdminCollaborations() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-serif font-bold text-sm md:text-base truncate">{c.name}</h3>
-                        <div className="flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground truncate">
+                        <h3 className="font-serif font-bold text-base md:text-base truncate">{c.name}</h3>
+                        <div className="flex items-center gap-1 text-xs md:text-xs text-muted-foreground truncate">
                           <MapPin className="w-3 h-3 shrink-0" />
                           <span className="truncate">{c.location || '—'}</span>
                         </div>
@@ -514,9 +514,9 @@ export default function AdminCollaborations() {
                     {c.description || '—'}
                   </p>
                   <div className="flex items-center justify-between gap-2 mt-2 md:mt-0">
-                    <span className="text-[10px] md:text-xs text-muted-foreground">Order: {c.display_order ?? 0}</span>
+                    <span className="text-xs md:text-xs text-muted-foreground">Order: {c.display_order ?? 0}</span>
                     <span
-                      className={`inline-flex items-center rounded-md px-1.5 py-0.5 md:px-2 md:py-1 text-[10px] md:text-xs font-medium ring-1 ring-inset ${c.is_active
+                      className={`inline-flex items-center rounded-md px-1.5 py-0.5 md:px-2 md:py-1 text-xs md:text-xs font-medium ring-1 ring-inset ${c.is_active
                           ? 'bg-primary/10 text-primary ring-primary/20'
                           : 'bg-muted text-muted-foreground ring-border'
                         }`}
@@ -526,12 +526,12 @@ export default function AdminCollaborations() {
                   </div>
                 </div>
                 <div className="px-3 py-2 md:px-6 md:py-3 bg-muted/50 border-t flex items-center justify-between">
-                  <span className="text-[10px] md:text-xs text-muted-foreground">Status</span>
+                  <span className="text-xs md:text-xs text-muted-foreground">Status</span>
                   <Switch
                     checked={c.is_active}
                     onCheckedChange={() => handleToggleActive(c)}
                     onClick={(e) => e.stopPropagation()}
-                    className="h-4 w-8 md:h-6 md:w-11"
+                    className="h-6 w-11"
                   />
                 </div>
               </Card>
@@ -843,9 +843,9 @@ export default function AdminCollaborations() {
             </div>
           </div>
 
-          <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>
+          <DialogFooter className="mt-6 max-md:flex-col max-md:items-stretch max-md:gap-2">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:h-11">Cancel</Button>
+            <Button onClick={handleSave} disabled={saving} className="max-md:h-11">
               {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving... </> : (editingCollab ? 'Save Changes' : 'Create Partner')}
             </Button>
           </DialogFooter>

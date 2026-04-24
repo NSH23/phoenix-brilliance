@@ -56,14 +56,15 @@ export default function AboutSection() {
       <div
         className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-100 dark:opacity-0 pointer-events-none"
         style={{
-          backgroundImage: "url('/9.jpg')",
+          backgroundImage: "var(--bg-image-9, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/9.jpg'))",
           filter: "blur(5px)",
           transform: "scale(1.08)",
         }}
         aria-hidden
       />
       <div
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-100 pointer-events-none bg-[url('/bg12.jpg')]"
+        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-100 pointer-events-none"
+        style={{ backgroundImage: "var(--bg-image-bg12, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/bg12.jpg'))" }}
         aria-hidden
       />
       <div
@@ -98,12 +99,12 @@ export default function AboutSection() {
               </h2>
             </div>
 
-            {/* Flip cards: on mobile less negative margin so they sit nicely below heading; desktop unchanged */}
+            {/* Flip cards: reduced size and slight overlap with heading block */}
             <motion.div
               style={{ scale, y }}
-              className="relative w-full flex-1 min-h-[300px] md:min-h-[400px] lg:min-h-[520px] flex flex-col items-center justify-center mt-2 md:-mt-28 lg:-mt-36"
+              className="relative w-full min-h-[210px] md:min-h-[250px] lg:min-h-[280px] flex flex-col items-center justify-start mt-4 md:mt-5 lg:mt-6"
             >
-              <div className="flex-1 w-full flex items-center justify-center px-1 md:px-0">
+              <div className="relative w-full flex items-start justify-center px-0 md:-left-6 lg:-left-8">
                 <AboutFlipCards />
               </div>
             </motion.div>

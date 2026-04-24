@@ -318,11 +318,11 @@ const Gallery = () => {
           </div>
         ) : (
           <>
-            {/* Browse by Event Type - Circular selector */}
+            {/* Browse by Event Type - rounded square selector */}
             <section className="pb-16 sm:pb-20 lg:pb-24 px-4 sm:px-6 -mt-8 relative z-10">
               <div className="max-w-[1200px] mx-auto">
 
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-8 sm:gap-10 justify-items-center">
+                <div className="grid grid-cols-[repeat(2,minmax(0,170px))] sm:grid-cols-[repeat(2,minmax(0,200px))] md:grid-cols-[repeat(4,minmax(0,220px))] gap-[38px] justify-center">
                   {eventTypesForCircles.map((option, index) => {
                     const isSelected = option.id === selectedEventId;
                     const isHovered = hoveredCircle === option.slug;
@@ -350,14 +350,14 @@ const Gallery = () => {
                           // Toggle: if already selected, deselect (set to null), otherwise select
                           setSelectedEventId(option.id === selectedEventId ? null : option.id);
                         }}
-                        className="flex flex-col items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
+                        className="flex flex-col items-center gap-2 sm:gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-2xl"
                         aria-label={`Filter by ${option.title}`}
                         aria-pressed={isSelected}
                       >
                         <motion.div
                           className={`
-                          relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[140px] md:h-[140px]
-                          rounded-full overflow-hidden cursor-pointer
+                          relative w-[170px] h-[170px] sm:w-[200px] sm:h-[200px] md:w-[220px] md:h-[220px]
+                          rounded-2xl overflow-hidden cursor-pointer
                           transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]
                           ${isSelected
                               ? "border-2 border-primary shadow-[0_8px_32px_hsl(var(--primary)_/_0.28)] ring-2 ring-primary/20"
@@ -415,7 +415,7 @@ const Gallery = () => {
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-lg"
+                              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-lg"
                             >
                               <Check className="w-3.5 h-3.5 text-[#1A1A2E]" strokeWidth={3} />
                             </motion.div>
@@ -424,14 +424,14 @@ const Gallery = () => {
                             <motion.span
                               initial={{ opacity: 0, scale: 0.8 }}
                               animate={{ opacity: 1, scale: 1 }}
-                              className="absolute -top-1 -right-1 px-2 py-0.5 rounded-full bg-primary text-[#1A1A2E] text-[10px] font-semibold border-2 border-background shadow-lg"
+                              className="absolute -top-2 -right-2 px-2.5 py-1 rounded-full bg-primary text-[#1A1A2E] text-xs font-bold border-2 border-background shadow-[0_8px_18px_hsl(var(--primary)_/_0.45)]"
                             >
                               {option.photoCount}+
                             </motion.span>
                           )}
                         </motion.div>
                         <span
-                          className={`text-sm font-medium text-center transition-colors duration-300 max-w-[100px] sm:max-w-[120px] ${isSelected || isHovered ? "text-primary" : "text-foreground/90"
+                          className={`text-sm sm:text-base font-medium text-center transition-colors duration-300 max-w-[170px] sm:max-w-[200px] md:max-w-[220px] ${isSelected || isHovered ? "text-primary" : "text-foreground/90"
                             }`}
                         >
                           {option.title}

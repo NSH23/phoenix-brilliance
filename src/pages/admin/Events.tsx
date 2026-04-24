@@ -245,8 +245,8 @@ export default function AdminEvents() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col max-md:flex-row max-md:items-center max-md:gap-3">
-                      <div className="relative h-24 md:h-48 overflow-hidden shrink-0 max-md:h-20 max-md:w-20 max-md:rounded-lg">
+                    <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col max-md:flex-row max-md:items-start max-md:gap-3">
+                      <div className="relative h-24 md:h-48 overflow-hidden shrink-0 max-md:h-24 max-md:w-24 max-md:rounded-lg">
                       <img
                         src={event.cover_image || '/placeholder.svg'}
                         alt={event.title}
@@ -290,13 +290,13 @@ export default function AdminEvents() {
                         <h3 className="text-xs md:text-xl font-serif font-bold text-white line-clamp-1">{event.title}</h3>
                       </div>
                     </div>
-                    <CardContent className="p-2 md:p-4 flex-1 flex flex-col justify-between gap-2">
+                    <CardContent className="p-2 md:p-4 flex-1 flex flex-col justify-between gap-2 min-w-0">
                       <div className="hidden max-md:flex items-start justify-between gap-2 mb-1">
                         <div className="min-w-0">
-                          <h3 className="text-sm font-serif font-bold text-foreground line-clamp-1">{event.title}</h3>
+                          <h3 className="text-sm font-serif font-bold text-foreground line-clamp-2 leading-tight">{event.title}</h3>
                           <Badge
                             variant={event.is_active ? 'default' : 'secondary'}
-                            className="text-[10px] px-1 py-0 h-4 mt-1"
+                            className="text-xs px-2 py-0.5 h-auto mt-1"
                           >
                             {event.is_active ? 'Active' : 'Inactive'}
                           </Badge>
@@ -324,23 +324,46 @@ export default function AdminEvents() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2 md:hidden">
+                        {event.short_description || event.description || 'No description'}
+                      </p>
                       <p className="text-xs text-muted-foreground line-clamp-2 hidden md:block">
                         {event.short_description || event.description || 'No description'}
                       </p>
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1 md:gap-0 mt-auto">
-                        <span className="text-[10px] md:text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           Order: {event.display_order}
                         </span>
-                        <div className="flex items-center gap-1 md:gap-2 scale-75 md:scale-100 origin-left max-md:scale-100">
+                        <div className="flex items-center gap-2">
                           <Switch
                             checked={event.is_active}
                             onCheckedChange={() => handleToggleActive(event.id)}
-                            className="h-4 w-8 md:h-6 md:w-11"
+                            className="h-6 w-11"
                           />
-                          <span className="text-[10px] text-muted-foreground max-md:inline md:hidden">
+                          <span className="text-xs text-muted-foreground max-md:inline md:hidden">
                             {event.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </div>
+                      </div>
+                      <div className="md:hidden grid grid-cols-2 gap-2 mt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10"
+                          onClick={() => handleOpenDialog(event)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10"
+                          onClick={() => window.open(`/events/${event.slug}`, '_blank')}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Preview
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

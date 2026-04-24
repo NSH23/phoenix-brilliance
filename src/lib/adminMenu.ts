@@ -29,6 +29,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { name: 'Gallery', href: '/admin/gallery', icon: Images, keywords: 'images pictures portfolio' },
   { name: 'Collaborations', href: '/admin/collaborations', icon: Handshake, keywords: 'partners' },
   { name: 'Manage Videos', href: '/admin/media', icon: Film, keywords: 'videos hero reels' },
+  { name: 'Background Images', href: '/admin/background-images', icon: ImagePlus, keywords: 'background cloudinary images' },
   { name: 'Albums', href: '/admin/albums', icon: FolderOpen, keywords: 'photos folders' },
   { name: 'Services', href: '/admin/services', icon: Wrench, keywords: 'offerings' },
   { name: 'Why Choose Us', href: '/admin/why-us', icon: Award, keywords: 'why us stats reasons' },

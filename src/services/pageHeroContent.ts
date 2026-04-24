@@ -15,11 +15,12 @@ export interface PageHeroContent {
   created_at: string;
   updated_at: string;
 }
+const PAGE_HERO_COLUMNS = 'id, page_key, title, subtitle, description, stats, created_at, updated_at';
 
 export async function getPageHeroContent(pageKey: 'events' | 'gallery' | 'collaborations'): Promise<PageHeroContent | null> {
   const { data, error } = await supabase
     .from('page_hero_content')
-    .select('*')
+    .select(PAGE_HERO_COLUMNS)
     .eq('page_key', pageKey)
     .maybeSingle();
 

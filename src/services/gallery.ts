@@ -12,12 +12,13 @@ export interface GalleryImage {
   created_at: string;
   updated_at: string;
 }
+const GALLERY_COLUMNS = 'id, url, title, category, is_featured, display_order, row_index, created_at, updated_at';
 
 // Get all gallery images
 export async function getAllGalleryImages() {
   const { data, error } = await supabase
     .from('gallery')
-    .select('*')
+    .select(GALLERY_COLUMNS)
     .order('row_index', { ascending: true })
     .order('display_order', { ascending: true });
 
@@ -29,7 +30,7 @@ export async function getAllGalleryImages() {
 export async function getGalleryImagesByCategory(category: string) {
   const { data, error } = await supabase
     .from('gallery')
-    .select('*')
+    .select(GALLERY_COLUMNS)
     .eq('category', category)
     .order('is_featured', { ascending: false })
     .order('display_order', { ascending: true });
@@ -42,7 +43,7 @@ export async function getGalleryImagesByCategory(category: string) {
 export async function getFeaturedGalleryImages(limit = 12) {
   const { data, error } = await supabase
     .from('gallery')
-    .select('*')
+    .select(GALLERY_COLUMNS)
     .eq('is_featured', true)
     .order('display_order', { ascending: true })
     .limit(limit);
@@ -55,7 +56,7 @@ export async function getFeaturedGalleryImages(limit = 12) {
 export async function getGalleryImagesForHomepage(maxLimit: number) {
   const { data, error } = await supabase
     .from('gallery')
-    .select('*')
+    .select(GALLERY_COLUMNS)
     .order('is_featured', { ascending: false })
     .order('display_order', { ascending: true })
     .limit(maxLimit);
@@ -68,7 +69,7 @@ export async function getGalleryImagesForHomepage(maxLimit: number) {
 export async function getGalleryImagesByRows(maxRows = 10) {
   const { data, error } = await supabase
     .from('gallery')
-    .select('*')
+    .select(GALLERY_COLUMNS)
     .order('row_index', { ascending: true })
     .order('display_order', { ascending: true });
 

@@ -56,11 +56,13 @@ export interface TeamDocument {
   created_at: string;
   updated_at: string;
 }
+const TEAM_COLUMNS = 'id, name, email, phone, address, designation, aadhaar_card, age, salary, join_date, department, emergency_contact, notes, photo_url, is_active, display_order, created_at, updated_at';
+const TEAM_DOCUMENT_COLUMNS = 'id, team_id, name, file_path, file_type, created_at, updated_at';
 
 export async function getAllTeam(): Promise<TeamMember[]> {
   const { data, error } = await supabase
     .from('team')
-    .select('*')
+    .select(TEAM_COLUMNS)
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: false });
 
@@ -71,7 +73,7 @@ export async function getAllTeam(): Promise<TeamMember[]> {
 export async function getTeamById(id: string): Promise<TeamMember | null> {
   const { data, error } = await supabase
     .from('team')
-    .select('*')
+    .select(TEAM_COLUMNS)
     .eq('id', id)
     .maybeSingle();
 
@@ -80,17 +82,22 @@ export async function getTeamById(id: string): Promise<TeamMember | null> {
 }
 
 export async function getTeamStats(): Promise<TeamStats> {
-  const { data: all, error: e1 } = await supabase.from('team').select('id, is_active, created_at');
-  if (e1) throw e1;
-
-  const list = (all ?? []) as { id: string; is_active: boolean; created_at: string }[];
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const total = list.length;
-  const active = list.filter((x) => x.is_active).length;
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+  const [total, active, thisMonth] = await Promise.all([
+    supabase.from('team').select('*', { count: 'exact', head: true }).then(({ count, error }) => {
+      if (error) throw error;
+      return count ?? 0;
+    }),
+    supabase.from('team').select('*', { count: 'exact', head: true }).eq('is_active', true).then(({ count, error }) => {
+      if (error) throw error;
+      return count ?? 0;
+    }),
+    supabase.from('team').select('*', { count: 'exact', head: true }).gte('created_at', startOfMonth).then(({ count, error }) => {
+      if (error) throw error;
+      return count ?? 0;
+    }),
+  ]);
   const inactive = total - active;
-  const thisMonth = list.filter((x) => new Date(x.created_at) >= startOfMonth).length;
 
   return { total, active, inactive, thisMonth };
 }
@@ -165,7 +172,7 @@ export async function deleteTeamMember(id: string): Promise<void> {
 export async function getTeamDocuments(teamId: string): Promise<TeamDocument[]> {
   const { data, error } = await supabase
     .from('team_documents')
-    .select('*')
+    .select(TEAM_DOCUMENT_COLUMNS)
     .eq('team_id', teamId)
     .order('created_at', { ascending: false });
   if (error) throw error;

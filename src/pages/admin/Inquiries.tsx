@@ -205,7 +205,29 @@ export default function AdminInquiries() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 max-md:w-full max-md:justify-end">
+                      <div className="hidden max-md:flex items-center gap-2 mr-auto">
+                        {inquiry.status !== 'contacted' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 px-3"
+                            onClick={() => handleUpdateStatus(inquiry.id, 'contacted')}
+                          >
+                            Contacted
+                          </Button>
+                        )}
+                        {inquiry.status !== 'closed' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 px-3"
+                            onClick={() => handleUpdateStatus(inquiry.id, 'closed')}
+                          >
+                            Close
+                          </Button>
+                        )}
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -217,7 +239,7 @@ export default function AdminInquiries() {
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="h-11 w-11">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>

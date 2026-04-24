@@ -14,6 +14,8 @@ function normEventImageUrl(url: string | null | undefined): string {
 type EventWithImages = Event & {
   event_images?: { id: string; url: string; display_order: number }[];
 };
+const EVENT_COLUMNS = 'id, title, slug, description, short_description, cover_image, powered_by, is_active, display_order, created_at, updated_at';
+const EVENT_STEP_COLUMNS = 'id, event_id, step_number, title, description, icon, image_url, created_at, updated_at';
 
 function normalizeEventRow<T extends EventWithImages>(e: T): T {
   return {
@@ -63,7 +65,7 @@ export interface EventStep {
 export async function getActiveEvents() {
   const { data, error } = await supabase
     .from('events')
-    .select('*')
+    .select(EVENT_COLUMNS)
     .eq('is_active', true)
     .order('display_order', { ascending: true });
 
@@ -75,7 +77,7 @@ export async function getActiveEvents() {
 export async function getEventsForHomepage(limit: number) {
   const { data, error } = await supabase
     .from('events')
-    .select('*, event_images(*)')
+    .select(`${EVENT_COLUMNS}, event_images(id, url, display_order)`)
     .eq('is_active', true)
     .order('display_order', { ascending: true })
     .limit(limit);
@@ -88,7 +90,7 @@ export async function getEventsForHomepage(limit: number) {
 export async function getAllEvents() {
   const { data, error } = await supabase
     .from('events')
-    .select('*')
+    .select(EVENT_COLUMNS)
     .order('display_order', { ascending: true });
 
   if (error) throw error;
@@ -99,7 +101,7 @@ export async function getAllEvents() {
 export async function getEventById(id: string) {
   const { data, error } = await supabase
     .from('events')
-    .select('*')
+    .select(EVENT_COLUMNS)
     .eq('id', id)
     .single();
 
@@ -111,7 +113,7 @@ export async function getEventById(id: string) {
 export async function getEventBySlug(slug: string) {
   const { data, error } = await supabase
     .from('events')
-    .select('*')
+    .select(EVENT_COLUMNS)
     .eq('slug', slug)
     .eq('is_active', true)
     .single();
@@ -124,10 +126,7 @@ export async function getEventBySlug(slug: string) {
 export async function getEventWithSteps(slug: string) {
   const { data, error } = await supabase
     .from('events')
-    .select(`
-      *,
-      event_steps (*)
-    `)
+    .select(`${EVENT_COLUMNS}, event_steps(${EVENT_STEP_COLUMNS})`)
     .eq('slug', slug)
     .eq('is_active', true)
     .single();
@@ -181,7 +180,7 @@ export async function deleteEvent(id: string) {
 export async function getEventSteps(eventId: string) {
   const { data, error } = await supabase
     .from('event_steps')
-    .select('*')
+    .select(EVENT_STEP_COLUMNS)
     .eq('event_id', eventId)
     .order('step_number', { ascending: true });
 

@@ -1,7 +1,6 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
-// Number of particles to generate
-const PARTICLE_COUNT = 60;
+const DESKTOP_PARTICLE_COUNT = 15;
 
 interface Particle {
     id: number;
@@ -17,12 +16,20 @@ interface Particle {
 export function HeroBackgroundPattern() {
     const [mounted, setMounted] = useState(false);
     const [particles, setParticles] = useState<Particle[]>([]);
+    const [animationsPaused, setAnimationsPaused] = useState(false);
+
+    const particleCount = useMemo(() => {
+        if (typeof window === "undefined") return DESKTOP_PARTICLE_COUNT;
+        const isMobile = window.innerWidth < 768;
+        const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (prefersReduced || isMobile) return 0;
+        return DESKTOP_PARTICLE_COUNT;
+    }, []);
 
     useEffect(() => {
         setMounted(true);
 
-        // Generate random particles only on client to avoid hydration mismatch
-        const newParticles = Array.from({ length: PARTICLE_COUNT }).map((_, i) => ({
+        const newParticles = Array.from({ length: particleCount }).map((_, i) => ({
             id: i,
             left: Math.random() * 100, // 0-100% width
             top: Math.random() * 100,  // 0-100% height
@@ -34,9 +41,19 @@ export function HeroBackgroundPattern() {
         }));
 
         setParticles(newParticles);
+    }, [particleCount]);
+
+    useEffect(() => {
+        const onVisibility = () => {
+            setAnimationsPaused(document.visibilityState !== "visible");
+        };
+        onVisibility();
+        document.addEventListener("visibilitychange", onVisibility);
+        return () => document.removeEventListener("visibilitychange", onVisibility);
     }, []);
 
     if (!mounted) return null;
+    if (particleCount === 0) return null;
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
@@ -54,6 +71,7 @@ export function HeroBackgroundPattern() {
                             "--dy": `${particle.yDrift}px`,
                             "--hero-dur": `${particle.duration}s`,
                             animationDelay: `${particle.delay}s`,
+                            animationPlayState: animationsPaused ? "paused" : "running",
                         } as CSSProperties
                     }
                 />

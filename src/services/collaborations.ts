@@ -55,12 +55,16 @@ export interface CollaborationStep {
   created_at: string;
   updated_at: string;
 }
+const COLLAB_COLUMNS = 'id, name, logo_url, banner_url, description, location, map_url, is_active, display_order, created_at, updated_at';
+const COLLAB_IMAGE_COLUMNS = 'id, collaboration_id, folder_id, image_url, caption, display_order, media_type, created_at, updated_at';
+const COLLAB_FOLDER_COLUMNS = 'id, collaboration_id, parent_id, name, display_order, is_enabled, created_at, updated_at';
+const COLLAB_STEP_COLUMNS = 'id, collaboration_id, step_number, title, description, created_at, updated_at';
 
 // Get all active collaborations
 export async function getActiveCollaborations() {
   const { data, error } = await supabase
     .from('collaborations')
-    .select('*')
+    .select(COLLAB_COLUMNS)
     .eq('is_active', true)
     .order('display_order', { ascending: true });
 
@@ -76,7 +80,7 @@ export async function getActiveCollaborations() {
 export async function getAllCollaborations() {
   const { data, error } = await supabase
     .from('collaborations')
-    .select('*')
+    .select(COLLAB_COLUMNS)
     .order('display_order', { ascending: true });
 
   if (error) throw error;
@@ -92,12 +96,7 @@ export async function getAllCollaborations() {
 export async function getCollaborationById(id: string) {
   const { data, error } = await supabase
     .from('collaborations')
-    .select(`
-      *,
-      collaboration_images (*),
-      collaboration_folders (*),
-      collaboration_steps (*)
-    `)
+    .select(`${COLLAB_COLUMNS}, collaboration_images(${COLLAB_IMAGE_COLUMNS}), collaboration_folders(${COLLAB_FOLDER_COLUMNS}), collaboration_steps(${COLLAB_STEP_COLUMNS})`)
     .eq('id', id)
     .single();
 
@@ -172,7 +171,7 @@ export async function deleteCollaboration(id: string) {
 export async function getCollaborationImages(collaborationId: string) {
   const { data, error } = await supabase
     .from('collaboration_images')
-    .select('*')
+    .select(COLLAB_IMAGE_COLUMNS)
     .eq('collaboration_id', collaborationId)
     .order('display_order', { ascending: true });
 
@@ -273,7 +272,7 @@ export async function deleteCollaborationImage(id: string) {
 export async function getCollaborationSteps(collaborationId: string) {
   const { data, error } = await supabase
     .from('collaboration_steps')
-    .select('*')
+    .select(COLLAB_STEP_COLUMNS)
     .eq('collaboration_id', collaborationId)
     .order('step_number', { ascending: true });
 
@@ -317,7 +316,7 @@ export async function deleteCollaborationStep(id: string) {
 export async function getCollaborationFolders(collaborationId: string) {
   const { data, error } = await supabase
     .from('collaboration_folders')
-    .select('*')
+    .select(COLLAB_FOLDER_COLUMNS)
     .eq('collaboration_id', collaborationId)
     .order('display_order', { ascending: true });
 

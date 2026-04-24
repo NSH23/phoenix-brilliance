@@ -20,12 +20,13 @@ function normalizeServiceRow(row: Service): Service {
     image_url: row.image_url ? resolvePublicStorageUrl(row.image_url, 'service-images') : null,
   };
 }
+const SERVICE_COLUMNS = 'id, title, description, icon, image_url, features, is_active, display_order, created_at, updated_at';
 
 // Get all active services
 export async function getActiveServices() {
   const { data, error } = await supabase
     .from('services')
-    .select('*')
+    .select(SERVICE_COLUMNS)
     .eq('is_active', true)
     .order('display_order', { ascending: true });
 
@@ -37,7 +38,7 @@ export async function getActiveServices() {
 export async function getAllServices() {
   const { data, error } = await supabase
     .from('services')
-    .select('*')
+    .select(SERVICE_COLUMNS)
     .order('display_order', { ascending: true });
 
   if (error) throw error;

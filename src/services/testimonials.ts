@@ -22,12 +22,13 @@ export interface Testimonial {
   is_featured?: boolean;
   display_order?: number;
 }
+const TESTIMONIAL_COLUMNS = 'id, name, role, content, rating, avatar_url, created_at, event_type, message, is_featured, display_order';
 
 // Get all testimonials
 export async function getAllTestimonials() {
   const { data, error } = await supabase
     .from('testimonials')
-    .select('*')
+    .select(TESTIMONIAL_COLUMNS)
     .order('display_order', { ascending: true })
     .order('rating', { ascending: false });
 
@@ -39,7 +40,7 @@ export async function getAllTestimonials() {
 export async function getFeaturedTestimonials(limit = 6) {
   const { data, error } = await supabase
     .from('testimonials')
-    .select('*')
+    .select(TESTIMONIAL_COLUMNS)
     .eq('is_featured', true)
     .order('display_order', { ascending: true })
     .order('rating', { ascending: false })
@@ -53,7 +54,7 @@ export async function getFeaturedTestimonials(limit = 6) {
 export async function getTestimonialsByEventType(eventType: string) {
   const { data, error } = await supabase
     .from('testimonials')
-    .select('*')
+    .select(TESTIMONIAL_COLUMNS)
     .eq('event_type', eventType)
     .order('rating', { ascending: false })
     .order('created_at', { ascending: false });

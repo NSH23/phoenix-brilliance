@@ -239,7 +239,7 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                     muted={isMuted}
                     playsInline
                     loop={heroMode}
-                    preload={heroMode ? "auto" : "metadata"}
+                    preload="metadata"
                     autoPlay={heroMode}
                     onCanPlay={handleCanPlay}
                     onLoadedData={handleLoadedData}
@@ -273,7 +273,7 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                     src={activeSrc}
                     alt="Gallery"
                     className="w-full h-full object-cover"
-                    loading={heroMode ? "eager" : "lazy"}
+                    loading={index === 0 ? "eager" : "lazy"}
                     decoding="async"
                   />
                 )

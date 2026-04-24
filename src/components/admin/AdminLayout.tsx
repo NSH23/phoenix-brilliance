@@ -39,6 +39,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   const [notifications, setNotifications] = useState<Inquiry[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const prevCountRef = useRef(0);
+  const debouncedFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     localStorage.setItem('adminSidebarCollapsed', JSON.stringify(sidebarCollapsed));
@@ -105,6 +106,10 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         const row = payload.new as Inquiry;
         upsertNotification(row);
         incrementUnread();
+        if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
+        debouncedFetchRef.current = setTimeout(() => {
+          fetchNotifications();
+        }, 1000);
         toast.success('New inquiry', {
           description: `${row.name} – ${row.event_type || 'Inquiry'}`,
           action: { label: 'View', onClick: () => navigate('/admin/inquiries') },
@@ -113,9 +118,10 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       .subscribe();
 
     return () => {
+      if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
       supabase.removeChannel(channel);
     };
-  }, [navigate]);
+  }, [navigate, fetchNotifications, incrementUnread, upsertNotification]);
 
   const handleMarkAsRead = useCallback(async (id: string) => {
     try {
@@ -192,7 +198,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                    className="sm:flex max-md:hidden items-center gap-2 bg-muted/50 rounded-xl px-3 md:px-4 py-2 w-auto md:w-80 text-left hover:bg-muted/70 transition-colors min-w-[44px] md:min-w-0"
+                  className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 md:px-4 py-2 w-11 h-11 md:w-80 md:h-auto text-left hover:bg-muted/70 transition-colors min-w-[44px] md:min-w-0"
                 >
                   <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                   <span className="text-muted-foreground text-sm hidden md:inline">Search...</span>
@@ -248,7 +254,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0 mr-4" align="end">
+              <PopoverContent className="w-[calc(100vw-1rem)] max-w-sm p-0 md:w-80 md:mr-4" align="end">
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <h4 className="font-semibold text-sm">Notifications</h4>
                   {unreadCount > 0 && (

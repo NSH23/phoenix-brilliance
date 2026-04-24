@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { uploadToCloudinary, type BucketName } from '@/lib/cloudinary';
 import { toast } from 'sonner';
@@ -41,6 +42,7 @@ export default function ImageUpload({
   const [isDragging, setIsDragging] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
 
   const images = Array.isArray(value) ? value : value ? [value] : [];
   const isBulkDeleteEnabled = multiple && enableBulkDelete !== false;
@@ -61,6 +63,23 @@ export default function ImageUpload({
     });
   };
 
+  const uploadFilesWithProgress = useCallback(
+    async (files: File[], targetBucket: BucketName): Promise<string[]> => {
+      const totalFiles = files.length;
+      const urls: string[] = [];
+      for (let i = 0; i < totalFiles; i++) {
+        const url = await uploadToCloudinary(files[i], targetBucket, (filePercent) => {
+          const overall = Math.round(((i + filePercent / 100) / totalFiles) * 100);
+          setUploadPercent(overall);
+        });
+        urls.push(url);
+      }
+      setUploadPercent(100);
+      return urls;
+    },
+    []
+  );
+
   const handleFileSelect = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -75,13 +94,14 @@ export default function ImageUpload({
     // If bucket is provided and uploadOnSelect is true, upload immediately
     if (bucket && uploadOnSelect) {
       setIsUploading(true);
+      setUploadPercent(0);
       try {
         if (multiple) {
-          const urls = await Promise.all(validFiles.map((f) => uploadToCloudinary(f, bucket)));
+          const urls = await uploadFilesWithProgress(validFiles, bucket);
           onChange([...images, ...urls]);
           toast.success(`${urls.length} image(s) uploaded successfully`);
         } else {
-          const url = await uploadToCloudinary(validFiles[0], bucket);
+          const url = await uploadToCloudinary(validFiles[0], bucket, setUploadPercent);
           onChange(url);
           toast.success('Image uploaded successfully');
         }
@@ -90,6 +110,7 @@ export default function ImageUpload({
         const message = error instanceof Error ? error.message : 'Failed to upload image(s). Please try again.';
         toast.error('Upload failed', { description: message });
       } finally {
+        setUploadPercent(0);
         setIsUploading(false);
       }
       return;
@@ -143,7 +164,7 @@ export default function ImageUpload({
       };
       reader.readAsDataURL(file);
     });
-  }, [images, multiple, maxFiles, onChange, bucket, uploadOnSelect]);
+  }, [images, multiple, maxFiles, onChange, bucket, uploadOnSelect, uploadFilesWithProgress]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
@@ -232,6 +253,7 @@ export default function ImageUpload({
     }
 
     setIsUploading(true);
+    setUploadPercent(0);
     try {
       if (multiple) {
         const filesToUpload = pendingFilesRef.current;
@@ -241,7 +263,7 @@ export default function ImageUpload({
           return;
         }
 
-        const urls = await Promise.all(filesToUpload.map((f) => uploadToCloudinary(f, bucket)));
+        const urls = await uploadFilesWithProgress(filesToUpload, bucket);
         pendingFilesRef.current = [];
         setPreviews([]);
         onChange([...images, ...urls]);
@@ -254,7 +276,7 @@ export default function ImageUpload({
           return;
         }
 
-        const url = await uploadToCloudinary(file, bucket);
+        const url = await uploadToCloudinary(file, bucket, setUploadPercent);
         pendingFilesRef.current = [];
         setPreviews([]);
         onChange(url);
@@ -264,6 +286,7 @@ export default function ImageUpload({
       logger.error('Upload error', error, { component: 'ImageUpload', action: 'handleUpload', bucket });
       toast.error('Failed to upload image(s). Please try again.');
     } finally {
+      setUploadPercent(0);
       setIsUploading(false);
     }
   };
@@ -366,7 +389,7 @@ export default function ImageUpload({
                         type="button"
                         size="icon"
                         variant="destructive"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                        className="opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity h-9 w-9"
                         onClick={() => removeImage(index)}
                       >
                         <X className="w-4 h-4" />
@@ -416,6 +439,19 @@ export default function ImageUpload({
             <Upload className="w-4 h-4" />
             {multiple ? 'Add More Images' : 'Change Image'}
           </Button>
+        </div>
+      )}
+
+      {isUploading && (
+        <div className="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              Uploading...
+            </span>
+            <span className="font-medium">{uploadPercent}%</span>
+          </div>
+          <Progress value={uploadPercent} className="h-2" />
         </div>
       )}
     </div>

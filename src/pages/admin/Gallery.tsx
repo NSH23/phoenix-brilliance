@@ -17,8 +17,8 @@ import { getAboutSectionFlipImagesOptional, upsertAboutSectionFlipImages } from 
 import { toast } from 'sonner';
 
 export default function AdminGallery() {
-  const [aboutFront, setAboutFront] = useState<string[]>(() => Array(6).fill(''));
-  const [aboutBack, setAboutBack] = useState<string[]>(() => Array(6).fill(''));
+  const [aboutFront, setAboutFront] = useState<string[]>(() => Array(4).fill(''));
+  const [aboutBack, setAboutBack] = useState<string[]>(() => Array(4).fill(''));
   const [isLoading, setIsLoading] = useState(true);
   const [aboutSectionSaving, setAboutSectionSaving] = useState(false);
   const [aboutUploadSlot, setAboutUploadSlot] = useState<{ side: 'front' | 'back'; index: number } | null>(null);
@@ -32,10 +32,10 @@ export default function AdminGallery() {
       setIsLoading(true);
       const aboutSection = await getAboutSectionFlipImagesOptional();
       if (aboutSection) {
-        const front = [...aboutSection.front.slice(0, 6)];
-        while (front.length < 6) front.push('');
-        const back = [...aboutSection.back.slice(0, 6)];
-        while (back.length < 6) back.push('');
+        const front = [...aboutSection.front.slice(0, 4)];
+        while (front.length < 4) front.push('');
+        const back = [...aboutSection.back.slice(0, 4)];
+        while (back.length < 4) back.push('');
         setAboutFront(front);
         setAboutBack(back);
       }
@@ -75,12 +75,12 @@ export default function AdminGallery() {
   }
 
   return (
-    <AdminLayout title="About Us 3D Section" subtitle="Set 6 front and 6 back images for the About section on the homepage">
+    <AdminLayout title="About Us 3D Section" subtitle="Set 4 front and 4 back images for the About section on the homepage">
       <Card className="p-4 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <h3 className="font-semibold text-lg">About Us 3D Flip Cards</h3>
-            <p className="text-sm text-muted-foreground">Upload 6 front and 6 back images. They appear in the About section on the homepage.</p>
+            <p className="text-sm text-muted-foreground">Upload 4 front and 4 back images. They appear in the About section on the homepage.</p>
           </div>
           <Button onClick={handleSaveAboutSection} disabled={aboutSectionSaving}>
             {aboutSectionSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -89,8 +89,8 @@ export default function AdminGallery() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <Label className="text-sm font-medium mb-2 block max-md:text-lg max-md:font-semibold max-md:mb-3">Front (6 cards)</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Label className="text-sm font-medium mb-2 block max-md:text-lg max-md:font-semibold max-md:mb-3">Front (4 cards)</Label>
+            <div className="grid grid-cols-2 gap-3">
               {aboutFront.map((url, i) => (
                 <div key={`f-${i}`} className="space-y-1">
                   <div className="aspect-square rounded-lg border bg-muted overflow-hidden max-md:min-h-[120px]">
@@ -127,8 +127,8 @@ export default function AdminGallery() {
           </div>
           <div className="md:hidden h-px bg-border/60" />
           <div>
-            <Label className="text-sm font-medium mb-2 block max-md:text-lg max-md:font-semibold max-md:mb-3">Back (6 cards)</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Label className="text-sm font-medium mb-2 block max-md:text-lg max-md:font-semibold max-md:mb-3">Back (4 cards)</Label>
+            <div className="grid grid-cols-2 gap-3">
               {aboutBack.map((url, i) => (
                 <div key={`b-${i}`} className="space-y-1">
                   <div className="aspect-square rounded-lg border bg-muted overflow-hidden max-md:min-h-[120px]">

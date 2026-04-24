@@ -31,12 +31,13 @@ export interface HeroMedia {
     videoUrl: string | null;
     imageUrls: string[];
 }
+const CONTENT_MEDIA_COLUMNS = 'id, category, media_type, title, url, thumbnail_url, is_active, display_order, created_at, updated_at';
 
 // Get Hero Videos (Active) - all hero media for admin
 export async function getHeroVideos() {
     const { data, error } = await supabase
         .from('content_media')
-        .select('*')
+        .select(CONTENT_MEDIA_COLUMNS)
         .eq('category', 'hero')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
@@ -79,7 +80,7 @@ function isImageUrl(url: string): boolean {
 export async function getMomentsReels() {
     const { data, error } = await supabase
         .from('content_media')
-        .select('*')
+        .select(CONTENT_MEDIA_COLUMNS)
         .eq('category', 'moment')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
@@ -93,7 +94,7 @@ export async function getMomentsReels() {
 export async function getAllContentMedia(category?: 'hero' | 'moment') {
     let query = supabase
         .from('content_media')
-        .select('*')
+        .select(CONTENT_MEDIA_COLUMNS)
         .order('display_order', { ascending: true });
 
     if (category) {

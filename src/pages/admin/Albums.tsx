@@ -33,10 +33,22 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { getAllAlbums, createAlbum, updateAlbum, deleteAlbum, Album, getAllAlbumMediaCounts } from '@/services/albums';
+import { Progress } from '@/components/ui/progress';
+import {
+  getAllAlbums,
+  createAlbum,
+  updateAlbum,
+  deleteAlbum,
+  Album,
+  getAllAlbumMediaCounts,
+  AlbumMedia,
+  getAlbumMedia,
+  createAlbumMedia,
+  deleteAlbumMedia,
+} from '@/services/albums';
 import { getAllEvents, Event } from '@/services/events';
-import { getAlbumMedia } from '@/services/albums';
 import { toast } from 'sonner';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 interface AlbumWithMediaCount extends Album {
   mediaCount?: number;
@@ -53,6 +65,14 @@ export default function AdminAlbums() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<AlbumWithMediaCount | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [albumMedia, setAlbumMedia] = useState<AlbumMedia[]>([]);
+  const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
+  const [isMediaLoading, setIsMediaLoading] = useState(false);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
+  const [mediaUploadProgress, setMediaUploadProgress] = useState(0);
+  const [isDeletingMedia, setIsDeletingMedia] = useState(false);
+  const [pendingNewAlbumFiles, setPendingNewAlbumFiles] = useState<File[]>([]);
+  const [pendingNewAlbumPreviews, setPendingNewAlbumPreviews] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     event_id: '',
     title: '',
@@ -112,6 +132,11 @@ export default function AdminAlbums() {
   });
 
   const handleOpenDialog = (album?: AlbumWithMediaCount) => {
+    setAlbumMedia([]);
+    setSelectedMediaIds(new Set());
+    setPendingNewAlbumFiles([]);
+    setPendingNewAlbumPreviews([]);
+    setMediaUploadProgress(0);
     if (album) {
       setEditingAlbum(album);
       setFormData({
@@ -136,6 +161,144 @@ export default function AdminAlbums() {
     setIsDialogOpen(true);
   };
 
+  useEffect(() => {
+    const loadMedia = async () => {
+      if (!editingAlbum?.id || !isDialogOpen) return;
+      setIsMediaLoading(true);
+      try {
+        const media = await getAlbumMedia(editingAlbum.id);
+        setAlbumMedia(media.filter((m) => m.type === 'image'));
+      } catch (error: any) {
+        toast.error('Failed to load album images', {
+          description: error?.message || 'Please try again.',
+        });
+      } finally {
+        setIsMediaLoading(false);
+      }
+    };
+    loadMedia();
+  }, [editingAlbum?.id, isDialogOpen]);
+
+  const toggleMediaSelection = (mediaId: string, checked: boolean) => {
+    setSelectedMediaIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(mediaId);
+      else next.delete(mediaId);
+      return next;
+    });
+  };
+
+  const toggleSelectAllMedia = (checked: boolean) => {
+    if (!checked) {
+      setSelectedMediaIds(new Set());
+      return;
+    }
+    setSelectedMediaIds(new Set(albumMedia.map((m) => m.id)));
+  };
+
+  const clearPendingNewAlbumFiles = () => {
+    pendingNewAlbumPreviews.forEach((url) => URL.revokeObjectURL(url));
+    setPendingNewAlbumFiles([]);
+    setPendingNewAlbumPreviews([]);
+  };
+
+  const uploadAlbumFilesWithProgress = async (files: File[]) => {
+    const uploadedUrls: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const url = await uploadToCloudinary(files[i], 'album-images', (filePercent) => {
+        const overall = Math.round(((i + filePercent / 100) / files.length) * 100);
+        setMediaUploadProgress(overall);
+      });
+      uploadedUrls.push(url);
+    }
+    setMediaUploadProgress(100);
+    return uploadedUrls;
+  };
+
+  const handleBulkUploadMedia = async (files: FileList | null, targetAlbumId?: string) => {
+    if (!files || files.length === 0) return;
+    const uploadFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
+    if (uploadFiles.length === 0) {
+      toast.error('Please select valid image files.');
+      return;
+    }
+
+    const albumId = targetAlbumId || editingAlbum?.id;
+    if (!albumId) {
+      const nextFiles = [...pendingNewAlbumFiles, ...uploadFiles];
+      const nextPreviews = [...pendingNewAlbumPreviews, ...uploadFiles.map((file) => URL.createObjectURL(file))];
+      setPendingNewAlbumFiles(nextFiles);
+      setPendingNewAlbumPreviews(nextPreviews);
+      toast.success(`${uploadFiles.length} image(s) added. Save album to upload.`);
+      return;
+    }
+
+    setIsMediaUploading(true);
+    setMediaUploadProgress(0);
+    try {
+      const uploadedUrls = await uploadAlbumFilesWithProgress(uploadFiles);
+      const startOrder =
+        albumMedia.length > 0
+          ? Math.max(...albumMedia.map((m) => m.display_order ?? 0)) + 1
+          : 0;
+      const createdMedia = await Promise.all(
+        uploadedUrls.map((url, index) =>
+          createAlbumMedia({
+            album_id: editingAlbum.id,
+            type: 'image',
+            url,
+            youtube_url: null,
+            caption: null,
+            is_featured: false,
+            display_order: startOrder + index,
+          })
+        )
+      );
+      setAlbumMedia((prev) => [...prev, ...createdMedia]);
+      setAlbums((prev) =>
+        prev.map((a) =>
+          a.id === albumId
+            ? { ...a, mediaCount: (a.mediaCount || 0) + createdMedia.length }
+            : a
+        )
+      );
+      toast.success(`${createdMedia.length} image(s) uploaded`);
+    } catch (error: any) {
+      toast.error('Failed to upload album images', {
+        description: error?.message || 'Please try again.',
+      });
+    } finally {
+      setMediaUploadProgress(0);
+      setIsMediaUploading(false);
+    }
+  };
+
+  const handleDeleteSelectedMedia = async () => {
+    if (!editingAlbum?.id || selectedMediaIds.size === 0) return;
+    if (!confirm(`Delete ${selectedMediaIds.size} selected image(s)?`)) return;
+    setIsDeletingMedia(true);
+    try {
+      const ids = Array.from(selectedMediaIds);
+      await Promise.all(ids.map((id) => deleteAlbumMedia(id)));
+      setAlbumMedia((prev) => prev.filter((m) => !selectedMediaIds.has(m.id)));
+      setSelectedMediaIds(new Set());
+      setAlbums((prev) =>
+        prev.map((a) =>
+          a.id === editingAlbum.id
+            ? { ...a, mediaCount: Math.max(0, (a.mediaCount || 0) - ids.length) }
+            : a
+        )
+      );
+      toast.success('Selected images deleted');
+    } catch (error: any) {
+      toast.error('Failed to delete selected images', {
+        description: error?.message || 'Please try again.',
+      });
+    } finally {
+      setIsDeletingMedia(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.title || !formData.event_id) {
       toast.error('Please fill in required fields', {
@@ -151,10 +314,9 @@ export default function AdminAlbums() {
         // Update existing album
         const updated = await updateAlbum(editingAlbum.id, formData);
         const event = events.find(e => e.id === updated.event_id);
-        const media = await getAlbumMedia(updated.id);
         const updatedWithCount: AlbumWithMediaCount = {
           ...updated,
-          mediaCount: media.length,
+          mediaCount: editingAlbum.mediaCount || 0,
           eventTitle: event?.title || 'Unknown Event',
         };
         setAlbums(albums.map(a => a.id === editingAlbum.id ? updatedWithCount : a));
@@ -168,8 +330,30 @@ export default function AdminAlbums() {
           mediaCount: 0,
           eventTitle: event?.title || 'Unknown Event',
         };
+        if (pendingNewAlbumFiles.length > 0) {
+          setIsMediaUploading(true);
+          setMediaUploadProgress(0);
+          const uploadedUrls = await uploadAlbumFilesWithProgress(pendingNewAlbumFiles);
+          const createdMedia = await Promise.all(
+            uploadedUrls.map((url, index) =>
+              createAlbumMedia({
+                album_id: newAlbum.id,
+                type: 'image',
+                url,
+                youtube_url: null,
+                caption: null,
+                is_featured: false,
+                display_order: index,
+              })
+            )
+          );
+          newAlbumWithCount.mediaCount = createdMedia.length;
+          toast.success(`Album created and ${createdMedia.length} image(s) uploaded`);
+          clearPendingNewAlbumFiles();
+        } else {
+          toast.success('Album created successfully');
+        }
         setAlbums([...albums, newAlbumWithCount]);
-        toast.success('Album created successfully');
       }
 
       setIsDialogOpen(false);
@@ -179,6 +363,8 @@ export default function AdminAlbums() {
         description: error.message || 'Please try again.',
       });
     } finally {
+      setMediaUploadProgress(0);
+      setIsMediaUploading(false);
       setIsSaving(false);
     }
   };
@@ -283,8 +469,8 @@ export default function AdminAlbums() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col max-md:flex-row max-md:items-center max-md:gap-3">
-                    <div className="relative h-24 md:h-52 overflow-hidden shrink-0 max-md:h-20 max-md:w-20 max-md:rounded-lg">
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col max-md:flex-row max-md:items-start max-md:gap-3">
+                    <div className="relative h-24 md:h-52 overflow-hidden shrink-0 max-md:h-24 max-md:w-24 max-md:rounded-lg">
                       <img
                         src={album.cover_image || '/placeholder.svg'}
                         alt={album.title}
@@ -299,11 +485,11 @@ export default function AdminAlbums() {
 
                       {/* Badges */}
                       <div className="absolute top-1 left-1 md:top-3 md:left-3 flex gap-1 md:gap-2">
-                        <Badge variant="secondary" className="bg-black/50 text-white border-0 text-[8px] px-1 py-0 md:text-xs md:px-2.5 md:py-0.5 line-clamp-1 max-w-[60px] md:max-w-none">
+                        <Badge variant="secondary" className="bg-black/50 text-white border-0 text-[10px] px-1.5 py-0.5 md:text-xs md:px-2.5 md:py-0.5 line-clamp-1 max-w-[90px] md:max-w-none">
                           {album.eventTitle}
                         </Badge>
                         {album.is_featured && (
-                          <Badge className="bg-primary text-primary-foreground gap-0.5 px-1 py-0 md:gap-1 md:px-2.5 md:py-0.5 text-[8px] md:text-xs">
+                          <Badge className="bg-primary text-primary-foreground gap-0.5 px-1.5 py-0.5 md:gap-1 md:px-2.5 md:py-0.5 text-[10px] md:text-xs">
                             <Star className="w-2 h-2 md:w-3 md:h-3 fill-current" /> <span className="hidden md:inline">Featured</span>
                           </Badge>
                         )}
@@ -321,7 +507,7 @@ export default function AdminAlbums() {
                             <DropdownMenuItem onClick={() => handleOpenDialog(album)}>
                               <Edit className="w-4 h-4 mr-2" /> Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.location.href = `/admin/gallery?album=${album.id}`}>
+                            <DropdownMenuItem onClick={() => handleOpenDialog(album)}>
                               <Image className="w-4 h-4 mr-2" /> Manage Media
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => toggleFeatured(album.id)}>
@@ -339,7 +525,7 @@ export default function AdminAlbums() {
                       </div>
 
                       {/* Info Overlay */}
-                      <div className="absolute bottom-1 left-1 right-1 md:bottom-3 md:left-3 md:right-3">
+                      <div className="absolute bottom-1 left-1 right-1 md:bottom-3 md:left-3 md:right-3 max-md:hidden">
                         <h3 className="text-xs md:text-lg font-serif font-bold text-white line-clamp-1">{album.title}</h3>
                         <div className="flex items-center gap-1 md:gap-3 mt-0.5 md:mt-1 text-white/80 text-[8px] md:text-xs">
                           {album.event_date && (
@@ -356,8 +542,27 @@ export default function AdminAlbums() {
                         </div>
                       </div>
                     </div>
-                    <CardContent className="p-2 md:p-4 hidden md:block">
-                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
+                    <CardContent className="p-2 md:p-4 flex-1 min-w-0">
+                      <div className="md:hidden space-y-1">
+                        <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-2">{album.title}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{album.eventTitle}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          {album.event_date && (
+                            <span className="inline-flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(album.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1">
+                            <Image className="w-3 h-3" />
+                            {album.mediaCount || 0}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {album.description || 'No description'}
+                        </p>
+                      </div>
+                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 max-md:hidden">
                         {album.description || 'No description'}
                       </p>
                     </CardContent>
@@ -475,6 +680,150 @@ export default function AdminAlbums() {
                 checked={formData.is_featured}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
               />
+            </div>
+
+            <div className="space-y-3 border-t pt-4">
+              <Label className="text-base font-medium">Album Images</Label>
+              {!editingAlbum ? (
+                <>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        handleBulkUploadMedia(e.target.files);
+                        e.currentTarget.value = '';
+                      }}
+                      className="max-md:h-11"
+                    />
+                  </div>
+                  {pendingNewAlbumPreviews.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      You can upload images now. They will be uploaded automatically when you create this album.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        {pendingNewAlbumPreviews.length} image(s) ready to upload on Save.
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {pendingNewAlbumPreviews.map((preview, index) => (
+                          <div key={`${preview}-${index}`} className="space-y-2 rounded-lg border p-2">
+                            <div className="aspect-square rounded-md overflow-hidden bg-muted">
+                              <img src={preview} alt="Pending upload preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                URL.revokeObjectURL(pendingNewAlbumPreviews[index]);
+                                setPendingNewAlbumFiles((prev) => prev.filter((_, i) => i !== index));
+                                setPendingNewAlbumPreviews((prev) => prev.filter((_, i) => i !== index));
+                              }}
+                              className="w-full max-md:h-10"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        handleBulkUploadMedia(e.target.files);
+                        e.currentTarget.value = '';
+                      }}
+                      disabled={isMediaUploading}
+                      className="max-md:h-11"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={handleDeleteSelectedMedia}
+                      disabled={selectedMediaIds.size === 0 || isDeletingMedia}
+                      className="max-md:h-11"
+                    >
+                      {isDeletingMedia ? 'Deleting...' : `Delete Selected (${selectedMediaIds.size})`}
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="select-all-media"
+                      type="checkbox"
+                      checked={albumMedia.length > 0 && selectedMediaIds.size === albumMedia.length}
+                      onChange={(e) => toggleSelectAllMedia(e.target.checked)}
+                    />
+                    <Label htmlFor="select-all-media" className="text-sm">
+                      Select all
+                    </Label>
+                  </div>
+
+                  {isMediaLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading album images...
+                    </div>
+                  ) : albumMedia.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No album images yet.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {albumMedia.map((media) => (
+                        <div key={media.id} className="space-y-2 rounded-lg border p-2">
+                          <div className="aspect-square rounded-md overflow-hidden bg-muted">
+                            <img
+                              src={media.url || '/placeholder.svg'}
+                              alt="Album media"
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedMediaIds.has(media.id)}
+                              onChange={(e) => toggleMediaSelection(media.id, e.target.checked)}
+                            />
+                            <span className="text-xs text-muted-foreground">Select</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant={formData.cover_image === media.url ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setFormData((prev) => ({ ...prev, cover_image: media.url || '' }))}
+                            className="w-full max-md:h-10"
+                          >
+                            {formData.cover_image === media.url ? 'Thumbnail Selected' : 'Set as Thumbnail'}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              {isMediaUploading && (
+                <div className="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      Uploading images...
+                    </span>
+                    <span className="font-medium">{mediaUploadProgress}%</span>
+                  </div>
+                  <Progress value={mediaUploadProgress} className="h-2" />
+                </div>
+              )}
             </div>
           </div>
 

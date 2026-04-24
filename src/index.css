@@ -596,15 +596,15 @@
 
   /* Homepage above-the-fold section backgrounds (avoid inline style recreation). */
   .homepage-bg-3 {
-    background-image: url('/3.jpg');
+    background-image: var(--bg-image-3, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/3.jpg'));
   }
 
   .homepage-bg-9 {
-    background-image: url('/9.jpg');
+    background-image: var(--bg-image-9, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/9.jpg'));
   }
 
   .homepage-bg-5 {
-    background-image: url('/5.jpg');
+    background-image: var(--bg-image-5, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/5.jpg'));
   }
 
   /* Flat sections: no gradient overlay, no noise – same colour everywhere */
@@ -635,7 +635,7 @@
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background-image: url('/bg12.jpg');
+    background-image: var(--bg-image-bg12, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/bg12.jpg'));
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -653,7 +653,7 @@
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background-image: url('/dt1.jpg');
+    background-image: var(--bg-image-dt1, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/dt1.jpg'));
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -761,7 +761,7 @@
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background-image: url('/dt1.jpg');
+    background-image: var(--bg-image-dt1, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/dt1.jpg'));
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -2396,5 +2396,41 @@
 @media (prefers-reduced-motion: reduce) {
   .services-page-card:hover {
     transform: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Disable expensive backdrop blur on mobile GPU */
+  .glass-effect,
+  [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Reduce blur-heavy filters on mobile */
+  [class*="blur-"] {
+    filter: none !important;
+  }
+
+  /* Lighter shadows on mobile */
+  [class*="shadow-"] {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Pause non-critical marquee/strip animations on mobile */
+  .collaborations-logo-track,
+  .reel-strip-track,
+  .section-separator-line {
+    animation-play-state: paused !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

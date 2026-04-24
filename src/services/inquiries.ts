@@ -15,6 +15,7 @@ export interface Inquiry {
   venue?: string;
   is_read?: boolean;
 }
+const INQUIRY_COLUMNS = 'id, name, email, phone, event_type, message, status, notes, created_at, updated_at, instagram_id, venue, is_read';
 
 const PHONE_10_DIGIT_REGEX = /^\d{10}$/;
 
@@ -65,7 +66,7 @@ export async function createInquiry(inquiry: Omit<Inquiry, 'id' | 'status' | 'no
 export async function getAllInquiries() {
   const { data, error } = await supabase
     .from('inquiries')
-    .select('*')
+    .select(INQUIRY_COLUMNS)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -100,7 +101,7 @@ export async function getUnreadInquiriesCount(): Promise<number> {
 export async function getInquiriesByStatus(status: Inquiry['status']) {
   const { data, error } = await supabase
     .from('inquiries')
-    .select('*')
+    .select(INQUIRY_COLUMNS)
     .eq('status', status)
     .order('created_at', { ascending: false });
 
@@ -112,7 +113,7 @@ export async function getInquiriesByStatus(status: Inquiry['status']) {
 export async function getInquiryById(id: string) {
   const { data, error } = await supabase
     .from('inquiries')
-    .select('*')
+    .select(INQUIRY_COLUMNS)
     .eq('id', id)
     .single();
 

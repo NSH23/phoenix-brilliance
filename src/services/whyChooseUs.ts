@@ -9,11 +9,13 @@ export interface WhyChooseUsReason {
   created_at: string;
   updated_at: string;
 }
+const WHY_REASON_COLUMNS = 'id, text, display_order, created_at, updated_at';
+const WHY_STAT_COLUMNS = 'id, stat_value, stat_label, stat_description, icon_key, display_order, created_at, updated_at';
 
 export async function getWhyChooseUsReasons(): Promise<WhyChooseUsReason[]> {
   const { data, error } = await supabase
     .from('why_choose_us_reasons')
-    .select('*')
+    .select(WHY_REASON_COLUMNS)
     .order('display_order', { ascending: true });
 
   if (error) throw error;
@@ -76,7 +78,7 @@ export interface WhyChooseUsStat {
 export async function getWhyChooseUsStats(): Promise<WhyChooseUsStat[]> {
   const { data, error } = await supabase
     .from('why_choose_us_stats')
-    .select('*')
+    .select(WHY_STAT_COLUMNS)
     .order('display_order', { ascending: true });
 
   if (error) throw error;

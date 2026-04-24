@@ -168,8 +168,13 @@ export async function createSignedUrl(
  * Upload team member photo to team-photos (private bucket). Replaces any existing photo.
  * Returns the storage path (store in team.photo_url); use createSignedUrl for display.
  */
-export async function uploadTeamPhoto(teamId: string, file: File): Promise<string> {
-  return uploadToCloudinary(file, 'team-photos');
+export async function uploadTeamPhoto(
+  teamId: string,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<string> {
+  void teamId;
+  return uploadToCloudinary(file, 'team-photos', onProgress);
 }
 
 /**
@@ -186,9 +191,11 @@ export async function deleteTeamPhoto(teamId: string): Promise<void> {
 export async function uploadTeamDocument(
   teamId: string,
   file: File,
-  displayName?: string
+  displayName?: string,
+  onProgress?: (percent: number) => void
 ): Promise<{ path: string; name: string; fileType: string | null }> {
-  const path = await uploadToCloudinary(file, 'team-documents');
+  void teamId;
+  const path = await uploadToCloudinary(file, 'team-documents', onProgress);
 
   const fileType = file.type || (file.name && file.name.includes('.') ? file.name.split('.').pop()! : null);
   return { path, name: displayName?.trim() || file.name || 'Document', fileType: fileType || null };

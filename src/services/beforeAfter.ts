@@ -12,6 +12,7 @@ export interface BeforeAfter {
   created_at: string;
   updated_at: string;
 }
+const BEFORE_AFTER_COLUMNS = 'id, title, description, before_image_url, after_image_url, display_order, is_active, created_at, updated_at';
 
 function normalizeBeforeAfterRow(row: BeforeAfter): BeforeAfter {
   return {
@@ -24,7 +25,7 @@ function normalizeBeforeAfterRow(row: BeforeAfter): BeforeAfter {
 export async function getActiveBeforeAfter(): Promise<BeforeAfter[]> {
   const { data, error } = await supabase
     .from('before_after')
-    .select('*')
+    .select(BEFORE_AFTER_COLUMNS)
     .eq('is_active', true)
     .order('display_order', { ascending: true })
     .limit(4);
@@ -36,7 +37,7 @@ export async function getActiveBeforeAfter(): Promise<BeforeAfter[]> {
 export async function getAllBeforeAfter(): Promise<BeforeAfter[]> {
   const { data, error } = await supabase
     .from('before_after')
-    .select('*')
+    .select(BEFORE_AFTER_COLUMNS)
     .order('display_order', { ascending: true });
 
   if (error) throw error;

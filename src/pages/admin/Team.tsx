@@ -26,6 +26,7 @@ import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import {
   getAllTeam,
   createTeamMember,
@@ -114,6 +115,8 @@ export default function AdminTeam() {
   const [docDisplayName, setDocDisplayName] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [photoUploadProgress, setPhotoUploadProgress] = useState(0);
+  const [docUploadProgress, setDocUploadProgress] = useState(0);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [pendingDocs, setPendingDocs] = useState<{ id: string; file: File; name: string }[]>([]);
   const [viewingMember, setViewingMember] = useState<TeamMember | null>(null);
@@ -292,8 +295,9 @@ export default function AdminTeam() {
   const handleUploadPhoto = async () => {
     if (!editing || !photoFile) return;
     setUploadingPhoto(true);
+    setPhotoUploadProgress(0);
     try {
-      const path = await uploadTeamPhoto(editing.id, photoFile);
+      const path = await uploadTeamPhoto(editing.id, photoFile, setPhotoUploadProgress);
       set('photo_url', path);
       setPhotoFile(null);
       if (photoInputRef.current) photoInputRef.current.value = '';
@@ -301,6 +305,7 @@ export default function AdminTeam() {
     } catch (err: unknown) {
       toast.error('Failed to upload photo', { description: (err as Error)?.message });
     } finally {
+      setPhotoUploadProgress(0);
       setUploadingPhoto(false);
     }
   };
@@ -342,8 +347,14 @@ export default function AdminTeam() {
     if (!docFile) return;
     if (editing) {
       setUploadingDoc(true);
+      setDocUploadProgress(0);
       try {
-        const { path, name, fileType } = await uploadTeamDocument(editing.id, docFile, docDisplayName || undefined);
+        const { path, name, fileType } = await uploadTeamDocument(
+          editing.id,
+          docFile,
+          docDisplayName || undefined,
+          setDocUploadProgress
+        );
         const newDoc = await createTeamDocument(editing.id, { name, file_path: path, file_type: fileType });
         setDocs((prev) => [newDoc, ...prev]);
         setDocFile(null);
@@ -353,6 +364,7 @@ export default function AdminTeam() {
       } catch (err: unknown) {
         toast.error('Failed to add document', { description: (err as Error)?.message });
       } finally {
+        setDocUploadProgress(0);
         setUploadingDoc(false);
       }
     } else {
@@ -400,7 +412,7 @@ export default function AdminTeam() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
           {filtered.map((m, i) => (
             <motion.div
               key={m.id}
@@ -803,6 +815,15 @@ export default function AdminTeam() {
                             )}
                           </div>
                           {photoFile && <span className="text-xs text-muted-foreground">{photoFile.name}</span>}
+                          {uploadingPhoto && (
+                            <div className="w-full max-w-xs space-y-1">
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>Uploading photo...</span>
+                                <span>{photoUploadProgress}%</span>
+                              </div>
+                              <Progress value={photoUploadProgress} className="h-1.5" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -929,6 +950,15 @@ export default function AdminTeam() {
                         </Button>
                       </div>
                       {docFile && <span className="text-xs text-muted-foreground block">{docFile.name}</span>}
+                      {uploadingDoc && (
+                        <div className="w-full max-w-xs space-y-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Uploading document...</span>
+                            <span>{docUploadProgress}%</span>
+                          </div>
+                          <Progress value={docUploadProgress} className="h-1.5" />
+                        </div>
+                      )}
                     </div>
                   )
                 ) : (

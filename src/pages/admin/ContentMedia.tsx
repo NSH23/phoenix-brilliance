@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
 import {
     Dialog,
     DialogContent,
@@ -46,8 +47,8 @@ const isVideoUrl = (url: string) => /\.(mp4|webm|mov)(\?|$)/i.test(url);
 const CONTENT_MEDIA_BUCKET = 'content-media';
 
 /** Upload a video/image file to content-media bucket. Returns public URL. */
-async function uploadContentMediaFile(file: File): Promise<string> {
-    return uploadToCloudinary(file, CONTENT_MEDIA_BUCKET as typeof CONTENT_MEDIA_BUCKET);
+async function uploadContentMediaFile(file: File, onProgress?: (percent: number) => void): Promise<string> {
+    return uploadToCloudinary(file, CONTENT_MEDIA_BUCKET as typeof CONTENT_MEDIA_BUCKET, onProgress);
 }
 
 function HeroSlotCard({
@@ -224,6 +225,7 @@ export default function ContentMedia() {
     const [editingSlot, setEditingSlot] = useState<{ slotIndex: number; mediaType: 'video' | 'image' } | null>(null);
     const [isDeploying, setIsDeploying] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const { register, handleSubmit, reset, setValue, watch } = useForm<Partial<ContentMedia> & { file?: FileList }>();
     const currentUrl = watch('url');
@@ -305,9 +307,10 @@ export default function ContentMedia() {
         const file = e.target.files?.[0];
         if (!file || !file.type.startsWith('image/')) return;
         setUploading(true);
+        setUploadProgress(0);
         setUploadSuccess(false);
         try {
-            const url = await uploadContentMediaFile(file);
+            const url = await uploadContentMediaFile(file, setUploadProgress);
             setValue('url', url);
             setUploadSuccess(true);
             toast.success('Image uploaded. Click Save to add it.');
@@ -315,6 +318,7 @@ export default function ContentMedia() {
             const msg = err instanceof Error ? err.message : 'Upload failed';
             toast.error('Upload failed', { description: msg });
         } finally {
+            setUploadProgress(0);
             setUploading(false);
             e.target.value = '';
         }
@@ -345,8 +349,10 @@ export default function ContentMedia() {
                 if (file && !mediaUrl) {
                     setUploading(true);
                     try {
-                        mediaUrl = await uploadContentMediaFile(file);
+                        setUploadProgress(0);
+                        mediaUrl = await uploadContentMediaFile(file, setUploadProgress);
                     } finally {
+                        setUploadProgress(0);
                         setUploading(false);
                     }
                 }
@@ -537,10 +543,16 @@ export default function ContentMedia() {
                                         disabled={uploading}
                                     />
                                     {uploading && (
-                                        <p className="text-sm text-primary flex items-center gap-2">
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Uploading image… please wait.
-                                        </p>
+                                        <div className="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-3">
+                                            <p className="text-sm text-primary flex items-center justify-between gap-2">
+                                                <span className="inline-flex items-center gap-2">
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    Uploading image...
+                                                </span>
+                                                <span className="font-medium">{uploadProgress}%</span>
+                                            </p>
+                                            <Progress value={uploadProgress} className="h-2" />
+                                        </div>
                                     )}
                                     {uploadSuccess && (
                                         <p className="text-sm text-green-600 dark:text-green-400">Upload complete. Click Save below to add this image.</p>

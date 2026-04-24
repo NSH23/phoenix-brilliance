@@ -152,7 +152,8 @@ const TestimonialsSectionWrapper = ({
       <div className="relative bg-transparent overflow-hidden py-12 md:py-16">
       {/* Light theme only: lgt4.jpg; dark theme: no section background */}
       <div
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat bg-[url('/lgt4.jpg')] dark:bg-none"
+        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-100 dark:opacity-0"
+        style={{ backgroundImage: "var(--bg-image-lgt4, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/lgt4.jpg'))" }}
         aria-hidden
       />
       <div

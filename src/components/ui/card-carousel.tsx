@@ -86,14 +86,16 @@ interface VideoSlideProps {
     sequenceActive: boolean
     requestPlay: boolean
     onPlayStarted: () => void
+    onPaused: () => void
     onEnded: () => void
     carouselApiRef: React.MutableRefObject<EmblaCarouselType | null>
 }
 
-const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayStarted, onEnded, carouselApiRef }: VideoSlideProps) => {
+const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayStarted, onPaused, onEnded, carouselApiRef }: VideoSlideProps) => {
     const videoRef = useRef<HTMLVideoElement>(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const slideId = `${index}-${src}`
+    const suppressPauseCallbackRef = useRef(false)
 
     useEffect(() => {
         if (!requestPlay || !isCenter) return
@@ -138,17 +140,20 @@ const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayS
             video.currentTime = 0
             video
                 .play()
-                .then(() => setIsPlaying(true))
+                .then(() => {
+                    setIsPlaying(true)
+                    onPlayStarted()
+                })
                 .catch(() => {
                     unlockCarouselPlayback(carouselApiRef.current)
                     emitVideoExclusiveRelease()
                 })
         } else {
+            suppressPauseCallbackRef.current = true
             video.pause()
             setIsPlaying(false)
             unlockCarouselPlayback(carouselApiRef.current)
-            video.currentTime = 0
-            onEnded()
+            onPaused()
         }
     }
 
@@ -157,6 +162,7 @@ const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayS
         if (!video) return
         setIsPlaying(false)
         video.currentTime = 0
+        suppressPauseCallbackRef.current = true
         video.pause()
         unlockCarouselPlayback(carouselApiRef.current)
         onEnded()
@@ -165,15 +171,26 @@ const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayS
     useEffect(() => {
         const v = videoRef.current
         if (!v) return
-        const onPause = () => setIsPlaying(false)
-        const onPlay = () => setIsPlaying(true)
+        const onPause = () => {
+            setIsPlaying(false)
+            unlockCarouselPlayback(carouselApiRef.current)
+            if (suppressPauseCallbackRef.current) {
+                suppressPauseCallbackRef.current = false
+                return
+            }
+            onPaused()
+        }
+        const onPlay = () => {
+            setIsPlaying(true)
+            onPlayStarted()
+        }
         v.addEventListener("pause", onPause)
         v.addEventListener("play", onPlay)
         return () => {
             v.removeEventListener("pause", onPause)
             v.removeEventListener("play", onPlay)
         }
-    }, [])
+    }, [carouselApiRef, onPaused, onPlayStarted])
 
     return (
         <div className="relative w-full h-full group" onClick={handleClick}>
@@ -206,6 +223,7 @@ interface YouTubeSlideProps {
     sequenceActive: boolean
     requestPlay: boolean
     onPlayStarted: () => void
+    onPaused: () => void
     onEnded: () => void
     carouselApiRef: React.MutableRefObject<EmblaCarouselType | null>
 }
@@ -218,6 +236,7 @@ const YouTubeSlide = ({
     sequenceActive,
     requestPlay,
     onPlayStarted,
+    onPaused,
     onEnded,
     carouselApiRef,
 }: YouTubeSlideProps) => {
@@ -300,6 +319,18 @@ const YouTubeSlide = ({
                             },
                             onStateChange: (ev: any) => {
                                 const isEnded = ev?.data === w.YT.PlayerState.ENDED
+                                const isPaused = ev?.data === w.YT.PlayerState.PAUSED
+                                const isPlayingNow = ev?.data === w.YT.PlayerState.PLAYING
+                                if (isPlayingNow) {
+                                    setIsPlaying(true)
+                                    return
+                                }
+                                if (isPaused) {
+                                    setIsPlaying(false)
+                                    unlockCarouselPlayback(carouselApiRef.current)
+                                    onPaused()
+                                    return
+                                }
                                 if (!isEnded) return
                                 if (endedHandledRef.current) return
                                 endedHandledRef.current = true
@@ -330,7 +361,7 @@ const YouTubeSlide = ({
                 /* ignore */
             }
         }
-    }, [isPlaying, videoId, slideId, onEnded, carouselApiRef])
+    }, [isPlaying, videoId, slideId, onEnded, onPaused, carouselApiRef])
 
     useEffect(() => {
         if (!requestPlay || !isCenter) return
@@ -360,7 +391,7 @@ const YouTubeSlide = ({
                 onPlayStarted()
             } else {
                 unlockCarouselPlayback(carouselApiRef.current)
-                onEnded()
+                onPaused()
             }
             return next
         })
@@ -476,6 +507,13 @@ export const CardCarousel: React.FC<CarouselProps> = ({
         setNextShouldPlayIndex(nextIndex)
         carouselApiRef.current?.scrollNext()
     }
+
+    const handleVideoPaused = useCallback(() => {
+        setNextShouldPlayIndex(null)
+        setReelsSequenceActive(false)
+        unlockCarouselPlayback(carouselApiRef.current)
+        startAutoplay()
+    }, [startAutoplay])
 
     const handlePlayStarted = () => {
         setNextShouldPlayIndex(null)
@@ -594,6 +632,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                                                 sequenceActive={reelsSequenceActive}
                                                                 requestPlay={nextShouldPlayIndex === index}
                                                                 onPlayStarted={handlePlayStarted}
+                                                                onPaused={handleVideoPaused}
                                                                 onEnded={handleVideoEnded}
                                                                 carouselApiRef={carouselApiRef}
                                                             />
@@ -605,6 +644,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                                                 sequenceActive={reelsSequenceActive}
                                                                 requestPlay={nextShouldPlayIndex === index}
                                                                 onPlayStarted={handlePlayStarted}
+                                                                onPaused={handleVideoPaused}
                                                                 onEnded={handleVideoEnded}
                                                                 carouselApiRef={carouselApiRef}
                                                             />

@@ -58,7 +58,7 @@ const HeroSection = () => {
     return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 
-  const { scrollY } = useScroll();
+  const { scrollY } = useScroll({ layoutEffect: false });
   const y1 = useTransform(scrollY, [0, 500], [0, 100]);
   const y2 = useTransform(scrollY, [0, 500], [0, -50]);
 

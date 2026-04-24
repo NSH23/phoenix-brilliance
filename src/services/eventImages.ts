@@ -8,11 +8,12 @@ export interface EventImage {
   created_at: string;
   updated_at: string;
 }
+const EVENT_IMAGE_COLUMNS = 'id, event_id, url, display_order, created_at, updated_at';
 
 export async function getEventImages(eventId: string): Promise<EventImage[]> {
   const { data, error } = await supabase
     .from('event_images')
-    .select('*')
+    .select(EVENT_IMAGE_COLUMNS)
     .eq('event_id', eventId)
     .order('display_order', { ascending: true });
 

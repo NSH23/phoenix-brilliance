@@ -45,6 +45,8 @@ export interface AlbumMedia {
   created_at: string;
   updated_at: string;
 }
+const ALBUM_COLUMNS = 'id, event_id, title, description, cover_image, event_date, is_featured, created_at, updated_at';
+const ALBUM_MEDIA_COLUMNS = 'id, album_id, type, url, youtube_url, caption, is_featured, display_order, created_at, updated_at';
 
 // Get all albums
 export async function getAllAlbums() {
@@ -65,7 +67,7 @@ export async function getAllAlbums() {
 export async function getAlbumsByEventId(eventId: string) {
   const { data, error } = await supabase
     .from('event_albums')
-    .select('*')
+    .select(ALBUM_COLUMNS)
     .eq('event_id', eventId)
     .order('event_date', { ascending: false });
 
@@ -95,8 +97,8 @@ export async function getAlbumById(id: string) {
   const { data, error } = await supabase
     .from('event_albums')
     .select(`
-      *,
-      events (*)
+      ${ALBUM_COLUMNS},
+      events (id, title, slug, is_active)
     `)
     .eq('id', id)
     .single();
@@ -110,9 +112,9 @@ export async function getAlbumWithMedia(id: string) {
   const { data, error } = await supabase
     .from('event_albums')
     .select(`
-      *,
-      events (*),
-      album_media (*)
+      ${ALBUM_COLUMNS},
+      events (id, title, slug, is_active),
+      album_media (${ALBUM_MEDIA_COLUMNS})
     `)
     .eq('id', id)
     .single();
@@ -160,7 +162,7 @@ export async function deleteAlbum(id: string) {
 export async function getAlbumMedia(albumId: string) {
   const { data, error } = await supabase
     .from('album_media')
-    .select('*')
+    .select(ALBUM_MEDIA_COLUMNS)
     .eq('album_id', albumId)
     .order('display_order', { ascending: true });
 
