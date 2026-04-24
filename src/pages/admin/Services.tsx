@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, MoreHorizontal, GripVertical, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MoreHorizontal, ImageIcon, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,6 +43,7 @@ export default function AdminServices() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -72,6 +74,29 @@ export default function AdminServices() {
   const filteredServices = services.filter(s =>
     s.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const showReorder = !searchQuery.trim();
+  const listForCards = showReorder
+    ? [...services].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    : filteredServices;
+
+  const persistServiceOrder = async (orderedIds: string[]) => {
+    setIsReordering(true);
+    try {
+      await Promise.all(orderedIds.map((id, i) => updateService(id, { display_order: i })));
+      setServices((prev) => {
+        const byId = new Map(prev.map((s) => [s.id, s]));
+        return orderedIds.map((id, i) => ({ ...byId.get(id)!, display_order: i }));
+      });
+      toast.success('Display order saved');
+    } catch (err: unknown) {
+      logger.error('Failed to save service order', err, { component: 'AdminServices', action: 'persistOrder' });
+      toast.error('Failed to save order', { description: (err as Error)?.message });
+      void load();
+    } finally {
+      setIsReordering(false);
+    }
+  };
 
   const handleOpenDialog = (service?: Service) => {
     const nextOrder = services.length > 0
@@ -166,6 +191,71 @@ export default function AdminServices() {
     }
   };
 
+  const renderServiceCard = (s: Service) => (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
+      <CardContent className="p-3 md:p-6 flex flex-col h-full max-md:min-h-[140px]">
+        <div className="flex items-start justify-between mb-2 md:mb-4">
+          <div className="flex items-center gap-2 text-muted-foreground bg-muted p-1.5 md:p-2 rounded-lg">
+            {s.image_url ? (
+              <img
+                src={resolvePublicStorageUrl(s.image_url, 'service-images')}
+                alt={s.title}
+                className="w-8 h-8 md:w-10 md:h-10 object-cover rounded-md"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <ImageIcon className="w-5 h-5 md:w-6 md:h-6" />
+            )}
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:-mr-2">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleOpenDialog(s)}>
+                <Edit className="w-4 h-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="flex-1">
+          <h3 className="text-base md:text-lg font-serif font-bold mb-1 md:mb-2 line-clamp-1">{s.title}</h3>
+          <p className="text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 md:hidden">{s.description || '—'}</p>
+          <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 hidden md:block">{s.description || '—'}</p>
+          <div className="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-0">
+            {(s.features || []).slice(0, 2).map((f, j) => (
+              <Badge key={j} variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">
+                {f}
+              </Badge>
+            ))}
+            {(s.features || []).length > 2 && (
+              <Badge variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">
+                +{s.features.length - 2}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-1 mt-auto pt-2 border-t text-xs">
+          <div className="flex items-center gap-1 md:gap-2">
+            <span className="text-xs text-muted-foreground">Order: {s.display_order ?? 0}</span>
+            <Switch checked={s.is_active} onCheckedChange={() => handleToggleActive(s)} className="h-6 w-11" />
+          </div>
+          <Badge variant={s.is_active ? 'default' : 'secondary'} className="text-xs px-1.5 py-0.5 h-auto">
+            {s.is_active ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <AdminLayout title="Services" subtitle="Manage your service offerings">
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -189,83 +279,48 @@ export default function AdminServices() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
-          {filteredServices.map((s, i) => (
-            <motion.div
-              key={s.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+        <>
+          {services.length >= 2 && (
+            <p className="text-xs text-muted-foreground mb-2">
+              {showReorder
+                ? 'Drag the grip on a card to reorder. Changes apply on the site immediately.'
+                : 'Clear search to drag and reorder cards.'}
+            </p>
+          )}
+          {showReorder ? (
+            <AdminSortableGrid
+              itemIds={listForCards.map((s) => s.id)}
+              disabled={isReordering}
+              onReorder={persistServiceOrder}
+              className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6"
             >
-                <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
-                <CardContent className="p-3 md:p-6 flex flex-col h-full max-md:min-h-[140px]">
-                  <div className="flex items-start justify-between mb-2 md:mb-4">
-                    <div className="flex items-center gap-2 text-muted-foreground bg-muted p-1.5 md:p-2 rounded-lg">
-                      {s.image_url ? (
-                        <img
-                          src={resolvePublicStorageUrl(s.image_url, 'service-images')}
-                          alt={s.title}
-                          className="w-8 h-8 md:w-10 md:h-10 object-cover rounded-md"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <GripVertical className="w-5 h-5 md:w-6 md:h-6" />
-                      )}
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:-mr-2">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenDialog(s)}>
-                          <Edit className="w-4 h-4 mr-2" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive">
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="flex-1">
-                    <h3 className="text-base md:text-lg font-serif font-bold mb-1 md:mb-2 line-clamp-1">{s.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 md:hidden">
-                      {s.description || '—'}
-                    </p>
-                    <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 hidden md:block">
-                      {s.description || '—'}
-                    </p>
-                    <div className="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-0">
-                      {(s.features || []).slice(0, 2).map((f, j) => (
-                        <Badge key={j} variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">{f}</Badge>
-                      ))}
-                      {(s.features || []).length > 2 && (
-                        <Badge variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">+{s.features.length - 2}</Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-1 mt-auto pt-2 border-t text-xs">
-                    <div className="flex items-center gap-1 md:gap-2">
-                      <span className="text-xs text-muted-foreground">Order: {s.display_order ?? 0}</span>
-                      <Switch
-                        checked={s.is_active}
-                        onCheckedChange={() => handleToggleActive(s)}
-                        className="h-6 w-11"
-                      />
-                    </div>
-                    <Badge variant={s.is_active ? 'default' : 'secondary'} className="text-xs px-1.5 py-0.5 h-auto">
-                      {s.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+              {listForCards.map((s, i) => (
+                <AdminSortableItem key={s.id} id={s.id} disabled={isReordering}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    {renderServiceCard(s)}
+                  </motion.div>
+                </AdminSortableItem>
+              ))}
+            </AdminSortableGrid>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+              {listForCards.map((s, i) => (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  {renderServiceCard(s)}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {!isLoading && filteredServices.length === 0 && (

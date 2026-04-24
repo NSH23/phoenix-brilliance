@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2, FolderPlus, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2, FolderPlus, FolderOpen } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';
 import { Card } from '@/components/ui/card';
@@ -26,6 +27,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   getAllCollaborations,
   getCollaborationById,
   createCollaboration,
@@ -38,6 +46,7 @@ import {
   getCollaborationFolders,
   createCollaborationFolder,
   updateCollaborationFolder,
+  deleteCollaborationFolder,
   seedCollaborationFolders,
   type Collaboration,
   type CollaborationFolder,
@@ -59,6 +68,7 @@ export default function AdminCollaborations() {
   const [editingCollab, setEditingCollab] = useState<Collaboration | null>(null);
   const [saving, setSaving] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     logoUrl: '',
@@ -72,11 +82,10 @@ export default function AdminCollaborations() {
   const [venueImages, setVenueImages] = useState<string[]>([]);
   const [galleryFolders, setGalleryFolders] = useState<Array<{ id: string; collaboration_id?: string; parent_id: string | null; name: string; display_order: number; is_enabled: boolean }>>([]);
   const [galleryImages, setGalleryImages] = useState<Array<{ id?: string; image_url: string; folder_id: string | null; display_order: number }>>([]);
-  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(new Set());
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [isCreatingCustomFolder, setIsCreatingCustomFolder] = useState(false);
-  const [customFolderName, setCustomFolderName] = useState('');
-  const [selectedImageKeys, setSelectedImageKeys] = useState<Set<string>>(new Set());
+  const [selectedRootFolderId, setSelectedRootFolderId] = useState<string | null>(null);
+  const [selectedSubfolderId, setSelectedSubfolderId] = useState<string | null>(null);
+  const [newRootFolderName, setNewRootFolderName] = useState('');
+  const [newSubfolderName, setNewSubfolderName] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -102,18 +111,38 @@ export default function AdminCollaborations() {
     }
   }, [searchParams.get('add')]);
 
-  // Keep selection scoped to the currently selected folder.
   useEffect(() => {
-    setSelectedImageKeys(new Set());
-    setIsCreatingCustomFolder(false);
-    setCustomFolderName('');
-  }, [selectedFolderId]);
+    setSelectedSubfolderId(null);
+  }, [selectedRootFolderId]);
 
   const filteredCollaborations = collaborations.filter(
     c =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.location || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const showReorder = !searchQuery.trim();
+  const listForCards = showReorder
+    ? [...collaborations].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    : filteredCollaborations;
+
+  const persistCollaborationOrder = async (orderedIds: string[]) => {
+    setIsReordering(true);
+    try {
+      await Promise.all(orderedIds.map((id, i) => updateCollaboration(id, { display_order: i })));
+      setCollaborations((prev) => {
+        const byId = new Map(prev.map((c) => [c.id, c]));
+        return orderedIds.map((id, i) => ({ ...byId.get(id)!, display_order: i }));
+      });
+      toast.success('Display order saved');
+    } catch (err: unknown) {
+      logger.error('Failed to save venue order', err, { component: 'AdminCollaborations', action: 'persistOrder' });
+      toast.error('Failed to save order', { description: (err as Error)?.message });
+      void load();
+    } finally {
+      setIsReordering(false);
+    }
+  };
 
   const handleOpenDialog = async (collab?: Collaboration) => {
     const nextOrder = collaborations.length > 0
@@ -153,9 +182,6 @@ export default function AdminCollaborations() {
           display_order: f.display_order,
           is_enabled: f.is_enabled ?? false,
         })));
-        // Expand all root folders by default so folder/subfolder structure is visible
-        const rootIds = folders.filter(f => !f.parent_id).map(f => f.id);
-        setExpandedFolderIds(new Set(rootIds));
       } catch {
         setVenueImages([]);
         setGalleryImages([]);
@@ -176,9 +202,11 @@ export default function AdminCollaborations() {
       setVenueImages([]);
       setGalleryImages([]);
       setGalleryFolders([]);
-      setExpandedFolderIds(new Set());
     }
-    setSelectedFolderId(null);
+    setSelectedRootFolderId(null);
+    setSelectedSubfolderId(null);
+    setNewRootFolderName('');
+    setNewSubfolderName('');
     setIsDialogOpen(true);
   };
 
@@ -293,10 +321,6 @@ export default function AdminCollaborations() {
     }
   };
 
-  const updateFolder = (id: string, updates: { name?: string; display_order?: number; is_enabled?: boolean }) => {
-    setGalleryFolders(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
-  };
-
   const toggleFolderEnabled = (id: string) => {
     setGalleryFolders(prev => prev.map(f => f.id === id ? { ...f, is_enabled: !f.is_enabled } : f));
   };
@@ -314,67 +338,30 @@ export default function AdminCollaborations() {
         display_order: f.display_order,
         is_enabled: f.is_enabled ?? false,
       })));
-      const rootIds = folders.filter(f => !f.parent_id).map(f => f.id);
-      setExpandedFolderIds(new Set(rootIds));
       toast.success('Standard folders created. Enable the ones you need and add images, then Save.');
     } catch (err: unknown) {
       toast.error('Failed to create folders', { description: (err as Error)?.message });
     }
   };
 
-  const toggleFolderExpanded = (id: string) => {
-    setExpandedFolderIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const imagesForFolder = (folderId: string | null) =>
-    galleryImages.filter(img => (img.folder_id ?? null) === folderId);
+  const getImagesForFolder = (folderId: string | null) =>
+    galleryImages.filter((img) => (img.folder_id ?? null) === folderId).map((img) => img.image_url);
 
   const setImagesForFolder = (folderId: string | null, urls: string[]) => {
-    const existingInFolder = galleryImages.filter(img => (img.folder_id ?? null) === folderId);
+    const existingInFolder = galleryImages.filter((img) => (img.folder_id ?? null) === folderId);
     setGalleryImages(prev => {
-      const others = prev.filter(img => (img.folder_id ?? null) !== folderId);
+      const others = prev.filter((img) => (img.folder_id ?? null) !== folderId);
       const merged = urls.map((url, i) => {
-        const found = existingInFolder.find(e => e.image_url === url);
+        const found = existingInFolder.find((e) => e.image_url === url);
         return found ? { ...found, display_order: i } : { image_url: url, folder_id: folderId, display_order: i };
       });
       return [...others, ...merged];
     });
   };
 
-  const removeImage = (index: number) => {
-    setGalleryImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const getImageKey = (img: { id?: string }, index: number) => {
-    return img.id ? `db:${img.id}` : `temp:${index}`;
-  };
-
-  const toggleSelectedImageKey = (key: string) => {
-    setSelectedImageKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const handleDeleteSelectedImages = () => {
-    const count = selectedImageKeys.size;
-    if (count === 0) return;
-    if (!confirm(`Delete ${count} selected image(s)? The change will apply when you click "Save Changes".`)) return;
-
-    setGalleryImages(prev => prev.filter((img, idx) => !selectedImageKeys.has(getImageKey(img, idx))));
-    setSelectedImageKeys(new Set());
-  };
-
-  const handleCreateCustomFolder = async () => {
+  const handleCreateRootFolder = async () => {
     if (!editingCollab) return;
-    const name = customFolderName.trim();
+    const name = newRootFolderName.trim();
     if (!name) {
       toast.error('Folder name is required');
       return;
@@ -404,33 +391,188 @@ export default function AdminCollaborations() {
           is_enabled: f.is_enabled ?? false,
         }))
       );
-
-      setSelectedFolderId(created.id);
-      toast.success('Custom folder created. Add images and click Save.');
+      setSelectedRootFolderId(created.id);
+      toast.success('Folder created.');
     } catch (err: unknown) {
       toast.error('Failed to create folder', { description: (err as Error)?.message });
     } finally {
       setCreatingFolder(false);
-      setIsCreatingCustomFolder(false);
-      setCustomFolderName('');
+      setNewRootFolderName('');
     }
   };
 
-  const setImageFolder = (index: number, folderId: string | null) => {
-    setGalleryImages(prev => prev.map((img, i) => i === index ? { ...img, folder_id: folderId } : img));
+  const handleCreateSubfolder = async () => {
+    if (!editingCollab) return;
+    if (!selectedRootFolderId) {
+      toast.error('Please select a parent folder first.');
+      return;
+    }
+    const name = newSubfolderName.trim();
+    if (!name) {
+      toast.error('Subfolder name is required');
+      return;
+    }
+    setCreatingFolder(true);
+    try {
+      const existingChildren = galleryFolders.filter(f => f.parent_id === selectedRootFolderId);
+      const nextOrder = existingChildren.length > 0 ? Math.max(...existingChildren.map(f => f.display_order ?? 0)) + 1 : 0;
+      const created = await createCollaborationFolder({
+        collaboration_id: editingCollab.id,
+        parent_id: selectedRootFolderId,
+        name,
+        display_order: nextOrder,
+        is_enabled: true,
+      });
+      setGalleryFolders((prev) => [...prev, created]);
+      setSelectedSubfolderId(created.id);
+      toast.success('Subfolder created.');
+    } catch (err: unknown) {
+      toast.error('Failed to create subfolder', { description: (err as Error)?.message });
+    } finally {
+      setCreatingFolder(false);
+      setNewSubfolderName('');
+    }
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!editingCollab) return;
+    const targetFolderId = selectedSubfolderId || selectedRootFolderId;
+    if (!targetFolderId) {
+      toast.error('Select a folder/subfolder to delete.');
+      return;
+    }
+    if (!confirm('Delete this folder? Images will be moved to unassigned.')) return;
+    try {
+      const children = galleryFolders.filter(f => f.parent_id === targetFolderId).map(f => f.id);
+      const affectedFolderIds = [targetFolderId, ...children];
+
+      // Move images from deleted folders to "no folder"
+      for (const img of galleryImages) {
+        if (img.id && img.folder_id && affectedFolderIds.includes(img.folder_id)) {
+          await updateCollaborationImage(img.id, { folder_id: null });
+        }
+      }
+
+      // Delete child folders first, then parent
+      for (const childId of children) {
+        await deleteCollaborationFolder(childId);
+      }
+      await deleteCollaborationFolder(targetFolderId);
+
+      setGalleryFolders((prev) => prev.filter(f => !affectedFolderIds.includes(f.id)));
+      setGalleryImages((prev) =>
+        prev.map((img) => (img.folder_id && affectedFolderIds.includes(img.folder_id) ? { ...img, folder_id: null } : img))
+      );
+      setSelectedSubfolderId(null);
+      setSelectedRootFolderId(null);
+      toast.success('Folder deleted.');
+    } catch (err: unknown) {
+      toast.error('Failed to delete folder', { description: (err as Error)?.message });
+    }
   };
 
   const rootFolders = galleryFolders.filter(f => !f.parent_id).sort((a, b) => a.display_order - b.display_order);
   const getChildFolders = (parentId: string) =>
     galleryFolders.filter(f => f.parent_id === parentId).sort((a, b) => a.display_order - b.display_order);
+  const selectedUploadFolderId = selectedSubfolderId || selectedRootFolderId;
+  const selectedUploadFolderName = selectedUploadFolderId
+    ? galleryFolders.find((f) => f.id === selectedUploadFolderId)?.name || 'Selected folder'
+    : 'No folder (uncategorized)';
+
+  const renderVenueCard = (c: Collaboration) => (
+    <Card
+      className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col max-md:flex-row max-md:items-start max-md:gap-3 max-md:cursor-pointer"
+      onClick={() => {
+        if (window.innerWidth < 768) handleOpenDialog(c);
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (window.innerWidth < 768) handleOpenDialog(c);
+        }
+      }}
+    >
+      <div className="p-3 md:p-6 flex-1">
+        <div className="flex items-start justify-between mb-2 md:mb-4">
+          <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-muted shrink-0">
+              {c.logo_url ? (
+                <img
+                  src={resolveLogoUrl(c.logo_url)!}
+                  alt={c.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-sm">
+                  {c.name.charAt(0)}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-serif font-bold text-base md:text-base truncate">{c.name}</h3>
+              <div className="flex items-center gap-1 text-xs md:text-xs text-muted-foreground truncate">
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span className="truncate">{c.location || '—'}</span>
+              </div>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:mr-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleOpenDialog(c)}>
+                <Edit className="w-4 h-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 hidden md:block">{c.description || '—'}</p>
+        <div className="flex items-center justify-between gap-2 mt-2 md:mt-0">
+          <span className="text-xs md:text-xs text-muted-foreground">Order: {c.display_order ?? 0}</span>
+          <span
+            className={`inline-flex items-center rounded-md px-1.5 py-0.5 md:px-2 md:py-1 text-xs md:text-xs font-medium ring-1 ring-inset ${
+              c.is_active
+                ? 'bg-primary/10 text-primary ring-primary/20'
+                : 'bg-muted text-muted-foreground ring-border'
+            }`}
+          >
+            {c.is_active ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+      </div>
+      <div className="px-3 py-2 md:px-6 md:py-3 bg-muted/50 border-t flex items-center justify-between">
+        <span className="text-xs md:text-xs text-muted-foreground">Status</span>
+        <Switch
+          checked={c.is_active}
+          onCheckedChange={() => handleToggleActive(c)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-6 w-11"
+        />
+      </div>
+    </Card>
+  );
 
   return (
-    <AdminLayout title="Collaborations" subtitle="Manage your venue partners and collaborators">
+    <AdminLayout title="Venues" subtitle="Manage venue partners and their gallery folders">
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search collaborations..."
+            placeholder="Search venues..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="pl-10 max-md:h-11"
@@ -438,7 +580,7 @@ export default function AdminCollaborations() {
         </div>
         <Button onClick={() => handleOpenDialog()} className="gap-2 max-md:h-11">
           <Plus className="w-4 h-4" />
-          Add Partner
+          Add Venue
         </Button>
       </div>
 
@@ -447,115 +589,66 @@ export default function AdminCollaborations() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
-          {filteredCollaborations.map((c, i) => (
-            <motion.div
-              key={c.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+        <>
+          {collaborations.length >= 2 && (
+            <p className="text-xs text-muted-foreground mb-2">
+              {showReorder
+                ? 'Drag the grip on a card to reorder. Changes apply on the site immediately.'
+                : 'Clear search to drag and reorder cards.'}
+            </p>
+          )}
+          {showReorder ? (
+            <AdminSortableGrid
+              itemIds={listForCards.map((c) => c.id)}
+              disabled={isReordering}
+              onReorder={persistCollaborationOrder}
+              className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1"
             >
-            <Card
-              className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col max-md:flex-row max-md:items-start max-md:gap-3 max-md:cursor-pointer"
-              onClick={() => {
-                // Mobile-only: tapping the card should open edit dialog.
-                if (window.innerWidth < 768) handleOpenDialog(c);
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  if (window.innerWidth < 768) handleOpenDialog(c);
-                }
-              }}
-            >
-                <div className="p-3 md:p-6 flex-1">
-                  <div className="flex items-start justify-between mb-2 md:mb-4">
-                    <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-muted shrink-0">
-                        {c.logo_url ? (
-                          <img src={resolveLogoUrl(c.logo_url)!} alt={c.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-sm">
-                            {c.name.charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-serif font-bold text-base md:text-base truncate">{c.name}</h3>
-                        <div className="flex items-center gap-1 text-xs md:text-xs text-muted-foreground truncate">
-                          <MapPin className="w-3 h-3 shrink-0" />
-                          <span className="truncate">{c.location || '—'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:mr-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenDialog(c)}>
-                          <Edit className="w-4 h-4 mr-2" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-destructive">
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4 hidden md:block">
-                    {c.description || '—'}
-                  </p>
-                  <div className="flex items-center justify-between gap-2 mt-2 md:mt-0">
-                    <span className="text-xs md:text-xs text-muted-foreground">Order: {c.display_order ?? 0}</span>
-                    <span
-                      className={`inline-flex items-center rounded-md px-1.5 py-0.5 md:px-2 md:py-1 text-xs md:text-xs font-medium ring-1 ring-inset ${c.is_active
-                          ? 'bg-primary/10 text-primary ring-primary/20'
-                          : 'bg-muted text-muted-foreground ring-border'
-                        }`}
-                    >
-                      {c.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                </div>
-                <div className="px-3 py-2 md:px-6 md:py-3 bg-muted/50 border-t flex items-center justify-between">
-                  <span className="text-xs md:text-xs text-muted-foreground">Status</span>
-                  <Switch
-                    checked={c.is_active}
-                    onCheckedChange={() => handleToggleActive(c)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-6 w-11"
-                  />
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+              {listForCards.map((c, i) => (
+                <AdminSortableItem key={c.id} id={c.id} disabled={isReordering}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    {renderVenueCard(c)}
+                  </motion.div>
+                </AdminSortableItem>
+              ))}
+            </AdminSortableGrid>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
+              {listForCards.map((c, i) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  {renderVenueCard(c)}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {!isLoading && filteredCollaborations.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">No collaborations found.</div>
+        <div className="text-center py-12 text-muted-foreground">No venues found.</div>
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingCollab ? 'Edit Collaboration' : 'Add New Partner'}</DialogTitle>
+            <DialogTitle>{editingCollab ? 'Edit Venue' : 'Add New Venue'}</DialogTitle>
             <DialogDescription>
-              {editingCollab ? 'Update the partner details. Changes are saved to the database.' : 'Add a new venue partner. It will be saved to the database.'}
+              {editingCollab ? 'Update venue details and gallery folders.' : 'Add a new venue partner. It will be saved to the database.'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Partner Name</Label>
+              <Label htmlFor="name">Venue Name</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -663,172 +756,111 @@ export default function AdminCollaborations() {
                       Create standard folders
                     </Button>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Turn on &quot;Show&quot; for folders you want on the site. Select a folder to add images.</span>
+                    <span className="text-xs text-muted-foreground">Select folder and subfolder from dropdowns, then upload images.</span>
                   )}
                 </div>
-                <div className="grid gap-4 sm:grid-cols-[minmax(0,220px)_1fr]">
-                  <div className="rounded-lg border bg-card overflow-hidden">
-                    <div className="p-2 border-b bg-muted/50 text-xs font-medium text-muted-foreground">Folders</div>
-                    <div className="max-h-[280px] overflow-y-auto max-md:max-h-none max-md:overflow-visible">
-                      {rootFolders.length === 0 && (
-                        <div className="px-2 py-3 border-b mb-1">
-                          <p className="text-sm text-muted-foreground mb-2">
-                            No standard folders yet. Create standard folders or add a custom folder.
-                          </p>
-                          <Button type="button" variant="outline" size="sm" onClick={handleSeedFolders} disabled={creatingFolder} className="w-full gap-1">
-                            <FolderPlus className="w-4 h-4" />
-                            Create standard folders
-                          </Button>
-                        </div>
-                      )}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-3 rounded-lg border bg-card p-3">
+                    <Label className="text-sm">Folder</Label>
+                    <Select
+                      value={selectedRootFolderId ?? '__none__'}
+                      onValueChange={(v) => setSelectedRootFolderId(v === '__none__' ? null : v)}
+                    >
+                      <SelectTrigger className="max-md:h-11">
+                        <SelectValue placeholder="Select folder" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">No folder (uncategorized)</SelectItem>
+                        {rootFolders.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                      {rootFolders.map((f) => (
-                        <div key={f.id}>
-                          <div
-                            className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-md hover:bg-muted/70 ${selectedFolderId === f.id ? 'bg-primary/10' : ''}`}
-                            onClick={() => setSelectedFolderId(f.id)}
-                          >
-                            <button type="button" onClick={(e) => { e.stopPropagation(); toggleFolderExpanded(f.id); }} className="p-0.5 shrink-0">
-                              {expandedFolderIds.has(f.id) ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            </button>
-                            <FolderOpen className="w-4 h-4 text-primary shrink-0" />
-                            <span className="text-sm font-medium truncate flex-1">{f.name}</span>
-                          <Switch checked={f.is_enabled} onCheckedChange={() => toggleFolderEnabled(f.id)} onClick={e => e.stopPropagation()} className="h-3.5 w-7 shrink-0 max-md:h-5 max-md:w-9" />
-                          </div>
-                          {expandedFolderIds.has(f.id) && getChildFolders(f.id).map((sub) => (
-                            <div
-                              key={sub.id}
-                              className={`flex items-center gap-2 pl-8 pr-2 py-1.5 cursor-pointer rounded-md hover:bg-muted/70 ${selectedFolderId === sub.id ? 'bg-primary/10' : ''}`}
-                              onClick={() => setSelectedFolderId(sub.id)}
-                            >
-                              <FolderOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                              <span className="text-sm truncate flex-1">{sub.name}</span>
-                                <Switch checked={sub.is_enabled} onCheckedChange={() => toggleFolderEnabled(sub.id)} onClick={e => e.stopPropagation()} className="h-3.5 w-7 shrink-0 max-md:h-5 max-md:w-9" />
-                            </div>
+                    <Label className="text-sm">Subfolder</Label>
+                    <Select
+                      value={selectedSubfolderId ?? '__none__'}
+                      onValueChange={(v) => setSelectedSubfolderId(v === '__none__' ? null : v)}
+                    >
+                      <SelectTrigger className="max-md:h-11">
+                        <SelectValue placeholder="Select subfolder (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">No subfolder</SelectItem>
+                        {selectedRootFolderId &&
+                          getChildFolders(selectedRootFolderId).map((sub) => (
+                            <SelectItem key={sub.id} value={sub.id}>{sub.name}</SelectItem>
                           ))}
-                        </div>
-                      ))}
+                      </SelectContent>
+                    </Select>
 
-                      <div
-                        className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-md hover:bg-muted/70 border-t mt-1 ${selectedFolderId === null ? 'bg-primary/10' : ''}`}
-                        onClick={() => setSelectedFolderId(null)}
-                      >
-                        <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
-                        <span className="text-sm truncate flex-1">No folder (uncategorized)</span>
+                    {selectedRootFolderId && (
+                      <div className="flex items-center justify-between rounded-md border p-2">
+                        <span className="text-xs text-muted-foreground">Show selected folder on site</span>
+                        <Switch
+                          checked={galleryFolders.find((f) => f.id === (selectedSubfolderId || selectedRootFolderId))?.is_enabled ?? false}
+                          onCheckedChange={() => toggleFolderEnabled(selectedSubfolderId || selectedRootFolderId)}
+                        />
                       </div>
+                    )}
 
-                      <div className="px-2 py-2 border-t mt-1">
-                        {isCreatingCustomFolder ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={customFolderName}
-                              onChange={(e) => setCustomFolderName(e.target.value)}
-                              placeholder="e.g., Private Event"
-                              className="h-8"
-                            />
-                            <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                disabled={creatingFolder}
-                                onClick={handleCreateCustomFolder}
-                                className="h-8 px-2"
-                              >
-                                {creatingFolder ? 'Creating...' : 'Create'}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsCreatingCustomFolder(false)}
-                                className="h-8 px-2"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start px-2"
-                            onClick={() => {
-                              setIsCreatingCustomFolder(true);
-                              setCustomFolderName('');
-                            }}
-                          >
-                            <FolderPlus className="w-4 h-4 mr-2" />
-                            Add custom folder
-                          </Button>
-                        )}
+                    <div className="space-y-2 border-t pt-2">
+                      <Label className="text-xs text-muted-foreground">Create new folder</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={newRootFolderName}
+                          onChange={(e) => setNewRootFolderName(e.target.value)}
+                          placeholder="e.g., Wedding"
+                          className="max-md:h-11"
+                        />
+                        <Button type="button" variant="outline" onClick={handleCreateRootFolder} disabled={creatingFolder} className="max-md:h-11">
+                          <FolderPlus className="w-4 h-4 mr-1" /> Add
+                        </Button>
                       </div>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Create subfolder</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={newSubfolderName}
+                          onChange={(e) => setNewSubfolderName(e.target.value)}
+                          placeholder="e.g., Ceremony"
+                          className="max-md:h-11"
+                        />
+                        <Button type="button" variant="outline" onClick={handleCreateSubfolder} disabled={creatingFolder || !selectedRootFolderId} className="max-md:h-11">
+                          <FolderOpen className="w-4 h-4 mr-1" /> Add
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={handleDeleteFolder}
+                      disabled={!selectedRootFolderId && !selectedSubfolderId}
+                      className="w-full max-md:h-11"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete selected folder/subfolder
+                    </Button>
                   </div>
 
                   <div className="rounded-lg border bg-card p-4 min-h-[200px]">
                     <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                       <FolderOpen className="w-4 h-4" />
-                      {selectedFolderId === null ? 'Images in No folder (uncategorized)' : galleryFolders.find(x => x.id === selectedFolderId)?.name ?? 'Images'}
+                      Uploading to: {selectedUploadFolderName}
                     </p>
                     <ImageUpload
-                      value={imagesForFolder(selectedFolderId).map(i => i.image_url)}
-                      onChange={v => setImagesForFolder(selectedFolderId, (v as string[]) || [])}
+                      value={getImagesForFolder(selectedUploadFolderId)}
+                      onChange={(v) => setImagesForFolder(selectedUploadFolderId, (v as string[]) || [])}
                       multiple
                       maxFiles={20}
                       previewClassName="object-cover"
                       bucket="gallery-images"
-                      enableBulkDelete={false}
+                      enableBulkDelete={true}
                       uploadOnSelect={true}
                     />
-
-                    {selectedImageKeys.size > 0 && (
-                      <div className="flex items-center justify-between mt-3 mb-2 gap-3">
-                        <p className="text-xs text-muted-foreground">
-                          {selectedImageKeys.size} selected
-                        </p>
-                        <Button type="button" variant="destructive" size="sm" onClick={handleDeleteSelectedImages}>
-                          Delete selected
-                        </Button>
-                      </div>
-                    )}
-
-                      <div className="flex flex-wrap gap-2 mt-3 max-md:grid max-md:grid-cols-3 max-md:gap-2">
-                      {galleryImages
-                        .map((img, globalIdx) => ({ img, globalIdx }))
-                        .filter(({ img }) => (img.folder_id ?? null) === selectedFolderId)
-                        .map(({ img, globalIdx }) => {
-                          const key = getImageKey(img, globalIdx);
-                          const checked = selectedImageKeys.has(key);
-                          return (
-                            <div
-                              key={img.id ?? `${globalIdx}-${img.image_url}`}
-                              className="relative group w-14 h-14 rounded overflow-hidden border"
-                            >
-                              <label
-                                className={`absolute top-1 left-1 z-10 rounded bg-background/80 dark:bg-background/60 backdrop-blur px-1 py-0.5 ${
-                                  checked ? 'text-primary' : 'text-muted-foreground'
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  aria-label="Select gallery image for deletion"
-                                  checked={checked}
-                                  onChange={() => toggleSelectedImageKey(key)}
-                                />
-                              </label>
-                              <img
-                                src={img.image_url}
-                                alt="Collaboration gallery image"
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            </div>
-                          );
-                        })}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -846,7 +878,7 @@ export default function AdminCollaborations() {
           <DialogFooter className="mt-6 max-md:flex-col max-md:items-stretch max-md:gap-2">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:h-11">Cancel</Button>
             <Button onClick={handleSave} disabled={saving} className="max-md:h-11">
-              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving... </> : (editingCollab ? 'Save Changes' : 'Create Partner')}
+              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving... </> : (editingCollab ? 'Save Changes' : 'Create Venue')}
             </Button>
           </DialogFooter>
         </DialogContent>

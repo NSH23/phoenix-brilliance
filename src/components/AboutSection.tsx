@@ -1,10 +1,18 @@
 import { useRef, useState, useEffect } from "react";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { AboutFlipCards } from "@/components/ui/about-flip-cards";
-import { getSiteContentByKey, parseAboutSectionDescription } from "@/services/siteContent";
+import { getSiteContentByKey, parseAboutSectionDescription, type AboutSectionFlipImages } from "@/services/siteContent";
 
-export default function AboutSection() {
+type AboutSectionProps = {
+  homepageDataPending?: boolean;
+  prefetchedAboutFlipImages?: AboutSectionFlipImages | null;
+};
+
+export default function AboutSection({
+  homepageDataPending,
+  prefetchedAboutFlipImages,
+}: AboutSectionProps = {}) {
   const containerRef = useRef<HTMLElement>(null);
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const [content, setContent] = useState<{
@@ -30,15 +38,6 @@ export default function AboutSection() {
       })
       .catch(() => {});
   }, []);
-
-  // Parallax effect for the left image
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"],
-  });
-
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.05]);
-  const y = useTransform(scrollYProgress, [0, 1], [0, 50]);
 
   // Handle potential React nodes or splitting for the title if needed,
   // but for now we assume linear text or basic HTML handling if we were using a parser.
@@ -99,15 +98,16 @@ export default function AboutSection() {
               </h2>
             </div>
 
-            {/* Flip cards: reduced size and slight overlap with heading block */}
-            <motion.div
-              style={{ scale, y }}
-              className="relative w-full min-h-[210px] md:min-h-[250px] lg:min-h-[280px] flex flex-col items-center justify-start mt-4 md:mt-5 lg:mt-6"
-            >
+            {/* Flip cards: must NOT sit under a CSS transform (e.g. framer scale/y) or preserve-3d is
+                flattened and back faces / some fronts paint incorrectly in WebKit/Chromium. */}
+            <div className="relative w-full min-h-[210px] md:min-h-[250px] lg:min-h-[280px] flex flex-col items-center justify-start mt-4 md:mt-5 lg:mt-6">
               <div className="relative w-full flex items-start justify-center px-0 md:-left-6 lg:-left-8">
-                <AboutFlipCards />
+                <AboutFlipCards
+                  homepageDataPending={homepageDataPending}
+                  prefetchedFlipImages={prefetchedAboutFlipImages}
+                />
               </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Right Column: Story Text – glass/iPhone-style container (container hidden on mobile) */}

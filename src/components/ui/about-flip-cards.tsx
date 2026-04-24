@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { getGalleryImagesForHomepage, type GalleryImage } from "@/services/gallery";
-import { getAboutSectionFlipImagesOptional } from "@/services/siteContent";
+import { getAboutSectionFlipImagesOptional, type AboutSectionFlipImages } from "@/services/siteContent";
+import { resolvePublicStorageUrl } from "@/services/storage";
 
 // Fallback images so something is always visible if gallery is empty or fails
 const FALLBACK_IMAGES = [
@@ -29,23 +30,80 @@ const PAUSE_BETWEEN_CYCLES_MS = 3200;
 const NUM_CARDS = 4;
 const NUM_IMAGES = NUM_CARDS * 2; // 8
 
-export function AboutFlipCards() {
+function resolveFlipImageUrl(raw: string): string {
+  const t = (raw || '').trim();
+  if (!t) return '';
+  return resolvePublicStorageUrl(t, 'gallery-images') || t;
+}
+
+function hasAnyFlipUrl(about: AboutSectionFlipImages): boolean {
+  return about.front.some((u) => u.trim()) || about.back.some((u) => u.trim());
+}
+
+function galleryRowsFromAboutSection(about: AboutSectionFlipImages): GalleryImage[] {
+  const combined: GalleryImage[] = [];
+  for (let i = 0; i < 4; i++) {
+    const f = resolveFlipImageUrl(about.front[i] ?? '');
+    const b = resolveFlipImageUrl(about.back[i] ?? '');
+    combined.push({
+      id: `front-${i}`,
+      url: f || FALLBACK_IMAGES[i % FALLBACK_IMAGES.length],
+      title: null,
+      category: null,
+      is_featured: false,
+      display_order: i * 2,
+      row_index: 0,
+      created_at: '',
+      updated_at: '',
+    });
+    combined.push({
+      id: `back-${i}`,
+      url: b || FALLBACK_IMAGES[(i * 2 + 1) % FALLBACK_IMAGES.length],
+      title: null,
+      category: null,
+      is_featured: false,
+      display_order: i * 2 + 1,
+      row_index: 0,
+      created_at: '',
+      updated_at: '',
+    });
+  }
+  return combined;
+}
+
+export type AboutFlipCardsProps = {
+  /** When true, wait for homepage bundle before resolving images (avoids wrong gallery fallback). */
+  homepageDataPending?: boolean;
+  /** From homepage query: `null` = no saved config; `undefined` = fetch client-side (no bundle). */
+  prefetchedFlipImages?: AboutSectionFlipImages | null;
+};
+
+export function AboutFlipCards({
+  homepageDataPending,
+  prefetchedFlipImages,
+}: AboutFlipCardsProps = {}) {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
 
   useEffect(() => {
+    if (homepageDataPending) return;
+
+    if (prefetchedFlipImages !== undefined) {
+      if (prefetchedFlipImages && hasAnyFlipUrl(prefetchedFlipImages)) {
+        setImages(galleryRowsFromAboutSection(prefetchedFlipImages));
+      } else {
+        void getGalleryImagesForHomepage(NUM_IMAGES).then((data) => setImages(data || []));
+      }
+      return;
+    }
+
     let cancelled = false;
     (async () => {
       try {
         const aboutSection = await getAboutSectionFlipImagesOptional();
         if (cancelled) return;
-        if (aboutSection && aboutSection.front.length > 0 && aboutSection.back.length > 0) {
-          const combined: GalleryImage[] = [];
-          for (let i = 0; i < 4; i++) {
-            combined.push({ id: `front-${i}`, url: aboutSection.front[i] || FALLBACK_IMAGES[0], title: null, category: null, is_featured: false, display_order: i * 2, row_index: 0, created_at: '', updated_at: '' });
-            combined.push({ id: `back-${i}`, url: aboutSection.back[i] || FALLBACK_IMAGES[1], title: null, category: null, is_featured: false, display_order: i * 2 + 1, row_index: 0, created_at: '', updated_at: '' });
-          }
-          setImages(combined);
+        if (aboutSection && hasAnyFlipUrl(aboutSection)) {
+          setImages(galleryRowsFromAboutSection(aboutSection));
         } else {
           const data = await getGalleryImagesForHomepage(NUM_IMAGES);
           if (cancelled) return;
@@ -56,8 +114,10 @@ export function AboutFlipCards() {
         getGalleryImagesForHomepage(NUM_IMAGES).then((data) => setImages(data || [])).catch(() => setImages([]));
       }
     })();
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [homepageDataPending, prefetchedFlipImages]);
 
   const { pairs, diagonalOrder } = useMemo(() => {
     const urls: string[] = [];
@@ -134,7 +194,7 @@ export function AboutFlipCards() {
         aria-hidden
       />
       <div className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-white/5 dark:bg-white/[0.06] dark:backdrop-blur-xl" aria-hidden />
-      <div className="relative z-10 grid grid-cols-2 grid-rows-2 gap-2 p-2 overflow-hidden">
+      <div className="relative z-10 grid grid-cols-2 grid-rows-2 gap-2 p-2 overflow-visible">
         {pairs.map(([frontUrl, backUrl], index) => (
           <FlipCard
             key={index}
@@ -175,8 +235,11 @@ function FlipCard({
       style={{ perspective: "1200px" }}
     >
       <motion.div
-        className="relative w-full h-full"
-        style={{ transformStyle: "preserve-3d" }}
+        className="relative w-full h-full [transform-style:preserve-3d]"
+        style={{
+          transformStyle: "preserve-3d",
+          WebkitTransformStyle: "preserve-3d" as const,
+        }}
         initial={false}
         animate={{
           rotateY: isFlipped ? 180 : 0,
@@ -189,11 +252,11 @@ function FlipCard({
         }}
       >
         <div
-          className="absolute inset-0 rounded-xl overflow-hidden bg-muted border-2 border-charcoal/50 dark:border-white/25 shadow-lg ring-1 ring-charcoal/20 dark:ring-white/10"
+          className="absolute inset-0 rounded-xl overflow-hidden bg-muted border-2 border-charcoal/50 dark:border-white/25 shadow-lg ring-1 ring-charcoal/20 dark:ring-white/10 [transform-style:preserve-3d]"
           style={{
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
-            transform: "rotateY(0deg)",
+            transform: "rotateY(0deg) translateZ(1px)",
           }}
         >
           <img
@@ -206,11 +269,11 @@ function FlipCard({
           />
         </div>
         <div
-          className="absolute inset-0 rounded-xl overflow-hidden bg-muted border-2 border-charcoal/50 dark:border-white/25 shadow-lg ring-1 ring-charcoal/20 dark:ring-white/10"
+          className="absolute inset-0 rounded-xl overflow-hidden bg-muted border-2 border-charcoal/50 dark:border-white/25 shadow-lg ring-1 ring-charcoal/20 dark:ring-white/10 [transform-style:preserve-3d]"
           style={{
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
+            transform: "rotateY(180deg) translateZ(1px)",
           }}
         >
           <img

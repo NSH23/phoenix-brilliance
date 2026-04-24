@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search, Edit, Trash2, MoreHorizontal, Star, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
 import { logger } from '@/utils/logger';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ export default function AdminTestimonials() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     role: '',
@@ -88,6 +90,29 @@ export default function AdminTestimonials() {
     const matchesFilter = filterEvent === 'all' || (t.event_type || '') === filterEvent;
     return matchesSearch && matchesFilter;
   });
+
+  const showReorder = !searchQuery.trim() && filterEvent === 'all';
+  const listForCards = showReorder
+    ? [...testimonials].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    : filteredTestimonials;
+
+  const persistTestimonialOrder = async (orderedIds: string[]) => {
+    setIsReordering(true);
+    try {
+      await Promise.all(orderedIds.map((id, i) => updateTestimonial(id, { display_order: i })));
+      setTestimonials((prev) => {
+        const byId = new Map(prev.map((t) => [t.id, t]));
+        return orderedIds.map((id, i) => ({ ...byId.get(id)!, display_order: i }));
+      });
+      toast.success('Display order saved');
+    } catch (err: unknown) {
+      logger.error('Failed to save testimonial order', err, { component: 'AdminTestimonials', action: 'persistOrder' });
+      toast.error('Failed to save order', { description: (err as Error)?.message });
+      void load();
+    } finally {
+      setIsReordering(false);
+    }
+  };
 
   const handleOpenDialog = (testimonial?: Testimonial) => {
     const nextOrder = testimonials.length > 0
@@ -195,6 +220,69 @@ export default function AdminTestimonials() {
 
   const eventTitles = [...new Set(events.map(e => e.title).filter(Boolean))].sort();
 
+  const renderTestimonialCard = (t: Testimonial) => (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
+      <CardContent className="p-3 md:p-6 flex flex-col h-full">
+        <div className="flex items-start justify-between mb-2 md:mb-4">
+          <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
+            <div className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden bg-muted shrink-0">
+              {t.avatar_url ? (
+                <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-base">
+                  {t.name.charAt(0)}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-sm md:text-sm truncate">{t.name}</h3>
+              <p className="text-xs md:text-xs text-muted-foreground truncate">{t.role || '—'}</p>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:-mr-2">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleOpenDialog(t)}>
+                <Edit className="w-4 h-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(t.id)} className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="flex items-center gap-0.5 md:gap-1 mb-2 md:mb-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              className={`w-3 h-3 md:w-4 md:h-4 ${i < (t.rating ?? 0) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
+            />
+          ))}
+        </div>
+        <p className="text-xs md:text-sm text-muted-foreground flex-1 mb-2 md:mb-4 italic line-clamp-3 md:line-clamp-none">
+          "{t.content}"
+        </p>
+        <div className="flex flex-wrap items-center gap-1 md:gap-2">
+          <Badge variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto line-clamp-1 max-w-[120px] md:max-w-none">
+            {t.event_type || '—'}
+          </Badge>
+          <Badge variant="secondary" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">
+            Order: {t.display_order ?? 0}
+          </Badge>
+          {t.is_featured && (
+            <Badge className="gap-0.5 px-1 py-0 md:gap-1 md:px-2.5 md:py-0.5 bg-primary/90 text-[10px] md:text-xs">
+              <Star className="w-2 h-2 md:w-3 md:h-3 fill-current" /> <span className="hidden md:inline">Featured</span>
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <AdminLayout title="Testimonials" subtitle="Manage client reviews and testimonials">
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -230,73 +318,46 @@ export default function AdminTestimonials() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
-            {filteredTestimonials.map((t, i) => (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
-                  <CardContent className="p-3 md:p-6 flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-2 md:mb-4">
-                      <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
-                        <div className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden bg-muted shrink-0">
-                          {t.avatar_url ? (
-                            <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-base">
-                              {t.name.charAt(0)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-sm md:text-sm truncate">{t.name}</h3>
-                          <p className="text-xs md:text-xs text-muted-foreground truncate">{t.role || '—'}</p>
-                        </div>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:-mr-2">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenDialog(t)}>
-                            <Edit className="w-4 h-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(t.id)} className="text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="flex items-center gap-0.5 md:gap-1 mb-2 md:mb-3">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-3 h-3 md:w-4 md:h-4 ${i < (t.rating ?? 0) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-xs md:text-sm text-muted-foreground flex-1 mb-2 md:mb-4 italic line-clamp-3 md:line-clamp-none">
-                      "{t.content}"
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1 md:gap-2">
-                      <Badge variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto line-clamp-1 max-w-[120px] md:max-w-none">{t.event_type || '—'}</Badge>
-                      <Badge variant="secondary" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">Order: {t.display_order ?? 0}</Badge>
-                      {t.is_featured && (
-                        <Badge className="gap-0.5 px-1 py-0 md:gap-1 md:px-2.5 md:py-0.5 bg-primary/90 text-[10px] md:text-xs">
-                          <Star className="w-2 h-2 md:w-3 md:h-3 fill-current" /> <span className="hidden md:inline">Featured</span>
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+          {testimonials.length >= 2 && (
+            <p className="text-xs text-muted-foreground mb-2">
+              {showReorder
+                ? 'Drag the grip on a card to reorder. Changes apply on the site immediately.'
+                : 'Clear search and set event filter to “All” to drag and reorder cards.'}
+            </p>
+          )}
+          {showReorder ? (
+            <AdminSortableGrid
+              itemIds={listForCards.map((t) => t.id)}
+              disabled={isReordering}
+              onReorder={persistTestimonialOrder}
+              className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1"
+            >
+              {listForCards.map((t, i) => (
+                <AdminSortableItem key={t.id} id={t.id} disabled={isReordering}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    {renderTestimonialCard(t)}
+                  </motion.div>
+                </AdminSortableItem>
+              ))}
+            </AdminSortableGrid>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
+              {listForCards.map((t, i) => (
+                <motion.div
+                  key={t.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  {renderTestimonialCard(t)}
+                </motion.div>
+              ))}
+            </div>
+          )}
           {filteredTestimonials.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">No testimonials found.</div>
           )}

@@ -199,27 +199,66 @@ export interface AboutSectionFlipImages {
   back: string[];
 }
 
-export async function getAboutSectionFlipImagesOptional(): Promise<AboutSectionFlipImages | null> {
-  const raw = await getSiteSettingOptional(ABOUT_SECTION_FLIP_KEY);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as { front?: unknown; back?: unknown };
-    const front = Array.isArray(parsed.front)
-      ? parsed.front.filter((u): u is string => typeof u === 'string').slice(0, 4)
-      : [];
-    const back = Array.isArray(parsed.back)
-      ? parsed.back.filter((u): u is string => typeof u === 'string').slice(0, 4)
-      : [];
-    if (front.length === 0 && back.length === 0) return null;
-    return { front, back };
-  } catch {
-    return null;
+/** Normalize site_settings row value: DB may return TEXT (string) or JSON/JSONB (already an object). */
+function parseAboutFlipSettingValue(raw: unknown): AboutSectionFlipImages | null {
+  if (raw == null) return null;
+  let obj: unknown = raw;
+  if (typeof raw === 'string') {
+    const s = raw.trim();
+    if (!s) return null;
+    try {
+      obj = JSON.parse(s);
+    } catch {
+      return null;
+    }
   }
+  while (typeof obj === 'string') {
+    try {
+      obj = JSON.parse(obj);
+    } catch {
+      return null;
+    }
+  }
+  if (!obj || typeof obj !== 'object') return null;
+  const record = obj as Record<string, unknown>;
+  const fr = record.front ?? record.Front;
+  const bk = record.back ?? record.Back;
+  const toSlotStrings = (arr: unknown): string[] => {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .slice(0, 4)
+      .map((u) => (typeof u === 'string' ? u.trim() : ''));
+  };
+  const pad4 = (slots: string[]) => {
+    const n = [...slots];
+    while (n.length < 4) n.push('');
+    return n.slice(0, 4);
+  };
+  const front = pad4(toSlotStrings(fr));
+  const back = pad4(toSlotStrings(bk));
+  if (!front.some(Boolean) && !back.some(Boolean)) return null;
+  return { front, back };
+}
+
+export async function getAboutSectionFlipImagesOptional(): Promise<AboutSectionFlipImages | null> {
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', ABOUT_SECTION_FLIP_KEY)
+    .maybeSingle();
+
+  if (error) throw error;
+  return parseAboutFlipSettingValue(data?.value as unknown);
 }
 
 export async function upsertAboutSectionFlipImages(payload: AboutSectionFlipImages): Promise<void> {
-  const front = (payload.front || []).slice(0, 4);
-  const back = (payload.back || []).slice(0, 4);
+  const pad4 = (arr: string[]) => {
+    const n = [...(arr || [])].map((s) => (typeof s === 'string' ? s.trim() : ''));
+    while (n.length < 4) n.push('');
+    return n.slice(0, 4);
+  };
+  const front = pad4(payload.front || []);
+  const back = pad4(payload.back || []);
   await upsertSiteSetting(ABOUT_SECTION_FLIP_KEY, JSON.stringify({ front, back }), 'json');
 }
 

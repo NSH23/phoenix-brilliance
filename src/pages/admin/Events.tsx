@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Plus, Search, Edit, Trash2, Eye, MoreHorizontal, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ImageUpload from '@/components/admin/ImageUpload';
+import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
 import { logger } from '@/utils/logger';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ export default function AdminEvents() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -85,6 +87,31 @@ export default function AdminEvents() {
   const filteredEvents = events.filter(event =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const showReorder = !searchQuery.trim();
+  const listForCards = showReorder
+    ? [...events].sort((a, b) => a.display_order - b.display_order)
+    : filteredEvents;
+
+  const persistEventOrder = async (orderedIds: string[]) => {
+    setIsReordering(true);
+    try {
+      await Promise.all(orderedIds.map((id, i) => updateEvent(id, { display_order: i })));
+      setEvents((prev) => {
+        const byId = new Map(prev.map((e) => [e.id, e]));
+        return orderedIds.map((id, i) => ({ ...byId.get(id)!, display_order: i }));
+      });
+      toast.success('Display order saved');
+    } catch (error: unknown) {
+      logger.error('Error saving event order', error, { component: 'AdminEvents', action: 'persistOrder' });
+      toast.error('Failed to save order', {
+        description: (error as Error)?.message || 'Please try again.',
+      });
+      void loadEvents();
+    } finally {
+      setIsReordering(false);
+    }
+  };
 
   const handleOpenDialog = async (event?: Event) => {
     if (event) {
@@ -202,6 +229,114 @@ export default function AdminEvents() {
     return title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   };
 
+  const renderEventCard = (event: Event, badgeShiftForDrag: boolean) => (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col max-md:flex-row max-md:items-start max-md:gap-3">
+      <div className="relative h-24 md:h-48 overflow-hidden shrink-0 max-md:h-24 max-md:w-24 max-md:rounded-lg">
+        <img
+          src={event.cover_image || '/placeholder.svg'}
+          alt={event.title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/placeholder.svg';
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div
+          className={`absolute top-1 max-md:hidden md:top-3 ${badgeShiftForDrag ? 'left-11 md:left-12' : 'left-1 md:left-3'}`}
+        >
+          <Badge
+            variant={event.is_active ? 'default' : 'secondary'}
+            className="text-[10px] px-1 py-0 h-4 md:text-xs md:px-2 md:py-0.5 md:h-auto"
+          >
+            {event.is_active ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+        <div className="absolute top-1 right-1 md:top-3 md:right-3 max-md:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="h-6 w-6 md:h-8 md:w-8">
+                <MoreHorizontal className="w-3 h-3 md:w-4 md:h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleOpenDialog(event)}>
+                <Edit className="w-4 h-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.open(`/events/${event.slug}`, '_blank')}>
+                <Eye className="w-4 h-4 mr-2" /> Preview
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(event.id)} className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="absolute bottom-1 left-1 right-1 md:bottom-3 md:left-3 md:right-3 max-md:hidden">
+          <h3 className="text-xs md:text-xl font-serif font-bold text-white line-clamp-1">{event.title}</h3>
+        </div>
+      </div>
+      <CardContent className="p-2 md:p-4 flex-1 flex flex-col justify-between gap-2 min-w-0">
+        <div className="hidden max-md:flex items-start justify-between gap-2 mb-1">
+          <div className="min-w-0">
+            <h3 className="text-sm font-serif font-bold text-foreground line-clamp-2 leading-tight">{event.title}</h3>
+            <Badge variant={event.is_active ? 'default' : 'secondary'} className="text-xs px-2 py-0.5 h-auto mt-1">
+              {event.is_active ? 'Active' : 'Inactive'}
+            </Badge>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="h-10 w-10">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleOpenDialog(event)}>
+                <Edit className="w-4 h-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.open(`/events/${event.slug}`, '_blank')}>
+                <Eye className="w-4 h-4 mr-2" /> Preview
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(event.id)} className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <p className="text-xs text-muted-foreground line-clamp-2 md:hidden">
+          {event.short_description || event.description || 'No description'}
+        </p>
+        <p className="text-xs text-muted-foreground line-clamp-2 hidden md:block">
+          {event.short_description || event.description || 'No description'}
+        </p>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1 md:gap-0 mt-auto">
+          <span className="text-xs text-muted-foreground">Order: {event.display_order}</span>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={event.is_active}
+              onCheckedChange={() => handleToggleActive(event.id)}
+              className="h-6 w-11"
+            />
+            <span className="text-xs text-muted-foreground max-md:inline md:hidden">
+              {event.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        </div>
+        <div className="md:hidden grid grid-cols-2 gap-2 mt-1">
+          <Button variant="outline" size="sm" className="h-10" onClick={() => handleOpenDialog(event)}>
+            <Edit className="w-4 h-4 mr-1" />
+            Edit
+          </Button>
+          <Button variant="outline" size="sm" className="h-10" onClick={() => window.open(`/events/${event.slug}`, '_blank')}>
+            <Eye className="w-4 h-4 mr-1" />
+            Preview
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <AdminLayout title="Events" subtitle="Manage your event types and their details">
 
@@ -237,139 +372,48 @@ export default function AdminEvents() {
               <Button onClick={() => handleOpenDialog()}>Create Your First Event</Button>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2 md:grid-cols-3 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
-              {filteredEvents.map((event, index) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+            <>
+              {events.length >= 2 && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  {showReorder
+                    ? 'Drag the grip on a card to reorder. Changes apply on the site immediately.'
+                    : 'Clear search to drag and reorder cards.'}
+                </p>
+              )}
+              {showReorder ? (
+                <AdminSortableGrid
+                  itemIds={listForCards.map((e) => e.id)}
+                  disabled={isReordering}
+                  onReorder={persistEventOrder}
+                  className="relative grid grid-cols-3 gap-2 md:grid-cols-3 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1"
                 >
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col max-md:flex-row max-md:items-start max-md:gap-3">
-                      <div className="relative h-24 md:h-48 overflow-hidden shrink-0 max-md:h-24 max-md:w-24 max-md:rounded-lg">
-                      <img
-                        src={event.cover_image || '/placeholder.svg'}
-                        alt={event.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute top-1 left-1 md:top-3 md:left-3 max-md:hidden">
-                        <Badge variant={event.is_active ? 'default' : 'secondary'} className="text-[10px] px-1 py-0 h-4 md:text-xs md:px-2 md:py-0.5 md:h-auto">
-                          {event.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                      <div className="absolute top-1 right-1 md:top-3 md:right-3 max-md:hidden">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="secondary" size="icon" className="h-6 w-6 md:h-8 md:w-8">
-                              <MoreHorizontal className="w-3 h-3 md:w-4 md:h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenDialog(event)}>
-                              <Edit className="w-4 h-4 mr-2" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.open(`/events/${event.slug}`, '_blank')}>
-                              <Eye className="w-4 h-4 mr-2" /> Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(event.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <div className="absolute bottom-1 left-1 right-1 md:bottom-3 md:left-3 md:right-3 max-md:hidden">
-                        <h3 className="text-xs md:text-xl font-serif font-bold text-white line-clamp-1">{event.title}</h3>
-                      </div>
-                    </div>
-                    <CardContent className="p-2 md:p-4 flex-1 flex flex-col justify-between gap-2 min-w-0">
-                      <div className="hidden max-md:flex items-start justify-between gap-2 mb-1">
-                        <div className="min-w-0">
-                          <h3 className="text-sm font-serif font-bold text-foreground line-clamp-2 leading-tight">{event.title}</h3>
-                          <Badge
-                            variant={event.is_active ? 'default' : 'secondary'}
-                            className="text-xs px-2 py-0.5 h-auto mt-1"
-                          >
-                            {event.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="secondary"
-                              size="icon"
-                              className="h-10 w-10"
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenDialog(event)}>
-                              <Edit className="w-4 h-4 mr-2" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.open(`/events/${event.slug}`, '_blank')}>
-                              <Eye className="w-4 h-4 mr-2" /> Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(event.id)} className="text-destructive">
-                              <Trash2 className="w-4 h-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 md:hidden">
-                        {event.short_description || event.description || 'No description'}
-                      </p>
-                      <p className="text-xs text-muted-foreground line-clamp-2 hidden md:block">
-                        {event.short_description || event.description || 'No description'}
-                      </p>
-                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1 md:gap-0 mt-auto">
-                        <span className="text-xs text-muted-foreground">
-                          Order: {event.display_order}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={event.is_active}
-                            onCheckedChange={() => handleToggleActive(event.id)}
-                            className="h-6 w-11"
-                          />
-                          <span className="text-xs text-muted-foreground max-md:inline md:hidden">
-                            {event.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="md:hidden grid grid-cols-2 gap-2 mt-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-10"
-                          onClick={() => handleOpenDialog(event)}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-10"
-                          onClick={() => window.open(`/events/${event.slug}`, '_blank')}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          Preview
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
+                  {listForCards.map((event, index) => (
+                    <AdminSortableItem key={event.id} id={event.id} disabled={isReordering} handleTone="dark">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        {renderEventCard(event, true)}
+                      </motion.div>
+                    </AdminSortableItem>
+                  ))}
+                </AdminSortableGrid>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 md:grid-cols-3 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
+                  {listForCards.map((event, index) => (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      {renderEventCard(event, false)}
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </>
       )}

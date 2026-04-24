@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -17,6 +18,7 @@ import { getAboutSectionFlipImagesOptional, upsertAboutSectionFlipImages } from 
 import { toast } from 'sonner';
 
 export default function AdminGallery() {
+  const queryClient = useQueryClient();
   const [aboutFront, setAboutFront] = useState<string[]>(() => Array(4).fill(''));
   const [aboutBack, setAboutBack] = useState<string[]>(() => Array(4).fill(''));
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +40,9 @@ export default function AdminGallery() {
         while (back.length < 4) back.push('');
         setAboutFront(front);
         setAboutBack(back);
+      } else {
+        setAboutFront(Array(4).fill(''));
+        setAboutBack(Array(4).fill(''));
       }
     } catch (error: unknown) {
       logger.error('Error loading about section', error, { component: 'AdminGallery', action: 'loadAboutSection' });
@@ -47,15 +52,22 @@ export default function AdminGallery() {
     }
   };
 
+  const persistAboutFlipToServer = async (nextFront: string[], nextBack: string[]) => {
+    setAboutSectionSaving(true);
+    try {
+      await upsertAboutSectionFlipImages({ front: nextFront, back: nextBack });
+      await queryClient.invalidateQueries({ queryKey: ['homepage-data'] });
+    } finally {
+      setAboutSectionSaving(false);
+    }
+  };
+
   const handleSaveAboutSection = async () => {
     try {
-      setAboutSectionSaving(true);
-      await upsertAboutSectionFlipImages({ front: aboutFront, back: aboutBack });
+      await persistAboutFlipToServer(aboutFront, aboutBack);
       toast.success('About Us 3D section saved');
     } catch (e: unknown) {
       toast.error('Failed to save', { description: (e as Error)?.message });
-    } finally {
-      setAboutSectionSaving(false);
     }
   };
 
@@ -80,7 +92,9 @@ export default function AdminGallery() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <h3 className="font-semibold text-lg">About Us 3D Flip Cards</h3>
-            <p className="text-sm text-muted-foreground">Upload 4 front and 4 back images. They appear in the About section on the homepage.</p>
+            <p className="text-sm text-muted-foreground">
+              Upload 4 front and 4 back images for the homepage About block. Each upload saves to the site automatically; you can also use Save to persist any pending changes.
+            </p>
           </div>
           <Button onClick={handleSaveAboutSection} disabled={aboutSectionSaving}>
             {aboutSectionSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -116,7 +130,18 @@ export default function AdminGallery() {
                       size="sm"
                       className="w-full text-xs"
                       disabled={!url}
-                      onClick={() => setAboutSlotUrl('front', i, '')}
+                      onClick={() => {
+                        void (async () => {
+                          const nextFront = aboutFront.map((u, j) => (j === i ? '' : u));
+                          setAboutFront(nextFront);
+                          try {
+                            await persistAboutFlipToServer(nextFront, aboutBack);
+                            toast.success('Slot cleared');
+                          } catch (e: unknown) {
+                            toast.error('Failed to save', { description: (e as Error)?.message });
+                          }
+                        })();
+                      }}
                     >
                       Delete
                     </Button>
@@ -154,7 +179,18 @@ export default function AdminGallery() {
                       size="sm"
                       className="w-full text-xs"
                       disabled={!url}
-                      onClick={() => setAboutSlotUrl('back', i, '')}
+                      onClick={() => {
+                        void (async () => {
+                          const nextBack = aboutBack.map((u, j) => (j === i ? '' : u));
+                          setAboutBack(nextBack);
+                          try {
+                            await persistAboutFlipToServer(aboutFront, nextBack);
+                            toast.success('Slot cleared');
+                          } catch (e: unknown) {
+                            toast.error('Failed to save', { description: (e as Error)?.message });
+                          }
+                        })();
+                      }}
                     >
                       Delete
                     </Button>
@@ -181,8 +217,22 @@ export default function AdminGallery() {
               onChange={(value) => {
                 const url = typeof value === 'string' ? value : (Array.isArray(value) ? value[0] : '');
                 if (url && aboutUploadSlot) {
-                  setAboutSlotUrl(aboutUploadSlot.side, aboutUploadSlot.index, url);
+                  const { side, index } = aboutUploadSlot;
+                  const nextFront =
+                    side === 'front' ? aboutFront.map((u, j) => (j === index ? url : u)) : [...aboutFront];
+                  const nextBack =
+                    side === 'back' ? aboutBack.map((u, j) => (j === index ? url : u)) : [...aboutBack];
+                  setAboutFront(nextFront);
+                  setAboutBack(nextBack);
                   setAboutUploadSlot(null);
+                  void (async () => {
+                    try {
+                      await persistAboutFlipToServer(nextFront, nextBack);
+                      toast.success('Image saved — homepage About cards will show this photo');
+                    } catch (e: unknown) {
+                      toast.error('Failed to save', { description: (e as Error)?.message });
+                    }
+                  })();
                 }
               }}
               bucket="gallery-images"

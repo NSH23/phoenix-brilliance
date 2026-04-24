@@ -106,7 +106,12 @@ const Index = () => {
               <div className="section-depth-noise" aria-hidden />
               <div className="section-about-bg-image" aria-hidden />
               <div className="section-about-overlay" aria-hidden />
-              <AboutSection />
+              <AboutSection
+                homepageDataPending={homepageDataPending}
+                prefetchedAboutFlipImages={
+                  homepageDataSuccess ? homepageData?.aboutFlipImages ?? null : undefined
+                }
+              />
             </div>
 
             {/* Events – light: 9.jpg + overlay; dark: solid band */}

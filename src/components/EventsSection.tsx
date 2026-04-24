@@ -78,7 +78,7 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
       return;
     }
 
-    const limit = 6;
+    const limit = 7;
     getEventsForHomepage(limit)
       .then((eventsData) => {
         const cats = buildEventCategories(eventsData || []);

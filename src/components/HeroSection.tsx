@@ -146,7 +146,7 @@ const HeroSection = () => {
             className="pl-0 lg:pl-4 border-l-0 lg:border-l-2 border-primary/35 lg:border-primary/45 bg-white/40 dark:bg-black/20 rounded-xl lg:rounded-none p-3 lg:p-0"
           >
             <h2 className="font-serif text-xl md:text-2xl font-medium tracking-tight text-foreground mb-1">
-              Kevin
+              Kevin David
             </h2>
             <p className="font-sans text-[0.7rem] font-medium tracking-eyebrow uppercase text-primary mb-3">
               Founder & Creative Director
