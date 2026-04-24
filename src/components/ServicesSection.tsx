@@ -47,7 +47,7 @@ const MobileServiceCarousel = ({ services }: { services: CardItem[] }) => {
   const currentService = services[index];
 
   return (
-    <div className="relative w-full h-[400px] overflow-hidden rounded-xl bg-muted/20 dark:bg-surface">
+    <div className="relative w-full h-[460px] overflow-hidden rounded-xl bg-muted/20 dark:bg-surface">
       <div className="relative w-full h-full"> {/* Container for absolute items */}
         <AnimatePresence initial={false} custom={index}>
           <motion.div
@@ -95,7 +95,7 @@ const MobileServiceCarousel = ({ services }: { services: CardItem[] }) => {
         </AnimatePresence>
 
         {/* Indicators */}
-        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-10">
+        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-10">
           {services.map((_, i) => (
             <div
               key={i}
@@ -215,7 +215,7 @@ const ServicesSection = ({ prefetchedServices, homepageDataPending }: ServicesSe
         </div>
 
         {/* Mobile View: Auto-rotating Service Carousel */}
-        <div className="md:hidden w-full relative min-h-[400px]">
+        <div className="md:hidden w-full relative min-h-[460px]">
           <MobileServiceCarousel services={services} />
         </div>
 

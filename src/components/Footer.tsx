@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Instagram, ArrowUp, MapPin, Phone, Mail } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 const INSTAGRAM_URL = "https://www.instagram.com/phoenix_events_and_production?igsh=MW1nMDh4dmg2ZWNvNA==";
@@ -8,8 +8,10 @@ const CONTACT_EMAIL = "Phoenixeventsandproduction@gmail.com";
 const MAP_ADDRESS = "Shop no 1, Phoenix Events and Production, Kailas kondiba Dange Plot, Unit 4, Dange Chowk Rd, nr. CBI Crime Branch, nr. Maruti Suzuki Showroom, Pune, Maharashtra 411033";
 
 const Footer = () => {
+  const location = useLocation();
   const { contact, socialLinks, logoUrl } = useSiteConfig();
   const logoSrc = logoUrl || '/logo.png';
+  const isHomepage = location.pathname === "/";
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -20,7 +22,11 @@ const Footer = () => {
   };
 
   return (
-    <footer className="relative bg-gradient-to-br from-footer-bg to-black text-footer-text dark:from-background dark:to-background overflow-hidden pt-8 md:pt-12 pb-6 transition-colors duration-500">
+    <footer
+      className={`relative bg-gradient-to-br from-footer-bg to-black text-footer-text dark:from-background dark:to-background overflow-hidden pt-8 md:pt-12 pb-6 transition-colors duration-500 ${
+        isHomepage ? "" : "hidden md:block"
+      }`}
+    >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         {/* Main Footer - Compact padding */}
         <div className="pt-4 pb-4 md:pt-8 md:pb-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-10 text-center lg:text-left">

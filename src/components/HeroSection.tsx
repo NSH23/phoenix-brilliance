@@ -106,7 +106,7 @@ const HeroSection = () => {
         {/* LEFT: Text Content */}
         <motion.div
           style={{ y: isDesktop ? y1 : 0 }}
-          className="text-center lg:text-left space-y-5 md:space-y-6 relative z-20 max-w-2xl"
+          className="text-center lg:text-left space-y-4 md:space-y-5 relative z-20 max-w-2xl rounded-2xl md:rounded-3xl border border-white/45 bg-white/25 dark:bg-black/20 backdrop-blur-xl px-4 py-5 md:px-7 md:py-7 shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
         >
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -114,7 +114,7 @@ const HeroSection = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="space-y-4"
           >
-            <h1 className="font-serif text-5xl md:text-6xl xl:text-7xl font-medium tracking-hero leading-[1.1] hero-heading-gradient">
+            <h1 className="font-serif text-4xl md:text-5xl xl:text-6xl font-medium tracking-tight leading-[1.08] hero-heading-gradient">
               {isDefaultTitle ? (
                 <>
                   Crafting Moments <br />
@@ -132,7 +132,7 @@ const HeroSection = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.35, duration: 0.7 }}
-              className="font-sans text-lg md:text-xl font-light tracking-normal leading-relaxed text-muted-foreground dark:text-white/80"
+              className="font-sans text-base md:text-lg font-normal tracking-normal leading-relaxed text-foreground/80 dark:text-white/80"
             >
               {heroContent?.description?.trim() || "Your vision, our craft—unforgettable events."}
             </motion.p>
@@ -143,18 +143,18 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.7 }}
-            className="pl-0 lg:pl-4 border-l-0 lg:border-l-2 border-primary/30 lg:border-primary/40"
+            className="pl-0 lg:pl-4 border-l-0 lg:border-l-2 border-primary/35 lg:border-primary/45 bg-white/40 dark:bg-black/20 rounded-xl lg:rounded-none p-3 lg:p-0"
           >
-            <h2 className="font-serif text-2xl md:text-3xl font-medium tracking-tight text-foreground mb-1">
+            <h2 className="font-serif text-xl md:text-2xl font-medium tracking-tight text-foreground mb-1">
               Kevin
             </h2>
             <p className="font-sans text-[0.7rem] font-medium tracking-eyebrow uppercase text-primary mb-3">
               Founder & Creative Director
             </p>
-            <p className="font-sans text-sm md:text-base text-muted-foreground dark:text-white/75 font-normal leading-relaxed tracking-normal">
+            <p className="font-sans text-sm md:text-[15px] text-foreground/75 dark:text-white/75 font-normal leading-relaxed tracking-normal">
               A visionary in event design, Kevin transforms ideas into elegant, unforgettable experiences. Since 2017, his passion for perfection and eye for detail have shaped Phoenix into a trusted name in premium celebrations.
             </p>
-            <p className="font-sans text-sm md:text-base font-medium text-primary/90 dark:text-primary mt-3 italic">
+            <p className="font-sans text-sm md:text-[15px] font-medium text-primary/95 dark:text-primary mt-2.5 italic">
               Where creativity meets flawless execution
             </p>
           </motion.div>
@@ -165,12 +165,12 @@ const HeroSection = () => {
             transition={{ delay: 0.6, duration: 0.8 }}
             className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
           >
-            <Button size="lg" className="font-sans font-medium tracking-[0.02em] h-14 px-8 text-lg rounded-full shadow-warm-lg hover:shadow-warm-xl transition-all duration-300" asChild>
+            <Button size="lg" className="font-sans font-medium tracking-[0.02em] h-12 md:h-14 px-6 md:px-8 text-base md:text-lg rounded-full shadow-warm-lg hover:shadow-warm-xl transition-all duration-300" asChild>
               <Link to={heroContent?.cta_link || "/contact"}>
                 {heroContent?.cta_text || "Plan Your Event"}
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="font-sans font-medium tracking-[0.02em] h-14 px-8 text-lg rounded-full border-2 border-primary/50 text-foreground hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 group" asChild>
+            <Button variant="outline" size="lg" className="font-sans font-medium tracking-[0.02em] h-12 md:h-14 px-6 md:px-8 text-base md:text-lg rounded-full border-2 border-primary/50 text-foreground bg-background/50 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 group" asChild>
               <Link to="/gallery">
                 View Our Work <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -182,20 +182,20 @@ const HeroSection = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 0.8 }}
-            className="flex items-center gap-6 sm:gap-8 justify-center lg:justify-start pt-6 border-t border-border/40"
+            className="flex items-center gap-4 sm:gap-6 justify-center lg:justify-start pt-4 border-t border-border/40"
           >
             <div className="text-center lg:text-left">
-              <p className="font-serif text-3xl md:text-4xl font-semibold text-primary tabular-nums">500+</p>
+              <p className="font-serif text-2xl md:text-3xl font-semibold text-primary tabular-nums">500+</p>
               <p className="font-sans text-xs text-muted-foreground uppercase tracking-[0.15em] mt-2">Events</p>
             </div>
             <div className="w-px h-10 bg-border/60" />
             <div className="text-center lg:text-left">
-              <p className="font-serif text-3xl md:text-4xl font-semibold text-primary tabular-nums">12+</p>
+              <p className="font-serif text-2xl md:text-3xl font-semibold text-primary tabular-nums">12+</p>
               <p className="font-sans text-xs text-muted-foreground uppercase tracking-[0.15em] mt-2">Years</p>
             </div>
             <div className="w-px h-10 bg-border/60" />
             <div className="text-center lg:text-left">
-              <p className="font-serif text-3xl md:text-4xl font-semibold text-primary tabular-nums">98%</p>
+              <p className="font-serif text-2xl md:text-3xl font-semibold text-primary tabular-nums">98%</p>
               <p className="font-sans text-xs text-muted-foreground uppercase tracking-[0.15em] mt-2">Satisfaction</p>
             </div>
           </motion.div>
@@ -217,16 +217,6 @@ const HeroSection = () => {
 
       </div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 1 }}
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10"
-      >
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">Scroll</span>
-        <div className="w-[1px] h-8 bg-gradient-to-b from-primary/50 to-transparent" />
-      </motion.div>
     </section>
   );
 };

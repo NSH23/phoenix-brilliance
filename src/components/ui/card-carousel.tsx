@@ -435,13 +435,14 @@ const CAROUSEL_CSS = `
   .embla-reels__container { display: flex; flex-direction: row; margin-left: -50px; }
   .embla-reels__slide { flex: 0 0 420px; min-width: 0; padding-left: 50px; background-position: center; background-size: cover; }
   @media (max-width: 768px) {
-    .embla-reels__slide { flex-basis: 300px; }
+    .embla-reels__slide { flex-basis: 340px; }
   }
   .embla-reels__slide img, .embla-reels__slide video, .embla-reels__slide iframe { display: block; width: 100%; }
   `
 
 export const CardCarousel: React.FC<CarouselProps> = ({
     images,
+    autoplayDelay = 8000,
     showPagination = true,
     showNavigation = true,
     title = "Card Carousel",
@@ -473,11 +474,11 @@ export const CardCarousel: React.FC<CarouselProps> = ({
 
     const startAutoplay = useCallback(() => {
         stopAutoplay()
-        if (!emblaApi || reelsSequenceActive || hoverPausedRef.current || !inViewRef.current) return
+        if (!emblaApi || reelsSequenceActive || !inViewRef.current) return
         autoplayRef.current = setInterval(() => {
             emblaApi.scrollNext()
-        }, 8000)
-    }, [emblaApi, reelsSequenceActive, stopAutoplay])
+        }, Math.max(1200, autoplayDelay))
+    }, [autoplayDelay, emblaApi, reelsSequenceActive, stopAutoplay])
 
     useEffect(() => {
         if (!emblaApi) return
@@ -564,12 +565,10 @@ export const CardCarousel: React.FC<CarouselProps> = ({
 
     const onViewportMouseEnter = () => {
         hoverPausedRef.current = true
-        stopAutoplay()
     }
 
     const onViewportMouseLeave = () => {
         hoverPausedRef.current = false
-        startAutoplay()
     }
 
     const scrollSnaps = emblaApi?.scrollSnapList() ?? []
@@ -580,7 +579,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
         <section ref={sectionRef} className="w-full space-y-2">
             <style>{css}</style>
             <div
-                className={`mx-auto w-full rounded-2xl border border-border/60 bg-card/40 dark:bg-card/20 backdrop-blur-sm p-4 md:p-6 shadow-elevation-1 dark:shadow-elevation-1-dark ${fullWidth ? "max-w-none" : "max-w-6xl"}`}
+                className={`mx-auto w-full rounded-2xl border border-border/80 bg-card/75 dark:bg-card/20 backdrop-blur-sm p-4 md:p-6 shadow-[0_10px_28px_rgba(0,0,0,0.08)] dark:shadow-elevation-1-dark ${fullWidth ? "max-w-none" : "max-w-6xl"}`}
             >
                 <div className="relative mx-auto flex w-full flex-col gap-4 md:gap-6">
                     {showHeader && (title || description) && (

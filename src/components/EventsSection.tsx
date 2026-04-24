@@ -165,38 +165,30 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
           {/* Dark: subtle gradient so text stays readable over the image */}
           <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-transparent dark:bg-gradient-to-b dark:from-black/40 dark:via-black/25 dark:to-black/50 pointer-events-none z-[1]" aria-hidden />
           <div className="relative z-10">
-          {/* Mobile Marquee View */}
-          <div className="block lg:hidden w-full overflow-hidden mb-6">
-            <div className="collaborations-logo-mask overflow-hidden pt-2 pb-2">
-            <div
-              className="collaborations-logo-track flex gap-4 px-4"
-              style={{
-                animationDuration: '45s', // Optimized speed
-                width: 'max-content',
-                willChange: 'transform' // Hardware acceleration
-              }}
-            >
-              {/* Duplicate enough times to ensure no gaps */}
-              {[...categories, ...categories, ...categories, ...categories].map((cat, index) => (
-                <Link
-                  key={`${cat.slug}-mobile-${index}`}
-                  to={`/events/${cat.slug}`}
-                  className="flex-shrink-0 w-[200px] group relative rounded-xl overflow-hidden aspect-[3/4] border border-border dark:border-white/10 bg-card shadow-elevation-1 dark:shadow-elevation-1-dark transition-all duration-300 ease-out hover:border-primary/40 dark:hover:border-primary/50 hover:shadow-card-hover dark:hover:shadow-card-hover-dark hover:ring-1 hover:ring-primary/20 hover:-translate-y-1"
-                >
-                  <img
-                    src={cat.images[0] || FALLBACK_IMAGES[0]}
-                    alt={cat.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
-                    <h3 className="text-white font-serif text-lg font-semibold tracking-wide">{cat.title}</h3>
-                  </div>
-                </Link>
-              ))}
-            </div>
+          {/* Mobile horizontal scroll view (manual swipe/scroll) */}
+          <div className="block lg:hidden w-full mb-6">
+            <div className="overflow-x-auto overflow-y-hidden px-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x">
+              <div className="flex gap-4 w-max snap-x snap-mandatory">
+                {categories.map((cat) => (
+                  <Link
+                    key={`${cat.slug}-mobile`}
+                    to={`/events/${cat.slug}`}
+                    className="snap-start flex-shrink-0 w-[230px] group relative rounded-xl overflow-hidden aspect-[3/4] border border-border/90 dark:border-white/10 bg-card shadow-[0_10px_26px_rgba(0,0,0,0.12)] dark:shadow-elevation-1-dark transition-all duration-300 ease-out hover:border-primary/40 dark:hover:border-primary/50 hover:shadow-card-hover dark:hover:shadow-card-hover-dark hover:ring-1 hover:ring-primary/20 hover:-translate-y-1"
+                  >
+                    <img
+                      src={cat.images[0] || FALLBACK_IMAGES[0]}
+                      alt={cat.title}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5 opacity-90" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
+                      <h3 className="text-white font-serif text-lg font-semibold tracking-wide">{cat.title}</h3>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
 

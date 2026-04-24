@@ -117,7 +117,7 @@ const Events = () => {
 
         {/* Hero Section - elegant abstract gradient mesh */}
         <section
-          className="relative min-h-[60vh] flex items-center justify-center overflow-hidden"
+          className="relative min-h-[48vh] md:min-h-[60vh] flex items-center justify-center overflow-hidden"
           aria-label="Events hero"
         >
           {/* Abstract gradient mesh background */}
@@ -280,7 +280,7 @@ const Events = () => {
 
         {/* Stats Section - overlap hero, 3 columns, count-up */}
         <section
-          className="relative z-20 -mt-[40px] max-w-[900px] mx-auto px-4 sm:px-6"
+          className="relative z-20 -mt-[24px] md:-mt-[40px] max-w-[900px] mx-auto px-4 sm:px-6"
           aria-label="Statistics"
         >
           <motion.div
@@ -297,7 +297,7 @@ const Events = () => {
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className="flex-1 flex flex-col items-center justify-center py-2 sm:py-6 px-1 sm:px-4"
+                className="flex-1 flex flex-col items-center justify-center py-3 sm:py-6 px-1 sm:px-4"
               >
                 <span className="text-sm sm:text-2xl md:text-3xl font-serif font-semibold text-primary mb-0 sm:mb-1">
                   {isStatFromHero ? (
@@ -318,7 +318,7 @@ const Events = () => {
         </section>
 
         {/* Section Heading - Choose Your Celebration - REMOVED as it is now in Hero */}
-        <section className="py-8 sm:py-12 lg:py-16 bg-background">
+        <section className="py-5 sm:py-10 lg:py-16 bg-background">
 
           {/* Event Cards - Option A Interactive Hover */}
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
@@ -331,7 +331,7 @@ const Events = () => {
                 No events available at the moment.
               </div>
             ) : (
-              <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-5">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                 {events.map((event, index) => {
                   const albumCount = eventAlbumsCount[event.id] || 0;
                   const stepsCount = eventStepsCount[event.id] || 0;
@@ -358,7 +358,7 @@ const Events = () => {
                         to={`/events/${event.slug}`}
                         className="events-premium-card block relative w-full rounded-[22px] overflow-hidden
                                  cursor-pointer transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
-                                 shadow-lg border border-transparent dark:border-white/10
+                                 shadow-[0_12px_26px_rgba(0,0,0,0.12)] border border-black/10 dark:border-white/10
                                  hover:shadow-[0_24px_56px_rgba(26,26,46,0.12)] dark:hover:shadow-[0_24px_56px_rgba(0,0,0,0.4)]
                                  hover:-translate-y-2 hover:ring-2 hover:ring-primary/20 dark:hover:border-primary/40
                                  focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
@@ -383,8 +383,8 @@ const Events = () => {
                           <div
                             className={`absolute inset-0 transition-all duration-400
                                     ${isHovered
-                                ? "bg-gradient-to-t from-black/65 via-black/25 to-black/20"
-                                : "bg-gradient-to-t from-black/75 via-black/15 to-transparent"
+                                ? "bg-gradient-to-t from-black/70 via-black/35 to-black/20"
+                                : "bg-gradient-to-t from-black/80 via-black/30 to-transparent"
                               }`}
                           />
                         </div>
@@ -400,9 +400,9 @@ const Events = () => {
                         )}
 
                         {/* Content – bottom */}
-                        <div className="absolute inset-x-0 bottom-0 p-2 sm:p-5 z-10 w-full text-center sm:text-left">
+                        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-5 z-10 w-full text-center sm:text-left">
                           <h3
-                            className="font-serif font-semibold text-white text-[10px] leading-tight sm:text-xl mb-0 sm:mb-2 tracking-tight line-clamp-2"
+                            className="font-serif font-semibold text-white text-sm leading-tight sm:text-xl mb-0 sm:mb-2 tracking-tight line-clamp-2"
                             style={{
                               textShadow: "0 2px 16px rgba(0,0,0,0.6)",
                             }}

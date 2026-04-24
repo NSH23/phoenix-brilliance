@@ -240,7 +240,7 @@ export default function Navbar() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className="relative h-full flex flex-col px-6 py-8 overflow-y-auto"
+              className="relative h-full flex flex-col px-6 py-8 overflow-y-auto bg-background"
             >
               {/* Decorative Element */}
               <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
@@ -259,9 +259,10 @@ export default function Navbar() {
                       to={link.href}
                       onClick={() => setIsOpen(false)}
                       className="flex items-center justify-between py-4 px-4 rounded-xl
+                                 bg-card/95 border border-border/60
                                  text-xl font-sans font-medium text-foreground 
                                  hover:bg-primary/10 hover:text-primary transition-all duration-300
-                                 border-b border-border/30 group"
+                                 group"
                     >
                       <span>{link.name}</span>
                       <span className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary 
