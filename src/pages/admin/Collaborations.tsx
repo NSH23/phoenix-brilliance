@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2, FolderPlus, FolderOpen } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2, FolderPlus, FolderOpen, Video } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/select';
 import {
   getAllCollaborations,
+  getAdminCollaborationsPage,
   getCollaborationById,
   createCollaboration,
   updateCollaboration,
@@ -53,6 +54,16 @@ import {
 } from '@/services/collaborations';
 import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
+import { getYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
+
+type GalleryImageRow = {
+  id?: string;
+  image_url: string;
+  folder_id: string | null;
+  display_order: number;
+  media_type: 'image' | 'video';
+  caption?: string | null;
+};
 
 function resolveLogoUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -60,13 +71,17 @@ function resolveLogoUrl(url: string | null | undefined): string | null {
 }
 
 export default function AdminCollaborations() {
+  const PAGE_SIZE = 12;
   const [searchParams, setSearchParams] = useSearchParams();
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
+  const [totalCollaborations, setTotalCollaborations] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCollab, setEditingCollab] = useState<Collaboration | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [initialDialogState, setInitialDialogState] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
   const [formData, setFormData] = useState({
@@ -81,24 +96,39 @@ export default function AdminCollaborations() {
   });
   const [venueImages, setVenueImages] = useState<string[]>([]);
   const [galleryFolders, setGalleryFolders] = useState<Array<{ id: string; collaboration_id?: string; parent_id: string | null; name: string; display_order: number; is_enabled: boolean }>>([]);
-  const [galleryImages, setGalleryImages] = useState<Array<{ id?: string; image_url: string; folder_id: string | null; display_order: number }>>([]);
+  const [galleryImages, setGalleryImages] = useState<GalleryImageRow[]>([]);
   const [selectedRootFolderId, setSelectedRootFolderId] = useState<string | null>(null);
   const [selectedSubfolderId, setSelectedSubfolderId] = useState<string | null>(null);
   const [newRootFolderName, setNewRootFolderName] = useState('');
   const [newSubfolderName, setNewSubfolderName] = useState('');
+  const [venueYoutubeInput, setVenueYoutubeInput] = useState('');
+  const [venueYoutubeTitle, setVenueYoutubeTitle] = useState('');
+  const serializeDialogState = (
+    nextFormData: typeof formData,
+    nextGalleryImages: GalleryImageRow[],
+    nextGalleryFolders: typeof galleryFolders,
+  ) => JSON.stringify({ formData: nextFormData, galleryImages: nextGalleryImages, galleryFolders: nextGalleryFolders });
+
+  const currentPage = Math.max(1, Number(searchParams.get('page') || '1'));
+  const currentQuery = (searchParams.get('q') || '').trim();
 
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await getAllCollaborations();
-      setCollaborations(data);
+      const result = await getAdminCollaborationsPage({
+        page: currentPage - 1,
+        pageSize: PAGE_SIZE,
+        searchQuery: currentQuery,
+      });
+      setCollaborations(result.data);
+      setTotalCollaborations(result.total);
     } catch (err: unknown) {
       logger.error('Failed to load collaborations', err, { component: 'AdminCollaborations', action: 'loadCollaborations' });
       toast.error('Failed to load collaborations', { description: (err as Error)?.message });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentPage, currentQuery]);
 
   useEffect(() => {
     load();
@@ -115,16 +145,28 @@ export default function AdminCollaborations() {
     setSelectedSubfolderId(null);
   }, [selectedRootFolderId]);
 
-  const filteredCollaborations = collaborations.filter(
-    c =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.location || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    setSearchQuery(currentQuery);
+  }, [currentQuery]);
 
-  const showReorder = !searchQuery.trim();
+  const updateQueryParams = (next: { page?: number; q?: string }) => {
+    const params = new URLSearchParams(searchParams);
+    if (next.q !== undefined) {
+      if (next.q.trim()) params.set('q', next.q.trim());
+      else params.delete('q');
+    }
+    if (next.page !== undefined) {
+      if (next.page > 1) params.set('page', String(next.page));
+      else params.delete('page');
+    }
+    setSearchParams(params, { replace: true });
+  };
+
+  const showReorder = !currentQuery && currentPage === 1 && totalCollaborations <= PAGE_SIZE;
   const listForCards = showReorder
     ? [...collaborations].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
-    : filteredCollaborations;
+    : collaborations;
+  const totalPages = Math.max(1, Math.ceil(totalCollaborations / PAGE_SIZE));
 
   const persistCollaborationOrder = async (orderedIds: string[]) => {
     setIsReordering(true);
@@ -172,6 +214,8 @@ export default function AdminCollaborations() {
           image_url: img.image_url,
           folder_id: img.folder_id ?? null,
           display_order: img.display_order ?? i,
+          media_type: (img as { media_type?: string }).media_type === 'video' ? 'video' : 'image',
+          caption: (img as { caption?: string | null }).caption ?? null,
         })));
         const folders = full?.collaboration_folders || [];
         setGalleryFolders(folders.map(f => ({
@@ -182,10 +226,44 @@ export default function AdminCollaborations() {
           display_order: f.display_order,
           is_enabled: f.is_enabled ?? false,
         })));
+        setInitialDialogState(serializeDialogState({
+          name: collab.name,
+          logoUrl: collab.logo_url || '',
+          bannerUrl: collab.banner_url || '',
+          description: collab.description || '',
+          location: collab.location || '',
+          mapUrl: collab.map_url || '',
+          isActive: collab.is_active ?? true,
+          display_order: collab.display_order ?? 0,
+        }, imgs.map((img, i) => ({
+          id: img.id,
+          image_url: img.image_url,
+          folder_id: img.folder_id ?? null,
+          display_order: img.display_order ?? i,
+          media_type: (img as { media_type?: string }).media_type === 'video' ? 'video' : 'image',
+          caption: (img as { caption?: string | null }).caption ?? null,
+        })), folders.map(f => ({
+          id: f.id,
+          collaboration_id: f.collaboration_id,
+          parent_id: f.parent_id,
+          name: f.name,
+          display_order: f.display_order,
+          is_enabled: f.is_enabled ?? false,
+        }))));
       } catch {
         setVenueImages([]);
         setGalleryImages([]);
         setGalleryFolders([]);
+        setInitialDialogState(serializeDialogState({
+          name: collab.name,
+          logoUrl: collab.logo_url || '',
+          bannerUrl: collab.banner_url || '',
+          description: collab.description || '',
+          location: collab.location || '',
+          mapUrl: collab.map_url || '',
+          isActive: collab.is_active ?? true,
+          display_order: collab.display_order ?? 0,
+        }, [], []));
       }
     } else {
       setEditingCollab(null);
@@ -202,13 +280,31 @@ export default function AdminCollaborations() {
       setVenueImages([]);
       setGalleryImages([]);
       setGalleryFolders([]);
+      setInitialDialogState(serializeDialogState({
+        name: '',
+        logoUrl: '',
+        bannerUrl: '',
+        description: '',
+        location: '',
+        mapUrl: '',
+        isActive: true,
+        display_order: nextOrder,
+      }, [], []));
     }
     setSelectedRootFolderId(null);
     setSelectedSubfolderId(null);
     setNewRootFolderName('');
     setNewSubfolderName('');
+    setVenueYoutubeInput('');
+    setVenueYoutubeTitle('');
+    setIsDirty(false);
     setIsDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!isDialogOpen || !initialDialogState) return;
+    setIsDirty(serializeDialogState(formData, galleryImages, galleryFolders) !== initialDialogState);
+  }, [formData, galleryImages, galleryFolders, isDialogOpen, initialDialogState]);
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -255,17 +351,26 @@ export default function AdminCollaborations() {
           const folderId = resolveFolderId(img.folder_id);
           if (img.id && existingIds.has(img.id)) {
             const existing = existingImages.find(e => e.id === img.id);
-            if (existing?.folder_id !== folderId) {
-              await updateCollaborationImage(img.id!, { folder_id: folderId });
+            const updates: Parameters<typeof updateCollaborationImage>[1] = {};
+            if (existing?.folder_id !== folderId) updates.folder_id = folderId;
+            if (existing && (existing.image_url !== img.image_url || existing.media_type !== img.media_type)) {
+              updates.image_url = img.image_url;
+              updates.media_type = img.media_type;
+            }
+            if (existing && (existing.caption ?? '') !== (img.caption ?? '')) {
+              updates.caption = img.caption ?? null;
+            }
+            if (Object.keys(updates).length > 0) {
+              await updateCollaborationImage(img.id!, updates);
             }
           } else if (!img.id) {
             await createCollaborationImage({
               collaboration_id: collabId,
               image_url: img.image_url,
-              caption: null,
+              caption: img.caption ?? null,
               display_order: img.display_order,
               folder_id: folderId,
-              media_type: 'image',
+              media_type: img.media_type ?? 'image',
             });
           }
         }
@@ -289,6 +394,7 @@ export default function AdminCollaborations() {
         setCollaborations(prev => [created, ...prev]);
         toast.success('Collaboration created');
       }
+      setIsDirty(false);
       setIsDialogOpen(false);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : typeof (err as { message?: string })?.message === 'string' ? (err as { message: string }).message : String(err);
@@ -345,18 +451,66 @@ export default function AdminCollaborations() {
   };
 
   const getImagesForFolder = (folderId: string | null) =>
-    galleryImages.filter((img) => (img.folder_id ?? null) === folderId).map((img) => img.image_url);
+    galleryImages
+      .filter((img) => (img.folder_id ?? null) === folderId && img.media_type !== 'video')
+      .map((img) => img.image_url);
 
   const setImagesForFolder = (folderId: string | null, urls: string[]) => {
-    const existingInFolder = galleryImages.filter((img) => (img.folder_id ?? null) === folderId);
-    setGalleryImages(prev => {
+    setGalleryImages((prev) => {
       const others = prev.filter((img) => (img.folder_id ?? null) !== folderId);
+      const existingInFolder = prev.filter((img) => (img.folder_id ?? null) === folderId);
+      const videosInFolder = existingInFolder.filter((img) => img.media_type === 'video');
       const merged = urls.map((url, i) => {
-        const found = existingInFolder.find((e) => e.image_url === url);
-        return found ? { ...found, display_order: i } : { image_url: url, folder_id: folderId, display_order: i };
+        const found = existingInFolder.find((e) => e.image_url === url && e.media_type === 'image');
+        return found
+          ? { ...found, display_order: i }
+          : { image_url: url, folder_id: folderId, display_order: i, media_type: 'image' as const, caption: null };
       });
-      return [...others, ...merged];
+      const base = merged.length;
+      const videosAdjusted = videosInFolder.map((v, i) => ({
+        ...v,
+        folder_id: folderId,
+        display_order: base + i,
+      }));
+      return [...others, ...merged, ...videosAdjusted];
     });
+  };
+
+  const getYoutubeVideosForFolder = (folderId: string | null) =>
+    galleryImages.filter((img) => (img.folder_id ?? null) === folderId && img.media_type === 'video');
+
+  const removeGalleryVideo = (folderId: string | null, imageUrl: string) => {
+    setGalleryImages((prev) => prev.filter((img) => !((img.folder_id ?? null) === folderId && img.media_type === 'video' && img.image_url === imageUrl)));
+  };
+
+  const handleAddVenueYoutubeVideo = () => {
+    const raw = venueYoutubeInput.trim();
+    if (!raw) {
+      toast.error('Enter a YouTube URL or video ID.');
+      return;
+    }
+    const id = getYouTubeId(raw);
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+      toast.error('Enter a valid YouTube URL or 11-character video ID.');
+      return;
+    }
+    const folderId = selectedSubfolderId || selectedRootFolderId;
+    const inFolder = galleryImages.filter((img) => (img.folder_id ?? null) === (folderId ?? null));
+    const nextOrder =
+      inFolder.length > 0 ? Math.max(...inFolder.map((img) => img.display_order ?? 0)) + 1 : 0;
+    setGalleryImages((prev) => [
+      ...prev,
+      {
+        image_url: id,
+        folder_id: folderId ?? null,
+        display_order: nextOrder,
+        media_type: 'video',
+        caption: venueYoutubeTitle.trim() || null,
+      },
+    ]);
+    setVenueYoutubeInput('');
+    setVenueYoutubeTitle('');
+    toast.success('Video added (save venue to publish).');
   };
 
   const handleCreateRootFolder = async () => {
@@ -574,7 +728,11 @@ export default function AdminCollaborations() {
           <Input
             placeholder="Search venues..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={e => {
+              const v = e.target.value;
+              setSearchQuery(v);
+              updateQueryParams({ q: v, page: 1 });
+            }}
             className="pl-10 max-md:h-11"
           />
         </div>
@@ -585,8 +743,13 @@ export default function AdminCollaborations() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={`collab-skeleton-${i}`} className="rounded-xl p-4 animate-pulse bg-[hsl(var(--admin-surface-2))]">
+              <div className="h-4 rounded w-3/4 mb-3 bg-[hsl(var(--admin-border))]" />
+              <div className="h-3 rounded w-1/2 bg-[hsl(var(--admin-border))]" />
+            </Card>
+          ))}
         </div>
       ) : (
         <>
@@ -633,8 +796,31 @@ export default function AdminCollaborations() {
         </>
       )}
 
-      {!isLoading && filteredCollaborations.length === 0 && (
+      {!isLoading && collaborations.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">No venues found.</div>
+      )}
+
+      {!isLoading && totalPages > 1 && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Button variant="outline" onClick={() => updateQueryParams({ page: currentPage - 1 })} disabled={currentPage <= 1}>
+            Previous
+          </Button>
+          {Array.from({ length: totalPages }).slice(0, 7).map((_, idx) => {
+            const page = idx + 1;
+            return (
+              <Button
+                key={`collab-page-${page}`}
+                variant={page === currentPage ? 'default' : 'outline'}
+                onClick={() => updateQueryParams({ page })}
+              >
+                {page}
+              </Button>
+            );
+          })}
+          <Button variant="outline" onClick={() => updateQueryParams({ page: currentPage + 1 })} disabled={currentPage >= totalPages}>
+            Next
+          </Button>
+        </div>
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -682,6 +868,8 @@ export default function AdminCollaborations() {
                 previewClassName="object-cover"
                 bucket="gallery-images"
                 uploadOnSelect={true}
+                enableCropAdjust={true}
+                cropAspect={16 / 9}
               />
               <p className="text-xs text-muted-foreground">Hero/banner image for the venue page. Or paste URL:</p>
               <Input
@@ -861,6 +1049,61 @@ export default function AdminCollaborations() {
                       enableBulkDelete={true}
                       uploadOnSelect={true}
                     />
+                    <div className="mt-4 space-y-3 border-t pt-3">
+                      <Label className="text-sm font-medium inline-flex items-center gap-2">
+                        <Video className="w-4 h-4" />
+                        Add video (YouTube)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Paste a full YouTube link or the 11-character video ID. Playback is embedded from YouTube (nothing stored on our servers). Videos appear after photos in this folder.
+                      </p>
+                      <Input
+                        value={venueYoutubeInput}
+                        onChange={(e) => setVenueYoutubeInput(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=… or video ID"
+                        className="max-md:h-11"
+                      />
+                      <Input
+                        value={venueYoutubeTitle}
+                        onChange={(e) => setVenueYoutubeTitle(e.target.value)}
+                        placeholder="Title (optional)"
+                        className="max-md:h-11"
+                      />
+                      <Button type="button" variant="secondary" onClick={handleAddVenueYoutubeVideo} className="max-md:h-11">
+                        Add video to folder
+                      </Button>
+                      {getYoutubeVideosForFolder(selectedUploadFolderId).length > 0 && (
+                        <ul className="space-y-2">
+                          {getYoutubeVideosForFolder(selectedUploadFolderId).map((v) => (
+                            <li
+                              key={`${v.image_url}-${v.display_order}`}
+                              className="flex items-center gap-3 rounded-md border bg-background p-2"
+                            >
+                              <img
+                                src={getYouTubeThumbnail(v.image_url)}
+                                alt=""
+                                className="h-14 w-24 shrink-0 rounded object-cover bg-muted"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                              <div className="min-w-0 flex-1 text-xs">
+                                <p className="font-medium truncate">{v.caption || v.image_url}</p>
+                                <p className="text-muted-foreground truncate">YouTube · {v.image_url}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="shrink-0 text-destructive"
+                                onClick={() => removeGalleryVideo(selectedUploadFolderId, v.image_url)}
+                              >
+                                Remove
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -877,6 +1120,11 @@ export default function AdminCollaborations() {
 
           <DialogFooter className="mt-6 max-md:flex-col max-md:items-stretch max-md:gap-2">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:h-11">Cancel</Button>
+            {isDirty && (
+              <span className="text-xs text-amber-500 flex items-center gap-1 max-md:justify-center">
+                ● Unsaved changes
+              </span>
+            )}
             <Button onClick={handleSave} disabled={saving} className="max-md:h-11">
               {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving... </> : (editingCollab ? 'Save Changes' : 'Create Venue')}
             </Button>

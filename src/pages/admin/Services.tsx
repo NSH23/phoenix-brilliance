@@ -345,6 +345,8 @@ export default function AdminServices() {
                 bucket="service-images"
                 uploadOnSelect={true}
                 previewClassName="aspect-video w-full object-cover"
+                enableCropAdjust={true}
+                cropAspect={16 / 9}
               />
             </div>
             <div className="grid gap-2">

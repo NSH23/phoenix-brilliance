@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
-const DESKTOP_PARTICLE_COUNT = 15;
+const DESKTOP_PARTICLE_COUNT = 10;
 
 interface Particle {
     id: number;
@@ -72,6 +72,7 @@ export function HeroBackgroundPattern() {
                             "--hero-dur": `${particle.duration}s`,
                             animationDelay: `${particle.delay}s`,
                             animationPlayState: animationsPaused ? "paused" : "running",
+                            willChange: "transform",
                         } as CSSProperties
                     }
                 />

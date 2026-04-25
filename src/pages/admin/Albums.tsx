@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, Image, Star, MoreHorizontal, Calendar, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Image, Star, MoreHorizontal, Calendar, Loader2, Video, Play } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';
@@ -36,6 +36,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import {
   getAllAlbums,
+  getAdminAlbumsPage,
   createAlbum,
   updateAlbum,
   deleteAlbum,
@@ -49,6 +50,9 @@ import {
 import { getAllEvents, Event } from '@/services/events';
 import { toast } from 'sonner';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { getYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
+
+type PendingAlbumYoutube = { youtubeId: string; posterUrl: string; caption: string };
 
 interface AlbumWithMediaCount extends Album {
   mediaCount?: number;
@@ -56,8 +60,10 @@ interface AlbumWithMediaCount extends Album {
 }
 
 export default function AdminAlbums() {
+  const PAGE_SIZE = 12;
   const [searchParams, setSearchParams] = useSearchParams();
   const [albums, setAlbums] = useState<AlbumWithMediaCount[]>([]);
+  const [totalAlbums, setTotalAlbums] = useState(0);
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,6 +71,8 @@ export default function AdminAlbums() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<AlbumWithMediaCount | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [initialDialogState, setInitialDialogState] = useState('');
   const [albumMedia, setAlbumMedia] = useState<AlbumMedia[]>([]);
   const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
   const [isMediaLoading, setIsMediaLoading] = useState(false);
@@ -73,6 +81,10 @@ export default function AdminAlbums() {
   const [isDeletingMedia, setIsDeletingMedia] = useState(false);
   const [pendingNewAlbumFiles, setPendingNewAlbumFiles] = useState<File[]>([]);
   const [pendingNewAlbumPreviews, setPendingNewAlbumPreviews] = useState<string[]>([]);
+  const [pendingNewAlbumVideos, setPendingNewAlbumVideos] = useState<PendingAlbumYoutube[]>([]);
+  const [albumVideoYoutube, setAlbumVideoYoutube] = useState('');
+  const [albumVideoThumb, setAlbumVideoThumb] = useState('');
+  const [albumVideoCaption, setAlbumVideoCaption] = useState('');
   const [formData, setFormData] = useState({
     event_id: '',
     title: '',
@@ -81,10 +93,19 @@ export default function AdminAlbums() {
     event_date: '',
     is_featured: false,
   });
+  const serializeDialogState = (nextFormData: typeof formData) => JSON.stringify(nextFormData);
+
+  const currentPage = Math.max(1, Number(searchParams.get('page') || '1'));
+  const currentQuery = (searchParams.get('q') || '').trim();
+  const currentEventFilter = searchParams.get('event') || 'all';
 
   useEffect(() => {
-    loadData();
-  }, []);
+    setSearchQuery(currentQuery);
+  }, [currentQuery]);
+
+  useEffect(() => {
+    setFilterEvent(currentEventFilter);
+  }, [currentEventFilter]);
 
   // Quick Action: open Create dialog when ?add=1
   useEffect(() => {
@@ -98,14 +119,19 @@ export default function AdminAlbums() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [albumsData, eventsData, mediaCounts] = await Promise.all([
-        getAllAlbums(),
+      const [albumsResult, eventsData, mediaCounts] = await Promise.all([
+        getAdminAlbumsPage({
+          page: currentPage - 1,
+          pageSize: PAGE_SIZE,
+          searchQuery: currentQuery,
+          eventId: currentEventFilter,
+        }),
         getAllEvents(),
         getAllAlbumMediaCounts(),
       ]);
 
       setEvents(eventsData);
-      const albumsWithCounts = albumsData.map((album: any) => {
+      const albumsWithCounts = albumsResult.data.map((album: any) => {
         const event = eventsData.find(e => e.id === album.event_id);
         return {
           ...album,
@@ -115,6 +141,7 @@ export default function AdminAlbums() {
       });
 
       setAlbums(albumsWithCounts);
+      setTotalAlbums(albumsResult.total);
     } catch (error: any) {
       logger.error('Error loading albums', error, { component: 'AdminAlbums', action: 'loadAlbums' });
       toast.error('Failed to load albums', {
@@ -124,42 +151,72 @@ export default function AdminAlbums() {
       setIsLoading(false);
     }
   };
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, currentQuery, currentEventFilter]);
 
-  const filteredAlbums = albums.filter(album => {
-    const matchesSearch = album.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesEvent = filterEvent === 'all' || album.event_id === filterEvent;
-    return matchesSearch && matchesEvent;
-  });
+  const updateQueryParams = (next: { page?: number; q?: string; event?: string }) => {
+    const params = new URLSearchParams(searchParams);
+    if (next.q !== undefined) {
+      if (next.q.trim()) params.set('q', next.q.trim());
+      else params.delete('q');
+    }
+    if (next.event !== undefined) {
+      if (next.event && next.event !== 'all') params.set('event', next.event);
+      else params.delete('event');
+    }
+    if (next.page !== undefined) {
+      if (next.page > 1) params.set('page', String(next.page));
+      else params.delete('page');
+    }
+    setSearchParams(params, { replace: true });
+  };
+  const totalPages = Math.max(1, Math.ceil(totalAlbums / PAGE_SIZE));
 
   const handleOpenDialog = (album?: AlbumWithMediaCount) => {
     setAlbumMedia([]);
     setSelectedMediaIds(new Set());
     setPendingNewAlbumFiles([]);
     setPendingNewAlbumPreviews([]);
+    setPendingNewAlbumVideos([]);
+    setAlbumVideoYoutube('');
+    setAlbumVideoThumb('');
+    setAlbumVideoCaption('');
     setMediaUploadProgress(0);
     if (album) {
       setEditingAlbum(album);
-      setFormData({
+      const next = {
         event_id: album.event_id,
         title: album.title,
         description: album.description || '',
         cover_image: album.cover_image || '',
         event_date: album.event_date || '',
         is_featured: album.is_featured || false,
-      });
+      };
+      setFormData(next);
+      setInitialDialogState(serializeDialogState(next));
     } else {
       setEditingAlbum(null);
-      setFormData({
+      const next = {
         event_id: '',
         title: '',
         description: '',
         cover_image: '',
         event_date: '',
         is_featured: false,
-      });
+      };
+      setFormData(next);
+      setInitialDialogState(serializeDialogState(next));
     }
+    setIsDirty(false);
     setIsDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!isDialogOpen || !initialDialogState) return;
+    setIsDirty(serializeDialogState(formData) !== initialDialogState);
+  }, [formData, isDialogOpen, initialDialogState]);
 
   useEffect(() => {
     const loadMedia = async () => {
@@ -167,7 +224,7 @@ export default function AdminAlbums() {
       setIsMediaLoading(true);
       try {
         const media = await getAlbumMedia(editingAlbum.id);
-        setAlbumMedia(media.filter((m) => m.type === 'image'));
+        setAlbumMedia(media);
       } catch (error: any) {
         toast.error('Failed to load album images', {
           description: error?.message || 'Please try again.',
@@ -273,9 +330,59 @@ export default function AdminAlbums() {
     }
   };
 
+  const handleAddAlbumYoutubeVideo = async () => {
+    const raw = albumVideoYoutube.trim();
+    if (!raw) {
+      toast.error('Enter a YouTube URL or video ID.');
+      return;
+    }
+    const id = getYouTubeId(raw);
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+      toast.error('Enter a valid YouTube URL or 11-character video ID.');
+      return;
+    }
+    const posterTrim = albumVideoThumb.trim();
+    const captionTrim = albumVideoCaption.trim();
+    const posterUrl = posterTrim || '';
+    const caption = captionTrim || '';
+
+    if (editingAlbum?.id) {
+      try {
+        const startOrder =
+          albumMedia.length > 0
+            ? Math.max(...albumMedia.map((m) => m.display_order ?? 0)) + 1
+            : 0;
+        const row = await createAlbumMedia({
+          album_id: editingAlbum.id,
+          type: 'video',
+          url: posterUrl || null,
+          youtube_url: id,
+          caption: caption || null,
+          is_featured: false,
+          display_order: startOrder,
+        });
+        setAlbumMedia((prev) => [...prev, row]);
+        setAlbums((prev) =>
+          prev.map((a) =>
+            a.id === editingAlbum.id ? { ...a, mediaCount: (a.mediaCount || 0) + 1 } : a
+          )
+        );
+        toast.success('YouTube video added to album.');
+      } catch (error: unknown) {
+        toast.error('Failed to add video', { description: (error as Error)?.message });
+      }
+    } else {
+      setPendingNewAlbumVideos((prev) => [...prev, { youtubeId: id, posterUrl, caption }]);
+      toast.success('Video queued. It will be saved when you create the album.');
+    }
+    setAlbumVideoYoutube('');
+    setAlbumVideoThumb('');
+    setAlbumVideoCaption('');
+  };
+
   const handleDeleteSelectedMedia = async () => {
     if (!editingAlbum?.id || selectedMediaIds.size === 0) return;
-    if (!confirm(`Delete ${selectedMediaIds.size} selected image(s)?`)) return;
+    if (!confirm(`Delete ${selectedMediaIds.size} selected item(s)?`)) return;
     setIsDeletingMedia(true);
     try {
       const ids = Array.from(selectedMediaIds);
@@ -289,7 +396,7 @@ export default function AdminAlbums() {
             : a
         )
       );
-      toast.success('Selected images deleted');
+      toast.success('Selected items deleted');
     } catch (error: any) {
       toast.error('Failed to delete selected images', {
         description: error?.message || 'Please try again.',
@@ -347,9 +454,51 @@ export default function AdminAlbums() {
               })
             )
           );
-          newAlbumWithCount.mediaCount = createdMedia.length;
-          toast.success(`Album created and ${createdMedia.length} image(s) uploaded`);
+          let mediaCount = createdMedia.length;
+          let order = createdMedia.length;
+          const videosQueuedWithImages = pendingNewAlbumVideos.length;
+          if (videosQueuedWithImages > 0) {
+            await Promise.all(
+              pendingNewAlbumVideos.map((v, i) =>
+                createAlbumMedia({
+                  album_id: newAlbum.id,
+                  type: 'video',
+                  url: v.posterUrl.trim() || null,
+                  youtube_url: v.youtubeId,
+                  caption: v.caption.trim() || null,
+                  is_featured: false,
+                  display_order: order + i,
+                })
+              )
+            );
+            mediaCount += videosQueuedWithImages;
+            setPendingNewAlbumVideos([]);
+          }
+          newAlbumWithCount.mediaCount = mediaCount;
+          toast.success(
+            videosQueuedWithImages > 0
+              ? `Album created with ${createdMedia.length} image(s) and ${videosQueuedWithImages} video(s).`
+              : `Album created and ${createdMedia.length} image(s) uploaded`
+          );
           clearPendingNewAlbumFiles();
+        } else if (pendingNewAlbumVideos.length > 0) {
+          const videosOnlyCount = pendingNewAlbumVideos.length;
+          await Promise.all(
+            pendingNewAlbumVideos.map((v, i) =>
+              createAlbumMedia({
+                album_id: newAlbum.id,
+                type: 'video',
+                url: v.posterUrl.trim() || null,
+                youtube_url: v.youtubeId,
+                caption: v.caption.trim() || null,
+                is_featured: false,
+                display_order: i,
+              })
+            )
+          );
+          newAlbumWithCount.mediaCount = videosOnlyCount;
+          setPendingNewAlbumVideos([]);
+          toast.success(`Album created with ${videosOnlyCount} video(s).`);
         } else {
           toast.success('Album created successfully');
         }
@@ -357,6 +506,7 @@ export default function AdminAlbums() {
       }
 
       setIsDialogOpen(false);
+      setIsDirty(false);
     } catch (error: any) {
       logger.error('Error saving album', error, { component: 'AdminAlbums', action: 'saveAlbum', editingAlbum: !!editingAlbum });
       toast.error(editingAlbum ? 'Failed to update album' : 'Failed to create album', {
@@ -417,11 +567,18 @@ export default function AdminAlbums() {
           <Input
             placeholder="Search albums..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSearchQuery(v);
+              updateQueryParams({ q: v, page: 1 });
+            }}
             className="pl-10"
           />
         </div>
-        <Select value={filterEvent} onValueChange={setFilterEvent}>
+        <Select value={filterEvent} onValueChange={(value) => {
+          setFilterEvent(value);
+          updateQueryParams({ event: value, page: 1 });
+        }}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by event" />
           </SelectTrigger>
@@ -440,13 +597,18 @@ export default function AdminAlbums() {
 
       {/* Loading State */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={`albums-skeleton-${i}`} className="rounded-xl p-4 animate-pulse bg-[hsl(var(--admin-surface-2))]">
+              <div className="h-4 rounded w-3/4 mb-3 bg-[hsl(var(--admin-border))]" />
+              <div className="h-3 rounded w-1/2 bg-[hsl(var(--admin-border))]" />
+            </Card>
+          ))}
         </div>
       ) : (
         <>
           {/* Albums Grid */}
-          {filteredAlbums.length === 0 ? (
+          {albums.length === 0 ? (
             <div className="text-center py-12">
               <Image className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">No albums found</h3>
@@ -462,7 +624,7 @@ export default function AdminAlbums() {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
-              {filteredAlbums.map((album, index) => (
+              {albums.map((album, index) => (
                 <motion.div
                   key={album.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -574,6 +736,29 @@ export default function AdminAlbums() {
         </>
       )}
 
+      {!isLoading && totalPages > 1 && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Button variant="outline" onClick={() => updateQueryParams({ page: currentPage - 1 })} disabled={currentPage <= 1}>
+            Previous
+          </Button>
+          {Array.from({ length: totalPages }).slice(0, 7).map((_, idx) => {
+            const page = idx + 1;
+            return (
+              <Button
+                key={`albums-page-${page}`}
+                variant={page === currentPage ? 'default' : 'outline'}
+                onClick={() => updateQueryParams({ page })}
+              >
+                {page}
+              </Button>
+            );
+          })}
+          <Button variant="outline" onClick={() => updateQueryParams({ page: currentPage + 1 })} disabled={currentPage >= totalPages}>
+            Next
+          </Button>
+        </div>
+      )}
+
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -632,6 +817,8 @@ export default function AdminAlbums() {
                 previewClassName="object-cover"
                 bucket="album-images"
                 uploadOnSelect={true}
+                enableCropAdjust={true}
+                cropAspect={16 / 9}
               />
               {formData.cover_image && (
                 <p className="text-xs text-muted-foreground">
@@ -683,7 +870,7 @@ export default function AdminAlbums() {
             </div>
 
             <div className="space-y-3 border-t pt-4">
-              <Label className="text-base font-medium">Album Images</Label>
+              <Label className="text-base font-medium">Album photos & videos</Label>
               {!editingAlbum ? (
                 <>
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -731,6 +918,34 @@ export default function AdminAlbums() {
                       </div>
                     </>
                   )}
+                  {pendingNewAlbumVideos.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">{pendingNewAlbumVideos.length} video(s) queued for Save.</p>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {pendingNewAlbumVideos.map((v, index) => (
+                          <li key={`${v.youtubeId}-${index}`} className="flex items-center gap-2 rounded-md border bg-card p-2 text-xs">
+                            <img
+                              src={v.posterUrl.trim() || getYouTubeThumbnail(v.youtubeId)}
+                              alt=""
+                              className="h-12 w-20 shrink-0 rounded object-cover bg-muted"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                            <span className="truncate flex-1">{v.caption || v.youtubeId}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0 text-destructive"
+                              onClick={() => setPendingNewAlbumVideos((prev) => prev.filter((_, i) => i !== index))}
+                            >
+                              Remove
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -772,46 +987,95 @@ export default function AdminAlbums() {
                   {isMediaLoading ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading album images...
+                      Loading album media...
                     </div>
                   ) : albumMedia.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No album images yet.</p>
+                    <p className="text-sm text-muted-foreground">No photos or videos yet.</p>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {albumMedia.map((media) => (
-                        <div key={media.id} className="space-y-2 rounded-lg border p-2">
-                          <div className="aspect-square rounded-md overflow-hidden bg-muted">
-                            <img
-                              src={media.url || '/placeholder.svg'}
-                              alt="Album media"
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                              decoding="async"
-                            />
+                      {albumMedia.map((media) => {
+                        const isVideo = media.type === 'video';
+                        const thumbSrc = isVideo
+                          ? (media.url?.trim() || getYouTubeThumbnail(media.youtube_url || '') || '/placeholder.svg')
+                          : (media.url || '/placeholder.svg');
+                        const coverTarget = isVideo
+                          ? (media.url?.trim() || getYouTubeThumbnail(media.youtube_url || ''))
+                          : (media.url || '');
+                        const coverSelected = coverTarget && formData.cover_image === coverTarget;
+                        return (
+                          <div key={media.id} className="space-y-2 rounded-lg border p-2">
+                            <div className="aspect-square rounded-md overflow-hidden bg-muted relative">
+                              <img
+                                src={thumbSrc}
+                                alt={media.caption || (isVideo ? 'YouTube video' : 'Album media')}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                              {isVideo && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/25">
+                                  <Play className="w-10 h-10 text-white drop-shadow-md" fill="currentColor" />
+                                </div>
+                              )}
+                            </div>
+                            {media.caption && (
+                              <p className="text-xs text-muted-foreground line-clamp-2">{media.caption}</p>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedMediaIds.has(media.id)}
+                                onChange={(e) => toggleMediaSelection(media.id, e.target.checked)}
+                              />
+                              <span className="text-xs text-muted-foreground">Select</span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant={coverSelected ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setFormData((prev) => ({ ...prev, cover_image: coverTarget }))}
+                              className="w-full max-md:h-10"
+                              disabled={!coverTarget}
+                            >
+                              {coverSelected ? 'Thumbnail Selected' : 'Set as Thumbnail'}
+                            </Button>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedMediaIds.has(media.id)}
-                              onChange={(e) => toggleMediaSelection(media.id, e.target.checked)}
-                            />
-                            <span className="text-xs text-muted-foreground">Select</span>
-                          </div>
-                          <Button
-                            type="button"
-                            variant={formData.cover_image === media.url ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setFormData((prev) => ({ ...prev, cover_image: media.url || '' }))}
-                            className="w-full max-md:h-10"
-                          >
-                            {formData.cover_image === media.url ? 'Thumbnail Selected' : 'Set as Thumbnail'}
-                          </Button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </>
               )}
+              <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                <Label className="inline-flex items-center gap-2 text-sm font-medium">
+                  <Video className="w-4 h-4" />
+                  Add video (YouTube)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Paste a full YouTube link or the 11-character ID. Playback is embedded from YouTube only (no video files on our storage).
+                </p>
+                <Input
+                  value={albumVideoYoutube}
+                  onChange={(e) => setAlbumVideoYoutube(e.target.value)}
+                  placeholder="YouTube URL or video ID"
+                  className="max-md:h-11"
+                />
+                <Input
+                  value={albumVideoThumb}
+                  onChange={(e) => setAlbumVideoThumb(e.target.value)}
+                  placeholder="Thumbnail URL (optional)"
+                  className="max-md:h-11"
+                />
+                <Input
+                  value={albumVideoCaption}
+                  onChange={(e) => setAlbumVideoCaption(e.target.value)}
+                  placeholder="Title / caption (optional)"
+                  className="max-md:h-11"
+                />
+                <Button type="button" variant="secondary" onClick={handleAddAlbumYoutubeVideo} className="max-md:h-11">
+                  {editingAlbum ? 'Add video to album' : 'Queue video for new album'}
+                </Button>
+              </div>
               {isMediaUploading && (
                 <div className="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-3">
                   <div className="flex items-center justify-between text-sm">
@@ -831,6 +1095,11 @@ export default function AdminAlbums() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="max-md:w-full">
               Cancel
             </Button>
+            {isDirty && (
+              <span className="text-xs text-amber-500 flex items-center gap-1 max-md:justify-center">
+                ● Unsaved changes
+              </span>
+            )}
             <Button onClick={handleSave} disabled={isSaving} className="max-md:w-full max-md:h-11">
               {isSaving ? (
                 <>

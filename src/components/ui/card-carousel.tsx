@@ -620,7 +620,10 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                             image.src.includes("content-media")
                                         return (
                                             <div className="embla-reels__slide" key={`${index}-${image.src}`}>
-                                                <div className="group size-full rounded-3xl overflow-hidden aspect-[3/4] relative bg-black/80 border border-border/50 dark:border-white/10 shadow-elevation-1 dark:shadow-elevation-1-dark">
+                                                <div className="group size-full rounded-[2rem] overflow-hidden aspect-[3/4] relative bg-black/85 border border-white/15 dark:border-white/20 shadow-[0_18px_40px_rgba(0,0,0,0.22)] ring-1 ring-white/10">
+                                                    <div className="pointer-events-none absolute inset-0 z-10 rounded-[2rem] border border-white/20 opacity-70" />
+                                                    <div className="pointer-events-none absolute inset-[2px] z-10 rounded-[calc(2rem-2px)] border border-white/10 opacity-80" />
+                                                    <div className="pointer-events-none absolute inset-0 z-10 rounded-[2rem] bg-gradient-to-b from-white/12 via-transparent to-black/30" />
                                                     {isVideo ? (
                                                         isYouTube ? (
                                                             <YouTubeSlide
@@ -657,7 +660,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                                             decoding="async"
                                                         />
                                                     )}
-                                                    <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-all duration-300 pointer-events-none" />
+                                                    <div className="absolute inset-0 z-10 bg-black/8 group-hover:bg-black/0 transition-all duration-300 pointer-events-none" />
                                                 </div>
                                             </div>
                                         )

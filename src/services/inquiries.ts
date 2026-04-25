@@ -67,10 +67,24 @@ export async function getAllInquiries() {
   const { data, error } = await supabase
     .from('inquiries')
     .select(INQUIRY_COLUMNS)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, 49);
 
   if (error) throw error;
   return data as Inquiry[];
+}
+
+export async function getInquiriesPage(page: number, pageSize: number) {
+  const from = Math.max(0, page) * pageSize;
+  const to = from + pageSize - 1;
+  const { data, error } = await supabase
+    .from('inquiries')
+    .select(INQUIRY_COLUMNS)
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return (data || []) as Inquiry[];
 }
 
 /** Lightweight: unread inquiries for admin header notifications (limit 10, minimal fields). Use this instead of getAllInquiries() for faster layout load. */

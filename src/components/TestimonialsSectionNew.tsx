@@ -153,7 +153,7 @@ const TestimonialsSectionWrapper = ({
       {/* Light theme only: lgt4.jpg; dark theme: no section background */}
       <div
         className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-100 dark:opacity-0"
-        style={{ backgroundImage: "var(--bg-image-lgt4, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/lgt4.jpg'))" }}
+        style={{ backgroundImage: "var(--bg-image-lgt4, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/lgt4.jpg'))" }}
         aria-hidden
       />
       <div

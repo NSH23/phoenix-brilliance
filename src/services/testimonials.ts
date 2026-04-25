@@ -30,10 +30,41 @@ export async function getAllTestimonials() {
     .from('testimonials')
     .select(TESTIMONIAL_COLUMNS)
     .order('display_order', { ascending: true })
-    .order('rating', { ascending: false });
+    .order('rating', { ascending: false })
+    .range(0, 49);
 
   if (error) throw error;
   return ((data || []) as Testimonial[]).map(normalizeTestimonialRow);
+}
+
+export async function getAdminTestimonialsPage(params: {
+  page: number;
+  pageSize: number;
+  searchQuery?: string;
+  eventType?: string;
+}) {
+  const { page, pageSize, searchQuery, eventType } = params;
+  const from = Math.max(0, page) * pageSize;
+  const to = from + pageSize - 1;
+  let query = supabase
+    .from('testimonials')
+    .select(TESTIMONIAL_COLUMNS, { count: 'exact' })
+    .order('display_order', { ascending: true })
+    .order('rating', { ascending: false });
+  const term = (searchQuery ?? '').trim();
+  if (term) {
+    const escaped = term.replace(/,/g, ' ');
+    query = query.or(`name.ilike.%${escaped}%,content.ilike.%${escaped}%`);
+  }
+  if (eventType && eventType !== 'all') {
+    query = query.eq('event_type', eventType);
+  }
+  const { data, error, count } = await query.range(from, to);
+  if (error) throw error;
+  return {
+    data: ((data || []) as Testimonial[]).map(normalizeTestimonialRow),
+    total: count ?? 0,
+  };
 }
 
 // Get featured testimonials

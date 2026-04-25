@@ -227,7 +227,7 @@ export default function ContentMedia() {
     const [uploadSuccess, setUploadSuccess] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    const { register, handleSubmit, reset, setValue, watch } = useForm<Partial<ContentMedia> & { file?: FileList }>();
+    const { register, handleSubmit, reset, setValue, watch, formState: { isDirty } } = useForm<Partial<ContentMedia> & { file?: FileList }>();
     const currentUrl = watch('url');
 
     useEffect(() => {
@@ -633,6 +633,11 @@ export default function ContentMedia() {
                             >
                                 Cancel
                             </Button>
+                            {isDirty && (
+                                <span className="text-xs text-amber-500 flex items-center gap-1 max-md:justify-center">
+                                    ● Unsaved changes
+                                </span>
+                            )}
                             <Button type="submit" disabled={isDeploying || uploading} className="max-md:w-full max-md:h-11">
                                 {(isDeploying || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {uploading ? 'Uploading video…' : isDeploying ? 'Saving…' : 'Save'}

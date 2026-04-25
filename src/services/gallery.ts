@@ -20,7 +20,8 @@ export async function getAllGalleryImages() {
     .from('gallery')
     .select(GALLERY_COLUMNS)
     .order('row_index', { ascending: true })
-    .order('display_order', { ascending: true });
+    .order('display_order', { ascending: true })
+    .range(0, 49);
 
   if (error) throw error;
   return (data || []).map(normalizeGalleryImage) as GalleryImage[];

@@ -21,7 +21,7 @@ type BackgroundItem = {
   uploadProgress: number;
 };
 
-const DEFAULT_BG_BASE = 'https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds';
+const DEFAULT_BG_BASE = 'https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds';
 
 const BG_CONFIG: Array<Omit<BackgroundItem, 'url' | 'uploading'>> = [
   { id: '3', label: 'Background 3', settingKey: 'bg_image_3', usage: 'Homepage section background (3.jpg)', fallbackUrl: `${DEFAULT_BG_BASE}/3.jpg` },

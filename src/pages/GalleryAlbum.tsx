@@ -13,6 +13,75 @@ import { getAlbumById, getAlbumWithMedia, AlbumMedia } from "@/services/albums";
 import { Album } from "@/services/albums";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
+import { getYouTubeId, getYouTubeNocookieEmbedUrl, getYouTubeThumbnail } from "@/lib/youtube";
+
+function AlbumYoutubeLazyCard({ video, animationDelay }: { video: AlbumMedia; animationDelay: number }) {
+  const [played, setPlayed] = useState(false);
+  const id = video.youtube_url ? getYouTubeId(video.youtube_url) : "";
+  const valid = /^[a-zA-Z0-9_-]{11}$/.test(id);
+  const poster =
+    video.url && /^https?:\/\//i.test(video.url.trim())
+      ? video.url.trim()
+      : valid
+        ? getYouTubeThumbnail(id)
+        : "";
+  const watchHref = valid ? `https://www.youtube.com/watch?v=${id}` : "";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: animationDelay }}
+      className="group rounded-xl overflow-hidden bg-card border border-border"
+    >
+      <div className="aspect-video bg-muted">
+        {valid && !played ? (
+          <button
+            type="button"
+            className="relative w-full h-full block text-left group/btn"
+            onClick={() => setPlayed(true)}
+            aria-label={video.caption ? `Play video: ${video.caption}` : "Play video"}
+          >
+            {poster ? (
+              <img src={poster} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+            ) : (
+              <div className="w-full h-full bg-muted" />
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/btn:bg-black/40 transition-colors">
+              <Play className="w-14 h-14 text-white drop-shadow-lg" />
+            </div>
+          </button>
+        ) : valid ? (
+          <iframe
+            src={getYouTubeNocookieEmbedUrl(id, { autoplay: true })}
+            title={video.caption || "Video"}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Play className="w-12 h-12 text-muted-foreground" />
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <h4 className="font-medium text-foreground mb-1">{video.caption || "Video"}</h4>
+        {watchHref && (
+          <a
+            href={watchHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+          >
+            Watch on YouTube <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 const GalleryAlbum = () => {
   const { eventType, albumId } = useParams<{ eventType: string; albumId: string }>();
@@ -125,13 +194,6 @@ const GalleryAlbum = () => {
       }
       return newSet;
     });
-  };
-
-  // Extract YouTube video ID
-  const getYoutubeId = (url: string | null) => {
-    if (!url) return null;
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
-    return match ? match[1] : null;
   };
 
   const eventSlug = event?.slug || eventType || 'all';
@@ -371,48 +433,9 @@ const GalleryAlbum = () => {
             ) : (
               // Videos Grid
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {videos.map((video, index) => {
-                  const youtubeId = video.youtube_url ? getYoutubeId(video.youtube_url) : null;
-                  
-                  return (
-                    <motion.div
-                      key={video.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="group rounded-xl overflow-hidden bg-card border border-border"
-                    >
-                      {youtubeId ? (
-                        <div className="aspect-video">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${youtubeId}`}
-                            title={video.caption || 'Video'}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
-                        </div>
-                      ) : (
-                        <div className="aspect-video bg-muted flex items-center justify-center">
-                          <Play className="w-12 h-12 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <h4 className="font-medium text-foreground mb-1">{video.caption || 'Video'}</h4>
-                        {video.youtube_url && (
-                          <a
-                            href={video.youtube_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                          >
-                            Watch on YouTube <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                {videos.map((video, index) => (
+                  <AlbumYoutubeLazyCard key={video.id} video={video} animationDelay={index * 0.1} />
+                ))}
               </div>
             )
           )}

@@ -55,7 +55,7 @@ const DEFAULT_CONTACT: SiteContact = {
 };
 
 const DEFAULT_SOCIAL: SiteSocialLinks = {};
-const DEFAULT_BG_BASE = 'https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds';
+const DEFAULT_BG_BASE = 'https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds';
 const DEFAULT_BACKGROUND_IMAGES: SiteBackgroundImages = {
   bg3: `${DEFAULT_BG_BASE}/3.jpg`,
   bg5: `${DEFAULT_BG_BASE}/5.jpg`,

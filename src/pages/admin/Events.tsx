@@ -27,7 +27,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { getAllEvents, createEvent, updateEvent, deleteEvent, Event } from '@/services/events';
+import { getAllEvents, getAdminEventsPage, createEvent, updateEvent, deleteEvent, Event } from '@/services/events';
 import { getEventImages, setEventImages } from '@/services/eventImages';
 import { toast } from 'sonner';
 
@@ -35,14 +35,18 @@ const MIN_EVENT_IMAGES = 0;
 const MAX_EVENT_IMAGES = 5;
 
 export default function AdminEvents() {
+  const PAGE_SIZE = 12;
   const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
+  const [totalEvents, setTotalEvents] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [initialDialogState, setInitialDialogState] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -54,11 +58,11 @@ export default function AdminEvents() {
     display_order: 0,
   });
   const [eventImages, setEventImagesForm] = useState<string[]>([]);
+  const serializeDialogState = (nextFormData: typeof formData, nextImages: string[]) =>
+    JSON.stringify({ formData: nextFormData, eventImages: nextImages });
 
-  // Load events from database
-  useEffect(() => {
-    loadEvents();
-  }, []);
+  const currentPage = Math.max(1, Number(searchParams.get('page') || '1'));
+  const currentQuery = (searchParams.get('q') || '').trim();
 
   // Quick Action: open Add dialog when ?add=1
   useEffect(() => {
@@ -72,8 +76,13 @@ export default function AdminEvents() {
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const data = await getAllEvents();
-      setEvents(data);
+      const result = await getAdminEventsPage({
+        page: currentPage - 1,
+        pageSize: PAGE_SIZE,
+        searchQuery: currentQuery,
+      });
+      setEvents(result.data);
+      setTotalEvents(result.total);
     } catch (error: unknown) {
       logger.error('Error loading events', error, { component: 'AdminEvents', action: 'loadEvents' });
       toast.error('Failed to load events', {
@@ -84,14 +93,34 @@ export default function AdminEvents() {
     }
   };
 
-  const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Load events from database
+  useEffect(() => {
+    loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, currentQuery]);
 
-  const showReorder = !searchQuery.trim();
+  useEffect(() => {
+    setSearchQuery(currentQuery);
+  }, [currentQuery]);
+
+  const updateQueryParams = (next: { page?: number; q?: string }) => {
+    const params = new URLSearchParams(searchParams);
+    if (next.q !== undefined) {
+      if (next.q.trim()) params.set('q', next.q.trim());
+      else params.delete('q');
+    }
+    if (next.page !== undefined) {
+      if (next.page > 1) params.set('page', String(next.page));
+      else params.delete('page');
+    }
+    setSearchParams(params, { replace: true });
+  };
+
+  const showReorder = !currentQuery && currentPage === 1 && totalEvents <= PAGE_SIZE;
   const listForCards = showReorder
     ? [...events].sort((a, b) => a.display_order - b.display_order)
-    : filteredEvents;
+    : events;
+  const totalPages = Math.max(1, Math.ceil(totalEvents / PAGE_SIZE));
 
   const persistEventOrder = async (orderedIds: string[]) => {
     setIsReordering(true);
@@ -128,9 +157,30 @@ export default function AdminEvents() {
       });
       try {
         const imgs = await getEventImages(event.id);
-        setEventImagesForm(imgs.map((i) => i.url));
+        const urls = imgs.map((i) => i.url);
+        setEventImagesForm(urls);
+        setInitialDialogState(serializeDialogState({
+          title: event.title,
+          slug: event.slug,
+          short_description: event.short_description || '',
+          description: event.description || '',
+          cover_image: event.cover_image || '',
+          powered_by: event.powered_by || '',
+          is_active: event.is_active,
+          display_order: event.display_order,
+        }, urls));
       } catch {
         setEventImagesForm([]);
+        setInitialDialogState(serializeDialogState({
+          title: event.title,
+          slug: event.slug,
+          short_description: event.short_description || '',
+          description: event.description || '',
+          cover_image: event.cover_image || '',
+          powered_by: event.powered_by || '',
+          is_active: event.is_active,
+          display_order: event.display_order,
+        }, []));
       }
     } else {
       setEditingEvent(null);
@@ -146,9 +196,25 @@ export default function AdminEvents() {
         display_order: nextOrder,
       });
       setEventImagesForm([]);
+      setInitialDialogState(serializeDialogState({
+        title: '',
+        slug: '',
+        short_description: '',
+        description: '',
+        cover_image: '',
+        powered_by: '',
+        is_active: true,
+        display_order: nextOrder,
+      }, []));
     }
+    setIsDirty(false);
     setIsDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!isDialogOpen || !initialDialogState) return;
+    setIsDirty(serializeDialogState(formData, eventImages) !== initialDialogState);
+  }, [formData, eventImages, isDialogOpen, initialDialogState]);
 
   const handleSave = async () => {
     if (!formData.title || !formData.slug) {
@@ -180,6 +246,7 @@ export default function AdminEvents() {
         toast.success('Event created successfully');
       }
 
+      setIsDirty(false);
       setIsDialogOpen(false);
     } catch (error: unknown) {
       logger.error('Error saving event', error, { component: 'AdminEvents', action: 'saveEvent', editingEvent: !!editingEvent });
@@ -348,7 +415,11 @@ export default function AdminEvents() {
           <Input
             placeholder="Search events..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSearchQuery(v);
+              updateQueryParams({ q: v, page: 1 });
+            }}
             className="pl-10"
           />
         </div>
@@ -360,13 +431,18 @@ export default function AdminEvents() {
 
       {/* Loading State */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={`events-skeleton-${i}`} className="rounded-xl p-4 animate-pulse bg-[hsl(var(--admin-surface-2))]">
+              <div className="h-4 rounded w-3/4 mb-3 bg-[hsl(var(--admin-border))]" />
+              <div className="h-3 rounded w-1/2 bg-[hsl(var(--admin-border))]" />
+            </Card>
+          ))}
         </div>
       ) : (
         <>
           {/* Events Grid */}
-          {filteredEvents.length === 0 ? (
+          {events.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">No events found</p>
               <Button onClick={() => handleOpenDialog()}>Create Your First Event</Button>
@@ -416,6 +492,37 @@ export default function AdminEvents() {
             </>
           )}
         </>
+      )}
+
+      {!isLoading && totalPages > 1 && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => updateQueryParams({ page: currentPage - 1 })}
+            disabled={currentPage <= 1}
+          >
+            Previous
+          </Button>
+          {Array.from({ length: totalPages }).slice(0, 7).map((_, idx) => {
+            const page = idx + 1;
+            return (
+              <Button
+                key={`events-page-${page}`}
+                variant={page === currentPage ? 'default' : 'outline'}
+                onClick={() => updateQueryParams({ page })}
+              >
+                {page}
+              </Button>
+            );
+          })}
+          <Button
+            variant="outline"
+            onClick={() => updateQueryParams({ page: currentPage + 1 })}
+            disabled={currentPage >= totalPages}
+          >
+            Next
+          </Button>
+        </div>
       )}
 
       {/* Add/Edit Dialog */}
@@ -502,6 +609,8 @@ export default function AdminEvents() {
                 previewClassName="object-cover"
                 bucket="event-images"
                 uploadOnSelect={true}
+                enableCropAdjust={true}
+                cropAspect={16 / 9}
               />
               {formData.cover_image && (
                 <div className="flex justify-end">
@@ -590,6 +699,11 @@ export default function AdminEvents() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="max-md:w-full">
               Cancel
             </Button>
+            {isDirty && (
+              <span className="text-xs text-amber-500 flex items-center gap-1 max-md:justify-center">
+                ● Unsaved changes
+              </span>
+            )}
             <Button
               onClick={handleSave}
               className="max-md:w-full max-md:h-11"

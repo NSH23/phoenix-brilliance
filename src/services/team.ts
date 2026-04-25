@@ -64,7 +64,8 @@ export async function getAllTeam(): Promise<TeamMember[]> {
     .from('team')
     .select(TEAM_COLUMNS)
     .order('display_order', { ascending: true })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, 49);
 
   if (error) throw error;
   return (data ?? []) as TeamMember[];

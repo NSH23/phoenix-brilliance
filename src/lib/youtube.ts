@@ -83,6 +83,14 @@ export function getYouTubeEmbedUrl(urlOrId: string): string {
   return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1`;
 }
 
+/** Privacy-enhanced host; prefer for embeds until the user opts in to play. */
+export function getYouTubeNocookieEmbedUrl(urlOrId: string, opts?: { autoplay?: boolean }): string {
+  const id = getYouTubeId(urlOrId);
+  if (!id) return '';
+  const autoplay = opts?.autoplay ? '1' : '0';
+  return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1&controls=1&autoplay=${autoplay}`;
+}
+
 export function isYouTubeValue(urlOrId: string): boolean {
   return !!getYouTubeId(urlOrId);
 }

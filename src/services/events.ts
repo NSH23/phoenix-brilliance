@@ -91,10 +91,35 @@ export async function getAllEvents() {
   const { data, error } = await supabase
     .from('events')
     .select(EVENT_COLUMNS)
-    .order('display_order', { ascending: true });
+    .order('display_order', { ascending: true })
+    .range(0, 49);
 
   if (error) throw error;
   return ((data || []) as Event[]).map((row) => normalizeEventRow(row as EventWithImages));
+}
+
+export async function getAdminEventsPage(params: {
+  page: number;
+  pageSize: number;
+  searchQuery?: string;
+}) {
+  const { page, pageSize, searchQuery } = params;
+  const from = Math.max(0, page) * pageSize;
+  const to = from + pageSize - 1;
+  let query = supabase
+    .from('events')
+    .select(EVENT_COLUMNS, { count: 'exact' })
+    .order('display_order', { ascending: true });
+  const term = (searchQuery ?? '').trim();
+  if (term) {
+    query = query.ilike('title', `%${term}%`);
+  }
+  const { data, error, count } = await query.range(from, to);
+  if (error) throw error;
+  return {
+    data: ((data || []) as Event[]).map((row) => normalizeEventRow(row as EventWithImages)),
+    total: count ?? 0,
+  };
 }
 
 // Get event by ID

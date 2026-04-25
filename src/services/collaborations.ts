@@ -81,7 +81,8 @@ export async function getAllCollaborations() {
   const { data, error } = await supabase
     .from('collaborations')
     .select(COLLAB_COLUMNS)
-    .order('display_order', { ascending: true });
+    .order('display_order', { ascending: true })
+    .range(0, 49);
 
   if (error) throw error;
   return ((data || []) as Collaboration[]).map((c) => ({
@@ -89,6 +90,35 @@ export async function getAllCollaborations() {
     logo_url: c.logo_url ? resolvePublicStorageUrl(c.logo_url, 'partner-logos') : null,
     banner_url: c.banner_url ? resolvePublicStorageUrl(c.banner_url, 'gallery-images') : null,
   }));
+}
+
+export async function getAdminCollaborationsPage(params: {
+  page: number;
+  pageSize: number;
+  searchQuery?: string;
+}) {
+  const { page, pageSize, searchQuery } = params;
+  const from = Math.max(0, page) * pageSize;
+  const to = from + pageSize - 1;
+  let query = supabase
+    .from('collaborations')
+    .select(COLLAB_COLUMNS, { count: 'exact' })
+    .order('display_order', { ascending: true });
+  const term = (searchQuery ?? '').trim();
+  if (term) {
+    const escaped = term.replace(/,/g, ' ');
+    query = query.or(`name.ilike.%${escaped}%,location.ilike.%${escaped}%`);
+  }
+  const { data, error, count } = await query.range(from, to);
+  if (error) throw error;
+  return {
+    data: ((data || []) as Collaboration[]).map((c) => ({
+      ...c,
+      logo_url: c.logo_url ? resolvePublicStorageUrl(c.logo_url, 'partner-logos') : null,
+      banner_url: c.banner_url ? resolvePublicStorageUrl(c.banner_url, 'gallery-images') : null,
+    })),
+    total: count ?? 0,
+  };
 }
 
 // Get collaboration by ID with images, folders, and steps.
@@ -232,7 +262,10 @@ export async function createCollaborationImage(image: Omit<CollaborationImage, '
   return data as CollaborationImage;
 }
 
-export async function updateCollaborationImage(id: string, updates: Partial<Pick<CollaborationImage, 'folder_id' | 'caption' | 'display_order' | 'media_type'>>) {
+export async function updateCollaborationImage(
+  id: string,
+  updates: Partial<Pick<CollaborationImage, 'folder_id' | 'caption' | 'display_order' | 'media_type' | 'image_url'>>,
+) {
   await requireSession();
   const payload: Record<string, unknown> = { ...updates };
   if ('folder_id' in payload) {

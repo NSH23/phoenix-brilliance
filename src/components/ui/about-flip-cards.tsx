@@ -173,7 +173,7 @@ export function AboutFlipCards({
       <div className="relative w-[29.5rem] md:w-[31rem] max-w-[96vw] mx-auto rounded-2xl md:rounded-3xl overflow-hidden border-2 border-primary/40 shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/20 dark:shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]">
         <div
           className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-cover bg-center bg-no-repeat dark:opacity-0 dark:pointer-events-none"
-          style={{ backgroundImage: "var(--bg-image-3, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/3.jpg'))" }}
+          style={{ backgroundImage: "var(--bg-image-3, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/3.jpg'))" }}
           aria-hidden
         />
         <div className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-white/5 dark:bg-white/[0.06] dark:backdrop-blur-xl" aria-hidden />
@@ -190,7 +190,7 @@ export function AboutFlipCards({
     <div className="relative w-[29.5rem] md:w-[31rem] max-w-[96vw] mx-auto rounded-2xl md:rounded-3xl overflow-hidden border-2 border-primary/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/20 dark:shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]">
       <div
         className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-cover bg-center bg-no-repeat dark:opacity-0 dark:pointer-events-none"
-        style={{ backgroundImage: "var(--bg-image-3, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/3.jpg'))" }}
+        style={{ backgroundImage: "var(--bg-image-3, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/3.jpg'))" }}
         aria-hidden
       />
       <div className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-white/5 dark:bg-white/[0.06] dark:backdrop-blur-xl" aria-hidden />

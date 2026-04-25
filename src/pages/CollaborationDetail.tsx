@@ -3,13 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   MapPin, ArrowLeft, ArrowRight, ExternalLink, Phone, X, ChevronLeft, ChevronRight,
-  Building2, Camera, Loader2, FolderOpen, Folder, ChevronDown, ChevronRight as ChevronRightIcon
+  Building2, Camera, Loader2, FolderOpen, Folder, ChevronDown, ChevronRight as ChevronRightIcon, Play
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getCollaborationById } from "@/services/collaborations";
 import { resolvePublicStorageUrl } from "@/services/storage";
+import { getYouTubeNocookieEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 
@@ -19,6 +20,18 @@ function resolveCollaborationMediaUrl(urlOrPath: string): string {
 
 type CollaborationDetail = Awaited<ReturnType<typeof getCollaborationById>>;
 type CollabImage = { id: string; image_url: string; caption: string | null; folder_id?: string | null; media_type?: 'image' | 'video' };
+
+function isCollabYouTubeVideo(m: CollabImage): boolean {
+  return m.media_type === "video" && isYouTubeValue(m.image_url);
+}
+
+function collabGalleryPosterSrc(m: CollabImage): string {
+  if (isCollabYouTubeVideo(m)) {
+    const thumb = getYouTubeThumbnail(m.image_url);
+    return thumb || "/placeholder.svg";
+  }
+  return resolveCollaborationMediaUrl(m.image_url);
+}
 type CollabFolder = { id: string; parent_id: string | null; name: string; display_order: number; is_enabled?: boolean };
 type CollabStep = { id: string; step_number: number; title: string; description: string | null };
 type FolderNode = { folder: CollabFolder; children: FolderNode[]; images: CollabImage[] };
@@ -145,11 +158,20 @@ function GalleryTreeAndContent({
                 {selectedImages.map((media, i) => {
               const globalIndex = images.indexOf(media);
               const isVideo = media.media_type === 'video';
+              const isYt = isCollabYouTubeVideo(media);
               const mediaSrc = resolveCollaborationMediaUrl(media.image_url);
+              const posterSrc = collabGalleryPosterSrc(media);
               return (
                 <motion.div key={media.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.02 }} className="aspect-square min-h-0">
                   <div className="relative w-full h-full rounded-xl overflow-hidden cursor-pointer group" onClick={() => globalIndex >= 0 && onOpenLightbox(globalIndex)}>
-                    {isVideo ? (
+                    {isYt ? (
+                      <>
+                        <img src={posterSrc} alt={media.caption || "YouTube video"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+                          <Play className="w-12 h-12 text-white drop-shadow-md" fill="currentColor" />
+                        </div>
+                      </>
+                    ) : isVideo ? (
                       <video
                         src={mediaSrc}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -167,7 +189,7 @@ function GalleryTreeAndContent({
           </div>
         ) : (
           <div className="rounded-xl border-2 border-dashed border-muted bg-muted/20 flex items-center justify-center min-h-[200px] text-muted-foreground text-sm">
-            No images in this folder
+            No photos or videos in this folder
           </div>
         )}
       </motion.div>
@@ -340,8 +362,26 @@ export default function CollaborationDetail() {
               className="relative"
             >
               <div className="relative rounded-3xl overflow-hidden aspect-[4/3]">
-                {images[0]?.media_type === 'video' && !collaboration.banner_url ? (
-                  <video src={resolveCollaborationMediaUrl(images[0].image_url)} className="w-full h-full object-cover" controls playsInline />
+                {images[0] && isCollabYouTubeVideo(images[0]) && !collaboration.banner_url ? (
+                  <button
+                    type="button"
+                    className="relative w-full h-full text-left group cursor-pointer"
+                    onClick={() => openLightbox(0)}
+                    aria-label="Play venue video"
+                  >
+                    <img
+                      src={collabGalleryPosterSrc(images[0])}
+                      alt={collaboration.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      loading="eager"
+                      decoding="async"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                      <Play className="w-16 h-16 text-white drop-shadow-lg" fill="currentColor" />
+                    </div>
+                  </button>
+                ) : images[0]?.media_type === 'video' && !collaboration.banner_url ? (
+                  <video src={resolveCollaborationMediaUrl(images[0].image_url)} className="w-full h-full object-cover" controls playsInline preload="metadata" />
                 ) : (
                   <img
                     src={(() => {
@@ -462,10 +502,19 @@ export default function CollaborationDetail() {
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 {images.map((image, index) => {
                   const mediaSrc = resolveCollaborationMediaUrl(image.image_url);
+                  const poster = collabGalleryPosterSrc(image);
+                  const yt = isCollabYouTubeVideo(image);
                   return (
                   <motion.div key={image.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: index * 0.02 }} className="aspect-square min-h-0">
                     <div className="relative w-full h-full rounded-xl overflow-hidden cursor-pointer group" onClick={() => openLightbox(index)}>
-                      {(image as CollabImage).media_type === 'video' ? (
+                      {yt ? (
+                        <>
+                          <img src={poster} alt={image.caption || "YouTube video"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+                            <Play className="w-10 h-10 text-white drop-shadow-md" fill="currentColor" />
+                          </div>
+                        </>
+                      ) : (image as CollabImage).media_type === 'video' ? (
                         <video src={mediaSrc} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" playsInline preload="metadata" />
                       ) : (
                         <img src={mediaSrc} alt={image.caption || "Collaboration media"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" />
@@ -567,15 +616,24 @@ export default function CollaborationDetail() {
               onTouchStart={handleLightboxTouchStart}
               onTouchEnd={handleLightboxTouchEnd}
             >
-              {images[lightboxIndex].media_type === 'video' ? (
+              {isCollabYouTubeVideo(images[lightboxIndex]) ? (
+                <iframe
+                  key={images[lightboxIndex].id}
+                  src={getYouTubeNocookieEmbedUrl(images[lightboxIndex].image_url, { autoplay: true })}
+                  title={images[lightboxIndex].caption || "YouTube video"}
+                  className="w-full max-w-4xl aspect-video max-h-[70vh] md:max-h-[80vh] rounded-lg border-0 bg-black"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              ) : images[lightboxIndex].media_type === 'video' ? (
                 <video
                   key={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
                   src={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
                   className="w-full h-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-lg"
                   controls
-                  autoPlay
                   playsInline
-                  preload="auto"
+                  preload="metadata"
                 />
               ) : (
                 <img

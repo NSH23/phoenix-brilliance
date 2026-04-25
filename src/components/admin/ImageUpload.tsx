@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import Cropper, { Area } from 'react-easy-crop';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { uploadToCloudinary, type BucketName } from '@/lib/cloudinary';
 import { toast } from 'sonner';
@@ -21,6 +23,45 @@ interface ImageUploadProps {
   previewWrapperClassName?: string;
   bucket?: BucketName; // Supabase storage bucket name
   uploadOnSelect?: boolean; // If true, upload immediately on file select
+  enableCropAdjust?: boolean; // If true and single image, allow mobile-friendly crop before upload
+  cropAspect?: number; // Crop frame ratio, defaults to 16/9
+}
+
+type Point = { x: number; y: number };
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.setAttribute('crossOrigin', 'anonymous');
+    image.src = url;
+  });
+
+async function getCroppedImageBlob(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Unable to prepare image crop.');
+  canvas.width = Math.max(1, Math.floor(pixelCrop.width));
+  canvas.height = Math.max(1, Math.floor(pixelCrop.height));
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  );
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) reject(new Error('Failed to generate cropped image.'));
+      else resolve(blob);
+    }, 'image/jpeg', 0.92);
+  });
 }
 
 export default function ImageUpload({
@@ -36,6 +77,8 @@ export default function ImageUpload({
   previewWrapperClassName,
   bucket,
   uploadOnSelect = false,
+  enableCropAdjust = false,
+  cropAspect = 16 / 9,
 }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<File[]>([]); // Store File objects for upload (can't attach to string)
@@ -43,6 +86,12 @@ export default function ImageUpload({
   const [previews, setPreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadPercent, setUploadPercent] = useState(0);
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [cropSource, setCropSource] = useState<string | null>(null);
+  const [cropFileName, setCropFileName] = useState<string>('cover.jpg');
+  const [cropPosition, setCropPosition] = useState<Point>({ x: 0, y: 0 });
+  const [cropZoom, setCropZoom] = useState(1.1);
+  const [croppedPixels, setCroppedPixels] = useState<Area | null>(null);
 
   const images = Array.isArray(value) ? value : value ? [value] : [];
   const isBulkDeleteEnabled = multiple && enableBulkDelete !== false;
@@ -80,6 +129,44 @@ export default function ImageUpload({
     []
   );
 
+  const closeCropDialog = useCallback(() => {
+    setIsCropOpen(false);
+    if (cropSource?.startsWith('blob:')) {
+      URL.revokeObjectURL(cropSource);
+    }
+    setCropSource(null);
+    setCroppedPixels(null);
+    setCropPosition({ x: 0, y: 0 });
+    setCropZoom(1.1);
+  }, [cropSource]);
+
+  const handleCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedPixels(croppedAreaPixels);
+  }, []);
+
+  const uploadCroppedImage = useCallback(async () => {
+    if (!bucket || !cropSource || !croppedPixels) {
+      toast.error('Crop details are missing. Please try again.');
+      return;
+    }
+    setIsUploading(true);
+    setUploadPercent(0);
+    try {
+      const blob = await getCroppedImageBlob(cropSource, croppedPixels);
+      const file = new File([blob], cropFileName || 'cover.jpg', { type: 'image/jpeg' });
+      const url = await uploadToCloudinary(file, bucket, setUploadPercent);
+      onChange(url);
+      toast.success('Image adjusted and uploaded successfully');
+      closeCropDialog();
+    } catch (error) {
+      logger.error('Crop upload error', error, { component: 'ImageUpload', action: 'uploadCroppedImage', bucket });
+      toast.error('Failed to upload cropped image. Please try again.');
+    } finally {
+      setUploadPercent(0);
+      setIsUploading(false);
+    }
+  }, [bucket, cropSource, croppedPixels, cropFileName, onChange, closeCropDialog]);
+
   const handleFileSelect = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -93,6 +180,17 @@ export default function ImageUpload({
 
     // If bucket is provided and uploadOnSelect is true, upload immediately
     if (bucket && uploadOnSelect) {
+      if (!multiple && enableCropAdjust && validFiles.length > 0) {
+        const firstFile = validFiles[0];
+        const localUrl = URL.createObjectURL(firstFile);
+        setCropSource(localUrl);
+        setCropFileName(firstFile.name || 'cover.jpg');
+        setCropPosition({ x: 0, y: 0 });
+        setCropZoom(1.1);
+        setCroppedPixels(null);
+        setIsCropOpen(true);
+        return;
+      }
       setIsUploading(true);
       setUploadPercent(0);
       try {
@@ -164,7 +262,7 @@ export default function ImageUpload({
       };
       reader.readAsDataURL(file);
     });
-  }, [images, multiple, maxFiles, onChange, bucket, uploadOnSelect, uploadFilesWithProgress]);
+  }, [images, multiple, maxFiles, onChange, bucket, uploadOnSelect, uploadFilesWithProgress, enableCropAdjust]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
@@ -454,6 +552,61 @@ export default function ImageUpload({
           <Progress value={uploadPercent} className="h-2" />
         </div>
       )}
+
+      <Dialog open={isCropOpen} onOpenChange={(open) => { if (!open) closeCropDialog(); }}>
+        <DialogContent className="max-w-lg w-[95vw] p-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-0">
+            <DialogTitle>Adjust cover image</DialogTitle>
+          </DialogHeader>
+          <div className="px-4 pt-2 pb-3">
+            <p className="text-xs text-muted-foreground mb-2">
+              Drag to position and pinch/zoom (or use slider). This works well on mobile and desktop.
+            </p>
+            <div className="relative w-full h-[320px] rounded-lg overflow-hidden bg-black/80">
+              {cropSource && (
+                <Cropper
+                  image={cropSource}
+                  crop={cropPosition}
+                  zoom={cropZoom}
+                  aspect={cropAspect}
+                  onCropChange={setCropPosition}
+                  onZoomChange={setCropZoom}
+                  onCropComplete={handleCropComplete}
+                  objectFit="cover"
+                  showGrid={true}
+                />
+              )}
+            </div>
+            <div className="mt-3">
+              <label className="text-xs text-muted-foreground mb-1 block">Zoom</label>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.01}
+                value={cropZoom}
+                onChange={(e) => setCropZoom(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+          </div>
+          <DialogFooter className="px-4 pb-4 pt-0 flex-row justify-end gap-2">
+            <Button type="button" variant="outline" onClick={closeCropDialog} disabled={isUploading}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={uploadCroppedImage} disabled={isUploading || !croppedPixels}>
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Use This Crop'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

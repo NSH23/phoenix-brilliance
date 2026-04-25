@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getAllInquiries, updateInquiry, deleteInquiry, type Inquiry } from '@/services/inquiries';
+import { getInquiriesPage, updateInquiry, deleteInquiry, type Inquiry } from '@/services/inquiries';
 import { toast } from 'sonner';
 import { formatDateTimeLocal } from '@/lib/formatDate';
 import { logger } from '@/utils/logger';
@@ -47,27 +47,41 @@ const statusLabels: Record<Inquiry['status'], string> = {
 };
 
 export default function AdminInquiries() {
+  const PAGE_SIZE = 20;
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   useEffect(() => {
-    load();
+    load(0, true);
   }, []);
 
-  const load = async () => {
+  const load = async (nextPage: number, reset: boolean) => {
     try {
-      setIsLoading(true);
-      const data = await getAllInquiries();
-      setInquiries(data);
+      if (reset) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+      const data = await getInquiriesPage(nextPage, PAGE_SIZE);
+      setInquiries((prev) => (reset ? data : [...prev, ...data]));
+      setPage(nextPage);
+      setHasMore(data.length === PAGE_SIZE);
     } catch (err: unknown) {
       logger.error('Failed to load inquiries', err, { component: 'AdminInquiries', action: 'loadInquiries' });
       toast.error('Failed to load inquiries', { description: (err as Error)?.message });
     } finally {
-      setIsLoading(false);
+      if (reset) {
+        setIsLoading(false);
+      } else {
+        setIsLoadingMore(false);
+      }
     }
   };
 
@@ -271,6 +285,21 @@ export default function AdminInquiries() {
         <div className="text-center py-12 text-muted-foreground">
           <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p>No inquiries found.</p>
+        </div>
+      )}
+
+      {!isLoading && hasMore && (
+        <div className="mt-6 flex justify-center">
+          <Button onClick={() => load(page + 1, false)} disabled={isLoadingMore}>
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              'Load More'
+            )}
+          </Button>
         </div>
       )}
 

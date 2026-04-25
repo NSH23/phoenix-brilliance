@@ -53,14 +53,42 @@ export async function getAllAlbums() {
   const { data, error } = await supabase
     .from('event_albums')
     .select(`
-      *,
+      ${ALBUM_COLUMNS},
       events!inner (id, title, slug, is_active)
     `)
     .order('is_featured', { ascending: false })
-    .order('event_date', { ascending: false });
+    .order('event_date', { ascending: false })
+    .range(0, 49);
 
   if (error) throw error;
   return (data || []).map((row) => normalizeAlbum(row as Album & { album_media?: AlbumMedia[] }));
+}
+
+export async function getAdminAlbumsPage(params: {
+  page: number;
+  pageSize: number;
+  searchQuery?: string;
+  eventId?: string;
+}) {
+  const { page, pageSize, searchQuery, eventId } = params;
+  const from = Math.max(0, page) * pageSize;
+  const to = from + pageSize - 1;
+  let query = supabase
+    .from('event_albums')
+    .select(`${ALBUM_COLUMNS}, events!inner (id, title, slug, is_active)`, { count: 'exact' })
+    .order('is_featured', { ascending: false })
+    .order('event_date', { ascending: false });
+
+  const term = (searchQuery ?? '').trim();
+  if (term) query = query.ilike('title', `%${term}%`);
+  if (eventId && eventId !== 'all') query = query.eq('event_id', eventId);
+
+  const { data, error, count } = await query.range(from, to);
+  if (error) throw error;
+  return {
+    data: (data || []).map((row) => normalizeAlbum(row as Album & { album_media?: AlbumMedia[] })),
+    total: count ?? 0,
+  };
 }
 
 // Get albums by event ID

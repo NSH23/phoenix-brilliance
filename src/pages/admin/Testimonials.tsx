@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Search, Edit, Trash2, MoreHorizontal, Star, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -35,6 +36,7 @@ import { Switch } from '@/components/ui/switch';
 import ImageUpload from '@/components/admin/ImageUpload';
 import {
   getAllTestimonials,
+  getAdminTestimonialsPage,
   createTestimonial,
   updateTestimonial,
   deleteTestimonial,
@@ -45,7 +47,10 @@ import type { Event } from '@/services/events';
 import { toast } from 'sonner';
 
 export default function AdminTestimonials() {
+  const PAGE_SIZE = 12;
+  const [searchParams, setSearchParams] = useSearchParams();
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [totalTestimonials, setTotalTestimonials] = useState(0);
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,15 +70,24 @@ export default function AdminTestimonials() {
     is_featured: false,
   });
 
-  useEffect(() => {
-    load();
-  }, []);
+  const currentPage = Math.max(1, Number(searchParams.get('page') || '1'));
+  const currentQuery = (searchParams.get('q') || '').trim();
+  const currentEventFilter = searchParams.get('event') || 'all';
 
   const load = async () => {
     try {
       setIsLoading(true);
-      const [t, e] = await Promise.all([getAllTestimonials(), getAllEvents()]);
-      setTestimonials(t);
+      const [result, e] = await Promise.all([
+        getAdminTestimonialsPage({
+          page: currentPage - 1,
+          pageSize: PAGE_SIZE,
+          searchQuery: currentQuery,
+          eventType: currentEventFilter,
+        }),
+        getAllEvents(),
+      ]);
+      setTestimonials(result.data);
+      setTotalTestimonials(result.total);
       setEvents(e);
     } catch (err: unknown) {
       logger.error('Failed to load testimonials', err, { component: 'AdminTestimonials', action: 'loadTestimonials' });
@@ -82,19 +96,41 @@ export default function AdminTestimonials() {
       setIsLoading(false);
     }
   };
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, currentQuery, currentEventFilter]);
 
-  const filteredTestimonials = testimonials.filter(t => {
-    const matchesSearch =
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.content || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterEvent === 'all' || (t.event_type || '') === filterEvent;
-    return matchesSearch && matchesFilter;
-  });
+  useEffect(() => {
+    setSearchQuery(currentQuery);
+  }, [currentQuery]);
 
-  const showReorder = !searchQuery.trim() && filterEvent === 'all';
+  useEffect(() => {
+    setFilterEvent(currentEventFilter);
+  }, [currentEventFilter]);
+
+  const updateQueryParams = (next: { page?: number; q?: string; event?: string }) => {
+    const params = new URLSearchParams(searchParams);
+    if (next.q !== undefined) {
+      if (next.q.trim()) params.set('q', next.q.trim());
+      else params.delete('q');
+    }
+    if (next.event !== undefined) {
+      if (next.event && next.event !== 'all') params.set('event', next.event);
+      else params.delete('event');
+    }
+    if (next.page !== undefined) {
+      if (next.page > 1) params.set('page', String(next.page));
+      else params.delete('page');
+    }
+    setSearchParams(params, { replace: true });
+  };
+
+  const showReorder = !currentQuery && currentEventFilter === 'all' && currentPage === 1 && totalTestimonials <= PAGE_SIZE;
   const listForCards = showReorder
     ? [...testimonials].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
-    : filteredTestimonials;
+    : testimonials;
+  const totalPages = Math.max(1, Math.ceil(totalTestimonials / PAGE_SIZE));
 
   const persistTestimonialOrder = async (orderedIds: string[]) => {
     setIsReordering(true);
@@ -291,11 +327,18 @@ export default function AdminTestimonials() {
           <Input
             placeholder="Search testimonials..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={e => {
+              const v = e.target.value;
+              setSearchQuery(v);
+              updateQueryParams({ q: v, page: 1 });
+            }}
             className="pl-10 max-md:h-11"
           />
         </div>
-        <Select value={filterEvent} onValueChange={setFilterEvent}>
+        <Select value={filterEvent} onValueChange={(value) => {
+          setFilterEvent(value);
+          updateQueryParams({ event: value, page: 1 });
+        }}>
           <SelectTrigger className="w-[180px] max-md:w-full max-md:h-11">
             <SelectValue placeholder="Filter by event" />
           </SelectTrigger>
@@ -358,10 +401,33 @@ export default function AdminTestimonials() {
               ))}
             </div>
           )}
-          {filteredTestimonials.length === 0 && (
+          {testimonials.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">No testimonials found.</div>
           )}
         </>
+      )}
+
+      {!isLoading && totalPages > 1 && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Button variant="outline" onClick={() => updateQueryParams({ page: currentPage - 1 })} disabled={currentPage <= 1}>
+            Previous
+          </Button>
+          {Array.from({ length: totalPages }).slice(0, 7).map((_, idx) => {
+            const page = idx + 1;
+            return (
+              <Button
+                key={`testimonials-page-${page}`}
+                variant={page === currentPage ? 'default' : 'outline'}
+                onClick={() => updateQueryParams({ page })}
+              >
+                {page}
+              </Button>
+            );
+          })}
+          <Button variant="outline" onClick={() => updateQueryParams({ page: currentPage + 1 })} disabled={currentPage >= totalPages}>
+            Next
+          </Button>
+        </div>
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

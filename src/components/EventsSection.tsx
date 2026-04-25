@@ -153,7 +153,7 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
           <div
             className="absolute inset-0 rounded-2xl md:rounded-3xl bg-cover bg-no-repeat opacity-100 dark:opacity-0 pointer-events-none z-0"
             style={{
-              backgroundImage: "var(--bg-image-9, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/9.jpg'))",
+              backgroundImage: "var(--bg-image-9, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/9.jpg'))",
               backgroundPosition: "center calc(50% - 2cm)",
               filter: "blur(5px)",
               transform: "scale(1.08)",
@@ -161,7 +161,7 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
             aria-hidden
           />
           {/* Dark theme only: bg2.jpg – 1 cm above center */}
-          <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-cover bg-no-repeat opacity-0 dark:opacity-100 pointer-events-none z-0" style={{ backgroundImage: "var(--bg-image-bg2, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/bg2.jpg'))", backgroundPosition: "center calc(50% - 1cm)" }} aria-hidden />
+          <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-cover bg-no-repeat opacity-0 dark:opacity-100 pointer-events-none z-0" style={{ backgroundImage: "var(--bg-image-bg2, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/bg2.jpg'))", backgroundPosition: "center calc(50% - 1cm)" }} aria-hidden />
           {/* Dark: subtle gradient so text stays readable over the image */}
           <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-transparent dark:bg-gradient-to-b dark:from-black/40 dark:via-black/25 dark:to-black/50 pointer-events-none z-[1]" aria-hidden />
           <div className="relative z-10">

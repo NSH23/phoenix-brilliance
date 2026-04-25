@@ -173,12 +173,12 @@ const ServicesSection = ({ prefetchedServices, homepageDataPending }: ServicesSe
       {/* Light theme: 7.jpg. Dark theme: background image */}
       <div
         className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-100 dark:opacity-0"
-        style={{ backgroundImage: "var(--bg-image-7, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/7.jpg'))" }}
+        style={{ backgroundImage: "var(--bg-image-7, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/7.jpg'))" }}
         aria-hidden
       />
       <div
         className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-100"
-        style={{ backgroundImage: "var(--bg-image-1-5, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/1.5.jpg'))" }}
+        style={{ backgroundImage: "var(--bg-image-1-5, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/1.5.jpg'))" }}
         aria-hidden
       />
       <div

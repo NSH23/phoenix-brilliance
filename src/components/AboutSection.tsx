@@ -55,7 +55,7 @@ export default function AboutSection({
       <div
         className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-100 dark:opacity-0 pointer-events-none"
         style={{
-          backgroundImage: "var(--bg-image-9, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/9.jpg'))",
+          backgroundImage: "var(--bg-image-9, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/9.jpg'))",
           filter: "blur(5px)",
           transform: "scale(1.08)",
         }}
@@ -63,7 +63,7 @@ export default function AboutSection({
       />
       <div
         className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-100 pointer-events-none"
-        style={{ backgroundImage: "var(--bg-image-bg12, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto,w_1920/phoenix/backgrounds/bg12.jpg'))" }}
+        style={{ backgroundImage: "var(--bg-image-bg12, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/bg12.jpg'))" }}
         aria-hidden
       />
       <div
