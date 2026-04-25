@@ -103,7 +103,7 @@ export default function AdminSetPassword() {
 
   if (verifying) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="admin-dashboard min-h-screen flex items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 animate-spin text-primary" />
           <p className="text-muted-foreground">Verifying your link...</p>
@@ -114,7 +114,7 @@ export default function AdminSetPassword() {
 
   if (!sessionReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="admin-dashboard min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center max-w-md">
           <h1 className="text-xl font-semibold text-foreground mb-2">Invalid or expired link</h1>
           <p className="text-muted-foreground mb-4">This link may have been used or expired. Request a new one from the admin dashboard.</p>
@@ -125,7 +125,7 @@ export default function AdminSetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="admin-dashboard min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-foreground">Set your password</h1>

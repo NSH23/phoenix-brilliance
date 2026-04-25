@@ -224,6 +224,62 @@ You'll need to update `src/contexts/AdminContext.tsx` to use Supabase authentica
 
 ### Admin Tables
 - **admin_users**: Admin user management
+- **admin_push_subscriptions**: Web Push subscriptions for admin devices (migration `20260425_admin_push_subscriptions.sql`)
+
+## Admin Web Push (closed-app inquiry alerts)
+
+This sends a **device notification** when a new row is inserted into `public.inquiries`, even if the admin PWA is fully closed. It does **not** run on every page load: work happens only on **subscribe once per device** and **one Edge Function invocation per new inquiry**.
+
+### 1) Apply the migration
+
+Run `supabase/migrations/20260425_admin_push_subscriptions.sql` in the SQL Editor (or via your migration pipeline).
+
+### 2) VAPID keys
+
+On your machine:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+- Put **Public Key** in your frontend env as `VITE_VAPID_PUBLIC_KEY` (Vercel/Netlify/hosting dashboard), then redeploy the site.
+- Put **Public + Private + subject** into Supabase Edge secrets (next step). Never commit the private key.
+
+`VAPID_SUBJECT` is usually `mailto:you@yourdomain.com`.
+
+### 3) Deploy the Edge Function
+
+Function path: `supabase/functions/send-inquiry-push/`
+
+Set secrets in Supabase (**Edge Functions → Secrets**):
+
+- `WEBHOOK_SECRET` — long random string (you choose)
+- `VAPID_SUBJECT`
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+
+Deploy:
+
+```bash
+supabase functions deploy send-inquiry-push --no-verify-jwt
+```
+
+(`--no-verify-jwt` because the Database Webhook will not send a user JWT; we authenticate using `x-phoenix-webhook-secret` instead.)
+
+### 4) Database Webhook
+
+In Supabase: **Database → Webhooks → Create**:
+
+- **Table**: `public.inquiries`
+- **Events**: Insert
+- **HTTP Request**: POST to  
+  `https://<PROJECT_REF>.supabase.co/functions/v1/send-inquiry-push`
+- **HTTP Headers**: add  
+  `x-phoenix-webhook-secret: <same value as WEBHOOK_SECRET>`
+
+### 5) Enable on a phone
+
+Open the admin dashboard → bell → **Enable mobile alerts** (browser permission). The device subscription is stored in `admin_push_subscriptions`.
 
 ## Next Steps
 

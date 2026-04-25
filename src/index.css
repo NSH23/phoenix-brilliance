@@ -2469,3 +2469,105 @@
   will-change: transform;
   transform: translateZ(0);
 }
+
+/* ─── Admin dashboard only (scoped; public site unchanged) ─── */
+/* Variables on `html` when any `.admin-dashboard` exists so portaled dialogs/sheets inherit the palette. */
+html:has(.admin-dashboard) {
+  --admin-surface-2: 214 32% 96%;
+  --admin-border: 214 24% 90%;
+
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --surface: 210 40% 97%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 214 32% 93%;
+  --secondary-foreground: 222 47% 11%;
+
+  --muted: 214 32% 94%;
+  --muted-foreground: 215 16% 46%;
+
+  --accent: 214 95% 93%;
+  --accent-foreground: 222 47% 11%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 214 24% 90%;
+  --input: 214 24% 90%;
+  --ring: 221 83% 53%;
+
+  --sidebar-background: 214 32% 96%;
+  --sidebar-foreground: 222 47% 11%;
+  --sidebar-primary: 221 83% 53%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 214 95% 92%;
+  --sidebar-accent-foreground: 222 47% 11%;
+  --sidebar-border: 214 24% 90%;
+  --sidebar-ring: 221 83% 53%;
+
+  --gold: 221 83% 53%;
+  --gold-light: 214 95% 93%;
+  --gold-dark: 221 70% 45%;
+  --rose-gold: 221 83% 53%;
+
+  --glass-bg: 0 0% 100% / 0.88;
+  --glass-border: 214 32% 88% / 0.55;
+  --glass-shadow: 0 10px 40px rgba(37, 99, 235, 0.08), 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+html.dark:has(.admin-dashboard) {
+  --admin-surface-2: 222 40% 16%;
+  --admin-border: 217 33% 24%;
+
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 14%;
+  --card-foreground: 210 40% 98%;
+  --surface: 222 44% 13%;
+  --popover: 222 47% 12%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 217 33% 18%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217 33% 18%;
+  --muted-foreground: 215 20% 70%;
+
+  --accent: 217 33% 20%;
+  --accent-foreground: 213 97% 87%;
+
+  --destructive: 0 63% 45%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 217 33% 22%;
+  --input: 217 33% 22%;
+  --ring: 217 91% 60%;
+
+  --sidebar-background: 222 47% 12%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 217 33% 18%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 22%;
+  --sidebar-ring: 217 91% 60%;
+
+  --gold: 217 91% 60%;
+  --gold-light: 213 97% 87%;
+  --gold-dark: 217 91% 52%;
+  --rose-gold: 217 91% 60%;
+
+  --glass-bg: 222 47% 14% / 0.92;
+  --glass-border: 217 91% 60% / 0.18;
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(96, 165, 250, 0.06);
+}

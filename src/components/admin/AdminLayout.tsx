@@ -17,6 +17,7 @@ import {
 import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
 import { getUnreadInquiriesForNotifications, getUnreadInquiriesCount, markInquiryAsRead, type Inquiry } from '@/services';
 import { supabase } from '@/lib/supabase';
+import { getAdminVapidPublicKey, syncAdminPushSubscription } from '@/lib/adminPush';
 import { toast } from 'sonner';
 
 interface AdminLayoutProps {
@@ -34,12 +35,14 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   const [darkMode, setDarkMode] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
 
   // Notification State
   const [notifications, setNotifications] = useState<Inquiry[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const prevCountRef = useRef(0);
   const debouncedFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
     localStorage.setItem('adminSidebarCollapsed', JSON.stringify(sidebarCollapsed));
@@ -50,6 +53,46 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      setNotificationPermission('unsupported');
+      return;
+    }
+    setNotificationPermission(Notification.permission);
+  }, []);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    let cancelled = false;
+    const register = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('/admin-notifications-sw.js');
+        if (!cancelled) swRegistrationRef.current = registration;
+      } catch (error) {
+        console.warn('Admin notification service worker registration failed', error);
+      }
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = requestIdleCallback(() => {
+        void register();
+      }, { timeout: 1500 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(id);
+      };
+    }
+
+    const timeout = window.setTimeout(() => {
+      void register();
+    }, 800);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   const fetchNotifications = useCallback(async () => {
@@ -75,6 +118,75 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     prevCountRef.current = newCount;
     setUnreadCount(prev => (prev === newCount ? prev : newCount));
   }, []);
+
+  const syncAdminPushToServer = useCallback(
+    async (showErrorToast: boolean) => {
+      if (!getAdminVapidPublicKey()) return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (Notification.permission !== 'granted') return;
+      try {
+        const reg = swRegistrationRef.current ?? (await navigator.serviceWorker.ready);
+        swRegistrationRef.current = reg;
+        const result = await syncAdminPushSubscription(supabase, reg);
+        if (!result.ok && showErrorToast) {
+          toast.error('Could not enable server push', { description: result.message });
+        }
+      } catch (e) {
+        if (showErrorToast) {
+          toast.error('Could not enable server push', {
+            description: e instanceof Error ? e.message : 'Unknown error',
+          });
+        }
+      }
+    },
+    []
+  );
+
+  const requestBrowserNotificationPermission = useCallback(async () => {
+    if (!('Notification' in window)) {
+      toast.error('Notifications are not supported on this device/browser.');
+      return;
+    }
+    if (!getAdminVapidPublicKey()) {
+      toast.error('Push is not configured', {
+        description: 'Add VITE_VAPID_PUBLIC_KEY to your hosting environment, then redeploy.',
+      });
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      setNotificationPermission('granted');
+      await syncAdminPushToServer(true);
+      toast.success('Push alerts are enabled and synced.');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    if (permission === 'granted') {
+      await syncAdminPushToServer(true);
+      toast.success('Mobile alerts enabled', {
+        description: 'You can receive inquiry alerts even when the admin app is fully closed (after server webhook setup).',
+      });
+    } else {
+      toast.error('Notification permission denied.');
+    }
+  }, [syncAdminPushToServer]);
+
+  // Re-sync push subscription once per session when permission already granted (refresh keys / new install).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!getAdminVapidPublicKey()) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const run = () => {
+      void syncAdminPushToServer(false);
+    };
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(run, { timeout: 4000 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(run, 2000);
+    return () => window.clearTimeout(t);
+  }, [syncAdminPushToServer]);
 
   // Defer notifications so layout paints immediately; fetch after first paint.
   // Debounce by 500ms to avoid bursts causing repeated layout work.
@@ -140,6 +252,12 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     document.documentElement.classList.toggle('dark');
   };
 
+  const pushConfigured = Boolean(getAdminVapidPublicKey());
+
+  const resyncPushSubscription = useCallback(() => {
+    void syncAdminPushToServer(true);
+  }, [syncAdminPushToServer]);
+
   // Cmd+K / Ctrl+K to open search
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -153,7 +271,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="admin-dashboard min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <AdminSidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
@@ -261,6 +379,47 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                     <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium">
                       {unreadCount} new
                     </span>
+                  )}
+                </div>
+                <div className="px-4 py-3 border-b border-border bg-muted/20 space-y-2">
+                  {!pushConfigured && (
+                    <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+                      Server push is not configured in the frontend yet. Add{' '}
+                      <span className="font-mono">VITE_VAPID_PUBLIC_KEY</span> to your environment and redeploy.
+                    </p>
+                  )}
+                  {notificationPermission !== 'granted' ? (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Allow notifications to get inquiry alerts on your phone like WhatsApp/Instagram (works when the admin app is closed, after the Supabase webhook is set up).
+                      </p>
+                      <Button
+                        size="sm"
+                        className="w-full h-8 text-xs"
+                        onClick={requestBrowserNotificationPermission}
+                        disabled={notificationPermission === 'unsupported' || !pushConfigured}
+                      >
+                        {notificationPermission === 'unsupported'
+                          ? 'Not supported on this browser'
+                          : 'Enable mobile alerts'}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        This device is registered for push. Use re-sync if you reinstalled the app or cleared site data.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-8 text-xs"
+                        onClick={resyncPushSubscription}
+                        disabled={!pushConfigured}
+                      >
+                        Re-sync this device
+                      </Button>
+                    </>
                   )}
                 </div>
                 <div className="max-h-[300px] overflow-y-auto">

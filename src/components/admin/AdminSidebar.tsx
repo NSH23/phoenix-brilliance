@@ -77,7 +77,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
               "hover:bg-primary/10 group",
               isActive(item.href)
                 ? mobile
-                  ? "border-l-4 border-primary bg-primary/10 text-primary-foreground pl-2 shadow-md"
+                  ? "border-l-4 border-primary bg-primary/10 text-primary pl-2 shadow-md"
                   : "bg-primary text-primary-foreground shadow-md"
                 : "text-muted-foreground hover:text-foreground",
               mobile ? "py-3 px-4 text-base" : "px-3 py-2.5"
@@ -85,7 +85,11 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
           >
             <item.icon className={cn(
               "w-5 h-5 flex-shrink-0",
-              isActive(item.href) ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
+              isActive(item.href)
+                ? mobile
+                  ? "text-primary"
+                  : "text-primary-foreground"
+                : "text-muted-foreground group-hover:text-primary"
             )} />
             <span
               className="font-medium whitespace-nowrap overflow-hidden"
