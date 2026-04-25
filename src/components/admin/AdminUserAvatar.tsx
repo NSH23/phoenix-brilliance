@@ -24,7 +24,19 @@ export default function AdminUserAvatar({ avatarUrl, name, className = '', size 
       setSrc(null);
       return;
     }
-    setSrc(resolvePublicStorageUrl(avatarUrl, 'admin-avatars'));
+    const resolved = resolvePublicStorageUrl(avatarUrl, 'admin-avatars');
+    // Ignore legacy Supabase project-hosted avatar URLs from old projects to avoid repeated DNS errors.
+    try {
+      const candidate = new URL(resolved);
+      const currentHost = new URL(import.meta.env.VITE_SUPABASE_URL).host;
+      if (candidate.host.endsWith('.supabase.co') && candidate.host !== currentHost) {
+        setSrc(null);
+        return;
+      }
+    } catch {
+      // ignore URL parsing issues and still try to load
+    }
+    setSrc(resolved);
   }, [avatarUrl]);
 
   const initial = name?.trim().charAt(0)?.toUpperCase() || '?';

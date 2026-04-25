@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
   const payload = JSON.stringify({
     title,
     body: bodyText,
-    url: '/admin/inquiries',
+    url: id ? `/admin/inquiries?open=${id}` : '/admin/inquiries',
     tag: id ? `inquiry-${id}` : 'inquiry',
   });
 
@@ -104,7 +104,12 @@ Deno.serve(async (req: Request) => {
       await webpush.sendNotification(
         sub as unknown as Parameters<typeof webpush.sendNotification>[0],
         payload,
-        { TTL: 86_400 }
+        {
+          // Higher delivery priority for near-instant mobile lock-screen alerts.
+          TTL: 60,
+          urgency: 'high',
+          topic: id ? `inquiry-${id}` : 'inquiry',
+        }
       );
       sent++;
     } catch (e: unknown) {

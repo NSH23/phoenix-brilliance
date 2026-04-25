@@ -204,7 +204,7 @@ export default function AdminGallery() {
 
       {/* Upload for one slot */}
       <Dialog open={!!aboutUploadSlot} onOpenChange={(open) => !open && setAboutUploadSlot(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto max-md:w-[95vw]">
           <DialogHeader>
             <DialogTitle>Upload image</DialogTitle>
             <DialogDescription>

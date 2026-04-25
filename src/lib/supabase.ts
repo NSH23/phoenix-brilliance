@@ -1,11 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
+type ViteEnvWithSupabase = ImportMetaEnv & {
+  VITE_SUPABASE_URL?: string;
+  VITE_SUPABASE_ANON_KEY?: string;
+};
+
 // Get environment variables
 // Try multiple ways to access env vars (for debugging)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() || 
-                     (import.meta.env as any).VITE_SUPABASE_URL?.trim();
+                     (import.meta.env as ViteEnvWithSupabase).VITE_SUPABASE_URL?.trim();
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || 
-                        (import.meta.env as any).VITE_SUPABASE_ANON_KEY?.trim();
+                        (import.meta.env as ViteEnvWithSupabase).VITE_SUPABASE_ANON_KEY?.trim();
 
 // Debug logs removed for cleaner console
 
@@ -65,4 +70,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // You can generate these types using: npx supabase gen types typescript --project-id YOUR_PROJECT_ID > src/types/supabase.ts
 export type Database = {
   // Add your database types here after generating them
-};
+} | Record<string, never>;

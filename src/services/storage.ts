@@ -3,6 +3,7 @@ import {
   uploadToCloudinary,
   deleteFromCloudinary,
   resolveMediaUrl,
+  isSupabaseUrl,
   type BucketName,
 } from '@/lib/cloudinary';
 
@@ -113,6 +114,8 @@ export function resolvePublicStorageUrl(pathOrUrl: string | null | undefined, fa
   const raw = (pathOrUrl ?? '').trim();
   if (!raw) return '';
   if (/^https?:\/\//i.test(raw)) {
+    // Rewrite legacy Supabase public URLs from old projects to this project's storage host.
+    if (isSupabaseUrl(raw)) return rewriteSupabaseStoragePublicUrlToCurrentProject(raw);
     return resolveMediaUrl(raw);
   }
   return getPublicUrl(fallbackBucket, raw);

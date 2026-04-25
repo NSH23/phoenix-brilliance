@@ -42,6 +42,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const userRef = useRef<AdminUser | null>(null);
+  const loginInFlightRef = useRef(false);
 
   useEffect(() => {
     userRef.current = user;
@@ -59,7 +60,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         // First, try to fetch existing admin user
         const { data, error } = await supabase
           .from('admin_users')
-          .select('*')
+          .select('id, email, name, role, avatar_url, must_change_password')
           .eq('id', authUser.id)
           .maybeSingle();
 
@@ -100,13 +101,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout to ensure loading doesn't stay true forever
-    const safetyTimeout = setTimeout(() => {
-      if (mounted) {
-        setIsLoading(false);
-      }
-    }, 2000); // 2 second timeout
-
     // Initial session check
     const checkSession = async () => {
       try {
@@ -130,7 +124,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
               if (adminUser) {
                 setUser(adminUser);
               } else {
-                await supabase.auth.signOut();
+                await supabase.auth.signOut({ scope: 'local' });
                 setUser(null);
               }
             }
@@ -145,13 +139,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             setUser(null);
           }
         }
-      } catch (error: any) {
+      } catch {
         // Any error - set user to null and continue
         if (mounted) {
           setUser(null);
         }
       } finally {
-        clearTimeout(safetyTimeout);
         if (mounted) {
           setIsLoading(false);
         }
@@ -167,7 +160,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
       if (accessToken && type === 'signup' && mounted) {
         try {
-          clearTimeout(safetyTimeout);
           const { data: { session }, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || '',
@@ -189,7 +181,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           }
         } catch (error) {
           logger.error('Error handling email verification', error, { component: 'AdminContext', action: 'handleEmailVerification' });
-          clearTimeout(safetyTimeout);
           // On error, check normal session
           if (mounted) {
             await checkSession();
@@ -204,7 +195,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     // Check for verification callback first, then normal session check
     handleEmailVerification().catch((error) => {
       logger.error('Error in handleEmailVerification', error, { component: 'AdminContext', action: 'handleEmailVerification' });
-      clearTimeout(safetyTimeout);
       if (mounted) {
         setIsLoading(false);
         setUser(null);
@@ -245,7 +235,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     subscription = authSubscription;
     } catch (error) {
       logger.error('Error setting up auth state listener', error, { component: 'AdminContext', action: 'setupAuthListener' });
-      clearTimeout(safetyTimeout);
       if (mounted) {
         setIsLoading(false);
       }
@@ -253,7 +242,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
-      clearTimeout(safetyTimeout);
       if (subscription) {
         subscription.unsubscribe();
       }
@@ -279,6 +267,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string; needsVerification?: boolean }> => {
+    if (loginInFlightRef.current) {
+      return { success: false, message: 'Login is already in progress. Please wait a moment.' };
+    }
+    loginInFlightRef.current = true;
     try {
       setIsLoading(true);
 
@@ -334,7 +326,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const adminUser = await loadAdminUser(data.user);
       setIsLoading(false);
       if (!adminUser) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         return {
           success: false,
           message: 'You do not have access to the admin panel. Accounts must be created by an existing admin in Settings.',
@@ -342,13 +334,16 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       }
       setUser(adminUser);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       setIsLoading(false);
       logger.error('Login error', error, { component: 'AdminContext', action: 'login' });
+      const message = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
       return {
         success: false,
-        message: error.message || 'Something went wrong. Please try again.',
+        message,
       };
+    } finally {
+      loginInFlightRef.current = false;
     }
   };
 
@@ -375,11 +370,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         success: true,
         message: 'Verification email sent! Please check your inbox.',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Resend verification error', error, { component: 'AdminContext', action: 'resendVerificationEmail' });
+      const message = error instanceof Error ? error.message : 'Failed to resend verification email.';
       return {
         success: false,
-        message: error.message || 'Failed to resend verification email.',
+        message,
       };
     }
   };

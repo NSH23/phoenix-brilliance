@@ -57,6 +57,7 @@ export default function AdminSettings() {
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
 
   const [profileSaving, setProfileSaving] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarDisplayUrl, setAvatarDisplayUrl] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [notificationsSaving, setNotificationsSaving] = useState(false);
@@ -137,6 +138,23 @@ export default function AdminSettings() {
       toast.error('Failed to update profile', { description: (err as Error)?.message });
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleProfileAvatarChange = async (value: string | string[]) => {
+    const next = typeof value === 'string' ? value : Array.isArray(value) ? value[0] ?? '' : '';
+    setProfileData((p) => ({ ...p, avatar: next }));
+
+    if (!user?.id) return;
+    setAvatarSaving(true);
+    try {
+      await updateAdminUser(user.id, { avatar_url: next || null });
+      await refreshUser();
+      toast.success('Profile avatar updated');
+    } catch (err) {
+      toast.error('Failed to save avatar', { description: (err as Error)?.message });
+    } finally {
+      setAvatarSaving(false);
     }
   };
 
@@ -258,13 +276,18 @@ export default function AdminSettings() {
                   <ImageUpload
                     key={profileData.avatar || 'no-avatar'}
                     value={avatarDisplayUrl || resolvePublicStorageUrl(profileData.avatar, 'admin-avatars')}
-                    onChange={(v) => setProfileData((p) => ({ ...p, avatar: (v as string) || '' }))}
+                    onChange={handleProfileAvatarChange}
                     multiple={false}
                     previewClassName="object-cover"
                     previewWrapperClassName="max-md:w-24 max-md:h-24 max-md:aspect-auto max-md:flex max-md:items-center max-md:justify-center max-md:mx-auto"
                     bucket="admin-avatars"
                     uploadOnSelect={true}
                   />
+                  {avatarSaving && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Saving avatar...
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">Or paste URL:</p>
                   <Input
                     value={profileData.avatar}

@@ -34,6 +34,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   });
   const [darkMode, setDarkMode] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
 
@@ -224,7 +225,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         }, 1000);
         toast.success('New inquiry', {
           description: `${row.name} – ${row.event_type || 'Inquiry'}`,
-          action: { label: 'View', onClick: () => navigate('/admin/inquiries') },
+          action: { label: 'View', onClick: () => navigate(`/admin/inquiries?open=${row.id}`) },
         });
       })
       .subscribe();
@@ -246,6 +247,19 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       console.error('Failed to mark as read', e);
     }
   }, []);
+
+  const handleNotificationsOpenChange = useCallback((open: boolean) => {
+    setNotificationsOpen(open);
+    if (!open) return;
+
+    const unreadIds = notifications.filter(n => n.is_read === false).map(n => n.id);
+    if (unreadIds.length === 0) return;
+
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    prevCountRef.current = Math.max(0, prevCountRef.current - unreadIds.length);
+    setUnreadCount(0);
+    void Promise.all(unreadIds.map((id) => markInquiryAsRead(id).catch(() => null)));
+  }, [notifications]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -357,7 +371,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
           <div className="flex items-center gap-3">
             {/* Notifications */}
-            <Popover>
+            <Popover open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
@@ -436,7 +450,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                           className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex gap-3 items-start"
                           onClick={() => {
                             handleMarkAsRead(inquiry.id);
-                            navigate('/admin/inquiries');
+                            setNotificationsOpen(false);
+                            navigate(`/admin/inquiries?open=${inquiry.id}`);
                           }}
                         >
                           <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Eye, Trash2, MoreHorizontal, Mail, Phone, Calendar, Filter, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -27,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getInquiriesPage, updateInquiry, deleteInquiry, type Inquiry } from '@/services/inquiries';
+import { getInquiriesPage, getInquiryById, updateInquiry, deleteInquiry, type Inquiry } from '@/services/inquiries';
 import { toast } from 'sonner';
 import { formatDateTimeLocal } from '@/lib/formatDate';
 import { logger } from '@/utils/logger';
@@ -48,6 +49,7 @@ const statusLabels: Record<Inquiry['status'], string> = {
 
 export default function AdminInquiries() {
   const PAGE_SIZE = 20;
+  const [searchParams, setSearchParams] = useSearchParams();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -57,10 +59,17 @@ export default function AdminInquiries() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [openingInquiryId, setOpeningInquiryId] = useState<string | null>(null);
 
   useEffect(() => {
     load(0, true);
   }, []);
+
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (!openId) return;
+    setOpeningInquiryId(openId);
+  }, [searchParams]);
 
   const load = async (nextPage: number, reset: boolean) => {
     try {
@@ -98,6 +107,40 @@ export default function AdminInquiries() {
     setSelectedInquiry(inquiry);
     setIsDetailOpen(true);
   };
+
+  useEffect(() => {
+    if (!openingInquiryId) return;
+
+    const local = inquiries.find(i => i.id === openingInquiryId);
+    if (local) {
+      setSelectedInquiry(local);
+      setIsDetailOpen(true);
+      setOpeningInquiryId(null);
+      const params = new URLSearchParams(searchParams);
+      params.delete('open');
+      setSearchParams(params, { replace: true });
+      return;
+    }
+
+    void (async () => {
+      try {
+        const fetched = await getInquiryById(openingInquiryId);
+        setInquiries(prev => {
+          if (prev.some(i => i.id === fetched.id)) return prev;
+          return [fetched, ...prev];
+        });
+        setSelectedInquiry(fetched);
+        setIsDetailOpen(true);
+      } catch (err) {
+        toast.error('Unable to open this notification', { description: (err as Error)?.message });
+      } finally {
+        setOpeningInquiryId(null);
+        const params = new URLSearchParams(searchParams);
+        params.delete('open');
+        setSearchParams(params, { replace: true });
+      }
+    })();
+  }, [openingInquiryId, inquiries, searchParams, setSearchParams]);
 
   const handleUpdateStatus = async (id: string, status: Inquiry['status']) => {
     try {

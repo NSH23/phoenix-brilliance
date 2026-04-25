@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const { login, resendVerificationEmail, isAuthenticated } = useAdmin();
+  const { login, resendVerificationEmail, isAuthenticated, isLoading: authChecking } = useAdmin();
   const { logoUrl } = useSiteConfig();
   const logoSrc = logoUrl || '/logo.png';
 
@@ -23,6 +23,7 @@ export default function AdminLogin() {
   const [needsVerification, setNeedsVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   const [forgotPassword, setForgotPassword] = useState(false);
+  const [showManualHint, setShowManualHint] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -30,6 +31,15 @@ export default function AdminLogin() {
       navigate('/admin/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (authChecking || isAuthenticated) {
+      setShowManualHint(false);
+      return;
+    }
+    const t = window.setTimeout(() => setShowManualHint(true), 600);
+    return () => window.clearTimeout(t);
+  }, [authChecking, isAuthenticated]);
 
   // Handle email verification callback from URL hash
   useEffect(() => {
@@ -50,6 +60,12 @@ export default function AdminLogin() {
     
     if (!email || !password) {
       toast.error('Please fill in all fields');
+      return;
+    }
+    if (authChecking) {
+      toast.message('Please wait', {
+        description: 'Checking existing admin session. You can login in a moment.',
+      });
       return;
     }
 
@@ -177,6 +193,19 @@ export default function AdminLogin() {
           </AnimatePresence>
 
           <form onSubmit={handleLogin} className="space-y-5">
+                {authChecking && (
+                  <Alert className="border-primary/40 bg-primary/5">
+                    <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                    <AlertDescription className="text-sm">
+                      Checking existing admin session for automatic login...
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {showManualHint && !authChecking && (
+                  <p className="text-xs text-muted-foreground">
+                    Auto-login was not completed. Continue with manual login below.
+                  </p>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
                   <div className="relative">
@@ -191,6 +220,7 @@ export default function AdminLogin() {
                       className="pl-10 h-12 rounded-xl"
                       required
                       disabled={isLoading}
+                      readOnly={authChecking}
                     />
                   </div>
                 </div>
@@ -218,6 +248,7 @@ export default function AdminLogin() {
                       className="pl-10 pr-10 h-12 rounded-xl"
                       required={!forgotPassword}
                       disabled={isLoading}
+                      readOnly={authChecking}
                     />
                     <button
                       type="button"
@@ -253,12 +284,13 @@ export default function AdminLogin() {
                 <Button
                   type="submit"
                   disabled={isLoading}
+                  aria-disabled={authChecking}
                   className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 >
-                  {isLoading ? (
+                  {isLoading || authChecking ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Signing in...
+                      {authChecking ? 'Checking session...' : 'Signing in...'}
                     </>
                   ) : (
                     'Sign In'
