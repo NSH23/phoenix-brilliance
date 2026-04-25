@@ -237,6 +237,8 @@ export default function AdminGallery() {
               }}
               bucket="gallery-images"
               uploadOnSelect={true}
+              enableCropAdjust={true}
+              cropAspect={1}
             />
           </div>
         </DialogContent>

@@ -28,6 +28,9 @@ interface ImageUploadProps {
 }
 
 type Point = { x: number; y: number };
+const MIN_CROP_ZOOM = 0.5;
+const MAX_CROP_ZOOM = 3;
+const DEFAULT_CROP_ZOOM = 1;
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -91,7 +94,7 @@ export default function ImageUpload({
   const [cropOriginalFile, setCropOriginalFile] = useState<File | null>(null);
   const [cropFileName, setCropFileName] = useState<string>('cover.jpg');
   const [cropPosition, setCropPosition] = useState<Point>({ x: 0, y: 0 });
-  const [cropZoom, setCropZoom] = useState(1.1);
+  const [cropZoom, setCropZoom] = useState(DEFAULT_CROP_ZOOM);
   const [croppedPixels, setCroppedPixels] = useState<Area | null>(null);
 
   const images = Array.isArray(value) ? value : value ? [value] : [];
@@ -139,7 +142,7 @@ export default function ImageUpload({
     setCropOriginalFile(null);
     setCroppedPixels(null);
     setCropPosition({ x: 0, y: 0 });
-    setCropZoom(1.1);
+    setCropZoom(DEFAULT_CROP_ZOOM);
   }, [cropSource]);
 
   const handleCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
@@ -189,7 +192,7 @@ export default function ImageUpload({
         setCropOriginalFile(firstFile);
         setCropFileName(firstFile.name || 'cover.jpg');
         setCropPosition({ x: 0, y: 0 });
-        setCropZoom(1.1);
+        setCropZoom(DEFAULT_CROP_ZOOM);
         setCroppedPixels(null);
         setIsCropOpen(true);
         return;
@@ -295,7 +298,7 @@ export default function ImageUpload({
     setCropOriginalFile(null);
     setCropFileName('adjusted-image.jpg');
     setCropPosition({ x: 0, y: 0 });
-    setCropZoom(1.1);
+    setCropZoom(DEFAULT_CROP_ZOOM);
     setCroppedPixels(null);
     setIsCropOpen(true);
   }, [enableCropAdjust, multiple, images]);
@@ -615,6 +618,8 @@ export default function ImageUpload({
                   image={cropSource}
                   crop={cropPosition}
                   zoom={cropZoom}
+                  minZoom={MIN_CROP_ZOOM}
+                  maxZoom={MAX_CROP_ZOOM}
                   aspect={cropAspect}
                   onCropChange={setCropPosition}
                   onZoomChange={setCropZoom}
@@ -628,8 +633,8 @@ export default function ImageUpload({
               <label className="text-xs text-muted-foreground mb-1 block">Zoom</label>
               <input
                 type="range"
-                min={1}
-                max={3}
+                min={MIN_CROP_ZOOM}
+                max={MAX_CROP_ZOOM}
                 step={0.01}
                 value={cropZoom}
                 onChange={(e) => setCropZoom(Number(e.target.value))}

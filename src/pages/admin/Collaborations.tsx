@@ -851,6 +851,8 @@ export default function AdminCollaborations() {
                 previewClassName="object-contain"
                 bucket="partner-logos"
                 uploadOnSelect={true}
+                enableCropAdjust={true}
+                cropAspect={1}
               />
               <p className="text-xs text-muted-foreground">Or paste image URL:</p>
               <Input
