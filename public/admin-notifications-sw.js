@@ -19,18 +19,14 @@ self.addEventListener('push', (event) => {
       /* ignore parse errors */
     }
 
-    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const adminVisible = clientsList.some(
-      (c) => typeof c.url === 'string' && c.url.includes('/admin') && c.visibilityState === 'visible'
-    );
-    if (adminVisible) return;
-
     await self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: '/android-chrome-192x192.png',
       badge: '/android-chrome-192x192.png',
       tag: payload.tag || 'inquiry',
       renotify: true,
+      requireInteraction: true,
+      vibrate: [200, 100, 200],
       data: { url: payload.url || '/admin/inquiries' },
     });
   })());
