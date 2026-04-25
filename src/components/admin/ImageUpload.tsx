@@ -88,6 +88,7 @@ export default function ImageUpload({
   const [uploadPercent, setUploadPercent] = useState(0);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [cropSource, setCropSource] = useState<string | null>(null);
+  const [cropOriginalFile, setCropOriginalFile] = useState<File | null>(null);
   const [cropFileName, setCropFileName] = useState<string>('cover.jpg');
   const [cropPosition, setCropPosition] = useState<Point>({ x: 0, y: 0 });
   const [cropZoom, setCropZoom] = useState(1.1);
@@ -135,6 +136,7 @@ export default function ImageUpload({
       URL.revokeObjectURL(cropSource);
     }
     setCropSource(null);
+    setCropOriginalFile(null);
     setCroppedPixels(null);
     setCropPosition({ x: 0, y: 0 });
     setCropZoom(1.1);
@@ -184,6 +186,7 @@ export default function ImageUpload({
         const firstFile = validFiles[0];
         const localUrl = URL.createObjectURL(firstFile);
         setCropSource(localUrl);
+        setCropOriginalFile(firstFile);
         setCropFileName(firstFile.name || 'cover.jpg');
         setCropPosition({ x: 0, y: 0 });
         setCropZoom(1.1);
@@ -263,6 +266,39 @@ export default function ImageUpload({
       reader.readAsDataURL(file);
     });
   }, [images, multiple, maxFiles, onChange, bucket, uploadOnSelect, uploadFilesWithProgress, enableCropAdjust]);
+
+  const uploadOriginalImage = useCallback(async () => {
+    if (!bucket || !cropOriginalFile) {
+      toast.error('Original image is missing. Please reselect and try again.');
+      return;
+    }
+    setIsUploading(true);
+    setUploadPercent(0);
+    try {
+      const url = await uploadToCloudinary(cropOriginalFile, bucket, setUploadPercent);
+      onChange(url);
+      toast.success('Image uploaded successfully');
+      closeCropDialog();
+    } catch (error) {
+      logger.error('Original upload error', error, { component: 'ImageUpload', action: 'uploadOriginalImage', bucket });
+      const message = error instanceof Error ? error.message : 'Failed to upload image. Please try again.';
+      toast.error('Upload failed', { description: message });
+    } finally {
+      setUploadPercent(0);
+      setIsUploading(false);
+    }
+  }, [bucket, cropOriginalFile, onChange, closeCropDialog]);
+
+  const openAdjustDialogForExisting = useCallback(() => {
+    if (!enableCropAdjust || multiple || !images[0]) return;
+    setCropSource(images[0]);
+    setCropOriginalFile(null);
+    setCropFileName('adjusted-image.jpg');
+    setCropPosition({ x: 0, y: 0 });
+    setCropZoom(1.1);
+    setCroppedPixels(null);
+    setIsCropOpen(true);
+  }, [enableCropAdjust, multiple, images]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
@@ -527,6 +563,17 @@ export default function ImageUpload({
       {/* Change / Add more button only (upload happens on parent form Save where applicable) */}
       {displayImages.length > 0 && (
         <div className="flex justify-end gap-2">
+          {enableCropAdjust && !multiple && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={openAdjustDialogForExisting}
+              className="gap-2"
+              disabled={isUploading}
+            >
+              Adjust Frame
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -560,7 +607,7 @@ export default function ImageUpload({
           </DialogHeader>
           <div className="px-4 pt-2 pb-3">
             <p className="text-xs text-muted-foreground mb-2">
-              Drag to position and pinch/zoom (or use slider). This works well on mobile and desktop.
+              Drag image inside the frame and pinch/zoom (or use slider). Then tap <strong>Use This Crop</strong>.
             </p>
             <div className="relative w-full h-[320px] rounded-lg overflow-hidden bg-black/80">
               {cropSource && (
@@ -593,6 +640,9 @@ export default function ImageUpload({
           <DialogFooter className="px-4 pb-4 pt-0 flex-row justify-end gap-2">
             <Button type="button" variant="outline" onClick={closeCropDialog} disabled={isUploading}>
               Cancel
+            </Button>
+            <Button type="button" variant="secondary" onClick={uploadOriginalImage} disabled={isUploading}>
+              Upload Original
             </Button>
             <Button type="button" onClick={uploadCroppedImage} disabled={isUploading || !croppedPixels}>
               {isUploading ? (

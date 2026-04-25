@@ -282,6 +282,8 @@ export default function AdminSettings() {
                     previewWrapperClassName="max-md:w-24 max-md:h-24 max-md:aspect-auto max-md:flex max-md:items-center max-md:justify-center max-md:mx-auto"
                     bucket="admin-avatars"
                     uploadOnSelect={true}
+                    enableCropAdjust={true}
+                    cropAspect={1}
                   />
                   {avatarSaving && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
