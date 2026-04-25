@@ -386,7 +386,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
       setUser(null);
     } catch (error) {
       logger.error('Logout error', error, { component: 'AdminContext', action: 'logout' });

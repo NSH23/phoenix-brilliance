@@ -27,8 +27,7 @@
 
     <!-- Performance: preload above-the-fold critical assets -->
     <link rel="preload" href="/logo.png" as="image" />
-    <link rel="preload" href="/bg.jpg" as="image" />
-    <link rel="modulepreload" href="/src/main.tsx" />
+    <!-- Removed bg/module preload to avoid unused-preload warnings and MIME issues in production -->
   </head>
 
   <body>
