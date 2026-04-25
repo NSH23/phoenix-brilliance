@@ -1,3 +1,11 @@
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
     let payload = {
@@ -25,8 +33,9 @@ self.addEventListener('push', (event) => {
       badge: '/android-chrome-192x192.png',
       tag: payload.tag || 'inquiry',
       renotify: true,
-      requireInteraction: true,
+      requireInteraction: false,
       vibrate: [200, 100, 200],
+      timestamp: Date.now(),
       data: { url: payload.url || '/admin/inquiries' },
     });
   })());

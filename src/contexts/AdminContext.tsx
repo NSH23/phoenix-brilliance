@@ -26,27 +26,10 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
-/** Build a fallback AdminUser from Supabase auth when DB fetch fails. Prevents spurious logouts. */
-function fallbackAdminUserFromAuth(authUser: User): AdminUser {
-  const meta = authUser.user_metadata || {};
-  return {
-    id: authUser.id,
-    email: authUser.email || '',
-    name: (meta.name as string) || authUser.email?.split('@')[0] || 'User',
-    role: (meta.role as 'admin' | 'moderator') || 'moderator',
-    must_change_password: false,
-  };
-}
-
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const userRef = useRef<AdminUser | null>(null);
   const loginInFlightRef = useRef(false);
-
-  useEffect(() => {
-    userRef.current = user;
-  }, [user]);
 
   // Load admin user from database with timeout
   const loadAdminUser = async (authUser: User): Promise<AdminUser | null> => {
@@ -97,109 +80,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Check session on mount and listen for auth changes
+  // Manual-signin mode: do not auto-login from persisted sessions.
+  // We only react to explicit login() and sign-out events.
   useEffect(() => {
     let mounted = true;
-
-    // Initial session check
-    const checkSession = async () => {
-      try {
-        // Check if supabase is available
-        if (!supabase) {
-          throw new Error('Supabase client not initialized');
-        }
-
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          logger.error('Session error', sessionError, { component: 'AdminContext', action: 'checkSession' });
-        }
-        
-        if (!mounted) return;
-
-        if (session?.user) {
-          try {
-            const adminUser = await loadAdminUser(session.user);
-            if (mounted) {
-              if (adminUser) {
-                setUser(adminUser);
-              } else {
-                await supabase.auth.signOut({ scope: 'local' });
-                setUser(null);
-              }
-            }
-          } catch (loadError) {
-            logger.error('Error loading admin user', loadError, { component: 'AdminContext', action: 'checkSession' });
-            if (mounted) {
-              setUser(fallbackAdminUserFromAuth(session.user));
-            }
-          }
-        } else {
-          if (mounted) {
-            setUser(null);
-          }
-        }
-      } catch {
-        // Any error - set user to null and continue
-        if (mounted) {
-          setUser(null);
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    // Handle email verification callback from URL hash
-    const handleEmailVerification = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
-      const type = hashParams.get('type');
-
-      if (accessToken && type === 'signup' && mounted) {
-        try {
-          const { data: { session }, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || '',
-          });
-
-          if (!error && session?.user && mounted) {
-            const adminUser = await loadAdminUser(session.user);
-            if (mounted) {
-              setUser(adminUser ?? fallbackAdminUserFromAuth(session.user));
-              setIsLoading(false);
-              // Clean up URL
-              window.history.replaceState({}, document.title, window.location.pathname);
-            }
-          } else {
-            // Verification failed, check normal session
-            if (mounted) {
-              await checkSession();
-            }
-          }
-        } catch (error) {
-          logger.error('Error handling email verification', error, { component: 'AdminContext', action: 'handleEmailVerification' });
-          // On error, check normal session
-          if (mounted) {
-            await checkSession();
-          }
-        }
-      } else {
-        // No verification callback, proceed with normal session check
-        await checkSession();
-      }
-    };
-
-    // Check for verification callback first, then normal session check
-    handleEmailVerification().catch((error) => {
-      logger.error('Error in handleEmailVerification', error, { component: 'AdminContext', action: 'handleEmailVerification' });
-      if (mounted) {
-        setIsLoading(false);
-        setUser(null);
-      }
-    });
+    setIsLoading(false);
 
     // Listen for auth state changes
     let subscription: { unsubscribe: () => void } | null = null;
@@ -214,22 +99,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         }
         return;
       }
-
-      // For any event with a valid session, set user (never clear when session exists)
-      if (session?.user) {
-        try {
-          const adminUser = await loadAdminUser(session.user);
-          if (mounted) {
-            setUser(adminUser ?? fallbackAdminUserFromAuth(session.user));
-            if (event === 'SIGNED_IN') setIsLoading(false);
-          }
-        } catch {
-          if (mounted) {
-            setUser(fallbackAdminUserFromAuth(session.user));
-            if (event === 'SIGNED_IN') setIsLoading(false);
-          }
-        }
-      }
+      void session;
     });
 
     subscription = authSubscription;
@@ -246,24 +116,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         subscription.unsubscribe();
       }
     };
-  }, []);
-
-  // When tab becomes visible, re-check session so we don't stay logged out if state was lost
-  useEffect(() => {
-    const onVisibilityChange = async () => {
-      if (document.visibilityState !== 'visible') return;
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user && !userRef.current) {
-        try {
-          const adminUser = await loadAdminUser(session.user);
-          setUser(adminUser ?? fallbackAdminUserFromAuth(session.user));
-        } catch {
-          setUser(fallbackAdminUserFromAuth(session.user));
-        }
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string; needsVerification?: boolean }> => {

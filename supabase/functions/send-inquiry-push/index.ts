@@ -19,9 +19,11 @@ const corsHeaders: Record<string, string> = {
 
 type DbWebhookBody = {
   type?: string;
+  eventType?: string;
   table?: string;
   schema?: string;
   record?: Record<string, unknown>;
+  new?: Record<string, unknown>;
 };
 
 Deno.serve(async (req: Request) => {
@@ -60,26 +62,36 @@ Deno.serve(async (req: Request) => {
     return new Response('Invalid JSON', { status: 400, headers: corsHeaders });
   }
 
-  if (body.type !== 'INSERT' || body.table !== 'inquiries' || body.schema !== 'public') {
+  const eventType = String(body.type ?? body.eventType ?? '').toUpperCase();
+  const table = String(body.table ?? '');
+  const schema = String(body.schema ?? '');
+  console.info('send-inquiry-push: webhook received', { eventType, table, schema });
+
+  if (eventType !== 'INSERT' || table !== 'inquiries' || schema !== 'public') {
+    console.info('send-inquiry-push: skipped webhook', { eventType, table, schema });
     return new Response(JSON.stringify({ ok: true, skipped: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const rec = body.record ?? {};
+  const rec = body.record ?? body.new ?? {};
   const id = String(rec.id ?? '');
   const name = String(rec.name ?? 'Someone');
-  const eventType = rec.event_type != null ? String(rec.event_type) : '';
+  const inquiryType = rec.event_type != null ? String(rec.event_type) : '';
   const message = rec.message != null ? String(rec.message) : '';
 
-  const title = eventType ? `New ${eventType} inquiry` : 'New inquiry';
+  const title = inquiryType ? `New ${inquiryType} inquiry` : 'New inquiry';
   const bodyText = `${name}: ${message || 'Open Phoenix Admin'}`.slice(0, 180);
+  // web-push topic must be <= 32 chars and URL/file-safe base64 charset.
+  const notificationTopic = id
+    ? `inq-${id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 28)}`
+    : 'inquiry';
 
   const payload = JSON.stringify({
     title,
     body: bodyText,
     url: id ? `/admin/inquiries?open=${id}` : '/admin/inquiries',
-    tag: id ? `inquiry-${id}` : 'inquiry',
+    tag: notificationTopic,
   });
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
@@ -94,6 +106,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const subscriptions = rows ?? [];
+  console.info('send-inquiry-push: subscriptions loaded', { total: subscriptions.length });
   let sent = 0;
   let removed = 0;
 
@@ -105,10 +118,10 @@ Deno.serve(async (req: Request) => {
         sub as unknown as Parameters<typeof webpush.sendNotification>[0],
         payload,
         {
-          // Higher delivery priority for near-instant mobile lock-screen alerts.
-          TTL: 60,
+          // Keep for longer so closed/offline PWAs can still receive when device wakes.
+          TTL: 60 * 60 * 24,
           urgency: 'high',
-          topic: id ? `inquiry-${id}` : 'inquiry',
+          topic: notificationTopic,
         }
       );
       sent++;
@@ -122,6 +135,8 @@ Deno.serve(async (req: Request) => {
       }
     }
   }
+
+  console.info('send-inquiry-push: push-result', { total: subscriptions.length, sent, removed });
 
   return new Response(JSON.stringify({ ok: true, sent, removed, total: subscriptions.length }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
