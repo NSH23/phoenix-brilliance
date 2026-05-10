@@ -559,7 +559,15 @@
   }
 
   .hero-bg-image {
-    display: none;
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    background-image: var(--bg-image-home-hero, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.25;
   }
 
   .hero-bg-overlay {
@@ -596,15 +604,15 @@
 
   /* Homepage above-the-fold section backgrounds (avoid inline style recreation). */
   .homepage-bg-3 {
-    background-image: var(--bg-image-3, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/3.jpg'));
+    background-image: var(--bg-image-home-venues, var(--bg-image-3, url('/3.jpg')));
   }
 
   .homepage-bg-9 {
-    background-image: var(--bg-image-9, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/9.jpg'));
+    background-image: var(--bg-image-home-events, var(--bg-image-9, url('/9.jpg')));
   }
 
   .homepage-bg-5 {
-    background-image: var(--bg-image-5, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/5.jpg'));
+    background-image: var(--bg-image-home-why-choose-us, var(--bg-image-5, url('/5.jpg')));
   }
 
   /* Flat sections: no gradient overlay, no noise – same colour everywhere */
@@ -635,7 +643,7 @@
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background-image: var(--bg-image-bg12, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/bg12.jpg'));
+    background-image: var(--bg-image-bg12, url('/bg12.jpg'));
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -653,7 +661,7 @@
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background-image: var(--bg-image-dt1, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/dt1.jpg'));
+    background-image: var(--bg-image-dt1, url('/dt1.jpg'));
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -761,7 +769,7 @@
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background-image: var(--bg-image-dt1, url('https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds/dt1.jpg'));
+    background-image: var(--bg-image-dt1, url('/dt1.jpg'));
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1140,7 +1148,7 @@
 
   /* Events page gradient mesh - theme-aware, smooth flowing animation */
   .events-page-mesh-bg {
-    background: var(--events-hero-mesh-light-base);
+    background: var(--bg-image-events-page-hero, var(--events-hero-mesh-light-base));
     background-size: 220% 220%;
     animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
     will-change: transform, opacity, background-position;
@@ -1148,7 +1156,7 @@
   }
 
   .dark .events-page-mesh-bg {
-    background: var(--events-hero-mesh-dark-base);
+    background: var(--bg-image-events-page-hero-dark, var(--events-hero-mesh-dark-base));
   }
 
   @keyframes pageMeshFloat {
@@ -1200,13 +1208,13 @@
 
   /* Services page gradient mesh - theme-aware, smooth flowing animation */
   .services-page-mesh-bg {
-    background: var(--services-hero-mesh-light-base);
+    background: var(--bg-image-services-page-hero, var(--services-hero-mesh-light-base));
     background-size: 220% 220%;
     animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   .dark .services-page-mesh-bg {
-    background: var(--services-hero-mesh-dark-base);
+    background: var(--bg-image-services-page-hero-dark, var(--services-hero-mesh-dark-base));
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1236,13 +1244,13 @@
 
   /* Gallery page gradient mesh - theme-aware, smooth flowing animation */
   .gallery-page-mesh-bg {
-    background: var(--gallery-hero-mesh-light-base);
+    background: var(--bg-image-gallery-page-hero, var(--gallery-hero-mesh-light-base));
     background-size: 220% 220%;
     animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   .dark .gallery-page-mesh-bg {
-    background: var(--gallery-hero-mesh-dark-base);
+    background: var(--bg-image-gallery-page-hero-dark, var(--gallery-hero-mesh-dark-base));
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1272,13 +1280,13 @@
 
   /* Collaborations page gradient mesh - theme-aware, smooth flowing animation */
   .collaborations-page-mesh-bg {
-    background: var(--collaborations-hero-mesh-light-base);
+    background: var(--bg-image-collaborations-page-hero, var(--collaborations-hero-mesh-light-base));
     background-size: 220% 220%;
     animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   .dark .collaborations-page-mesh-bg {
-    background: var(--collaborations-hero-mesh-dark-base);
+    background: var(--bg-image-collaborations-page-hero-dark, var(--collaborations-hero-mesh-dark-base));
   }
 
   @media (prefers-reduced-motion: reduce) {

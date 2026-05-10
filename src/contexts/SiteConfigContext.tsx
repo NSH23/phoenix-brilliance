@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
-import { getContactInfoOptional, getSiteSettingOptional } from '@/services/siteContent';
+import { getAllSiteSettings, getContactInfoOptional, getSiteSettingOptional } from '@/services/siteContent';
 import { getActiveSocialLinks } from '@/services/siteContent';
 import { resolvePublicStorageUrl } from '@/services/storage';
 
@@ -34,6 +34,7 @@ interface SiteConfigContextType {
   socialLinks: SiteSocialLinks;
   logoUrl: string;
   backgroundImages: SiteBackgroundImages;
+  customBackgroundVars?: Record<string, string>;
   isLoading: boolean;
 }
 
@@ -55,7 +56,7 @@ const DEFAULT_CONTACT: SiteContact = {
 };
 
 const DEFAULT_SOCIAL: SiteSocialLinks = {};
-const DEFAULT_BG_BASE = 'https://res.cloudinary.com/dutkr9zku/image/upload/f_auto,q_auto:good,w_1920/phoenix/backgrounds';
+const DEFAULT_BG_BASE = '';
 const DEFAULT_BACKGROUND_IMAGES: SiteBackgroundImages = {
   bg3: `${DEFAULT_BG_BASE}/3.jpg`,
   bg5: `${DEFAULT_BG_BASE}/5.jpg`,
@@ -80,10 +81,18 @@ const BG_SETTING_TO_VAR: Array<{ settingKey: string; cssVar: string; field: keyo
   { settingKey: 'bg_image_lgt4', cssVar: '--bg-image-lgt4', field: 'lgt4' },
 ];
 
-function applyBackgroundCssVariables(images: SiteBackgroundImages) {
+function settingKeyToCssVar(settingKey: string): string | null {
+  if (!settingKey.startsWith('bg_image_')) return null;
+  return `--bg-image-${settingKey.replace(/^bg_image_/, '').replace(/_/g, '-')}`;
+}
+
+function applyBackgroundCssVariables(images: SiteBackgroundImages, customBackgroundVars: Record<string, string> = {}) {
   const root = document.documentElement;
   BG_SETTING_TO_VAR.forEach(({ cssVar, field }) => {
     root.style.setProperty(cssVar, `url('${images[field]}')`);
+  });
+  Object.entries(customBackgroundVars).forEach(([cssVar, url]) => {
+    root.style.setProperty(cssVar, `url('${url}')`);
   });
 }
 
@@ -110,7 +119,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
           setSocialLinks(cached.socialLinks);
           setLogoUrl(cached.logoUrl);
           setBackgroundImages(cached.backgroundImages);
-          applyBackgroundCssVariables(cached.backgroundImages);
+          applyBackgroundCssVariables(cached.backgroundImages, cached.customBackgroundVars || {});
           setIsLoading(false);
           return;
         }
@@ -118,11 +127,12 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
           siteConfigCache = null;
         }
 
-        const [contactData, socialData, logoValue, bgValues] = await Promise.all([
+        const [contactData, socialData, logoValue, bgValues, allSettings] = await Promise.all([
           getContactInfoOptional().catch(() => null),
           getActiveSocialLinks().catch(() => []),
           getSiteSettingOptional('site_logo_url').catch(() => null),
           Promise.all(BG_SETTING_TO_VAR.map(({ settingKey }) => getSiteSettingOptional(settingKey).catch(() => null))),
+          getAllSiteSettings().catch(() => []),
         ]);
         const socialMap: SiteSocialLinks & { whatsapp?: string } = {};
         socialData.forEach((l) => {
@@ -162,12 +172,18 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
           const value = bgValues[idx];
           if (value && value.trim()) nextBackgroundImages[field] = value.trim();
         });
+        const customBackgroundVars: Record<string, string> = {};
+        (allSettings || []).forEach((setting) => {
+          const cssVar = settingKeyToCssVar(setting?.key || '');
+          const value = setting?.value?.trim?.() || '';
+          if (cssVar && value) customBackgroundVars[cssVar] = value;
+        });
 
         setContact(nextContact);
         setSocialLinks(nextSocialLinks);
         setLogoUrl(nextLogoUrl);
         setBackgroundImages(nextBackgroundImages);
-        applyBackgroundCssVariables(nextBackgroundImages);
+        applyBackgroundCssVariables(nextBackgroundImages, customBackgroundVars);
 
         siteConfigCache = {
           fetchedAt: Date.now(),
@@ -176,6 +192,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
             socialLinks: Object.keys(nextSocialLinks).length > 0 ? nextSocialLinks : DEFAULT_SOCIAL,
             logoUrl: nextLogoUrl,
             backgroundImages: nextBackgroundImages,
+            customBackgroundVars,
             isLoading: false,
           },
         };
@@ -194,6 +211,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
       socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : DEFAULT_SOCIAL,
       logoUrl,
       backgroundImages,
+      customBackgroundVars: siteConfigCache?.value?.customBackgroundVars || {},
       isLoading,
     };
   }, [contact, socialLinks, logoUrl, backgroundImages, isLoading]);

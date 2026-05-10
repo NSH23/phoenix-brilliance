@@ -26,25 +26,12 @@ const ReelsSection = () => {
             setReels(mapped);
           }
         } else {
-          // Fallback
-          const fallbackSrcs = ["/4.mp4", "/5.MP4", "/6.mp4", "/7.MP4", "/1.mp4", "/reel 1.mp4"];
-          const fallback = fallbackSrcs.map((src, index) => ({
-            src: src,
-            alt: `Phoenix Moment ${index + 1}`
-          }));
-
-          setReels([...fallback, ...fallback, ...fallback]);
+          // No local media fallback: keep this section empty when DB has no reels.
+          setReels([]);
         }
       } catch (error) {
         console.error("Failed to fetch reels", error);
-        // Fallback (same as above)
-        const fallbackSrcs = ["/4.mp4", "/5.MP4", "/6.mp4", "/7.MP4", "/1.mp4", "/reel 1.mp4"];
-        const fallback = fallbackSrcs.map((src, index) => ({
-          src: src,
-          alt: `Phoenix Moment ${index + 1}`
-        }));
-
-        setReels([...fallback, ...fallback, ...fallback]);
+        setReels([]);
       } finally {
         setLoading(false);
       }
@@ -52,7 +39,7 @@ const ReelsSection = () => {
     fetchReels();
   }, []);
 
-  if (loading && reels.length === 0) return null; // Or skeleton
+  if (loading || reels.length === 0) return null;
 
   return (
     <section

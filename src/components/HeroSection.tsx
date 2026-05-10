@@ -76,7 +76,7 @@ const HeroSection = () => {
       items.push(media.imageUrls[0], media.imageUrls[0]);
     }
 
-    return items.length > 0 ? items : ["/1.mp4"];
+    return items;
   })();
 
   // Non-blocking load: we render the structure immediately and let the video component handle the empty/loading state gracefully.

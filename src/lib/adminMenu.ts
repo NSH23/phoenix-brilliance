@@ -14,6 +14,9 @@ import {
   Users,
   ImagePlus,
   Film,
+  MessageCircleMore,
+  ChartColumn,
+  Clapperboard,
 } from 'lucide-react';
 
 export interface AdminMenuItem {
@@ -25,6 +28,9 @@ export interface AdminMenuItem {
 
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, keywords: 'home overview' },
+  { name: 'WP Leads', href: '/admin/wp-leads', icon: MessageCircleMore, keywords: 'whatsapp leads pipeline agent' },
+  { name: 'WP Analytics', href: '/admin/wp-analytics', icon: ChartColumn, keywords: 'whatsapp analytics funnel trends' },
+  { name: 'WP Media', href: '/admin/wp-media', icon: Clapperboard, keywords: 'whatsapp media cloudinary youtube assets' },
   { name: 'Events', href: '/admin/events', icon: Calendar, keywords: 'calendar' },
   { name: 'Gallery', href: '/admin/gallery', icon: Images, keywords: 'images pictures portfolio' },
   { name: 'Venues', href: '/admin/collaborations', icon: Handshake, keywords: 'partners venues collaborations' },
@@ -34,7 +40,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { name: 'Services', href: '/admin/services', icon: Wrench, keywords: 'offerings' },
   { name: 'Why Choose Us', href: '/admin/why-us', icon: Award, keywords: 'why us stats reasons' },
   { name: 'Testimonials', href: '/admin/testimonials', icon: MessageSquareQuote, keywords: 'reviews quotes' },
-  { name: 'Inquiries', href: '/admin/inquiries', icon: Mail, keywords: 'messages contact' },
+  { name: 'Notifications', href: '/admin/notifications', icon: Mail, keywords: 'messages contact inquiries alerts' },
   { name: 'Team', href: '/admin/team', icon: Users, keywords: 'staff employees' },
   { name: 'Site Content', href: '/admin/content', icon: FileText, keywords: 'content pages' },
   { name: 'Settings', href: '/admin/settings', icon: Settings, keywords: 'config' },

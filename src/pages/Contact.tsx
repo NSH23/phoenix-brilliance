@@ -45,6 +45,14 @@ const Contact = () => {
       toast.error("Please enter a valid 10-digit number (with or without +91)");
       return;
     }
+    if (!resolvedEventType) {
+      toast.error("Please select your event type");
+      return;
+    }
+    if (!resolvedVenue) {
+      toast.error("Please select your venue");
+      return;
+    }
 
     const messageWithDate = [formData.message, formData.eventDate ? `Event Date: ${formData.eventDate}` : ""].filter(Boolean).join("\n\n");
 
@@ -389,11 +397,12 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                       )}
 
                       <div>
-                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Venue</label>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Venue *</label>
                         <select
                           name="venue"
                           value={formData.venue}
                           onChange={handleChange}
+                          required
                           className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-background border border-border 
                                  focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
                                  transition-all duration-300 text-sm sm:text-base"
@@ -406,12 +415,13 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                       </div>
                       {formData.venue === OTHER_LABEL && (
                         <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Venue name (other)</label>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2">Venue name (other) *</label>
                           <input
                             type="text"
                             name="venueOther"
                             value={formData.venueOther}
                             onChange={handleChange}
+                            required={formData.venue === OTHER_LABEL}
                             className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-background border border-border 
                                    focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none 
                                    transition-all duration-300 text-sm sm:text-base"

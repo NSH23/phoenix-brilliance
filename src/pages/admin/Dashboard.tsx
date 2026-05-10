@@ -17,6 +17,8 @@ import {
   Trash2,
   Film,
   Zap,
+  MessageCircleMore,
+  ChartColumn,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +46,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getWpDashboardSummary, getRecentWpLeads, getWpUnreadNotificationsCount } from '@/services/wpAgent';
 
 const quickActions = [
   { title: 'Add New Event', href: '/admin/events?add=1', icon: Calendar },
@@ -99,12 +102,59 @@ export default function AdminDashboard() {
     retry: false,
   });
 
+  const wpSummaryQuery = useQuery({
+    queryKey: ['wp-dashboard-summary'],
+    queryFn: getWpDashboardSummary,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  const recentWpLeadsQuery = useQuery({
+    queryKey: ['wp-recent-leads-dashboard'],
+    queryFn: () => getRecentWpLeads(5),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  const wpUnreadAlertsQuery = useQuery({
+    queryKey: ['wp-unread-notifications-count'],
+    queryFn: getWpUnreadNotificationsCount,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
   const isLoading = dashboardQuery.isPending || adminUsersQuery.isPending;
   const stats = dashboardQuery.data?.stats ?? null;
   const recentInquiries = dashboardQuery.data?.recentInquiries ?? [];
   const recentActivity = dashboardQuery.data?.recentActivity ?? [];
   const siteOverview = dashboardQuery.data?.siteOverview ?? null;
   const adminUsers = adminUsersQuery.data ?? [];
+  const wpSummary = wpSummaryQuery.data ?? {
+    totalLeads: 0,
+    newLeads: 0,
+    highPriorityLeads: 0,
+    callbacksDue: 0,
+    avgLeadScore: 0,
+  };
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('dashboard-wp-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wp_leads' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['wp-recent-leads-dashboard'] });
+        void queryClient.invalidateQueries({ queryKey: ['wp-dashboard-summary'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wp_notifications' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['wp-unread-notifications-count'] });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   useEffect(() => {
     if (!dashboardQuery.isError) return;
@@ -271,7 +321,7 @@ export default function AdminDashboard() {
               <Card className="h-full flex flex-col border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between py-3 px-4 sm:py-4 sm:px-6 border-b border-border/40 bg-muted/20 max-md:flex-col max-md:items-start max-md:gap-3">
                   <CardTitle className="text-sm sm:text-base font-semibold">Recent Inquiries</CardTitle>
-                  <Link to="/admin/inquiries">
+                  <Link to="/admin/notifications">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -364,6 +414,110 @@ export default function AdminDashboard() {
 
         {/* Right Column (1/3 width) - mobile: same spacing and rounded cards */}
         <div className="space-y-6 sm:space-y-8 max-md:space-y-4">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                <MessageCircleMore className="w-5 h-5 text-primary shrink-0" />
+                WP Agent
+              </h2>
+            </div>
+            <Card className="border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
+              <CardContent className="p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <p className="text-xs text-muted-foreground">Total Leads</p>
+                    <p className="text-xl font-semibold">{wpSummary.totalLeads}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <p className="text-xs text-muted-foreground">New</p>
+                    <p className="text-xl font-semibold">{wpSummary.newLeads}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <p className="text-xs text-muted-foreground">Callbacks Due</p>
+                    <p className="text-xl font-semibold">{wpSummary.callbacksDue}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3">
+                    <p className="text-xs text-muted-foreground">Avg Score</p>
+                    <p className="text-xl font-semibold">{wpSummary.avgLeadScore}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Link to="/admin/wp-leads">
+                    <Button size="sm" variant="outline" className="w-full">
+                      <MessageCircleMore className="w-4 h-4 mr-1" />
+                      Leads
+                    </Button>
+                  </Link>
+                  <Link to="/admin/wp-analytics">
+                    <Button size="sm" variant="outline" className="w-full">
+                      <ChartColumn className="w-4 h-4 mr-1" />
+                      Stats
+                    </Button>
+                  </Link>
+                  <Link to="/admin/notifications?tab=wp">
+                    <Button size="sm" variant="outline" className="w-full">
+                      <Mail className="w-4 h-4 mr-1" />
+                      Alerts
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="pt-2 border-t border-border/40">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-xs font-medium text-muted-foreground">Recent leads</p>
+                    <Link
+                      to="/admin/notifications?tab=wp"
+                      className="text-xs text-primary hover:underline whitespace-nowrap"
+                    >
+                      {(wpUnreadAlertsQuery.data ?? 0) > 0
+                        ? `${wpUnreadAlertsQuery.data} unread alerts`
+                        : 'Unread alerts'}
+                    </Link>
+                  </div>
+                  <div className="rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden">
+                    {recentWpLeadsQuery.isPending ? (
+                      <div className="flex justify-center py-6">
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      </div>
+                    ) : !recentWpLeadsQuery.data?.length ? (
+                      <p className="text-xs text-muted-foreground py-4 px-3 text-center">No WP leads yet.</p>
+                    ) : (
+                      recentWpLeadsQuery.data.map((lead) => (
+                        <Link
+                          key={lead.id}
+                          to={
+                            lead.phone
+                              ? `/admin/wp-leads?phone=${encodeURIComponent(lead.phone)}`
+                              : '/admin/wp-leads'
+                          }
+                          className="flex items-start gap-2 px-3 py-2.5 hover:bg-muted/40 transition-colors"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium truncate">{lead.name || 'Unknown'}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              {lead.event_type || '—'} • {lead.source_channel || '—'}
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0 pt-0.5">
+                            {new Date(lead.created_at).toLocaleString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Site Overview - mobile: slightly larger touch targets, rounded */}
           <motion.div

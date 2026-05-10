@@ -101,6 +101,16 @@ export default function LeadCaptureModal() {
             }
             const resolvedVenue = venue === OTHER_LABEL ? (venueOther.trim() || null) : (venue.trim() || null);
             const resolvedEventType = eventType === OTHER_LABEL ? (eventTypeOther.trim() || null) : (eventType.trim() || null);
+            if (!resolvedEventType) {
+                toast.error("Please select event type");
+                setIsSubmitting(false);
+                return;
+            }
+            if (!resolvedVenue) {
+                toast.error("Please select venue");
+                setIsSubmitting(false);
+                return;
+            }
             await createInquiry({
                 name: name.trim(),
                 phone: getNormalizedPhone10(phone),
@@ -307,12 +317,13 @@ export default function LeadCaptureModal() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label htmlFor="lead-event-type" className="text-[11px] sm:text-xs">Event</Label>
+                                <Label htmlFor="lead-event-type" className="text-[11px] sm:text-xs">Event *</Label>
                                 <select
                                     id="lead-event-type"
                                     value={eventType}
                                     onChange={(e) => setEventType(e.target.value)}
                                     className={selectClass}
+                                    required
                                 >
                                     <option value="">Select</option>
                                     {eventTypeOptions.map((t) => (
@@ -323,23 +334,25 @@ export default function LeadCaptureModal() {
                         </div>
                         {eventType === OTHER_LABEL && (
                             <div className="space-y-1">
-                                <Label htmlFor="lead-event-other" className="text-[11px] sm:text-xs">Event type (other)</Label>
+                                <Label htmlFor="lead-event-other" className="text-[11px] sm:text-xs">Event type (other) *</Label>
                                 <Input
                                     id="lead-event-other"
                                     value={eventTypeOther}
                                     onChange={(e) => setEventTypeOther(e.target.value)}
                                     placeholder="Specify event type"
                                     className="h-9 text-sm touch-manipulation"
+                                    required={eventType === OTHER_LABEL}
                                 />
                             </div>
                         )}
                         <div className="space-y-1">
-                            <Label htmlFor="lead-venue" className="text-[11px] sm:text-xs">Venue</Label>
+                            <Label htmlFor="lead-venue" className="text-[11px] sm:text-xs">Venue *</Label>
                             <select
                                 id="lead-venue"
                                 value={venue}
                                 onChange={(e) => setVenue(e.target.value)}
                                 className={selectClass}
+                                required
                             >
                                 <option value="">Select venue</option>
                                 {venueOptions.map((v) => (
@@ -349,13 +362,14 @@ export default function LeadCaptureModal() {
                         </div>
                         {venue === OTHER_LABEL && (
                             <div className="space-y-1">
-                                <Label htmlFor="lead-venue-other" className="text-[11px] sm:text-xs">Venue name (other)</Label>
+                                <Label htmlFor="lead-venue-other" className="text-[11px] sm:text-xs">Venue name (other) *</Label>
                                 <Input
                                     id="lead-venue-other"
                                     value={venueOther}
                                     onChange={(e) => setVenueOther(e.target.value)}
                                     placeholder="Enter venue name"
                                     className="h-9 text-sm touch-manipulation"
+                                    required={venue === OTHER_LABEL}
                                 />
                             </div>
                         )}

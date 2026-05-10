@@ -14,6 +14,7 @@ export const BUCKET_TO_FOLDER = {
   'service-images': 'phoenix/service-images',
   'site-logo': 'phoenix/site-logo',
   'content-media': 'phoenix/content-media',
+  'wp-agent-media': 'phoenix/wp-agent-media',
   'background-images': 'phoenix/backgrounds',
 } as const;
 

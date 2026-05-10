@@ -12,24 +12,9 @@ import { HeroBackgroundPattern } from "@/components/ui/HeroBackgroundPattern";
 import { getAlbumsByEventId } from "@/services/albums";
 import { getPageHeroContent } from "@/services/pageHeroContent";
 
-// Fallback images by slug when event has no cover_image
-const SLUG_TO_IMAGE: Record<string, string> = {
-  wedding: "/wedding 1.jpg",
-  birthday: "/birthday.jpg",
-  engagement: "/engagement.jpg",
-  sangeet: "/sangeet.jpg",
-  haldi: "/haldi.jpg",
-  mehendi: "/mehendi.jpg",
-  anniversary: "/anniversary.jpg",
-  corporate: "/corporate.jpg",
-  "corporate-events": "/corporate.jpg",
-  "car-opening": "/corporate.jpg",
-};
-
 function getEventImage(event: Event): string {
   if (event.cover_image) return event.cover_image;
-  const key = event.slug.toLowerCase().replace(/\s+/g, "-");
-  return SLUG_TO_IMAGE[key] || "/placeholder.svg";
+  return "/placeholder.svg";
 }
 
 const Events = () => {

@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import ScrollToTop from "./components/ScrollToTop";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -43,7 +43,10 @@ const AdminGallery = lazy(() => import("./pages/admin/Gallery"));
 const AdminServices = lazy(() => import("./pages/admin/Services"));
 const AdminCollaborations = lazy(() => import("./pages/admin/Collaborations"));
 const AdminTestimonials = lazy(() => import("./pages/admin/Testimonials"));
-const AdminInquiries = lazy(() => import("./pages/admin/Inquiries"));
+const AdminNotifications = lazy(() => import("./pages/admin/Notifications"));
+const AdminWpLeads = lazy(() => import("./pages/admin/WpLeads"));
+const AdminWpAnalytics = lazy(() => import("./pages/admin/WpAnalytics"));
+const AdminWpMedia = lazy(() => import("./pages/admin/WpMedia"));
 const AdminContent = lazy(() => import("./pages/admin/Content"));
 
 
@@ -151,10 +154,10 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/admin/inquiries"
+            path="/admin/notifications"
             element={
               <ProtectedRoute>
-                <AdminInquiries />
+                <AdminNotifications />
               </ProtectedRoute>
             }
           />
@@ -163,6 +166,32 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <AdminContent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/wp-leads"
+            element={
+              <ProtectedRoute>
+                <AdminWpLeads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/wp-analytics"
+            element={
+              <ProtectedRoute>
+                <AdminWpAnalytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/admin/inquiries" element={<Navigate to="/admin/notifications" replace />} />
+          <Route path="/admin/wp-notifications" element={<Navigate to="/admin/notifications?tab=wp" replace />} />
+          <Route
+            path="/admin/wp-media"
+            element={
+              <ProtectedRoute>
+                <AdminWpMedia />
               </ProtectedRoute>
             }
           />

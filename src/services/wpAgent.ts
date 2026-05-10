@@ -1,0 +1,427 @@
+import { endOfDay, startOfDay, endOfWeek, startOfWeek, subWeeks } from "date-fns";
+import { supabase } from "@/lib/supabase";
+
+export type WpLeadStatus = "new" | "contacted" | "qualified" | "converted" | "lost";
+
+export interface WpLead {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  status: WpLeadStatus;
+  event_type: string | null;
+  package_type: string | null;
+  urgency_level: string | null;
+  lead_score: number | null;
+  source_channel: string | null;
+  venue: string | null;
+  next_follow_up: string | null;
+  last_message: string | null;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WpNotification {
+  id: string;
+  type: string;
+  priority: string;
+  message: string;
+  lead_name: string | null;
+  lead_phone: string | null;
+  is_read: boolean;
+  scheduled_for: string | null;
+  created_at: string;
+}
+
+export interface WpDashboardSummary {
+  totalLeads: number;
+  newLeads: number;
+  highPriorityLeads: number;
+  callbacksDue: number;
+  avgLeadScore: number;
+}
+
+export interface WpConversation {
+  id: string;
+  lead_phone: string | null;
+  direction: "inbound" | "outbound";
+  message: string;
+  message_type: string | null;
+  created_at: string;
+}
+
+export interface WpFollowup {
+  id: string;
+  lead_phone: string;
+  message: string | null;
+  scheduled_at: string;
+  status: string;
+  created_at: string;
+}
+
+export const WP_SCHEDULE_FOLLOWUP_URL =
+  "https://phoenix-whatsapp-agent-production.up.railway.app/schedule-followup";
+
+const leadColumns =
+  "id, name, phone, email, status, event_type, package_type, urgency_level, lead_score, source_channel, venue, next_follow_up, last_message, metadata, created_at, updated_at";
+
+export async function scheduleWpFollowup(payload: {
+  phone: string;
+  message: string;
+  scheduled_at?: string;
+  send_now?: boolean;
+}) {
+  const res = await fetch(WP_SCHEDULE_FOLLOWUP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || res.statusText || "Request failed");
+}
+
+export async function getWpLeadsPage(
+  page: number,
+  pageSize: number,
+  search: string,
+  status: string,
+  source: "all" | "website" | "whatsapp" = "all"
+) {
+  const from = Math.max(page, 0) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("wp_leads")
+    .select(leadColumns, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (search.trim()) {
+    query = query.or(
+      `name.ilike.%${search.trim()}%,phone.ilike.%${search.trim()}%,event_type.ilike.%${search.trim()}%`
+    );
+  }
+  if (status !== "all") {
+    query = query.eq("status", status);
+  }
+  if (source !== "all") {
+    query = query.eq("source_channel", source);
+  }
+
+  const { data, count, error } = await query;
+  if (error) throw error;
+
+  return {
+    rows: (data || []) as WpLead[],
+    total: count ?? 0,
+  };
+}
+
+/** Lightweight lead facts keyed by phone (no joins elsewhere). */
+export async function getWpLeadBriefsByPhones(
+  phones: string[]
+): Promise<Record<string, { event_type: string | null; source_channel: string | null }>> {
+  const uniq = [...new Set(phones.filter(Boolean))];
+  if (!uniq.length) return {};
+  const { data, error } = await supabase
+    .from("wp_leads")
+    .select("phone, event_type, source_channel")
+    .in("phone", uniq);
+  if (error) throw error;
+  const map: Record<string, { event_type: string | null; source_channel: string | null }> = {};
+  for (const row of data || []) {
+    const p = (row as { phone: string | null }).phone;
+    if (p)
+      map[p] = {
+        event_type: (row as { event_type: string | null }).event_type,
+        source_channel: (row as { source_channel: string | null }).source_channel,
+      };
+  }
+  return map;
+}
+
+export async function getWpLeadByPhone(phone: string): Promise<WpLead | null> {
+  const { data, error } = await supabase
+    .from("wp_leads")
+    .select(leadColumns)
+    .eq("phone", phone)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as WpLead) ?? null;
+}
+
+export async function getRecentWpLeads(limit = 5): Promise<WpLead[]> {
+  const { data, error } = await supabase
+    .from("wp_leads")
+    .select(leadColumns)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data || []) as WpLead[];
+}
+
+export async function getWpLeadSummaryCards(): Promise<{
+  totalLeads: number;
+  newToday: number;
+  websiteLeads: number;
+  whatsappLeads: number;
+}> {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const iso = start.toISOString();
+
+  const [total, newToday, website, whatsapp] = await Promise.all([
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }),
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }).gte("created_at", iso),
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }).eq("source_channel", "website"),
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }).eq("source_channel", "whatsapp"),
+  ]);
+
+  const errs = [total.error, newToday.error, website.error, whatsapp.error].filter(Boolean);
+  if (errs.length) throw errs[0];
+
+  return {
+    totalLeads: total.count ?? 0,
+    newToday: newToday.count ?? 0,
+    websiteLeads: website.count ?? 0,
+    whatsappLeads: whatsapp.count ?? 0,
+  };
+}
+
+export async function updateWpLeadStatus(id: string, status: WpLeadStatus) {
+  const { data, error } = await supabase
+    .from("wp_leads")
+    .update({ status })
+    .eq("id", id)
+    .select(leadColumns)
+    .single();
+  if (error) throw error;
+  return data as WpLead;
+}
+
+export async function deleteWpLeadByPhone(phone: string) {
+  if (!phone) throw new Error("Phone is required");
+  const { error } = await supabase.from("wp_leads").delete().eq("phone", phone);
+  if (error) throw error;
+}
+
+export async function getWpDashboardSummary(): Promise<WpDashboardSummary> {
+  const nowIso = new Date().toISOString();
+
+  const [totalLeadsRes, newLeadsRes, highPriorityRes, callbacksDueRes, leadScoreRes] = await Promise.all([
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }),
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }).eq("status", "new"),
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }).in("urgency_level", ["high", "urgent"]),
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }).lte("next_follow_up", nowIso),
+    supabase.from("wp_leads").select("lead_score").not("lead_score", "is", null),
+  ]);
+
+  const errors = [
+    totalLeadsRes.error,
+    newLeadsRes.error,
+    highPriorityRes.error,
+    callbacksDueRes.error,
+    leadScoreRes.error,
+  ].filter(Boolean);
+  if (errors.length > 0) throw errors[0];
+
+  const scores = (leadScoreRes.data || []).map((r) => Number(r.lead_score || 0));
+  const avgLeadScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+
+  return {
+    totalLeads: totalLeadsRes.count ?? 0,
+    newLeads: newLeadsRes.count ?? 0,
+    highPriorityLeads: highPriorityRes.count ?? 0,
+    callbacksDue: callbacksDueRes.count ?? 0,
+    avgLeadScore,
+  };
+}
+
+export async function getWpNotifications(limit = 30) {
+  const { data, error } = await supabase
+    .from("wp_notifications")
+    .select("id, type, priority, message, lead_name, lead_phone, is_read, scheduled_for, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data || []) as WpNotification[];
+}
+
+export async function markWpNotificationRead(id: string) {
+  const { error } = await supabase.from("wp_notifications").update({ is_read: true }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function markWpNotificationsReadByIds(ids: string[]) {
+  if (!ids.length) return;
+  const { error } = await supabase.from("wp_notifications").update({ is_read: true }).in("id", ids);
+  if (error) throw error;
+}
+
+export async function markAllWpNotificationsRead() {
+  const { error } = await supabase.from("wp_notifications").update({ is_read: true }).eq("is_read", false);
+  if (error) throw error;
+}
+
+export async function getWpUnreadNotificationsCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("wp_notifications")
+    .select("*", { count: "exact", head: true })
+    .eq("is_read", false);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function getWpConversationsForPhone(phone: string): Promise<WpConversation[]> {
+  if (!phone) return [];
+  const { data, error } = await supabase
+    .from("wp_conversations")
+    .select("id, lead_phone, direction, message, message_type, created_at")
+    .eq("lead_phone", phone)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data || []) as WpConversation[];
+}
+
+export async function getWpFollowupsForPhone(phone: string): Promise<WpFollowup[]> {
+  if (!phone) return [];
+  const { data, error } = await supabase
+    .from("wp_followups")
+    .select("id, lead_phone, message, scheduled_at, status, created_at")
+    .eq("lead_phone", phone)
+    .order("scheduled_at", { ascending: true });
+  if (error) throw error;
+  return (data || []) as WpFollowup[];
+}
+
+export async function getTodaysPendingFollowupsWithNames(): Promise<
+  Array<WpFollowup & { lead_name: string | null }>
+> {
+  const start = startOfDay(new Date());
+  const end = endOfDay(new Date());
+  const { data, error } = await supabase
+    .from("wp_followups")
+    .select("id, lead_phone, message, scheduled_at, status, created_at")
+    .eq("status", "pending")
+    .gte("scheduled_at", start.toISOString())
+    .lte("scheduled_at", end.toISOString())
+    .order("scheduled_at", { ascending: true });
+  if (error) throw error;
+  const rows = (data || []) as WpFollowup[];
+  const phones = [...new Set(rows.map((r) => r.lead_phone).filter(Boolean))];
+  if (!phones.length) return rows.map((r) => ({ ...r, lead_name: null }));
+
+  const { data: leads, error: le } = await supabase.from("wp_leads").select("phone, name").in("phone", phones);
+  if (le) throw le;
+  const nameByPhone = new Map((leads || []).map((l: { phone: string | null; name: string }) => [l.phone, l.name]));
+  return rows.map((r) => ({ ...r, lead_name: (nameByPhone.get(r.lead_phone) as string | undefined) ?? null }));
+}
+
+export async function getTodaysPendingFollowupsCount(): Promise<number> {
+  const start = startOfDay(new Date());
+  const end = endOfDay(new Date());
+  const { count, error } = await supabase
+    .from("wp_followups")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending")
+    .gte("scheduled_at", start.toISOString())
+    .lte("scheduled_at", end.toISOString());
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export interface WpAnalyticsRow {
+  date: string;
+  total_leads: number;
+  converted_leads: number;
+  contacted_leads: number;
+}
+
+export async function getWpAnalytics(days = 14): Promise<WpAnalyticsRow[]> {
+  const { data, error } = await supabase
+    .from("wp_daily_stats")
+    .select("date, total_leads, converted_leads, contacted_leads")
+    .order("date", { ascending: false })
+    .limit(days);
+
+  if (error) throw error;
+  return ((data || []) as WpAnalyticsRow[]).reverse();
+}
+
+export async function refreshWpDailyStats(daysBack = 30) {
+  const { error } = await supabase.rpc("refresh_wp_daily_stats", { days_back: daysBack });
+  if (error) throw error;
+}
+
+export async function getWpSourceBreakdown(): Promise<{
+  website: number;
+  whatsapp: number;
+  other: number;
+}> {
+  const [totalRes, websiteRes, whatsappRes] = await Promise.all([
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }),
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }).eq("source_channel", "website"),
+    supabase.from("wp_leads").select("*", { count: "exact", head: true }).eq("source_channel", "whatsapp"),
+  ]);
+  if (totalRes.error) throw totalRes.error;
+  if (websiteRes.error) throw websiteRes.error;
+  if (whatsappRes.error) throw whatsappRes.error;
+  const total = totalRes.count ?? 0;
+  const website = websiteRes.count ?? 0;
+  const whatsapp = whatsappRes.count ?? 0;
+  const other = Math.max(0, total - website - whatsapp);
+  return { website, whatsapp, other };
+}
+
+export async function getWpEventTypeCounts(maxRows = 8000): Promise<{ label: string; count: number }[]> {
+  const pageSize = 1000;
+  let start = 0;
+  const tallies: Record<string, number> = {};
+  while (start < maxRows) {
+    const { data, error } = await supabase
+      .from("wp_leads")
+      .select("event_type")
+      .order("id", { ascending: true })
+      .range(start, start + pageSize - 1);
+    if (error) throw error;
+    const chunk = data || [];
+    if (chunk.length === 0) break;
+    for (const row of chunk) {
+      const k = (row as { event_type: string | null }).event_type?.trim() || "Unknown";
+      tallies[k] = (tallies[k] || 0) + 1;
+    }
+    if (chunk.length < pageSize) break;
+    start += pageSize;
+  }
+  return Object.entries(tallies)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export async function getWpWeeklyLeadComparison(): Promise<{ thisWeek: number; lastWeek: number }> {
+  const now = new Date();
+  const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const prev = subWeeks(now, 1);
+  const lastWeekStart = startOfWeek(prev, { weekStartsOn: 1 });
+  const lastWeekEnd = endOfWeek(prev, { weekStartsOn: 1 });
+
+  const [thisWeek, lastWeek] = await Promise.all([
+    supabase
+      .from("wp_leads")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", thisWeekStart.toISOString())
+      .lte("created_at", thisWeekEnd.toISOString()),
+    supabase
+      .from("wp_leads")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", lastWeekStart.toISOString())
+      .lte("created_at", lastWeekEnd.toISOString()),
+  ]);
+  if (thisWeek.error) throw thisWeek.error;
+  if (lastWeek.error) throw lastWeek.error;
+  return { thisWeek: thisWeek.count ?? 0, lastWeek: lastWeek.count ?? 0 };
+}

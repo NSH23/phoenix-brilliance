@@ -14,3 +14,5 @@ export * from './dashboard';
 export * from './pageHeroContent';
 export * from './team';
 export * from './adminUsers';
+export * from './wpAgent';
+export * from './wpMedia';

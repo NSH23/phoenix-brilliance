@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, Bell, Search, Moon, Sun } from 'lucide-react';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/command';
 import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
 import { getUnreadInquiriesForNotifications, getUnreadInquiriesCount, markInquiryAsRead, type Inquiry } from '@/services';
+import { getWpNotifications, markWpNotificationRead, type WpNotification } from '@/services/wpAgent';
 import { supabase } from '@/lib/supabase';
 import { getAdminVapidPublicKey, syncAdminPushSubscription } from '@/lib/adminPush';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
   // Notification State
   const [notifications, setNotifications] = useState<Inquiry[]>([]);
+  const [wpNotifications, setWpNotifications] = useState<WpNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const prevCountRef = useRef(0);
   const debouncedFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,13 +100,17 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const [list, count] = await Promise.all([
+      const [list, count, wpList] = await Promise.all([
         getUnreadInquiriesForNotifications(10),
         getUnreadInquiriesCount(),
+        getWpNotifications(10),
       ]);
       setNotifications(list);
-      prevCountRef.current = count;
-      setUnreadCount(prev => (prev === count ? prev : count));
+      setWpNotifications(wpList);
+      const wpUnread = wpList.filter((n) => !n.is_read).length;
+      const totalUnread = count + wpUnread;
+      prevCountRef.current = totalUnread;
+      setUnreadCount(prev => (prev === totalUnread ? prev : totalUnread));
     } catch (error) {
       console.error('Failed to fetch notifications', error);
     }
@@ -211,6 +217,23 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     };
   }, [fetchNotifications]);
 
+  // Real-time: WP notifications (bell count + dropdown)
+  useEffect(() => {
+    const channel = supabase
+      .channel('wp-notifications-layout')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wp_notifications' }, () => {
+        if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
+        debouncedFetchRef.current = setTimeout(() => {
+          fetchNotifications();
+        }, 800);
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [fetchNotifications]);
+
   // Real-time: new inquiries
   useEffect(() => {
     const channel = supabase
@@ -225,7 +248,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         }, 1000);
         toast.success('New inquiry', {
           description: `${row.name} – ${row.event_type || 'Inquiry'}`,
-          action: { label: 'View', onClick: () => navigate(`/admin/inquiries?open=${row.id}`) },
+          action: { label: 'View', onClick: () => navigate(`/admin/notifications?tab=inquiries&open=${row.id}`) },
         });
       })
       .subscribe();
@@ -252,14 +275,45 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     setNotificationsOpen(open);
     if (!open) return;
 
-    const unreadIds = notifications.filter(n => n.is_read === false).map(n => n.id);
-    if (unreadIds.length === 0) return;
+    const unreadInquiryIds = notifications.filter(n => n.is_read === false).map(n => n.id);
+    const unreadWpIds = wpNotifications.filter(n => n.is_read === false).map(n => n.id);
+    if (unreadInquiryIds.length === 0 && unreadWpIds.length === 0) return;
 
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    prevCountRef.current = Math.max(0, prevCountRef.current - unreadIds.length);
+    setWpNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    prevCountRef.current = 0;
     setUnreadCount(0);
-    void Promise.all(unreadIds.map((id) => markInquiryAsRead(id).catch(() => null)));
-  }, [notifications]);
+    void Promise.all([
+      ...unreadInquiryIds.map((id) => markInquiryAsRead(id).catch(() => null)),
+      ...unreadWpIds.map((id) => markWpNotificationRead(id).catch(() => null)),
+    ]);
+  }, [notifications, wpNotifications]);
+
+  const combinedNotifications = useMemo(() => {
+    const inquiryItems = notifications.map((n) => ({
+      id: n.id,
+      kind: 'inquiry' as const,
+      title: n.name,
+      subtitle: n.event_type || 'General Inquiry',
+      message: n.message,
+      createdAt: n.created_at,
+      isRead: n.is_read ?? false,
+      leadPhone: null as string | null,
+    }));
+    const wpItems = wpNotifications.map((n) => ({
+      id: n.id,
+      kind: 'wp' as const,
+      title: n.lead_name || 'WP Alert',
+      subtitle: `${n.type} • ${n.priority}`,
+      message: n.message,
+      createdAt: n.created_at,
+      isRead: n.is_read,
+      leadPhone: n.lead_phone,
+    }));
+    return [...inquiryItems, ...wpItems]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 20);
+  }, [notifications, wpNotifications]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -437,30 +491,41 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                   )}
                 </div>
                 <div className="max-h-[300px] overflow-y-auto">
-                  {notifications.length === 0 ? (
+                  {combinedNotifications.length === 0 ? (
                     <div className="p-8 text-center text-muted-foreground">
                       <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
                       <p className="text-sm">No new notifications</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-border/50">
-                      {notifications.map((inquiry) => (
+                      {combinedNotifications.map((item) => (
                         <button
-                          key={inquiry.id}
+                          key={`${item.kind}-${item.id}`}
                           className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex gap-3 items-start"
                           onClick={() => {
-                            handleMarkAsRead(inquiry.id);
+                            if (item.kind === 'inquiry') {
+                              handleMarkAsRead(item.id);
+                            } else {
+                              void markWpNotificationRead(item.id).then(() => {
+                                setWpNotifications(prev => prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n)));
+                              });
+                            }
                             setNotificationsOpen(false);
-                            navigate(`/admin/inquiries?open=${inquiry.id}`);
+                            navigate(
+                              item.kind === 'inquiry'
+                                ? `/admin/notifications?tab=inquiries&open=${item.id}`
+                                : `/admin/notifications?tab=wp${item.leadPhone ? `&leadPhone=${encodeURIComponent(item.leadPhone)}` : ''}`
+                            );
                           }}
                         >
                           <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{inquiry.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{inquiry.event_type || 'General Inquiry'}</p>
-                            <p className="text-[10px] text-muted-foreground truncate opacity-70">{inquiry.message}</p>
+                            <p className="text-[10px] uppercase text-muted-foreground">{item.kind === 'inquiry' ? 'Inquiry' : 'WP Alert'}</p>
+                            <p className="text-sm font-medium truncate">{item.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
+                            <p className="text-[10px] text-muted-foreground truncate opacity-70">{item.message}</p>
                             <p className="text-[10px] text-muted-foreground mt-1">
-                              {new Date(inquiry.created_at).toLocaleDateString()}
+                              {new Date(item.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </button>
@@ -469,8 +534,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                   )}
                 </div>
                 <div className="p-2 border-t border-border bg-muted/20">
-                  <Button variant="ghost" size="sm" className="w-full text-xs h-8" onClick={() => navigate('/admin/inquiries')}>
-                    View all inquiries
+                  <Button variant="ghost" size="sm" className="w-full text-xs h-8" onClick={() => navigate('/admin/notifications')}>
+                    View all notifications
                   </Button>
                 </div>
               </PopoverContent>

@@ -12,20 +12,20 @@ import { cn } from "@/lib/utils";
 
 const FALLBACK_IMAGES: Record<string, string[]> = {
   row1: [
-    "/wedding 1.jpg",
-    "/gallery wedding.jpg",
-    "/engagement.jpg",
-    "/sangeet.jpg",
-    "/haldi.jpg",
-    "/mehendi.jpg",
+    "/placeholder.svg",
+    "/placeholder.svg",
+    "/placeholder.svg",
+    "/placeholder.svg",
+    "/placeholder.svg",
+    "/placeholder.svg",
   ],
   row2: [
-    "/birthday.jpg",
-    "/corporate.jpg",
-    "/anniversary.jpg",
-    "/wedding 1.jpg",
-    "/engagement.jpg",
-    "/gallery wedding.jpg",
+    "/placeholder.svg",
+    "/placeholder.svg",
+    "/placeholder.svg",
+    "/placeholder.svg",
+    "/placeholder.svg",
+    "/placeholder.svg",
   ],
 };
 

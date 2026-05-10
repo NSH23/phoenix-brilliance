@@ -1,10 +1,14 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LogOut, ChevronLeft } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useSiteConfig } from '@/contexts/SiteConfigContext';
 import { cn } from '@/lib/utils';
 import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
 import AdminUserAvatar from '@/components/admin/AdminUserAvatar';
+import { supabase } from '@/lib/supabase';
+import { getWpUnreadNotificationsCount } from '@/services/wpAgent';
 
 interface AdminSidebarProps {
   collapsed?: boolean;
@@ -14,8 +18,31 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ collapsed = false, onCollapsedChange, mobile = false }: AdminSidebarProps) {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { user, logout } = useAdmin();
   const { logoUrl } = useSiteConfig();
+
+  const wpUnreadQuery = useQuery({
+    queryKey: ['wp-unread-notifications-count'],
+    queryFn: getWpUnreadNotificationsCount,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: false,
+  });
+
+  const wpUnreadCount = wpUnreadQuery.data ?? 0;
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('sidebar-wp-unread')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wp_notifications' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['wp-unread-notifications-count'] });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
   const logoSrc = logoUrl || '/logo.png';
   const sidebarWidth = collapsed ? 80 : 280;
   const showLabels = !collapsed || mobile;
@@ -83,14 +110,26 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
               mobile ? "py-3 px-4 text-base" : "px-3 py-2.5"
             )}
           >
-            <item.icon className={cn(
-              "w-5 h-5 flex-shrink-0",
-              isActive(item.href)
-                ? mobile
-                  ? "text-primary"
-                  : "text-primary-foreground"
-                : "text-muted-foreground group-hover:text-primary"
-            )} />
+            <span className="relative inline-flex shrink-0">
+              <item.icon className={cn(
+                "w-5 h-5 flex-shrink-0",
+                isActive(item.href)
+                  ? mobile
+                    ? "text-primary"
+                    : "text-primary-foreground"
+                  : "text-muted-foreground group-hover:text-primary"
+              )} />
+              {item.href === '/admin/notifications' && wpUnreadCount > 0 ? (
+                <span
+                  className={cn(
+                    'absolute -top-1.5 -right-2 min-h-[16px] min-w-[16px] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center tabular-nums',
+                    isActive(item.href) && !mobile ? 'ring-2 ring-primary' : ''
+                  )}
+                >
+                  {wpUnreadCount > 99 ? '99+' : wpUnreadCount}
+                </span>
+              ) : null}
+            </span>
             <span
               className="font-medium whitespace-nowrap overflow-hidden"
               style={{
