@@ -60,8 +60,51 @@ export interface WpFollowup {
   created_at: string;
 }
 
-export const WP_SCHEDULE_FOLLOWUP_URL =
+const DEFAULT_WP_SCHEDULE_FOLLOWUP =
   "https://phoenix-whatsapp-agent-production.up.railway.app/schedule-followup";
+
+/** Optional override: `VITE_WP_SCHEDULE_FOLLOWUP_URL` (full URL to `/schedule-followup`). */
+export const WP_SCHEDULE_FOLLOWUP_URL =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_WP_SCHEDULE_FOLLOWUP_URL?.trim()) ||
+  DEFAULT_WP_SCHEDULE_FOLLOWUP;
+
+/** Last 10 digits and optional `91` prefix — matches website storage vs WhatsApp `from` formats. */
+export function wpLeadPhoneKeyVariants(phone: string): string[] {
+  const digits = String(phone).replace(/\D/g, "");
+  if (!digits) return [];
+  const last10 = digits.slice(-10);
+  if (last10.length !== 10) return [digits];
+  return Array.from(new Set([last10, `91${last10}`]));
+}
+
+/** True when two stored / WhatsApp phone keys refer to the same subscriber (10 vs 91…). */
+export function wpPhonesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  const va = wpLeadPhoneKeyVariants(a);
+  const vb = wpLeadPhoneKeyVariants(b);
+  return va.some((x) => vb.includes(x));
+}
+
+export function getWpAgentBaseUrl(): string {
+  try {
+    return new URL(WP_SCHEDULE_FOLLOWUP_URL).origin;
+  } catch {
+    return "";
+  }
+}
+
+/** Triggers the Railway agent POST /process-followups (sends due wp_followups rows). */
+export async function triggerWpProcessFollowups(): Promise<void> {
+  const base = getWpAgentBaseUrl();
+  if (!base) throw new Error("WP agent base URL is not configured");
+  const res = await fetch(`${base}/process-followups`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || res.statusText || "Request failed");
+}
 
 const leadColumns =
   "id, name, phone, email, status, event_type, package_type, urgency_level, lead_score, source_channel, venue, next_follow_up, last_message, metadata, created_at, updated_at";
@@ -142,10 +185,11 @@ export async function getWpLeadBriefsByPhones(
 }
 
 export async function getWpLeadByPhone(phone: string): Promise<WpLead | null> {
+  const keys = wpLeadPhoneKeyVariants(phone);
   const { data, error } = await supabase
     .from("wp_leads")
     .select(leadColumns)
-    .eq("phone", phone)
+    .in("phone", keys.length ? keys : [phone])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -204,39 +248,57 @@ export async function updateWpLeadStatus(id: string, status: WpLeadStatus) {
 
 export async function deleteWpLeadByPhone(phone: string) {
   if (!phone) throw new Error("Phone is required");
-  const { error } = await supabase.from("wp_leads").delete().eq("phone", phone);
-  if (error) throw error;
+  const keys = wpLeadPhoneKeyVariants(phone);
+  if (!keys.length) throw new Error("Invalid phone");
+
+  const del = async (table: string) => {
+    const { error } = await supabase.from(table).delete().in("lead_phone", keys);
+    if (error) throw error;
+  };
+
+  await del("wp_followups");
+  await del("wp_conversations");
+  await del("wp_notifications");
+
+  const { error: leadErr } = await supabase.from("wp_leads").delete().in("phone", keys);
+  if (leadErr) throw leadErr;
 }
 
 export async function getWpDashboardSummary(): Promise<WpDashboardSummary> {
-  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase.rpc("get_wp_dashboard_summary");
+  if (!error && data != null) {
+    const row = data as {
+      totalLeads?: number;
+      newLeads?: number;
+      highPriorityLeads?: number;
+      callbacksDue?: number;
+      avgLeadScore?: number;
+    };
+    return {
+      totalLeads: Number(row?.totalLeads ?? 0),
+      newLeads: Number(row?.newLeads ?? 0),
+      highPriorityLeads: Number(row?.highPriorityLeads ?? 0),
+      callbacksDue: Number(row?.callbacksDue ?? 0),
+      avgLeadScore: Number(row?.avgLeadScore ?? 0),
+    };
+  }
 
-  const [totalLeadsRes, newLeadsRes, highPriorityRes, callbacksDueRes, leadScoreRes] = await Promise.all([
+  const nowIso = new Date().toISOString();
+  const [totalLeadsRes, newLeadsRes, highPriorityRes, callbacksDueRes] = await Promise.all([
     supabase.from("wp_leads").select("*", { count: "exact", head: true }),
     supabase.from("wp_leads").select("*", { count: "exact", head: true }).eq("status", "new"),
     supabase.from("wp_leads").select("*", { count: "exact", head: true }).in("urgency_level", ["high", "urgent"]),
     supabase.from("wp_leads").select("*", { count: "exact", head: true }).lte("next_follow_up", nowIso),
-    supabase.from("wp_leads").select("lead_score").not("lead_score", "is", null),
   ]);
-
-  const errors = [
-    totalLeadsRes.error,
-    newLeadsRes.error,
-    highPriorityRes.error,
-    callbacksDueRes.error,
-    leadScoreRes.error,
-  ].filter(Boolean);
-  if (errors.length > 0) throw errors[0];
-
-  const scores = (leadScoreRes.data || []).map((r) => Number(r.lead_score || 0));
-  const avgLeadScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  const errs = [totalLeadsRes.error, newLeadsRes.error, highPriorityRes.error, callbacksDueRes.error].filter(Boolean);
+  if (errs.length > 0) throw errs[0];
 
   return {
     totalLeads: totalLeadsRes.count ?? 0,
     newLeads: newLeadsRes.count ?? 0,
     highPriorityLeads: highPriorityRes.count ?? 0,
     callbacksDue: callbacksDueRes.count ?? 0,
-    avgLeadScore,
+    avgLeadScore: 0,
   };
 }
 

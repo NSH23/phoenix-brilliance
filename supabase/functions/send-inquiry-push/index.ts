@@ -4,6 +4,10 @@
  * Invoke via Database Webhook (INSERT on public.inquiries) with header:
  *   x-phoenix-webhook-secret: <WEBHOOK_SECRET>
  *
+ * For WhatsApp auto-replies on the same INSERT, deploy and wire
+ * `forward-inquiry-whatsapp` (see that function) with WA_WEBSITE_LEAD_URL — you can attach
+ * multiple webhooks to the same table in the Supabase dashboard.
+ *
  * Secrets (Dashboard → Edge Functions → Secrets):
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto), WEBHOOK_SECRET,
  *   VAPID_SUBJECT (e.g. mailto:you@domain.com), VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY

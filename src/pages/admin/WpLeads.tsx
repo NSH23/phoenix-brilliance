@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CalendarClock, Loader2, MessageSquarePlus, Search, Trash2 } from "lucide-react";
+import { CalendarClock, Loader2, MessageSquarePlus, PlayCircle, Search, Trash2 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import WpLeadDetailSheet from "@/components/admin/WpLeadDetailSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,10 @@ import {
   getWpLeadsPage,
   getTodaysPendingFollowupsWithNames,
   scheduleWpFollowup,
+  triggerWpProcessFollowups,
   updateWpLeadStatus,
+  wpLeadPhoneKeyVariants,
+  wpPhonesMatch,
   type WpFollowup,
   type WpLead,
   type WpLeadStatus,
@@ -82,6 +85,7 @@ export default function WpLeadsPage() {
   const [sendBusy, setSendBusy] = useState(false);
 
   const [deleteLead, setDeleteLead] = useState<WpLead | null>(null);
+  const [processFollowupsBusy, setProcessFollowupsBusy] = useState(false);
 
   const loadSummaries = useCallback(async () => {
     setSummaryLoading(true);
@@ -225,8 +229,9 @@ export default function WpLeadsPage() {
     }
     try {
       await deleteWpLeadByPhone(phone);
-      setRows((prev) => prev.filter((r) => r.phone !== phone));
-      if (detailLead?.phone === phone) {
+      const keys = new Set(wpLeadPhoneKeyVariants(phone));
+      setRows((prev) => prev.filter((r) => r.phone == null || !keys.has(r.phone)));
+      if (detailLead?.phone && keys.has(detailLead.phone)) {
         setDetailOpen(false);
         setDetailLead(null);
       }
@@ -261,6 +266,19 @@ export default function WpLeadsPage() {
       toast.error("Send failed", { description: (err as Error).message });
     } finally {
       setSendBusy(false);
+    }
+  };
+
+  const onProcessFollowups = async () => {
+    setProcessFollowupsBusy(true);
+    try {
+      await triggerWpProcessFollowups();
+      toast.success("Agent ran the due follow-up job");
+      void loadPending();
+    } catch (err) {
+      toast.error("Could not reach WhatsApp agent", { description: (err as Error).message });
+    } finally {
+      setProcessFollowupsBusy(false);
     }
   };
 
@@ -307,6 +325,21 @@ export default function WpLeadsPage() {
                     </Badge>
                   ) : null}
                 </CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 h-8 gap-1 text-xs"
+                  disabled={processFollowupsBusy}
+                  onClick={() => void onProcessFollowups()}
+                >
+                  {processFollowupsBusy ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <PlayCircle className="w-3.5 h-3.5" />
+                  )}
+                  Run due
+                </Button>
               </CardHeader>
               <CardContent className="px-4 pb-4 pt-0">
                 {pendingLoading ? (
@@ -323,7 +356,7 @@ export default function WpLeadsPage() {
                           type="button"
                           className="w-full text-left rounded-lg border border-border/50 px-3 py-2 hover:bg-muted/50 transition-colors"
                           onClick={() => {
-                            const row = rows.find((r) => r.phone === p.lead_phone);
+                            const row = rows.find((r) => r.phone != null && wpPhonesMatch(r.phone, p.lead_phone));
                             if (row) openLeadDetail(row);
                             else {
                               void (async () => {
@@ -507,16 +540,34 @@ export default function WpLeadsPage() {
 
         <aside className="hidden xl:block space-y-4 sticky top-24">
           <Card className="rounded-2xl border border-border/60">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <CalendarClock className="w-4 h-4" />
-                Pending follow-ups
-                {!pendingLoading && pendingCount > 0 ? (
-                  <Badge variant="destructive" className="ml-auto">
-                    {pendingCount}
-                  </Badge>
-                ) : null}
-              </CardTitle>
+            <CardHeader className="pb-2 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CalendarClock className="w-4 h-4" />
+                  Pending follow-ups
+                  {!pendingLoading && pendingCount > 0 ? (
+                    <Badge variant="destructive" className="ml-auto">
+                      {pendingCount}
+                    </Badge>
+                  ) : null}
+                </CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 h-8 gap-1 text-xs"
+                  disabled={processFollowupsBusy}
+                  onClick={() => void onProcessFollowups()}
+                  title="Calls the Railway agent to send follow-ups whose scheduled time has passed"
+                >
+                  {processFollowupsBusy ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <PlayCircle className="w-3.5 h-3.5" />
+                  )}
+                  Run due
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground font-normal">Scheduled for today</p>
             </CardHeader>
             <CardContent className="pt-0">
@@ -534,7 +585,7 @@ export default function WpLeadsPage() {
                         type="button"
                         className="w-full text-left rounded-lg border border-border/50 px-3 py-2.5 hover:bg-muted/50 transition-colors"
                         onClick={() => {
-                          const row = rows.find((r) => r.phone === p.lead_phone);
+                          const row = rows.find((r) => r.phone != null && wpPhonesMatch(r.phone, p.lead_phone));
                           if (row) openLeadDetail(row);
                           else {
                             void (async () => {
@@ -603,9 +654,10 @@ export default function WpLeadsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this lead?</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes the row from wp_leads for phone{" "}
-              <span className="font-mono text-foreground">{deleteLead?.phone}</span>. Related conversations,
-              notifications, and follow-ups are removed via database cascade.
+              This removes the lead and all WhatsApp thread data we store for{" "}
+              <span className="font-mono text-foreground">{deleteLead?.phone}</span> (including{" "}
+              <span className="font-mono text-foreground">91…</span> variants). The next message from that number is
+              treated as a fresh contact in the agent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

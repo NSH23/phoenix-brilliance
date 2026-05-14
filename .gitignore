@@ -38,6 +38,10 @@ public/*.mov
 phoenix-foundation-2/
 phoenix-foundation-main/
 
+# Cursor / Supabase CLI local state
+.cursor/
+supabase/.temp/
+
 Capture.PNG
 bg10.jpg
 bg3.jpg

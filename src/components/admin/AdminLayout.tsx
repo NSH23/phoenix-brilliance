@@ -14,12 +14,14 @@ import {
   CommandGroup,
   CommandItem,
 } from '@/components/ui/command';
-import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
+import { ADMIN_COMMAND_PALETTE_ITEMS } from '@/lib/adminMenu';
 import { getUnreadInquiriesForNotifications, getUnreadInquiriesCount, markInquiryAsRead, type Inquiry } from '@/services';
-import { getWpNotifications, markWpNotificationRead, type WpNotification } from '@/services/wpAgent';
+import { getWpNotifications, getWpUnreadNotificationsCount, markWpNotificationRead, type WpNotification } from '@/services/wpAgent';
 import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { getAdminVapidPublicKey, syncAdminPushSubscription } from '@/lib/adminPush';
 import { toast } from 'sonner';
+import AdminWorkspaceSwitcher from '@/components/admin/AdminWorkspaceSwitcher';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -27,8 +29,11 @@ interface AdminLayoutProps {
   subtitle?: string;
 }
 
+const WP_UNREAD_QUERY_KEY = ['wp-unread-notifications-count'] as const;
+
 export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('adminSidebarCollapsed');
     return saved ? JSON.parse(saved) : false;
@@ -100,21 +105,25 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const [list, count, wpList] = await Promise.all([
+      const [list, count, wpList, wpUnreadTotal] = await Promise.all([
         getUnreadInquiriesForNotifications(10),
         getUnreadInquiriesCount(),
         getWpNotifications(10),
+        queryClient.ensureQueryData({
+          queryKey: WP_UNREAD_QUERY_KEY,
+          queryFn: getWpUnreadNotificationsCount,
+          staleTime: 30_000,
+        }),
       ]);
       setNotifications(list);
       setWpNotifications(wpList);
-      const wpUnread = wpList.filter((n) => !n.is_read).length;
-      const totalUnread = count + wpUnread;
+      const totalUnread = count + wpUnreadTotal;
       prevCountRef.current = totalUnread;
       setUnreadCount(prev => (prev === totalUnread ? prev : totalUnread));
     } catch (error) {
       console.error('Failed to fetch notifications', error);
     }
-  }, []);
+  }, [queryClient]);
 
   const upsertNotification = useCallback((row: Inquiry) => {
     setNotifications(prev => [row, ...prev.filter(i => i.id !== row.id)].slice(0, 10));
@@ -352,10 +361,10 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className="min-h-screen"
       >
-        {/* Top Header */}
-        <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-lg border-b border-border flex items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-4">
-
+        {/* Top Header — workspace switcher centered on laptop; full-width row under tools on small screens */}
+        <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-lg">
+          <div className="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] gap-x-2 gap-y-2 px-3 py-2 sm:px-4 md:px-6 md:grid-cols-[minmax(0,1fr)_minmax(200px,280px)_auto] md:grid-rows-1 md:items-center md:gap-4 md:py-0 md:min-h-16">
+            <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2 sm:gap-3 md:max-w-2xl">
             {/* Mobile Menu Trigger */}
             <div className="md:hidden">
               <Sheet>
@@ -375,7 +384,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
             {/* Desktop Collapse Trigger */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden md:flex w-10 h-10 items-center justify-center rounded-lg hover:bg-muted"
+              className="hidden md:flex w-10 h-10 shrink-0 items-center justify-center rounded-lg hover:bg-muted"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -384,11 +393,11 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 md:px-4 py-2 w-11 h-11 md:w-80 md:h-auto text-left hover:bg-muted/70 transition-colors min-w-[44px] md:min-w-0"
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-left hover:bg-muted/70 transition-colors md:max-w-80 md:flex-none md:px-4 h-11 md:h-auto"
                 >
-                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="text-muted-foreground text-sm hidden md:inline">Search...</span>
-                  <kbd className="ml-auto pointer-events-none hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="hidden truncate text-sm text-muted-foreground sm:inline md:inline">Search…</span>
+                  <kbd className="ml-auto hidden h-5 shrink-0 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground md:inline-flex">
                     <span>⌘</span>K
                   </kbd>
                 </button>
@@ -399,7 +408,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                   <CommandList>
                     <CommandEmpty>No results.</CommandEmpty>
                     <CommandGroup heading="Admin">
-                      {ADMIN_MENU_ITEMS.map((item) => {
+                      {ADMIN_COMMAND_PALETTE_ITEMS.map((item) => {
                         const Icon = item.icon;
                         return (
                           <CommandItem
@@ -421,9 +430,13 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                 </Command>
               </PopoverContent>
             </Popover>
-          </div>
+            </div>
 
-          <div className="flex items-center gap-3">
+            <div className="col-span-2 row-start-2 flex justify-center px-1 sm:px-2 md:col-span-1 md:col-start-2 md:row-start-1 md:px-0">
+              <AdminWorkspaceSwitcher placement="navbar" className="w-full max-w-[280px]" />
+            </div>
+
+            <div className="col-start-2 row-start-1 flex shrink-0 items-center justify-end gap-1.5 sm:gap-2 md:col-start-3 md:row-start-1 md:justify-end">
             {/* Notifications */}
             <Popover open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
               <PopoverTrigger asChild>
@@ -549,6 +562,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
             >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
+          </div>
           </div>
         </header>
 

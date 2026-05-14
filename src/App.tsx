@@ -11,6 +11,7 @@ import { SiteConfigProvider } from "./contexts/SiteConfigContext";
 import { LeadCaptureProvider } from "./contexts/LeadCaptureContext";
 import GlobalBackground from "@/components/GlobalBackground";
 import LeadCaptureModal from "@/components/LeadCaptureModal";
+import ProtectedRoute from "./components/admin/ProtectedRoute";
 
 // Lazy load all route components for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -56,7 +57,8 @@ const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminTeam = lazy(() => import("./pages/admin/Team"));
 const AdminSetPassword = lazy(() => import("./pages/admin/SetPassword"));
 const AdminWhyUs = lazy(() => import("./pages/admin/WhyUs"));
-import ProtectedRoute from "./components/admin/ProtectedRoute";
+const AdminWpDashboard = lazy(() => import("./pages/admin/WpDashboard"));
+const AdminWpSettings = lazy(() => import("./pages/admin/WpSettings"));
 
 // Loading component for Suspense fallback
 const PageLoader = () => (
@@ -94,6 +96,30 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/wp-dashboard"
+            element={
+              <ProtectedRoute>
+                <AdminWpDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/wp-settings"
+            element={
+              <ProtectedRoute>
+                <AdminWpSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/wp-alerts"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/admin/notifications?tab=wp" replace />
               </ProtectedRoute>
             }
           />

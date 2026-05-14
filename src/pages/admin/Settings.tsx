@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Save, User, Shield, Bell, Globe, Database, Lock, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -64,13 +65,6 @@ export default function AdminSettings() {
   const [siteSaving, setSiteSaving] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState('');
   const [siteLogoSaving, setSiteLogoSaving] = useState(false);
-  const [wpSettings, setWpSettings] = useState({
-    wpAgentEnabled: true,
-    defaultOwner: '',
-    callbackSlaMinutes: '30',
-    highPriorityScore: '75',
-  });
-  const [wpSaving, setWpSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -129,24 +123,6 @@ export default function AdminSettings() {
 
   useEffect(() => {
     getSiteSettingOptional('site_logo_url').then((v) => setSiteLogoUrl(v || '')).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    Promise.all([
-      getSiteSettingOptional('wp_agent_enabled'),
-      getSiteSettingOptional('wp_agent_default_owner'),
-      getSiteSettingOptional('wp_agent_callback_sla_minutes'),
-      getSiteSettingOptional('wp_agent_high_priority_score'),
-    ])
-      .then(([enabled, owner, sla, score]) => {
-        setWpSettings({
-          wpAgentEnabled: enabled ? enabled === 'true' : true,
-          defaultOwner: owner || '',
-          callbackSlaMinutes: sla || '30',
-          highPriorityScore: score || '75',
-        });
-      })
-      .catch(() => {});
   }, []);
 
   const handleSaveProfile = async () => {
@@ -260,23 +236,6 @@ export default function AdminSettings() {
     }
   };
 
-  const handleSaveWpSettings = async () => {
-    setWpSaving(true);
-    try {
-      await Promise.all([
-        upsertSiteSetting('wp_agent_enabled', String(wpSettings.wpAgentEnabled), 'text'),
-        upsertSiteSetting('wp_agent_default_owner', wpSettings.defaultOwner, 'text'),
-        upsertSiteSetting('wp_agent_callback_sla_minutes', wpSettings.callbackSlaMinutes, 'text'),
-        upsertSiteSetting('wp_agent_high_priority_score', wpSettings.highPriorityScore, 'text'),
-      ]);
-      toast.success('WP agent settings saved');
-    } catch (err) {
-      toast.error('Failed to save WP settings', { description: (err as Error)?.message });
-    } finally {
-      setWpSaving(false);
-    }
-  };
-
   return (
     <AdminLayout title="Settings" subtitle="Manage your account and site settings">
       <Tabs defaultValue="profile" className="space-y-8">
@@ -296,10 +255,6 @@ export default function AdminSettings() {
           <TabsTrigger value="site" className="gap-2 flex-1 max-md:flex-none max-md:px-4 max-md:py-2 max-md:rounded-full max-md:whitespace-nowrap">
             <Globe className="w-4 h-4" />
             Site
-          </TabsTrigger>
-          <TabsTrigger value="wp-agent" className="gap-2 flex-1 max-md:flex-none max-md:px-4 max-md:py-2 max-md:rounded-full max-md:whitespace-nowrap">
-            <Bell className="w-4 h-4" />
-            WP Agent
           </TabsTrigger>
         </TabsList>
 
@@ -690,73 +645,27 @@ export default function AdminSettings() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle>WhatsApp (WP) agent</CardTitle>
+                <CardDescription>
+                  WP-specific toggles and SLA defaults live in the WP Agent workspace so this page stays focused on
+                  the public website.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" asChild className="w-full sm:w-auto">
+                  <Link to="/admin/wp-settings">Open WP Agent settings</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
             <div className="flex justify-end">
               <Button onClick={handleSaveSiteSettings} disabled={siteSaving} className="max-md:w-full max-md:h-11 max-md:px-4">
                 {siteSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                 Save Settings
               </Button>
             </div>
-          </motion.div>
-        </TabsContent>
-
-        <TabsContent value="wp-agent">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>WhatsApp Agent Settings</CardTitle>
-                <CardDescription>
-                  Configure defaults used by WP Leads, analytics, and callback notifications.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Enable WP agent module</p>
-                    <p className="text-sm text-muted-foreground">Turn WhatsApp-agent admin pages on/off at config level.</p>
-                  </div>
-                  <Switch
-                    checked={wpSettings.wpAgentEnabled}
-                    onCheckedChange={(checked) => setWpSettings((s) => ({ ...s, wpAgentEnabled: checked }))}
-                  />
-                </div>
-                <Separator />
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>Default lead owner</Label>
-                    <Input
-                      value={wpSettings.defaultOwner}
-                      onChange={(e) => setWpSettings((s) => ({ ...s, defaultOwner: e.target.value }))}
-                      placeholder="e.g. ops-team"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Callback SLA (minutes)</Label>
-                    <Input
-                      value={wpSettings.callbackSlaMinutes}
-                      onChange={(e) => setWpSettings((s) => ({ ...s, callbackSlaMinutes: e.target.value }))}
-                      placeholder="30"
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label>High-priority lead score threshold</Label>
-                  <Input
-                    value={wpSettings.highPriorityScore}
-                    onChange={(e) => setWpSettings((s) => ({ ...s, highPriorityScore: e.target.value }))}
-                    placeholder="75"
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={handleSaveWpSettings} disabled={wpSaving}>
-                    {wpSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                    Save WP Settings
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </motion.div>
         </TabsContent>
       </Tabs>

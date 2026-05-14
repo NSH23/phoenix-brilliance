@@ -1,13 +1,11 @@
-import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LogOut, ChevronLeft } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useSiteConfig } from '@/contexts/SiteConfigContext';
 import { cn } from '@/lib/utils';
-import { ADMIN_MENU_ITEMS } from '@/lib/adminMenu';
+import { ADMIN_WEBSITE_MENU_ITEMS, ADMIN_WP_MENU_ITEMS, getAdminWorkspace } from '@/lib/adminMenu';
 import AdminUserAvatar from '@/components/admin/AdminUserAvatar';
-import { supabase } from '@/lib/supabase';
 import { getWpUnreadNotificationsCount } from '@/services/wpAgent';
 
 interface AdminSidebarProps {
@@ -18,9 +16,10 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ collapsed = false, onCollapsedChange, mobile = false }: AdminSidebarProps) {
   const location = useLocation();
-  const queryClient = useQueryClient();
   const { user, logout } = useAdmin();
   const { logoUrl } = useSiteConfig();
+  const workspace = getAdminWorkspace(location.pathname, location.search);
+  const menuItems = workspace === 'wp' ? ADMIN_WP_MENU_ITEMS : ADMIN_WEBSITE_MENU_ITEMS;
 
   const wpUnreadQuery = useQuery({
     queryKey: ['wp-unread-notifications-count'],
@@ -32,26 +31,26 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
 
   const wpUnreadCount = wpUnreadQuery.data ?? 0;
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('sidebar-wp-unread')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wp_notifications' }, () => {
-        void queryClient.invalidateQueries({ queryKey: ['wp-unread-notifications-count'] });
-      })
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
   const logoSrc = logoUrl || '/logo.png';
   const sidebarWidth = collapsed ? 80 : 280;
   const showLabels = !collapsed || mobile;
 
   const isActive = (path: string) => {
-    if (path === '/admin') {
+    if (path === '/admin/wp-alerts') {
+      return (
+        location.pathname === '/admin/wp-alerts' ||
+        (location.pathname === '/admin/notifications' && location.search.includes('tab=wp'))
+      );
+    }
+    const [pathOnly, query] = path.split('?');
+    const base = pathOnly || path;
+    if (base === '/admin') {
       return location.pathname === '/admin';
     }
-    return location.pathname.startsWith(path);
+    if (query) {
+      return location.pathname === base && location.search.includes(query);
+    }
+    return location.pathname === base || location.pathname.startsWith(`${base}/`);
   };
 
   const sidebarClasses = cn(
@@ -77,7 +76,12 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
           }}
         >
           <img src={logoSrc} alt="Phoenix" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
-          <span className="font-serif font-bold text-lg">Phoenix Admin</span>
+          <div className="flex min-w-0 flex-col">
+            <span className="font-serif font-bold text-lg leading-tight">Phoenix Admin</span>
+            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              {workspace === 'wp' ? 'WP Agent' : 'Website'}
+            </span>
+          </div>
         </div>
         {!mobile && (
           <button
@@ -95,7 +99,7 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {ADMIN_MENU_ITEMS.map((item) => (
+        {menuItems.map((item) => (
           <Link
             key={item.name}
             to={item.href}
@@ -119,7 +123,8 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
                     : "text-primary-foreground"
                   : "text-muted-foreground group-hover:text-primary"
               )} />
-              {item.href === '/admin/notifications' && wpUnreadCount > 0 ? (
+              {(item.href === '/admin/notifications' || item.href.startsWith('/admin/wp-alerts')) &&
+              wpUnreadCount > 0 ? (
                 <span
                   className={cn(
                     'absolute -top-1.5 -right-2 min-h-[16px] min-w-[16px] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center tabular-nums',

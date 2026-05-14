@@ -1,0 +1,8 @@
+# Database Webhooks call Edge Functions without a user JWT; disable JWT verification
+# for hooks that rely on x-phoenix-webhook-secret instead.
+
+[functions.send-inquiry-push]
+verify_jwt = false
+
+[functions.forward-inquiry-whatsapp]
+verify_jwt = false
