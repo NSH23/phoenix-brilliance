@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.forward-inquiry-whatsapp]
 verify_jwt = false
+
+[functions.wp-agent-proxy]
+verify_jwt = true

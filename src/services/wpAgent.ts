@@ -94,6 +94,10 @@ export function getWpAgentBaseUrl(): string {
   }
 }
 
+/** Use Supabase Edge proxy by default (fixes CORS from admin site → Railway). Set VITE_WP_AGENT_DIRECT=1 to call Railway from browser. */
+const WP_AGENT_DIRECT =
+  typeof import.meta !== "undefined" && import.meta.env?.VITE_WP_AGENT_DIRECT === "1";
+
 const WP_ADMIN_SECRET =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_WP_AGENT_ADMIN_SECRET?.trim()) || "";
 
@@ -103,17 +107,47 @@ function wpAgentFetchHeaders(): HeadersInit {
   return headers;
 }
 
-/** Triggers the Railway agent POST /process-followups (sends due wp_followups rows). */
-export async function triggerWpProcessFollowups(): Promise<void> {
+function parseAgentError(data: unknown, status: number, statusText: string): void {
+  if (status >= 200 && status < 300) return;
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String((data as { error: unknown }).error));
+  }
+  throw new Error(statusText || `Request failed (${status})`);
+}
+
+/** Calls Railway via Edge Function (no browser CORS) or direct fetch when VITE_WP_AGENT_DIRECT=1. */
+async function callWpAgent(path: string, payload: Record<string, unknown> = {}): Promise<void> {
+  if (!WP_AGENT_DIRECT) {
+    const { data, error } = await supabase.functions.invoke("wp-agent-proxy", {
+      body: { path, payload },
+    });
+    if (error) throw error;
+    if (data && typeof data === "object" && "error" in data && (data as { error?: unknown }).error) {
+      throw new Error(String((data as { error: unknown }).error));
+    }
+    return;
+  }
+
   const base = getWpAgentBaseUrl();
   if (!base) throw new Error("WP agent base URL is not configured");
-  const res = await fetch(`${base}/process-followups`, {
+  const res = await fetch(`${base}${path}`, {
     method: "POST",
     headers: wpAgentFetchHeaders(),
-    body: "{}",
+    body: JSON.stringify(payload),
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(text || res.statusText || "Request failed");
+  let parsed: unknown = text;
+  try {
+    parsed = text ? JSON.parse(text) : {};
+  } catch {
+    parsed = { raw: text };
+  }
+  parseAgentError(parsed, res.status, text || res.statusText);
+}
+
+/** Triggers the Railway agent POST /process-followups (sends due wp_followups rows). */
+export async function triggerWpProcessFollowups(): Promise<void> {
+  await callWpAgent("/process-followups", {});
 }
 
 export async function sendWpAdminMedia(payload: {
@@ -124,15 +158,7 @@ export async function sendWpAdminMedia(payload: {
   caption?: string;
   filename?: string;
 }): Promise<void> {
-  const base = getWpAgentBaseUrl();
-  if (!base) throw new Error("WP agent base URL is not configured");
-  const res = await fetch(`${base}/admin-send-media`, {
-    method: "POST",
-    headers: wpAgentFetchHeaders(),
-    body: JSON.stringify(payload),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(text || res.statusText || "Request failed");
+  await callWpAgent("/admin-send-media", payload as Record<string, unknown>);
 }
 
 /** Creates wp_notifications rows for leads awaiting a reply (6h+ since last inbound). */
@@ -151,13 +177,7 @@ export async function scheduleWpFollowup(payload: {
   scheduled_at?: string;
   send_now?: boolean;
 }) {
-  const res = await fetch(WP_SCHEDULE_FOLLOWUP_URL, {
-    method: "POST",
-    headers: wpAgentFetchHeaders(),
-    body: JSON.stringify(payload),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(text || res.statusText || "Request failed");
+  await callWpAgent("/schedule-followup", payload as Record<string, unknown>);
 }
 
 export async function getWpLeadsPage(
