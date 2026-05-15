@@ -33,7 +33,8 @@ export async function uploadToCloudinary(
 
   const folder = BUCKET_TO_FOLDER[bucket] ?? `phoenix/${bucket}`;
   const isVideo = file.type.startsWith('video/');
-  const resourceType = isVideo ? 'video' : 'image';
+  const isImage = file.type.startsWith('image/');
+  const resourceType = isVideo ? 'video' : isImage ? 'image' : 'raw';
 
   const formData = new FormData();
   formData.append('file', file);

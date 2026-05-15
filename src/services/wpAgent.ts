@@ -48,6 +48,7 @@ export interface WpConversation {
   direction: "inbound" | "outbound";
   message: string;
   message_type: string | null;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -93,17 +94,52 @@ export function getWpAgentBaseUrl(): string {
   }
 }
 
+const WP_ADMIN_SECRET =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_WP_AGENT_ADMIN_SECRET?.trim()) || "";
+
+function wpAgentFetchHeaders(): HeadersInit {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (WP_ADMIN_SECRET) headers["x-wp-admin-secret"] = WP_ADMIN_SECRET;
+  return headers;
+}
+
 /** Triggers the Railway agent POST /process-followups (sends due wp_followups rows). */
 export async function triggerWpProcessFollowups(): Promise<void> {
   const base = getWpAgentBaseUrl();
   if (!base) throw new Error("WP agent base URL is not configured");
   const res = await fetch(`${base}/process-followups`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: wpAgentFetchHeaders(),
     body: "{}",
   });
   const text = await res.text();
   if (!res.ok) throw new Error(text || res.statusText || "Request failed");
+}
+
+export async function sendWpAdminMedia(payload: {
+  phone: string;
+  media_type: "text" | "image" | "video" | "document";
+  message?: string;
+  url?: string;
+  caption?: string;
+  filename?: string;
+}): Promise<void> {
+  const base = getWpAgentBaseUrl();
+  if (!base) throw new Error("WP agent base URL is not configured");
+  const res = await fetch(`${base}/admin-send-media`, {
+    method: "POST",
+    headers: wpAgentFetchHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || res.statusText || "Request failed");
+}
+
+/** Creates wp_notifications rows for leads awaiting a reply (6h+ since last inbound). */
+export async function refreshWpSlaNotifications(): Promise<number> {
+  const { data, error } = await supabase.rpc("wp_refresh_sla_notifications");
+  if (error) throw error;
+  return Number(data ?? 0);
 }
 
 const leadColumns =
@@ -117,7 +153,7 @@ export async function scheduleWpFollowup(payload: {
 }) {
   const res = await fetch(WP_SCHEDULE_FOLLOWUP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: wpAgentFetchHeaders(),
     body: JSON.stringify(payload),
   });
   const text = await res.text();
@@ -339,10 +375,11 @@ export async function getWpUnreadNotificationsCount(): Promise<number> {
 
 export async function getWpConversationsForPhone(phone: string): Promise<WpConversation[]> {
   if (!phone) return [];
+  const keys = wpLeadPhoneKeyVariants(phone);
   const { data, error } = await supabase
     .from("wp_conversations")
-    .select("id, lead_phone, direction, message, message_type, created_at")
-    .eq("lead_phone", phone)
+    .select("id, lead_phone, direction, message, message_type, metadata, created_at")
+    .in("lead_phone", keys.length ? keys : [phone])
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data || []) as WpConversation[];

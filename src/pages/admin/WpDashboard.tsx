@@ -18,7 +18,13 @@ import { useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getWpDashboardSummary, getRecentWpLeads, getWpUnreadNotificationsCount, type WpDashboardSummary } from '@/services/wpAgent';
+import {
+  getWpDashboardSummary,
+  getRecentWpLeads,
+  getWpUnreadNotificationsCount,
+  refreshWpSlaNotifications,
+  type WpDashboardSummary,
+} from '@/services/wpAgent';
 import { supabase } from '@/lib/supabase';
 
 const statTiles: {
@@ -70,6 +76,16 @@ export default function WpDashboard() {
     gcTime: 5 * 60 * 1000,
     retry: false,
   });
+
+  useEffect(() => {
+    void refreshWpSlaNotifications()
+      .then(() => {
+        void queryClient.invalidateQueries({ queryKey: ['wp-unread-notifications-count'] });
+      })
+      .catch(() => {
+        /* RPC may not be deployed yet */
+      });
+  }, [queryClient]);
 
   useEffect(() => {
     const channel = supabase

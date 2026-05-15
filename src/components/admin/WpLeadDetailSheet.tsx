@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, Loader2, MessageSquare, Send } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CalendarClock, FileText, ImageIcon, Loader2, MessageSquare, Paperclip, Send, Video } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -12,12 +12,15 @@ import {
   getWpConversationsForPhone,
   getWpFollowupsForPhone,
   scheduleWpFollowup,
+  sendWpAdminMedia,
   type WpConversation,
   type WpFollowup,
   type WpLead,
 } from "@/services/wpAgent";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 export type WpLeadDetailSheetProps = {
   lead: WpLead | null;
@@ -33,6 +36,93 @@ function metaString(metadata: Record<string, unknown> | null | undefined, key: s
   if (Array.isArray(v)) return v.map(String).filter(Boolean).join(", ");
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
+}
+
+function mediaUrlFromMeta(metadata: Record<string, unknown> | null | undefined): string | null {
+  const u = metadata?.media_url;
+  return typeof u === "string" && u.startsWith("http") ? u : null;
+}
+
+function ConversationBubble({ row }: { row: WpConversation }) {
+  const inbound = String(row.direction).toLowerCase() === "inbound";
+  const mt = (row.message_type || "text").toLowerCase();
+  const mediaUrl = mediaUrlFromMeta(row.metadata);
+  const isImage = mt === "image" && mediaUrl;
+  const typeLabel =
+    mt === "image" ? "Photo" : mt === "video" ? "Video" : mt === "document" ? "Document" : null;
+  const source = row.metadata?.source;
+
+  return (
+    <div className={cn("flex", inbound ? "justify-start" : "justify-end")}>
+      <div
+        className={cn(
+          "max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm border",
+          inbound
+            ? "bg-muted/80 border-border/60 rounded-tl-sm"
+            : "bg-primary text-primary-foreground border-primary rounded-tr-sm"
+        )}
+      >
+        {typeLabel ? (
+          <div
+            className={cn(
+              "flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide mb-1",
+              inbound ? "text-muted-foreground" : "text-primary-foreground/90"
+            )}
+          >
+            {mt === "image" ? <ImageIcon className="w-3 h-3" /> : null}
+            {mt === "video" ? <Video className="w-3 h-3" /> : null}
+            {mt === "document" ? <FileText className="w-3 h-3" /> : null}
+            {typeLabel}
+            {source === "admin" ? " · Admin" : source === "agent" ? " · Agent" : null}
+          </div>
+        ) : null}
+        {isImage ? (
+          <a href={mediaUrl} target="_blank" rel="noreferrer" className="block mb-1.5">
+            <img
+              src={mediaUrl}
+              alt=""
+              className="rounded-lg max-h-40 w-full object-cover border border-border/40"
+            />
+          </a>
+        ) : null}
+        <p className="whitespace-pre-wrap break-words">{row.message}</p>
+        {mt === "document" && mediaUrl ? (
+          <a
+            href={mediaUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              "text-xs underline mt-1 inline-block",
+              inbound ? "text-primary" : "text-primary-foreground"
+            )}
+          >
+            Open file
+          </a>
+        ) : null}
+        {mt === "video" && mediaUrl && !isImage ? (
+          <a
+            href={mediaUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              "text-xs underline mt-1 inline-block",
+              inbound ? "text-primary" : "text-primary-foreground"
+            )}
+          >
+            Open video / link
+          </a>
+        ) : null}
+        <p
+          className={cn(
+            "text-[10px] mt-1.5 opacity-80",
+            inbound ? "text-muted-foreground" : "text-primary-foreground/80"
+          )}
+        >
+          {new Date(row.created_at).toLocaleString()}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function SummaryCard({ label, value }: { label: string; value: string | null }) {
@@ -54,8 +144,18 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
   const [followMessage, setFollowMessage] = useState("");
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [scheduling, setScheduling] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaCaption, setMediaCaption] = useState("");
+  const [mediaSending, setMediaSending] = useState(false);
+  const [mediaProgress, setMediaProgress] = useState(0);
+  const mediaInputRef = useRef<HTMLInputElement | null>(null);
 
   const phone = lead?.phone ?? "";
+
+  const reloadConversations = async () => {
+    if (!phone) return;
+    setConversations(await getWpConversationsForPhone(phone));
+  };
 
   useEffect(() => {
     if (!open || !phone) {
@@ -63,6 +163,9 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
       setFollowups([]);
       setFollowMessage("");
       setScheduledAtLocal("");
+      setMediaFile(null);
+      setMediaCaption("");
+      setMediaProgress(0);
       return;
     }
 
@@ -162,6 +265,7 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
       setFollowMessage("");
       setScheduledAtLocal("");
       await refreshFollowups();
+      await reloadConversations();
     } catch (e) {
       toast.error("Schedule failed", { description: (e as Error).message });
     } finally {
@@ -185,10 +289,49 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
       toast.success("Message sent");
       setFollowMessage("");
       await refreshFollowups();
+      await reloadConversations();
     } catch (e) {
       toast.error("Send failed", { description: (e as Error).message });
     } finally {
       setScheduling(false);
+    }
+  };
+
+  const onSendMedia = async () => {
+    if (!phone) {
+      toast.error("This lead has no phone number");
+      return;
+    }
+    if (!mediaFile) {
+      toast.error("Choose a photo, video, or document");
+      return;
+    }
+    setMediaSending(true);
+    setMediaProgress(0);
+    try {
+      const url = await uploadToCloudinary(mediaFile, "wp-agent-media", setMediaProgress);
+      const mediaType = mediaFile.type.startsWith("video/")
+        ? "video"
+        : mediaFile.type.startsWith("image/")
+          ? "image"
+          : "document";
+      await sendWpAdminMedia({
+        phone,
+        media_type: mediaType,
+        url,
+        caption: mediaCaption.trim() || undefined,
+        filename: mediaFile.name,
+      });
+      toast.success("Media sent on WhatsApp");
+      setMediaFile(null);
+      setMediaCaption("");
+      if (mediaInputRef.current) mediaInputRef.current.value = "";
+      await reloadConversations();
+    } catch (e) {
+      toast.error("Send failed", { description: (e as Error).message });
+    } finally {
+      setMediaSending(false);
+      setMediaProgress(0);
     }
   };
 
@@ -282,31 +425,7 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                   ) : conversations.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-10">No messages yet.</p>
                   ) : (
-                    conversations.map((row) => {
-                      const inbound = String(row.direction).toLowerCase() === "inbound";
-                      return (
-                        <div key={row.id} className={cn("flex", inbound ? "justify-start" : "justify-end")}>
-                          <div
-                            className={cn(
-                              "max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm border",
-                              inbound
-                                ? "bg-muted/80 border-border/60 rounded-tl-sm"
-                                : "bg-primary text-primary-foreground border-primary rounded-tr-sm"
-                            )}
-                          >
-                            <p className="whitespace-pre-wrap break-words">{row.message}</p>
-                            <p
-                              className={cn(
-                                "text-[10px] mt-1.5 opacity-80",
-                                inbound ? "text-muted-foreground" : "text-primary-foreground/80"
-                              )}
-                            >
-                              {new Date(row.created_at).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })
+                    conversations.map((row) => <ConversationBubble key={row.id} row={row} />)
                   )}
                 </div>
               )}
@@ -436,6 +555,51 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                       >
                         <Send className="w-4 h-4 mr-2 shrink-0" />
                         Send now
+                      </Button>
+                    </div>
+
+                    <div className="pt-2 border-t border-border/50 space-y-2">
+                      <Label className="text-xs flex items-center gap-1.5">
+                        <Paperclip className="w-3.5 h-3.5" />
+                        Send photo, video, or document
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        Uploads go to Cloudinary (wp-agent-media), then WhatsApp. Shown in Conversation tab.
+                      </p>
+                      <Input
+                        ref={mediaInputRef}
+                        type="file"
+                        accept="image/*,video/*,.pdf,.doc,.docx"
+                        className="h-11 text-sm"
+                        disabled={mediaSending}
+                        onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
+                      />
+                      {mediaFile ? (
+                        <p className="text-xs text-muted-foreground truncate">{mediaFile.name}</p>
+                      ) : null}
+                      <Input
+                        placeholder="Caption (optional)"
+                        value={mediaCaption}
+                        onChange={(e) => setMediaCaption(e.target.value)}
+                        className="h-10 text-sm"
+                        disabled={mediaSending}
+                      />
+                      {mediaSending && mediaProgress > 0 ? (
+                        <Progress value={mediaProgress} className="h-1.5" />
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full h-11"
+                        disabled={mediaSending || !mediaFile}
+                        onClick={() => void onSendMedia()}
+                      >
+                        {mediaSending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Paperclip className="w-4 h-4 mr-2" />
+                        )}
+                        Send media
                       </Button>
                     </div>
                   </CardContent>
