@@ -380,6 +380,18 @@ export async function getWpNotifications(limit = 30) {
   return (data || []) as WpNotification[];
 }
 
+/** Unread WP alerts for the header bell (avoids mixing read history into the badge dropdown). */
+export async function getUnreadWpNotifications(limit = 10) {
+  const { data, error } = await supabase
+    .from("wp_notifications")
+    .select("id, type, priority, message, lead_name, lead_phone, is_read, scheduled_for, created_at")
+    .eq("is_read", false)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data || []) as WpNotification[];
+}
+
 export async function markWpNotificationRead(id: string) {
   const { error } = await supabase.from("wp_notifications").update({ is_read: true }).eq("id", id);
   if (error) throw error;

@@ -11,7 +11,7 @@ self.addEventListener('push', (event) => {
     let payload = {
       title: 'Phoenix Admin',
       body: 'New inquiry',
-      url: '/admin/inquiries',
+      url: '/admin/notifications?tab=inquiries',
       tag: 'inquiry',
     };
     try {
@@ -36,14 +36,20 @@ self.addEventListener('push', (event) => {
       requireInteraction: false,
       vibrate: [200, 100, 200],
       timestamp: Date.now(),
-      data: { url: payload.url || '/admin/inquiries' },
+      data: { url: payload.url || '/admin/notifications?tab=inquiries' },
     });
   })());
 });
 
+function resolveAdminUrl(path) {
+  const raw = path || '/admin/notifications?tab=inquiries';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return new URL(raw.startsWith('/') ? raw : `/${raw}`, self.location.origin).href;
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification?.data?.url || '/admin/inquiries';
+  const targetUrl = resolveAdminUrl(event.notification?.data?.url);
 
   event.waitUntil((async () => {
     const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });

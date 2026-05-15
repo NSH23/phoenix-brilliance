@@ -16,7 +16,13 @@ import {
 } from '@/components/ui/command';
 import { ADMIN_COMMAND_PALETTE_ITEMS } from '@/lib/adminMenu';
 import { getUnreadInquiriesForNotifications, getUnreadInquiriesCount, markInquiryAsRead, type Inquiry } from '@/services';
-import { getWpNotifications, getWpUnreadNotificationsCount, markWpNotificationRead, type WpNotification } from '@/services/wpAgent';
+import {
+  getUnreadWpNotifications,
+  getWpUnreadNotificationsCount,
+  markWpNotificationRead,
+  type WpNotification,
+} from '@/services/wpAgent';
+import { formatRelativeTime } from '@/lib/formatDate';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { getAdminVapidPublicKey, syncAdminPushSubscription } from '@/lib/adminPush';
@@ -51,6 +57,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   const prevCountRef = useRef(0);
   const debouncedFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const toastedInquiryIdsRef = useRef<Set<string>>(new Set());
+  const [markAllBusy, setMarkAllBusy] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('adminSidebarCollapsed', JSON.stringify(sidebarCollapsed));
@@ -108,7 +116,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       const [list, count, wpList, wpUnreadTotal] = await Promise.all([
         getUnreadInquiriesForNotifications(10),
         getUnreadInquiriesCount(),
-        getWpNotifications(10),
+        getUnreadWpNotifications(10),
         queryClient.ensureQueryData({
           queryKey: WP_UNREAD_QUERY_KEY,
           queryFn: getWpUnreadNotificationsCount,
@@ -226,14 +234,39 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     };
   }, [fetchNotifications]);
 
-  // Real-time: WP notifications (bell count + dropdown)
+  // Real-time: WP notifications (bell count + dropdown + toast)
   useEffect(() => {
     const channel = supabase
       .channel('wp-notifications-layout')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wp_notifications' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wp_notifications' }, (payload) => {
+        const row = payload.new as WpNotification;
+        if (row.is_read) return;
+        setWpNotifications((prev) => [row, ...prev.filter((n) => n.id !== row.id)].slice(0, 10));
+        incrementUnread();
         if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
         debouncedFetchRef.current = setTimeout(() => {
-          fetchNotifications();
+          void fetchNotifications();
+          void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
+        }, 800);
+        const label = row.lead_name || row.lead_phone || 'Lead';
+        toast.message('WP alert', {
+          description: row.message || label,
+          action: row.lead_phone
+            ? {
+                label: 'Open',
+                onClick: () =>
+                  navigate(
+                    `/admin/notifications?tab=wp&leadPhone=${encodeURIComponent(row.lead_phone!)}`
+                  ),
+              }
+            : undefined,
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wp_notifications' }, () => {
+        if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
+        debouncedFetchRef.current = setTimeout(() => {
+          void fetchNotifications();
+          void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
         }, 800);
       })
       .subscribe();
@@ -241,7 +274,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, incrementUnread, navigate, queryClient]);
 
   // Real-time: new inquiries
   useEffect(() => {
@@ -249,16 +282,27 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       .channel('inquiries-inserts')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inquiries' }, (payload) => {
         const row = payload.new as Inquiry;
+        if (row.is_read) return;
         upsertNotification(row);
         incrementUnread();
         if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
         debouncedFetchRef.current = setTimeout(() => {
-          fetchNotifications();
+          void fetchNotifications();
         }, 1000);
-        toast.success('New inquiry', {
-          description: `${row.name} – ${row.event_type || 'Inquiry'}`,
-          action: { label: 'View', onClick: () => navigate(`/admin/notifications?tab=inquiries&open=${row.id}`) },
-        });
+        if (!toastedInquiryIdsRef.current.has(row.id)) {
+          toastedInquiryIdsRef.current.add(row.id);
+          if (toastedInquiryIdsRef.current.size > 50) {
+            const keep = [...toastedInquiryIdsRef.current].slice(-25);
+            toastedInquiryIdsRef.current = new Set(keep);
+          }
+          toast.success('New inquiry', {
+            description: `${row.name} – ${row.event_type || 'General'}`,
+            action: {
+              label: 'View',
+              onClick: () => navigate(`/admin/notifications?tab=inquiries&open=${row.id}`),
+            },
+          });
+        }
       })
       .subscribe();
 
@@ -268,35 +312,61 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     };
   }, [navigate, fetchNotifications, incrementUnread, upsertNotification]);
 
-  const handleMarkAsRead = useCallback(async (id: string) => {
+  const handleMarkInquiryRead = useCallback(async (id: string) => {
     try {
       await markInquiryAsRead(id);
-      setNotifications(prev => prev.filter(i => i.id !== id));
+      setNotifications((prev) => prev.filter((i) => i.id !== id));
       const nextCount = Math.max(0, prevCountRef.current - 1);
       prevCountRef.current = nextCount;
-      setUnreadCount(prev => (prev === nextCount ? prev : nextCount));
+      setUnreadCount((prev) => (prev === nextCount ? prev : nextCount));
     } catch (e) {
-      console.error('Failed to mark as read', e);
+      console.error('Failed to mark inquiry as read', e);
+      toast.error('Could not mark inquiry as read');
     }
   }, []);
 
-  const handleNotificationsOpenChange = useCallback((open: boolean) => {
-    setNotificationsOpen(open);
-    if (!open) return;
+  const handleMarkWpRead = useCallback(
+    async (id: string) => {
+      try {
+        await markWpNotificationRead(id);
+        setWpNotifications((prev) => prev.filter((n) => n.id !== id));
+        const nextCount = Math.max(0, prevCountRef.current - 1);
+        prevCountRef.current = nextCount;
+        setUnreadCount((prev) => (prev === nextCount ? prev : nextCount));
+        void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
+      } catch (e) {
+        console.error('Failed to mark WP notification as read', e);
+        toast.error('Could not mark alert as read');
+      }
+    },
+    [queryClient]
+  );
 
-    const unreadInquiryIds = notifications.filter(n => n.is_read === false).map(n => n.id);
-    const unreadWpIds = wpNotifications.filter(n => n.is_read === false).map(n => n.id);
+  const handleMarkAllNotificationsRead = useCallback(async () => {
+    const unreadInquiryIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
+    const unreadWpIds = wpNotifications.filter((n) => !n.is_read).map((n) => n.id);
     if (unreadInquiryIds.length === 0 && unreadWpIds.length === 0) return;
 
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    setWpNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    prevCountRef.current = 0;
-    setUnreadCount(0);
-    void Promise.all([
-      ...unreadInquiryIds.map((id) => markInquiryAsRead(id).catch(() => null)),
-      ...unreadWpIds.map((id) => markWpNotificationRead(id).catch(() => null)),
-    ]);
-  }, [notifications, wpNotifications]);
+    setMarkAllBusy(true);
+    try {
+      await Promise.all([
+        ...unreadInquiryIds.map((id) => markInquiryAsRead(id)),
+        ...unreadWpIds.map((id) => markWpNotificationRead(id)),
+      ]);
+      setNotifications([]);
+      setWpNotifications([]);
+      prevCountRef.current = 0;
+      setUnreadCount(0);
+      void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
+      toast.success('All caught up', { description: 'Notifications marked as read.' });
+    } catch (e) {
+      console.error('Failed to mark all notifications read', e);
+      toast.error('Could not mark all as read');
+      void fetchNotifications();
+    } finally {
+      setMarkAllBusy(false);
+    }
+  }, [notifications, wpNotifications, fetchNotifications, queryClient]);
 
   const combinedNotifications = useMemo(() => {
     const inquiryItems = notifications.map((n) => ({
@@ -438,7 +508,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
             <div className="col-start-2 row-start-1 flex shrink-0 items-center justify-end gap-1.5 sm:gap-2 md:col-start-3 md:row-start-1 md:justify-end">
             {/* Notifications */}
-            <Popover open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
+            <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
@@ -507,7 +577,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                   {combinedNotifications.length === 0 ? (
                     <div className="p-8 text-center text-muted-foreground">
                       <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                      <p className="text-sm">No new notifications</p>
+                      <p className="text-sm">No unread notifications</p>
+                      <p className="text-xs mt-1 opacity-70">You&apos;re all caught up.</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-border/50">
@@ -515,15 +586,14 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                         <button
                           key={`${item.kind}-${item.id}`}
                           className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex gap-3 items-start"
+                          type="button"
                           onClick={() => {
-                            if (item.kind === 'inquiry') {
-                              handleMarkAsRead(item.id);
-                            } else {
-                              void markWpNotificationRead(item.id).then(() => {
-                                setWpNotifications(prev => prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n)));
-                              });
-                            }
                             setNotificationsOpen(false);
+                            if (item.kind === 'inquiry') {
+                              void handleMarkInquiryRead(item.id);
+                            } else {
+                              void handleMarkWpRead(item.id);
+                            }
                             navigate(
                               item.kind === 'inquiry'
                                 ? `/admin/notifications?tab=inquiries&open=${item.id}`
@@ -536,9 +606,9 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                             <p className="text-[10px] uppercase text-muted-foreground">{item.kind === 'inquiry' ? 'Inquiry' : 'WP Alert'}</p>
                             <p className="text-sm font-medium truncate">{item.title}</p>
                             <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
-                            <p className="text-[10px] text-muted-foreground truncate opacity-70">{item.message}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.message}</p>
                             <p className="text-[10px] text-muted-foreground mt-1">
-                              {new Date(item.createdAt).toLocaleDateString()}
+                              {formatRelativeTime(item.createdAt)}
                             </p>
                           </div>
                         </button>
@@ -546,11 +616,32 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                     </div>
                   )}
                 </div>
-                <div className="p-2 border-t border-border bg-muted/20">
-                  <Button variant="ghost" size="sm" className="w-full text-xs h-8" onClick={() => navigate('/admin/notifications')}>
+                <motion.div className="p-2 border-t border-border bg-muted/20 space-y-1">
+                  {unreadCount > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs h-8"
+                      disabled={markAllBusy}
+                      onClick={() => void handleMarkAllNotificationsRead()}
+                    >
+                      {markAllBusy ? 'Marking…' : 'Mark all as read'}
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs h-8"
+                    onClick={() => {
+                      setNotificationsOpen(false);
+                      navigate('/admin/notifications');
+                    }}
+                  >
                     View all notifications
                   </Button>
-                </div>
+                </motion.div>
               </PopoverContent>
             </Popover>
 

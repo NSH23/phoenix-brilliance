@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 
 /**
  * Format ISO date string from Supabase to local date-time for admin.
@@ -12,6 +12,18 @@ export function formatDateTimeLocal(isoString: string | null | undefined): strin
     return format(date, 'dd MMM yyyy, h:mm a');
   } catch {
     return '—';
+  }
+}
+
+/** Short relative time for notification lists (e.g. "3 minutes ago"). */
+export function formatRelativeTime(isoString: string | null | undefined): string {
+  if (!isoString) return '';
+  try {
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return '';
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch {
+    return '';
   }
 }
 

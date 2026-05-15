@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
   const payload = JSON.stringify({
     title,
     body: bodyText,
-    url: id ? `/admin/inquiries?open=${id}` : '/admin/inquiries',
+    url: id ? `/admin/notifications?tab=inquiries&open=${id}` : '/admin/notifications?tab=inquiries',
     tag: notificationTopic,
   });
 

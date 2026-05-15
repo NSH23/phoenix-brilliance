@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import ScrollToTop from "./components/ScrollToTop";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -14,6 +14,14 @@ import LeadCaptureModal from "@/components/LeadCaptureModal";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 
 // Lazy load all route components for code splitting
+/** Preserve ?open= and other query params when redirecting legacy /admin/inquiries links (e.g. push notifications). */
+function RedirectInquiriesToNotifications() {
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  params.set("tab", "inquiries");
+  return <Navigate to={`/admin/notifications?${params.toString()}`} replace />;
+}
+
 const Index = lazy(() => import("./pages/Index"));
 const Contact = lazy(() => import("./pages/Contact"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -211,7 +219,7 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route path="/admin/inquiries" element={<Navigate to="/admin/notifications" replace />} />
+          <Route path="/admin/inquiries" element={<RedirectInquiriesToNotifications />} />
           <Route path="/admin/wp-notifications" element={<Navigate to="/admin/notifications?tab=wp" replace />} />
           <Route
             path="/admin/wp-media"
