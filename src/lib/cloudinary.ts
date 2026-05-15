@@ -34,7 +34,10 @@ export async function uploadToCloudinary(
   const folder = BUCKET_TO_FOLDER[bucket] ?? `phoenix/${bucket}`;
   const isVideo = file.type.startsWith('video/');
   const isImage = file.type.startsWith('image/');
-  const resourceType = isVideo ? 'video' : isImage ? 'image' : 'raw';
+  const isPdf =
+    file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  // PDFs as image/upload so WhatsApp receives a native document (raw/upload often shows as link only).
+  const resourceType = isVideo ? 'video' : isImage || isPdf ? 'image' : 'raw';
 
   const formData = new FormData();
   formData.append('file', file);
@@ -81,6 +84,19 @@ export async function deleteFromCloudinary(url: string): Promise<void> {
 
 export function isCloudinaryUrl(url: string): boolean {
   return url.includes('res.cloudinary.com');
+}
+
+/** Delivery URL WhatsApp can fetch as a native document (not a text link). */
+export function toWhatsAppDocumentUrl(url: string): string {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  const base = url.split('?')[0];
+  const qs = url.includes('?') ? url.slice(url.indexOf('?')) : '';
+  if (base.includes('/raw/upload/')) {
+    const imagePath = base.replace('/raw/upload/', '/image/upload/');
+    return /\.pdf$/i.test(imagePath) ? `${imagePath}${qs}` : `${imagePath}.pdf${qs}`;
+  }
+  if (!/\.pdf$/i.test(base)) return `${base}.pdf${qs}`;
+  return url;
 }
 
 export function isSupabaseUrl(url: string): boolean {

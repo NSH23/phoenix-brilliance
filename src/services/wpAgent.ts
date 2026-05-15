@@ -52,6 +52,13 @@ export interface WpConversation {
   created_at: string;
 }
 
+export interface WpFollowupMediaMeta {
+  media_type?: "image" | "video" | "document";
+  media_url?: string;
+  filename?: string;
+  caption?: string;
+}
+
 export interface WpFollowup {
   id: string;
   lead_phone: string;
@@ -59,10 +66,11 @@ export interface WpFollowup {
   scheduled_at: string;
   status: string;
   created_at: string;
+  metadata?: WpFollowupMediaMeta | null;
 }
 
 const DEFAULT_WP_SCHEDULE_FOLLOWUP =
-  "https://phoenix-whatsapp-agent-production.up.railway.app/schedule-followup";
+  "https://whatsapp-agentindexjs-production.up.railway.app/schedule-followup";
 
 /** Optional override: `VITE_WP_SCHEDULE_FOLLOWUP_URL` (full URL to `/schedule-followup`). */
 export const WP_SCHEDULE_FOLLOWUP_URL =
@@ -173,9 +181,13 @@ const leadColumns =
 
 export async function scheduleWpFollowup(payload: {
   phone: string;
-  message: string;
+  message?: string;
   scheduled_at?: string;
   send_now?: boolean;
+  media_type?: "image" | "video" | "document";
+  media_url?: string;
+  filename?: string;
+  caption?: string;
 }) {
   await callWpAgent("/schedule-followup", payload as Record<string, unknown>);
 }
@@ -407,13 +419,32 @@ export async function getWpConversationsForPhone(phone: string): Promise<WpConve
 
 export async function getWpFollowupsForPhone(phone: string): Promise<WpFollowup[]> {
   if (!phone) return [];
+  const keys = wpLeadPhoneKeyVariants(phone);
   const { data, error } = await supabase
     .from("wp_followups")
-    .select("id, lead_phone, message, scheduled_at, status, created_at")
-    .eq("lead_phone", phone)
+    .select("id, lead_phone, message, scheduled_at, status, created_at, metadata")
+    .in("lead_phone", keys.length ? keys : [phone])
     .order("scheduled_at", { ascending: true });
   if (error) throw error;
   return (data || []) as WpFollowup[];
+}
+
+const CANCELLABLE_FOLLOWUP_STATUSES = new Set(["pending", "processing"]);
+
+/** Removes a scheduled follow-up before it is sent (pending or in-flight processing only). */
+export async function deleteWpFollowup(id: string): Promise<void> {
+  const { data: row, error: fetchErr } = await supabase
+    .from("wp_followups")
+    .select("id, status")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+  if (!row) throw new Error("Follow-up not found");
+  if (!CANCELLABLE_FOLLOWUP_STATUSES.has(String(row.status).toLowerCase())) {
+    throw new Error("Only scheduled (pending) follow-ups can be cancelled");
+  }
+  const { error } = await supabase.from("wp_followups").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function getTodaysPendingFollowupsWithNames(): Promise<

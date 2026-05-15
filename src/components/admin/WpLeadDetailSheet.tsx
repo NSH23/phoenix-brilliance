@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarClock, FileText, ImageIcon, Loader2, MessageSquare, Paperclip, Send, Video } from "lucide-react";
+import {
+  CalendarClock,
+  FileText,
+  ImageIcon,
+  Loader2,
+  MessageSquare,
+  Paperclip,
+  Send,
+  Trash2,
+  Video,
+} from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -10,17 +20,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getWpConversationsForPhone,
+  deleteWpFollowup,
   getWpFollowupsForPhone,
   scheduleWpFollowup,
-  sendWpAdminMedia,
   type WpConversation,
   type WpFollowup,
   type WpLead,
 } from "@/services/wpAgent";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { toWhatsAppDocumentUrl, uploadToCloudinary } from "@/lib/cloudinary";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type WpLeadDetailSheetProps = {
   lead: WpLead | null;
@@ -125,6 +145,29 @@ function ConversationBubble({ row }: { row: WpConversation }) {
   );
 }
 
+function followupStatusLabel(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "sent") return "Sent";
+  if (s === "partial") return "Sent (doc failed)";
+  if (s === "failed") return "Failed";
+  if (s === "processing") return "Sending…";
+  return "Scheduled";
+}
+
+function canCancelFollowup(status: string): boolean {
+  const s = status.toLowerCase();
+  return s === "pending" || s === "processing";
+}
+
+function followupStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+  const s = status.toLowerCase();
+  if (s === "sent") return "default";
+  if (s === "partial") return "secondary";
+  if (s === "failed") return "destructive";
+  if (s === "processing") return "secondary";
+  return "outline";
+}
+
 function SummaryCard({ label, value }: { label: string; value: string | null }) {
   if (value == null || value === "") return null;
   return (
@@ -148,6 +191,8 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
   const [mediaCaption, setMediaCaption] = useState("");
   const [mediaSending, setMediaSending] = useState(false);
   const [mediaProgress, setMediaProgress] = useState(0);
+  const [cancelFollowup, setCancelFollowup] = useState<WpFollowup | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
 
   const phone = lead?.phone ?? "";
@@ -243,93 +288,107 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
     }
   };
 
-  const onSchedule = async () => {
-    if (!phone) {
-      toast.error("This lead has no phone number");
-      return;
-    }
-    const msg = followMessage.trim();
-    if (!msg) {
-      toast.error("Enter a message");
-      return;
-    }
-    if (!scheduledAtLocal) {
-      toast.error("Pick a date and time");
-      return;
-    }
-    const scheduled_at = new Date(scheduledAtLocal).toISOString();
-    setScheduling(true);
+  useEffect(() => {
+    if (!open || !phone || activeTab !== "followup") return;
+    const id = window.setInterval(() => {
+      void refreshFollowups();
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [open, phone, activeTab]);
+
+  const onConfirmCancelFollowup = async () => {
+    if (!cancelFollowup) return;
+    setCancelBusy(true);
     try {
-      await scheduleWpFollowup({ phone, message: msg, scheduled_at });
-      toast.success("Follow-up scheduled");
-      setFollowMessage("");
-      setScheduledAtLocal("");
+      await deleteWpFollowup(cancelFollowup.id);
+      toast.success("Scheduled message cancelled");
+      setCancelFollowup(null);
       await refreshFollowups();
-      await reloadConversations();
     } catch (e) {
-      toast.error("Schedule failed", { description: (e as Error).message });
+      toast.error("Could not cancel", { description: (e as Error).message });
     } finally {
-      setScheduling(false);
+      setCancelBusy(false);
     }
   };
 
-  const onSendNowFollowup = async () => {
+  const buildFollowupPayload = async () => {
     if (!phone) {
       toast.error("This lead has no phone number");
-      return;
+      return null;
     }
     const msg = followMessage.trim();
-    if (!msg) {
-      toast.error("Enter a message");
-      return;
+    const cap = mediaCaption.trim();
+    if (!msg && !mediaFile) {
+      toast.error("Enter a message and/or attach a file");
+      return null;
     }
-    setScheduling(true);
-    try {
-      await scheduleWpFollowup({ phone, message: msg, send_now: true });
-      toast.success("Message sent");
-      setFollowMessage("");
-      await refreshFollowups();
-      await reloadConversations();
-    } catch (e) {
-      toast.error("Send failed", { description: (e as Error).message });
-    } finally {
-      setScheduling(false);
-    }
-  };
-
-  const onSendMedia = async () => {
-    if (!phone) {
-      toast.error("This lead has no phone number");
-      return;
-    }
-    if (!mediaFile) {
-      toast.error("Choose a photo, video, or document");
-      return;
-    }
-    setMediaSending(true);
-    setMediaProgress(0);
-    try {
+    const payload: Parameters<typeof scheduleWpFollowup>[0] = { phone, message: msg || undefined };
+    if (mediaFile) {
+      setMediaProgress(0);
       const url = await uploadToCloudinary(mediaFile, "wp-agent-media", setMediaProgress);
       const mediaType = mediaFile.type.startsWith("video/")
         ? "video"
         : mediaFile.type.startsWith("image/")
           ? "image"
           : "document";
-      await sendWpAdminMedia({
-        phone,
-        media_type: mediaType,
-        url,
-        caption: mediaCaption.trim() || undefined,
-        filename: mediaFile.name,
+      payload.media_type = mediaType;
+      payload.media_url =
+        mediaType === "document" ? toWhatsAppDocumentUrl(url) : url;
+      payload.filename = mediaFile.name;
+      if (cap) payload.caption = cap;
+    }
+    return payload;
+  };
+
+  const clearFollowupForm = () => {
+    setFollowMessage("");
+    setMediaCaption("");
+    setMediaFile(null);
+    if (mediaInputRef.current) mediaInputRef.current.value = "";
+  };
+
+  const onSchedule = async () => {
+    if (!scheduledAtLocal) {
+      toast.error("Pick a date and time");
+      return;
+    }
+    const scheduled_at = new Date(scheduledAtLocal).toISOString();
+    setScheduling(true);
+    setMediaSending(Boolean(mediaFile));
+    try {
+      const payload = await buildFollowupPayload();
+      if (!payload) return;
+      await scheduleWpFollowup({ ...payload, scheduled_at });
+      toast.success("Follow-up scheduled", {
+        description: "Text and attachment will send automatically at the chosen time.",
       });
-      toast.success("Media sent on WhatsApp");
-      setMediaFile(null);
-      setMediaCaption("");
-      if (mediaInputRef.current) mediaInputRef.current.value = "";
+      clearFollowupForm();
+      setScheduledAtLocal("");
+      await refreshFollowups();
+    } catch (e) {
+      toast.error("Schedule failed", { description: (e as Error).message });
+    } finally {
+      setScheduling(false);
+      setMediaSending(false);
+      setMediaProgress(0);
+    }
+  };
+
+  const onSendNowFollowup = async () => {
+    setScheduling(true);
+    setMediaSending(Boolean(mediaFile));
+    try {
+      const payload = await buildFollowupPayload();
+      if (!payload) return;
+      await scheduleWpFollowup({ ...payload, send_now: true });
+      toast.success("Sent on WhatsApp");
+      clearFollowupForm();
+      await refreshFollowups();
       await reloadConversations();
     } catch (e) {
       toast.error("Send failed", { description: (e as Error).message });
     } finally {
+      setScheduling(false);
       setMediaSending(false);
       setMediaProgress(0);
     }
@@ -489,13 +548,38 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                     <ul className="space-y-2">
                       {followups.map((f) => (
                         <li key={f.id} className="rounded-lg border border-border/60 p-3 text-sm">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <Badge variant="outline">{f.status}</Badge>
+                          <div className="flex flex-wrap items-center gap-2 mb-1 w-full">
+                            <Badge variant={followupStatusVariant(f.status)}>
+                              {followupStatusLabel(f.status)}
+                            </Badge>
                             <span className="text-xs text-muted-foreground">
                               {new Date(f.scheduled_at).toLocaleString()}
                             </span>
+                            {canCancelFollowup(f.status) ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 ml-auto shrink-0 text-muted-foreground hover:text-destructive"
+                                aria-label="Cancel scheduled message"
+                                onClick={() => setCancelFollowup(f)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            ) : null}
                           </div>
                           {f.message ? <p className="break-words text-muted-foreground">{f.message}</p> : null}
+                          {f.metadata?.media_url ? (
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <Paperclip className="w-3 h-3 shrink-0" />
+                              {f.metadata.media_type === "image"
+                                ? "Photo"
+                                : f.metadata.media_type === "video"
+                                  ? "Video"
+                                  : "Document"}
+                              {f.metadata.filename ? ` · ${f.metadata.filename}` : ""}
+                            </p>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
@@ -535,13 +619,47 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                       onChange={(e) => setScheduledAtLocal(e.target.value)}
                         className="h-11 sm:h-10"
                       />
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        Due follow-ups send automatically within ~15 seconds after the chosen time. Status updates
+                        below when delivered.
+                      </p>
+                    </div>
+                    <div className="pt-2 border-t border-border/50 space-y-2">
+                      <Label className="text-xs flex items-center gap-1.5">
+                        <Paperclip className="w-3.5 h-3.5" />
+                        Attachment (optional)
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        Sent together with your message on Schedule or Send now.
+                      </p>
+                      <Input
+                        ref={mediaInputRef}
+                        type="file"
+                        accept="image/*,video/*,.pdf,.doc,.docx"
+                        className="h-11 text-sm"
+                        disabled={scheduling || mediaSending}
+                        onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
+                      />
+                      {mediaFile ? (
+                        <p className="text-xs text-muted-foreground truncate">{mediaFile.name}</p>
+                      ) : null}
+                      <Input
+                        placeholder="Caption for attachment (optional)"
+                        value={mediaCaption}
+                        onChange={(e) => setMediaCaption(e.target.value)}
+                        className="h-10 text-sm"
+                        disabled={scheduling || mediaSending}
+                      />
+                      {(scheduling || mediaSending) && mediaProgress > 0 ? (
+                        <Progress value={mediaProgress} className="h-1.5" />
+                      ) : null}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Button
                         type="button"
                         className="h-11 sm:h-10"
                         onClick={() => void onSchedule()}
-                        disabled={scheduling}
+                        disabled={scheduling || mediaSending}
                       >
                         {scheduling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                         Schedule
@@ -551,55 +669,10 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                         variant="secondary"
                         className="h-11 sm:h-10"
                         onClick={() => void onSendNowFollowup()}
-                        disabled={scheduling}
+                        disabled={scheduling || mediaSending}
                       >
                         <Send className="w-4 h-4 mr-2 shrink-0" />
                         Send now
-                      </Button>
-                    </div>
-
-                    <div className="pt-2 border-t border-border/50 space-y-2">
-                      <Label className="text-xs flex items-center gap-1.5">
-                        <Paperclip className="w-3.5 h-3.5" />
-                        Send photo, video, or document
-                      </Label>
-                      <p className="text-[11px] text-muted-foreground leading-snug">
-                        Uploads go to Cloudinary (wp-agent-media), then WhatsApp. Shown in Conversation tab.
-                      </p>
-                      <Input
-                        ref={mediaInputRef}
-                        type="file"
-                        accept="image/*,video/*,.pdf,.doc,.docx"
-                        className="h-11 text-sm"
-                        disabled={mediaSending}
-                        onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
-                      />
-                      {mediaFile ? (
-                        <p className="text-xs text-muted-foreground truncate">{mediaFile.name}</p>
-                      ) : null}
-                      <Input
-                        placeholder="Caption (optional)"
-                        value={mediaCaption}
-                        onChange={(e) => setMediaCaption(e.target.value)}
-                        className="h-10 text-sm"
-                        disabled={mediaSending}
-                      />
-                      {mediaSending && mediaProgress > 0 ? (
-                        <Progress value={mediaProgress} className="h-1.5" />
-                      ) : null}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full h-11"
-                        disabled={mediaSending || !mediaFile}
-                        onClick={() => void onSendMedia()}
-                      >
-                        {mediaSending ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Paperclip className="w-4 h-4 mr-2" />
-                        )}
-                        Send media
                       </Button>
                     </div>
                   </CardContent>
@@ -611,6 +684,34 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
           </>
         )}
       </SheetContent>
+
+      <AlertDialog open={!!cancelFollowup} onOpenChange={(o) => !o && !cancelBusy && setCancelFollowup(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel scheduled message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the follow-up scheduled for{" "}
+              {cancelFollowup
+                ? new Date(cancelFollowup.scheduled_at).toLocaleString()
+                : ""}
+              . It will not be sent on WhatsApp.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelBusy}>Keep</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={cancelBusy}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                void onConfirmCancelFollowup();
+              }}
+            >
+              {cancelBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Cancel message"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
