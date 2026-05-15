@@ -116,49 +116,6 @@ export default function WpAgentSettingsForm() {
           </div>
         </CardContent>
       </Card>
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Inquiry form → WhatsApp (Railway agent)</CardTitle>
-          <CardDescription>
-            Optional automation: when someone submits the site inquiry form, call your agent’s{' '}
-            <span className="font-mono text-xs">POST /website-lead</span> so it greets them and sends portfolio media.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-3">
-          <ol className="list-decimal pl-5 space-y-2">
-            <li>
-              Deploy the Supabase Edge Function <span className="font-mono text-[11px]">forward-inquiry-whatsapp</span>{' '}
-              from this repo’s <span className="font-mono text-[11px]">supabase/functions</span> folder.
-            </li>
-            <li>
-              In Supabase → Edge Functions → Secrets, set{' '}
-              <span className="font-mono text-[11px]">WA_WEBSITE_LEAD_URL</span> to your Railway base URL plus{' '}
-              <span className="font-mono text-[11px]">/website-lead</span>, and reuse{' '}
-              <span className="font-mono text-[11px]">WEBHOOK_SECRET</span> from the push notification function.
-            </li>
-            <li>
-              Database → Webhooks → create hook on <span className="font-mono text-[11px]">public.inquiries</span> INSERT
-              → function URL → HTTP header{' '}
-              <span className="font-mono text-[11px]">x-phoenix-webhook-secret: &lt;WEBHOOK_SECRET&gt;</span>.
-            </li>
-          </ol>
-          <p>
-            Scheduled follow-ups still use the schedule URL from the app (override with{' '}
-            <span className="font-mono text-[11px]">VITE_WP_SCHEDULE_FOLLOWUP_URL</span> at build time if your Railway
-            URL changes). Use WP Leads → “Run due” to fire your agent’s{' '}
-            <span className="font-mono text-[11px]">/process-followups</span> when you are not running cron on Railway.
-          </p>
-          <p>
-            If portfolio images or videos do not send from the agent, point <span className="font-mono text-[11px]">getMediaSlotPack</span> in your
-            Railway <span className="font-mono text-[11px]">index.js</span> at RPC{' '}
-            <span className="font-mono text-[11px]">wp_get_media_slots_for_whatsapp</span> (returns a JSON array with{' '}
-            <span className="font-mono text-[11px]">media_type</span>), or parse the object returned by{' '}
-            <span className="font-mono text-[11px]">wp_get_media_slot_pack</span> (<span className="font-mono text-[11px]">images</span> /{' '}
-            <span className="font-mono text-[11px]">videos</span> arrays).
-          </p>
-        </CardContent>
-      </Card>
     </motion.div>
   );
 }

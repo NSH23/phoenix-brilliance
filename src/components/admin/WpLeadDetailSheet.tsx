@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { CalendarClock, Loader2, MessageSquare, Send } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getWpConversationsForPhone,
   getWpFollowupsForPhone,
@@ -24,6 +24,8 @@ export type WpLeadDetailSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
+
+type DetailTab = "details" | "conversation" | "summary" | "followup";
 
 function metaString(metadata: Record<string, unknown> | null | undefined, key: string): string | null {
   const v = metadata?.[key];
@@ -44,6 +46,7 @@ function SummaryCard({ label, value }: { label: string; value: string | null }) 
 }
 
 export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDetailSheetProps) {
+  const [activeTab, setActiveTab] = useState<DetailTab>("details");
   const [conversations, setConversations] = useState<WpConversation[]>([]);
   const [convLoading, setConvLoading] = useState(false);
   const [followups, setFollowups] = useState<WpFollowup[]>([]);
@@ -112,6 +115,18 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
     ];
     return keys.map(([key, label]) => ({ label, value: metaString(m as Record<string, unknown>, key) }));
   }, [lead?.metadata]);
+
+  const hasSummaryData = useMemo(() => {
+    if (!lead) return false;
+    if (summaryFields.some((s) => s.value)) return true;
+    return Boolean(
+      lead.event_type ||
+        venueDisplay ||
+        lead.package_type ||
+        lead.lead_score != null ||
+        lead.urgency_level
+    );
+  }, [lead, summaryFields, venueDisplay]);
 
   const refreshFollowups = async () => {
     if (!phone) return;
@@ -200,9 +215,13 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
               </SheetDescription>
             </SheetHeader>
 
-            <Tabs defaultValue="details" className="flex flex-col flex-1 min-h-0">
-              <div className="px-4 pt-3 shrink-0 border-b border-border/40">
-                <TabsList className="w-full flex flex-wrap h-auto gap-1 justify-start bg-muted/40 p-1">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as DetailTab)}
+              className="flex flex-col flex-1 min-h-0 overflow-hidden"
+            >
+              <div className="px-3 py-2 shrink-0 border-b border-border/40 bg-background">
+                <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto gap-1 bg-muted/40 p-1">
                   <TabsTrigger value="details" className="text-xs sm:text-sm">
                     Details
                   </TabsTrigger>
@@ -218,7 +237,9 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                 </TabsList>
               </div>
 
-              <TabsContent value="details" className="flex-1 min-h-0 overflow-y-auto mt-0 p-4 sm:p-6 space-y-4">
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-4">
+              {activeTab === "details" && (
+              <div className="space-y-4">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">{lead.event_type || "General"}</Badge>
                   <Badge variant="outline">{lead.source_channel || "—"}</Badge>
@@ -249,10 +270,11 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                     </div>
                   ) : null}
                 </dl>
-              </TabsContent>
+              </div>
+              )}
 
-              <TabsContent value="conversation" className="flex-1 min-h-0 overflow-hidden flex flex-col mt-0 p-0">
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
+              {activeTab === "conversation" && (
+              <div className="space-y-3 min-h-[200px]">
                   {convLoading ? (
                     <div className="flex justify-center py-12">
                       <Loader2 className="w-7 h-7 animate-spin text-primary" />
@@ -287,22 +309,57 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                     })
                   )}
                 </div>
-              </TabsContent>
+              )}
 
-              <TabsContent value="summary" className="flex-1 min-h-0 overflow-y-auto mt-0 p-4 sm:p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {summaryFields.map(({ label, value }) => (
-                    <SummaryCard key={label} label={label} value={value} />
-                  ))}
-                </div>
-                {!summaryFields.some((s) => s.value) ? (
-                  <p className="text-sm text-muted-foreground mt-4">No summary metadata on this lead.</p>
-                ) : null}
-              </TabsContent>
+              {activeTab === "summary" && (
+              <div className="space-y-3">
+                {!hasSummaryData ? (
+                  <p className="text-sm text-muted-foreground text-center py-6 rounded-lg border border-dashed border-border/60 bg-muted/15">
+                    No extra details collected yet from WhatsApp.
+                  </p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <SummaryCard label="Event" value={lead.event_type} />
+                      <SummaryCard label="Venue" value={venueDisplay} />
+                      <SummaryCard label="Package" value={lead.package_type} />
+                      <SummaryCard
+                        label="Lead score"
+                        value={lead.lead_score != null ? String(lead.lead_score) : null}
+                      />
+                      <SummaryCard label="Priority" value={lead.urgency_level} />
+                      <SummaryCard label="Source" value={lead.source_channel} />
+                    </div>
+                    {summaryFields.some((s) => s.value) ? (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">From conversation</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {summaryFields.map(({ label, value }) => (
+                            <SummaryCard key={label} label={label} value={value} />
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+              )}
 
-              <TabsContent value="followup" className="flex-1 min-h-0 overflow-y-auto mt-0 p-4 sm:p-6 space-y-4">
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Scheduled follow-ups</h4>
+              {activeTab === "followup" && (
+              <div className="space-y-3">
+                <Card className="border-border/60 shadow-sm">
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <CalendarClock className="w-4 h-4 text-primary" />
+                      Scheduled
+                      {followups.length > 0 ? (
+                        <Badge variant="secondary" className="ml-auto text-[10px]">
+                          {followups.length}
+                        </Badge>
+                      ) : null}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4 pt-0">
                   {followLoading ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -324,55 +381,68 @@ export default function WpLeadDetailSheet({ lead, open, onOpenChange }: WpLeadDe
                       ))}
                     </ul>
                   )}
-                </div>
+                  </CardContent>
+                </Card>
 
-                <Separator />
-
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold">Schedule new</h4>
-                  <div className="grid gap-2">
-                    <Label htmlFor="wp-follow-msg">Message</Label>
-                    <Textarea
-                      id="wp-follow-msg"
-                      rows={4}
+                <Card className="border-border/60 shadow-sm">
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                      New message
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4 pt-0 space-y-3">
+                    <div className="grid gap-2">
+                      <Label htmlFor="wp-follow-msg" className="text-xs">
+                        Message
+                      </Label>
+                      <Textarea
+                        id="wp-follow-msg"
+                        rows={3}
                       value={followMessage}
                       onChange={(e) => setFollowMessage(e.target.value)}
                       placeholder="WhatsApp message to send"
-                      className="resize-none"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="wp-follow-when">Scheduled at</Label>
+                        className="resize-none text-sm"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="wp-follow-when" className="text-xs">
+                        Schedule for
+                      </Label>
                     <Input
                       id="wp-follow-when"
                       type="datetime-local"
                       value={scheduledAtLocal}
                       onChange={(e) => setScheduledAtLocal(e.target.value)}
-                      className="h-11 sm:h-10"
-                    />
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      type="button"
-                      className="flex-1 h-11 sm:h-10"
-                      onClick={() => void onSchedule()}
-                      disabled={scheduling}
-                    >
-                      {scheduling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Schedule
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="flex-1 h-11 sm:h-10"
-                      onClick={() => void onSendNowFollowup()}
-                      disabled={scheduling}
-                    >
-                      Send now
-                    </Button>
-                  </div>
-                </div>
-              </TabsContent>
+                        className="h-11 sm:h-10"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        className="h-11 sm:h-10"
+                        onClick={() => void onSchedule()}
+                        disabled={scheduling}
+                      >
+                        {scheduling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Schedule
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="h-11 sm:h-10"
+                        onClick={() => void onSendNowFollowup()}
+                        disabled={scheduling}
+                      >
+                        <Send className="w-4 h-4 mr-2 shrink-0" />
+                        Send now
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              )}
+              </div>
             </Tabs>
           </>
         )}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, Loader2, RefreshCw, TrendingUp } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronUp, Loader2, TrendingUp } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -14,13 +14,11 @@ import {
 } from "recharts";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   getWpAnalytics,
   getWpEventTypeCounts,
   getWpSourceBreakdown,
   getWpWeeklyLeadComparison,
-  refreshWpDailyStats,
   type WpAnalyticsRow,
 } from "@/services/wpAgent";
 import { toast } from "sonner";
@@ -31,7 +29,7 @@ export default function WpAnalyticsPage() {
   const [rows, setRows] = useState<WpAnalyticsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartsLoading, setChartsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [dailyExpanded, setDailyExpanded] = useState(false);
 
   const [sourceBreakdown, setSourceBreakdown] = useState({ website: 0, whatsapp: 0, other: 0 });
   const [eventTypes, setEventTypes] = useState<{ label: string; count: number }[]>([]);
@@ -71,20 +69,6 @@ export default function WpAnalyticsPage() {
     void loadCharts();
   }, [loadDaily, loadCharts]);
 
-  const onRefreshStats = async () => {
-    setRefreshing(true);
-    try {
-      await refreshWpDailyStats(30);
-      toast.success("Stats refreshed");
-      await loadDaily();
-      await loadCharts();
-    } catch (err) {
-      toast.error("Refresh failed", { description: (err as Error).message });
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   const totals = useMemo(() => {
     return rows.reduce(
       (acc, row) => {
@@ -113,14 +97,28 @@ export default function WpAnalyticsPage() {
     [eventTypes]
   );
 
+  // Daily breakdown helpers
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayRow = rows.find((r) => r.date === todayStr);
+
+  const activeRows = useMemo(() => {
+    return [...rows]
+      .filter((r) => (r.total_leads ?? 0) > 0 || (r.converted_leads ?? 0) > 0)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [rows]);
+
+  const formatDay = (dateStr: string) => {
+    const d = new Date(`${dateStr}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return dateStr;
+    const isToday = dateStr === todayStr;
+    const label = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    return isToday ? `Today (${label})` : label;
+  };
+
   return (
-    <AdminLayout title="WP Agent Analytics" subtitle="Daily lead trend and conversion metrics for WhatsApp agent">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <p className="text-sm text-muted-foreground">Charts use live wp_leads aggregates; daily table uses wp_daily_stats.</p>
-        <Button className="h-11 sm:h-10 shrink-0" variant="outline" onClick={() => void onRefreshStats()} disabled={refreshing}>
-          {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-          Refresh stats
-        </Button>
+    <AdminLayout title="WP Analytics" subtitle="Lead trends and conversions.">
+      <div className="mb-5 sm:mb-6">
+        <p className="text-xs sm:text-sm text-muted-foreground">Live data from your WhatsApp leads.</p>
       </div>
 
       {loading ? (
@@ -129,37 +127,37 @@ export default function WpAnalyticsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
-            <Card className="rounded-2xl sm:rounded-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" /> Total Leads (14d)
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-6">
+            <Card className="rounded-2xl sm:rounded-lg border border-border/60 max-md:min-h-[92px]">
+              <CardHeader className="pb-2 px-4 pt-4 max-md:px-3 max-md:pt-3">
+                <CardTitle className="text-xs sm:text-sm flex items-center gap-2 font-medium text-muted-foreground">
+                  <BarChart3 className="w-4 h-4 shrink-0 text-foreground" /> <span className="leading-tight">Total (14d)</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-2xl font-bold">{totals.total}</CardContent>
+              <CardContent className="px-4 pb-4 text-xl sm:text-2xl font-bold tabular-nums max-md:px-3 max-md:pb-3">{totals.total}</CardContent>
             </Card>
-            <Card className="rounded-2xl sm:rounded-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" /> Contacted
+            <Card className="rounded-2xl sm:rounded-lg border border-border/60 max-md:min-h-[92px]">
+              <CardHeader className="pb-2 px-4 pt-4 max-md:px-3 max-md:pt-3">
+                <CardTitle className="text-xs sm:text-sm flex items-center gap-2 font-medium text-muted-foreground">
+                  <TrendingUp className="w-4 h-4 shrink-0 text-foreground" /> <span className="leading-tight">Contacted</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-2xl font-bold">{totals.contacted}</CardContent>
+              <CardContent className="px-4 pb-4 text-xl sm:text-2xl font-bold tabular-nums max-md:px-3 max-md:pb-3">{totals.contacted}</CardContent>
             </Card>
-            <Card className="rounded-2xl sm:rounded-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Conversion Rate</CardTitle>
+            <Card className="rounded-2xl sm:rounded-lg border border-border/60 max-md:col-span-2 max-md:min-h-[88px]">
+              <CardHeader className="pb-2 px-4 pt-4 max-md:px-3 max-md:pt-3">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Conversion rate</CardTitle>
               </CardHeader>
-              <CardContent className="text-2xl font-bold">{conversionRate}%</CardContent>
+              <CardContent className="px-4 pb-4 text-xl sm:text-2xl font-bold tabular-nums max-md:px-3 max-md:pb-3">{conversionRate}%</CardContent>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            <Card className="rounded-2xl sm:rounded-lg">
-              <CardHeader>
-                <CardTitle className="text-base">Source breakdown</CardTitle>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5 sm:mb-6">
+            <Card className="rounded-2xl sm:rounded-lg border border-border/60 overflow-hidden">
+              <CardHeader className="px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle className="text-sm sm:text-base">Source breakdown</CardTitle>
               </CardHeader>
-              <CardContent className="h-[280px]">
+              <CardContent className="h-[220px] sm:h-[280px] px-2 sm:px-6 pb-4">
                 {chartsLoading ? (
                   <div className="h-full flex items-center justify-center">
                     <Loader2 className="w-7 h-7 animate-spin text-primary" />
@@ -187,26 +185,26 @@ export default function WpAnalyticsPage() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl sm:rounded-lg">
-              <CardHeader>
-                <CardTitle className="text-base">Weekly summary</CardTitle>
+            <Card className="rounded-2xl sm:rounded-lg border border-border/60 overflow-hidden">
+              <CardHeader className="px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle className="text-sm sm:text-base">Weekly summary</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 pb-4 sm:px-6">
                 {chartsLoading ? (
                   <div className="flex justify-center py-16">
                     <Loader2 className="w-7 h-7 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-border/60 p-4">
-                      <p className="text-xs text-muted-foreground mb-1">This week</p>
-                      <p className="text-3xl font-bold tabular-nums">{weekly.thisWeek}</p>
-                      <p className="text-xs text-muted-foreground mt-2">New leads (Mon–Sun)</p>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="rounded-xl border border-border/60 p-3.5 sm:p-4 bg-muted/10">
+                      <p className="text-[11px] sm:text-xs text-muted-foreground mb-1">This week</p>
+                      <p className="text-2xl sm:text-3xl font-bold tabular-nums">{weekly.thisWeek}</p>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 leading-snug">New leads (Mon–Sun)</p>
                     </div>
-                    <div className="rounded-xl border border-border/60 p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Last week</p>
-                      <p className="text-3xl font-bold tabular-nums">{weekly.lastWeek}</p>
-                      <p className="text-xs text-muted-foreground mt-2">Previous Mon–Sun</p>
+                    <div className="rounded-xl border border-border/60 p-3.5 sm:p-4 bg-muted/10">
+                      <p className="text-[11px] sm:text-xs text-muted-foreground mb-1">Last week</p>
+                      <p className="text-2xl sm:text-3xl font-bold tabular-nums">{weekly.lastWeek}</p>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 leading-snug">Previous Mon–Sun</p>
                     </div>
                   </div>
                 )}
@@ -214,11 +212,11 @@ export default function WpAnalyticsPage() {
             </Card>
           </div>
 
-          <Card className="rounded-2xl sm:rounded-lg mb-6">
-            <CardHeader>
-              <CardTitle className="text-base">Leads by event type</CardTitle>
+          <Card className="rounded-2xl sm:rounded-lg border border-border/60 mb-5 sm:mb-6 overflow-hidden">
+            <CardHeader className="px-4 py-3 sm:px-6 sm:py-4">
+              <CardTitle className="text-sm sm:text-base">Leads by event type</CardTitle>
             </CardHeader>
-            <CardContent className="h-[320px] w-full">
+            <CardContent className="h-[260px] w-full sm:h-[320px] px-0 sm:px-2 pb-2 overflow-x-auto">
               {chartsLoading ? (
                 <div className="h-full flex items-center justify-center">
                   <Loader2 className="w-7 h-7 animate-spin text-primary" />
@@ -226,11 +224,12 @@ export default function WpAnalyticsPage() {
               ) : barData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-12">No event types recorded.</p>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 16 }}>
+                <div className="h-[240px] sm:h-[300px] min-w-[300px] w-full max-w-none">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={barData} layout="vertical" margin={{ left: 4, right: 8, top: 4, bottom: 4 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                    <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
-                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
+                    <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" width={88} tick={{ fontSize: 9 }} className="max-sm:[&_text]:text-[9px]" />
                     <Tooltip
                       formatter={(value: number) => [value, "Leads"]}
                       labelFormatter={(_, payload) => {
@@ -246,35 +245,83 @@ export default function WpAnalyticsPage() {
                     <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl sm:rounded-lg">
-            <CardHeader>
-              <CardTitle>Daily Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No analytics data available.</p>
+          <Card className="rounded-2xl sm:rounded-lg border border-border/60 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDailyExpanded((p) => !p)}
+              className="w-full flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 text-left hover:bg-muted/30 transition-colors"
+            >
+              <div>
+                <p className="text-sm sm:text-base font-semibold">Daily breakdown</p>
+                {!dailyExpanded && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Today:&nbsp;
+                    <span className="font-medium text-foreground">{todayRow?.total_leads ?? 0} leads</span>
+                    {(todayRow?.converted_leads ?? 0) > 0 && (
+                      <span className="ml-2 text-green-600 dark:text-green-400">
+                        {todayRow!.converted_leads} converted
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+              {dailyExpanded ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
               ) : (
-                rows.map((row) => (
-                  <div
-                    key={row.date}
-                    className="border border-border/50 rounded-xl p-3 sm:p-0 sm:border-0 sm:rounded-none sm:grid sm:grid-cols-4 sm:gap-2 sm:text-sm sm:border-b sm:py-2"
-                  >
-                    <div className="font-medium mb-2 sm:mb-0">{row.date}</div>
-                    <div className="text-sm sm:text-inherit text-muted-foreground sm:text-foreground">Total: {row.total_leads}</div>
-                    <div className="text-sm sm:text-inherit text-muted-foreground sm:text-foreground">
-                      Contacted: {row.contacted_leads}
-                    </div>
-                    <div className="text-sm sm:text-inherit text-muted-foreground sm:text-foreground">
-                      Converted: {row.converted_leads}
-                    </div>
-                  </div>
-                ))
+                <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
               )}
-            </CardContent>
+            </button>
+
+            {dailyExpanded && (
+              <CardContent className="px-3 pb-4 sm:px-6 pt-0">
+                {activeRows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">No lead activity in the last 14 days.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
+                        <th className="py-2 pr-3 font-medium">Date</th>
+                        <th className="py-2 px-2 font-medium text-right">Leads</th>
+                        <th className="py-2 px-2 font-medium text-right">Contacted</th>
+                        <th className="py-2 pl-2 font-medium text-right">Converted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeRows.map((row) => {
+                        const leads = row.total_leads ?? 0;
+                        const contacted = row.contacted_leads ?? 0;
+                        const converted = row.converted_leads ?? 0;
+                        const rate = leads > 0 ? Math.round((converted / leads) * 100) : 0;
+                        const isToday = row.date === todayStr;
+                        return (
+                          <tr
+                            key={row.date}
+                            className={`border-b border-border/40 last:border-0 ${isToday ? "bg-primary/5" : ""}`}
+                          >
+                            <td className={`py-2.5 pr-3 ${isToday ? "font-semibold text-primary" : "font-medium"}`}>
+                              {formatDay(row.date)}
+                            </td>
+                            <td className="py-2.5 px-2 text-right tabular-nums">{leads}</td>
+                            <td className="py-2.5 px-2 text-right tabular-nums">{contacted}</td>
+                            <td className="py-2.5 pl-2 text-right tabular-nums">
+                              {converted}
+                              {leads > 0 && (
+                                <span className="text-[11px] text-muted-foreground ml-1">({rate}%)</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </CardContent>
+            )}
           </Card>
         </>
       )}

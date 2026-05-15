@@ -285,28 +285,30 @@ export default function WpLeadsPage() {
   const pendingCount = pendingToday.length;
 
   return (
-    <AdminLayout
-      title="WP Agent Leads"
-      subtitle="WhatsApp lead pipeline with search, filters and status updates"
-    >
-      <div className="xl:grid xl:grid-cols-[1fr_280px] xl:items-start gap-6">
-        <div className="space-y-5 sm:space-y-6 min-w-0">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <AdminLayout title="WP Leads" subtitle="Search, filter, and update WhatsApp leads.">
+      <div className="xl:grid xl:grid-cols-[1fr_280px] xl:items-start gap-5 sm:gap-6">
+        <div className="space-y-4 sm:space-y-6 min-w-0">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-md:gap-2.5">
             {[
               { title: "Total leads", value: summary.totalLeads },
               { title: "New today", value: summary.newToday },
               { title: "Website leads", value: summary.websiteLeads },
               { title: "WhatsApp leads", value: summary.whatsappLeads },
             ].map((c) => (
-              <Card key={c.title} className="rounded-2xl sm:rounded-lg border border-border/60">
-                <CardHeader className="pb-2 p-4">
-                  <CardTitle className="text-xs font-medium text-muted-foreground">{c.title}</CardTitle>
+              <Card
+                key={c.title}
+                className="rounded-2xl sm:rounded-lg border border-border/60 shadow-sm bg-card/50 max-md:min-h-[96px]"
+              >
+                <CardHeader className="pb-1.5 p-4 max-md:p-3 max-md:pb-1">
+                  <CardTitle className="text-[11px] sm:text-xs font-medium text-muted-foreground leading-tight">
+                    {c.title}
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 p-4">
+                <CardContent className="pt-0 p-4 max-md:p-3 max-md:pt-0">
                   {summaryLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   ) : (
-                    <p className="text-2xl font-bold tabular-nums">{c.value}</p>
+                    <p className="text-2xl max-md:text-[1.5rem] font-bold tabular-nums">{c.value}</p>
                   )}
                 </CardContent>
               </Card>
@@ -383,7 +385,7 @@ export default function WpLeadsPage() {
             </Card>
           </div>
 
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-1">
+          <div className="grid grid-cols-1 sm:flex sm:flex-row flex-wrap gap-3 mb-1">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -421,22 +423,22 @@ export default function WpLeadsPage() {
             </Button>
           </div>
 
-          <Card className="rounded-2xl sm:rounded-lg border border-border/60 sm:border-border">
-            <CardContent className="p-0">
+          <Card className="rounded-2xl sm:rounded-lg border border-border/60 sm:border-border overflow-hidden">
+            <CardContent className="p-0 max-md:space-y-2 max-md:p-2">
               {loading ? (
-                <div className="flex justify-center py-14">
+                <div className="flex justify-center py-14 max-md:py-12">
                   <Loader2 className="w-7 h-7 animate-spin text-primary" />
                 </div>
               ) : rows.length === 0 ? (
-                <div className="text-center py-14 text-muted-foreground">No leads found.</div>
+                <div className="text-center py-14 max-md:py-12 text-muted-foreground text-sm px-4">No leads found.</div>
               ) : (
-                <div className="divide-y divide-border/50">
+                <div className="divide-y divide-border/50 max-md:divide-y-0 max-md:flex max-md:flex-col max-md:gap-2">
                   {rows.map((lead) => (
                     <div
                       key={lead.id}
                       role="button"
                       tabIndex={0}
-                      className="p-4 sm:p-4 flex flex-col lg:flex-row lg:items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="p-4 sm:p-4 flex flex-col lg:flex-row lg:items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:rounded-xl max-md:border max-md:border-border/60 max-md:bg-card/80 max-md:active:scale-[0.99]"
                       onClick={() => openLeadDetail(lead)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {

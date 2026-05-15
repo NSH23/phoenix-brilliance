@@ -20,6 +20,29 @@ const COLUMNS =
 
 export type WpMediaEntityKind = "event" | "venue" | "service" | "global";
 
+export type WpMediaEntityOption = { id: string; label: string };
+
+/** Lightweight dropdown options (id + label only) for WP media page. */
+export async function getWpMediaEntityOptions(): Promise<{
+  events: WpMediaEntityOption[];
+  venues: WpMediaEntityOption[];
+  services: WpMediaEntityOption[];
+}> {
+  const [eventsRes, venuesRes, servicesRes] = await Promise.all([
+    supabase.from("events").select("id, title").eq("is_active", true).order("title"),
+    supabase.from("collaborations").select("id, name").eq("is_active", true).order("name"),
+    supabase.from("services").select("id, title").eq("is_active", true).order("title"),
+  ]);
+  if (eventsRes.error) throw eventsRes.error;
+  if (venuesRes.error) throw venuesRes.error;
+  if (servicesRes.error) throw servicesRes.error;
+  return {
+    events: (eventsRes.data || []).map((r) => ({ id: r.id, label: r.title || "Event" })),
+    venues: (venuesRes.data || []).map((r) => ({ id: r.id, label: r.name || "Venue" })),
+    services: (servicesRes.data || []).map((r) => ({ id: r.id, label: r.title || "Service" })),
+  };
+}
+
 export async function getWpMediaAssetsForEntity(entityKind: WpMediaEntityKind, entityId: string | null) {
   let query = supabase
     .from("wp_media_assets")

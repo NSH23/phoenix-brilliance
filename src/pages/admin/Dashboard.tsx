@@ -99,7 +99,7 @@ export default function AdminDashboard() {
     retry: false,
   });
 
-  const isLoading = dashboardQuery.isPending || adminUsersQuery.isPending;
+  const dashboardBlocking = dashboardQuery.isPending;
   const stats = dashboardQuery.data?.stats ?? null;
   const recentInquiries = dashboardQuery.data?.recentInquiries ?? [];
   const recentActivity = dashboardQuery.data?.recentActivity ?? [];
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (isLoading) {
+  if (dashboardBlocking) {
     return (
       <AdminLayout title="Welcome back!" subtitle="Here's what's happening with your events.">
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -196,9 +196,9 @@ export default function AdminDashboard() {
           return (
             <motion.div
               key={m.key}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: Math.min(index * 0.04, 0.16), duration: 0.22 }}
             >
               <Card className="relative overflow-hidden hover:shadow-lg transition-all border border-border/60 sm:border-none shadow-sm bg-card/50 backdrop-blur-sm rounded-2xl sm:rounded-lg max-md:rounded-xl max-md:min-h-[100px]">
                 <CardContent className="p-4 sm:p-5 max-md:p-4">
@@ -233,9 +233,9 @@ export default function AdminDashboard() {
 
           {/* Quick Actions - mobile: larger tap targets, rounded cards */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.08, duration: 0.22 }}
           >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2 max-md:text-lg max-md:px-1">
@@ -263,9 +263,9 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
             {/* Recent Inquiries */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.1, duration: 0.22 }}
               className="h-full"
             >
               <Card className="h-full flex flex-col border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
@@ -324,9 +324,9 @@ export default function AdminDashboard() {
 
             {/* Recent Activity */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.12, duration: 0.22 }}
               className="h-full"
             >
               <Card className="h-full flex flex-col border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
@@ -366,9 +366,9 @@ export default function AdminDashboard() {
         <div className="space-y-6 sm:space-y-8 max-md:space-y-4">
           {/* Site Overview - mobile: slightly larger touch targets, rounded */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.1, duration: 0.22 }}
           >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
@@ -402,9 +402,9 @@ export default function AdminDashboard() {
 
           {/* Admin Users - mobile: clearer list rows, tap-friendly */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.12, duration: 0.22 }}
           >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
@@ -415,7 +415,19 @@ export default function AdminDashboard() {
             <Card className="border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
               <CardContent className="p-0">
                 <div className="divide-y divide-border/40">
-                  {adminUsers.length === 0 ? (
+                  {adminUsersQuery.isPending ? (
+                    <div className="p-4 space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-muted animate-pulse shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-3.5 w-24 rounded bg-muted animate-pulse" />
+                            <div className="h-3 w-40 max-w-full rounded bg-muted animate-pulse" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : adminUsers.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-5 px-4 text-center">No admin users.</p>
                   ) : (
                     adminUsers.map((u) => (
