@@ -39,6 +39,7 @@ function CollaborationsMarqueeStrip({ itemCount, children }: { itemCount: number
   const dragStartRef = useRef({ x: 0, y: 0, offset: 0 });
   const movedRef = useRef(0);
   const suppressClickRef = useRef(false);
+  const capturedPointerIdRef = useRef<number | null>(null);
   const reducedMotionRef = useRef(false);
 
   const wrapOffset = useCallback(() => {
@@ -113,12 +114,13 @@ function CollaborationsMarqueeStrip({ itemCount, children }: { itemCount: number
     dragArmedRef.current = true;
     draggingRef.current = false;
     movedRef.current = 0;
+    suppressClickRef.current = false;
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
       offset: offsetRef.current,
     };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // Defer pointer capture until horizontal drag starts so card links stay clickable.
   };
 
   const onPointerMove: PointerEventHandler<HTMLDivElement> = (e) => {
@@ -130,10 +132,13 @@ function CollaborationsMarqueeStrip({ itemCount, children }: { itemCount: number
       if (Math.abs(dx) < DRAG_THRESHOLD_PX && Math.abs(dy) < DRAG_THRESHOLD_PX) return;
       if (Math.abs(dy) > Math.abs(dx)) {
         dragArmedRef.current = false;
-        e.currentTarget.releasePointerCapture(e.pointerId);
         return;
       }
       draggingRef.current = true;
+      if (capturedPointerIdRef.current === null) {
+        capturedPointerIdRef.current = e.pointerId;
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
     }
 
     movedRef.current = Math.abs(dx);
@@ -146,12 +151,13 @@ function CollaborationsMarqueeStrip({ itemCount, children }: { itemCount: number
     if (draggingRef.current && movedRef.current > CLICK_SUPPRESS_PX) {
       suppressClickRef.current = true;
     }
-    if (dragArmedRef.current || draggingRef.current) {
+    if (capturedPointerIdRef.current !== null) {
       try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
+        e.currentTarget.releasePointerCapture(capturedPointerIdRef.current);
       } catch {
         /* already released */
       }
+      capturedPointerIdRef.current = null;
     }
     dragArmedRef.current = false;
     draggingRef.current = false;
@@ -178,8 +184,8 @@ function CollaborationsMarqueeStrip({ itemCount, children }: { itemCount: number
         <div
           ref={trackRef}
           role="presentation"
-          className="collaborations-logo-track-static flex items-stretch gap-6 md:gap-8 cursor-grab active:cursor-grabbing touch-none select-none"
-          style={{ touchAction: "none" }}
+          className="collaborations-logo-track-static flex items-stretch gap-6 md:gap-8 cursor-grab active:cursor-grabbing select-none"
+          style={{ touchAction: "pan-y" }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endPointer}
@@ -258,7 +264,11 @@ const CollaborationsSection = ({ prefetchedCollaborations, homepageDataPending }
         key={singleCard ? venue.id : `${venue.id}-${index}`}
         className="collaborations-logo-item flex-shrink-0 w-[300px] sm:w-[360px] md:w-[420px] flex flex-col group"
       >
-        <Link to={`/collaborations/${venue.id}`} replace className="flex flex-col flex-1 min-h-0">
+        <Link
+          to={`/collaborations/${venue.id}`}
+          replace
+          className="relative z-[2] flex flex-col flex-1 min-h-0 touch-manipulation"
+        >
           {isPremiumCard ? (
             <div className="p-[1px] rounded-2xl bg-gradient-to-r from-primary/30 to-transparent transition-all duration-300 ease-out hover:from-primary/40 flex-1 flex flex-col min-h-0">
               <div className="bg-card rounded-2xl overflow-hidden border-0 shadow-elevation-1 dark:shadow-elevation-1-dark hover:shadow-card-hover dark:hover:shadow-card-hover-dark transition-all duration-300 ease-out hover:-translate-y-1 flex-1 flex flex-col min-h-0">
