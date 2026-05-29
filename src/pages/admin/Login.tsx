@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import AdminBrand from '@/components/admin/AdminBrand';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -108,12 +109,10 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="admin-dashboard min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      {/* Background Decorations */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/15 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+    <div className="admin-dashboard flex min-h-screen items-center justify-center bg-background px-4 py-8">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-muted/80 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-muted/60 blur-3xl" />
       </div>
 
       {/* Login Card */}
@@ -123,19 +122,24 @@ export default function AdminLogin() {
         transition={{ duration: 0.5 }}
         className="relative w-full max-w-md mx-4"
       >
-        <div className="glass-card p-8 md:p-10">
-          {/* Logo */}
-          <div className="text-center mb-8">
+        <div className="admin-glass-card p-8 md:p-10">
+          <div className="mb-8 text-center">
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="inline-flex items-center justify-center mb-4"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.35 }}
+              className="mb-4 inline-flex items-center justify-center"
             >
-              <img src={logoSrc} alt="Phoenix" className="w-16 h-16 object-contain" loading="lazy" decoding="async" />
+              <img
+                src={logoSrc}
+                alt="Phoenix"
+                className="h-14 w-14 object-contain drop-shadow-md"
+                loading="lazy"
+                decoding="async"
+              />
             </motion.div>
-            <h1 className="text-2xl font-serif font-bold text-foreground">Phoenix Admin</h1>
-            <p className="text-muted-foreground mt-1">Sign in to your dashboard</p>
+            <AdminBrand size="lg" showTagline={false} workspace="website" className="mx-auto flex flex-col items-center text-center" />
+            <p className="mt-2 text-xs text-muted-foreground">Sign in to manage your website &amp; WP agent</p>
           </div>
 
           {/* Email Verification Alert */}
@@ -147,8 +151,8 @@ export default function AdminLogin() {
                 exit={{ opacity: 0, y: -10 }}
                 className="mb-6"
               >
-                <Alert className="border-primary/50 bg-primary/5">
-                  <AlertCircle className="h-4 w-4 text-primary" />
+                <Alert className="border-border bg-muted/50">
+                  <AlertCircle className="h-4 w-4 text-foreground/70" />
                   <AlertDescription className="text-sm">
                     <p className="font-medium mb-2">Email verification required</p>
                     <p className="text-muted-foreground mb-3">
@@ -203,7 +207,7 @@ export default function AdminLogin() {
                     <button
                       type="button"
                       onClick={() => setForgotPassword(true)}
-                      className="text-xs text-primary hover:underline"
+                      className="admin-link-accent text-xs hover:underline"
                     >
                       Forgot password?
                     </button>

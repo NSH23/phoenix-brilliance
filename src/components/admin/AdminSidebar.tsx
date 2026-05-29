@@ -5,21 +5,33 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { useSiteConfig } from '@/contexts/SiteConfigContext';
 import { cn } from '@/lib/utils';
 import { ADMIN_WEBSITE_MENU_ITEMS, ADMIN_WP_MENU_ITEMS, getAdminWorkspace } from '@/lib/adminMenu';
+import { filterMenuItemsForMobileOverflow } from '@/lib/adminMobileNav';
 import AdminUserAvatar from '@/components/admin/AdminUserAvatar';
+import AdminBrand from '@/components/admin/AdminBrand';
 import { getWpUnreadNotificationsCount } from '@/services/wpAgent';
 
 interface AdminSidebarProps {
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
-  mobile?: boolean; // New prop
+  mobile?: boolean;
+  /** Mobile bottom bar overflow sheet: only links not already on the tab bar. */
+  mobileOverflowMenu?: boolean;
 }
 
-export default function AdminSidebar({ collapsed = false, onCollapsedChange, mobile = false }: AdminSidebarProps) {
+export default function AdminSidebar({
+  collapsed = false,
+  onCollapsedChange,
+  mobile = false,
+  mobileOverflowMenu = false,
+}: AdminSidebarProps) {
   const location = useLocation();
   const { user, logout } = useAdmin();
   const { logoUrl } = useSiteConfig();
   const workspace = getAdminWorkspace(location.pathname, location.search);
-  const menuItems = workspace === 'wp' ? ADMIN_WP_MENU_ITEMS : ADMIN_WEBSITE_MENU_ITEMS;
+  const allMenuItems = workspace === 'wp' ? ADMIN_WP_MENU_ITEMS : ADMIN_WEBSITE_MENU_ITEMS;
+  const menuItems = mobileOverflowMenu
+    ? filterMenuItemsForMobileOverflow(allMenuItems, workspace)
+    : allMenuItems;
 
   const wpUnreadQuery = useQuery({
     queryKey: ['wp-unread-notifications-count'],
@@ -54,8 +66,8 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
   };
 
   const sidebarClasses = cn(
-    "bg-card border-r border-border flex flex-col z-40",
-    mobile ? "w-full h-full" : "fixed left-0 top-0 bottom-0"
+    'admin-glass-sidebar flex flex-col z-40 border-r',
+    mobile ? 'h-full w-full bg-card' : 'fixed left-0 top-0 bottom-0'
   );
 
   return (
@@ -63,10 +75,9 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
       className={sidebarClasses}
       style={mobile ? undefined : { width: sidebarWidth, transition: 'width 0.3s ease' }}
     >
-      {/* Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+      <div className="flex h-16 items-center justify-between border-b border-border/80 px-4">
         <div
-          className="flex items-center gap-2"
+          className="flex min-w-0 items-center gap-2.5"
           style={{
             opacity: showLabels ? 1 : 0,
             width: showLabels ? 'auto' : 0,
@@ -75,90 +86,94 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
             whiteSpace: 'nowrap',
           }}
         >
-          <img src={logoSrc} alt="Phoenix" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
-          <div className="flex min-w-0 flex-col">
-            <span className="font-serif font-bold text-lg leading-tight">Phoenix Admin</span>
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {workspace === 'wp' ? 'WP Agent' : 'Website'}
-            </span>
-          </div>
+          <img
+            src={logoSrc}
+            alt="Phoenix"
+            className="h-9 w-9 shrink-0 object-contain drop-shadow-sm"
+            loading="lazy"
+            decoding="async"
+          />
+          <AdminBrand workspace={workspace} size="sm" showTagline={false} />
         </div>
         {!mobile && (
           <button
+            type="button"
             onClick={() => onCollapsedChange?.(!collapsed)}
             className={cn(
-              "w-8 h-8 flex items-center justify-center rounded-lg transition-colors",
-              "hover:bg-muted text-muted-foreground hover:text-foreground",
-              collapsed && "mx-auto"
+              'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground',
+              collapsed && 'mx-auto'
             )}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            <ChevronLeft className={cn("w-5 h-5 transition-transform", collapsed && "rotate-180")} />
+            <ChevronLeft className={cn('h-5 w-5 transition-transform', collapsed && 'rotate-180')} />
           </button>
         )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <Link
-            key={item.name}
-            to={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-xl transition-all duration-200",
-              "hover:bg-primary/10 group",
-              isActive(item.href)
-                ? mobile
-                  ? "border-l-4 border-primary bg-primary/10 text-primary pl-2 shadow-md"
-                  : "bg-primary text-primary-foreground shadow-md"
-                : "text-muted-foreground hover:text-foreground",
-              mobile ? "py-3 px-4 text-base" : "px-3 py-2.5"
-            )}
-          >
-            <span className="relative inline-flex shrink-0">
-              <item.icon className={cn(
-                "w-5 h-5 flex-shrink-0",
-                isActive(item.href)
-                  ? mobile
-                    ? "text-primary"
-                    : "text-primary-foreground"
-                  : "text-muted-foreground group-hover:text-primary"
-              )} />
-              {(item.href === '/admin/notifications' || item.href.startsWith('/admin/wp-alerts')) &&
-              wpUnreadCount > 0 ? (
-                <span
-                  className={cn(
-                    'absolute -top-1.5 -right-2 min-h-[16px] min-w-[16px] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center tabular-nums',
-                    isActive(item.href) && !mobile ? 'ring-2 ring-primary' : ''
-                  )}
-                >
-                  {wpUnreadCount > 99 ? '99+' : wpUnreadCount}
-                </span>
-              ) : null}
-            </span>
-            <span
-              className="font-medium whitespace-nowrap overflow-hidden"
-              style={{
-                opacity: showLabels ? 1 : 0,
-                width: showLabels ? 'auto' : 0,
-                transition: 'opacity 0.2s ease, width 0.2s ease',
-                whiteSpace: 'nowrap',
-              }}
+      {showLabels && (
+        <p className="px-4 pt-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {mobileOverflowMenu
+            ? 'More'
+            : workspace === 'wp'
+              ? 'WP Agent'
+              : 'Website'}
+        </p>
+      )}
+
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+        {menuItems.length === 0 ? (
+          <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+            All sections are on the bar below.
+          </p>
+        ) : null}
+        {menuItems.map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98]',
+                active
+                  ? 'admin-nav-link-active shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+                mobile && 'min-h-[48px] py-3 text-base'
+              )}
             >
-              {item.name}
-            </span>
-          </Link>
-        ))}
+              <span className="relative inline-flex shrink-0">
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                {(item.href === '/admin/notifications' || item.href.startsWith('/admin/wp-alerts')) &&
+                wpUnreadCount > 0 ? (
+                  <span className="absolute -right-2 -top-1.5 flex min-h-[16px] min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold tabular-nums text-destructive-foreground">
+                    {wpUnreadCount > 99 ? '99+' : wpUnreadCount}
+                  </span>
+                ) : null}
+              </span>
+              <span
+                className="overflow-hidden whitespace-nowrap"
+                style={{
+                  opacity: showLabels ? 1 : 0,
+                  width: showLabels ? 'auto' : 0,
+                  transition: 'opacity 0.2s ease, width 0.2s ease',
+                }}
+              >
+                {item.name}
+              </span>
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* User Profile */}
-      <div className={cn("border-t border-border", mobile ? "py-3 px-3" : "p-3")}>
-        <div className={cn(
-          "flex items-center gap-3 p-3 rounded-xl bg-muted/50",
-          (collapsed && !mobile) && "justify-center"
-        )}>
-          <AdminUserAvatar avatarUrl={user?.avatar} name={user?.name} size="md" className="w-10 h-10" />
+      <div className={cn('border-t border-border/80', mobile ? 'px-3 py-3' : 'p-3')}>
+        <div
+          className={cn(
+            'flex items-center gap-3 rounded-xl bg-muted/50 p-3',
+            collapsed && !mobile && 'justify-center'
+          )}
+        >
+          <AdminUserAvatar avatarUrl={user?.avatar} name={user?.name} size="md" className="h-10 w-10" />
           <div
-            className="flex-1 min-w-0"
+            className="min-w-0 flex-1"
             style={{
               opacity: showLabels ? 1 : 0,
               width: showLabels ? 'auto' : 0,
@@ -167,22 +182,21 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange, mob
               whiteSpace: 'nowrap',
             }}
           >
-            <p className="font-medium text-sm truncate">{user?.name}</p>
-            <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+            <p className="truncate text-sm font-medium">{user?.name}</p>
+            <p className="text-xs capitalize text-muted-foreground">{user?.role}</p>
           </div>
         </div>
         <button
+          type="button"
           onClick={logout}
           className={cn(
-            "w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors",
-            "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-            mobile ? "py-3" : "py-2.5",
-            (collapsed && !mobile) && "justify-center"
+            'mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive active:scale-[0.98]',
+            mobile && 'min-h-[48px]',
+            collapsed && !mobile && 'justify-center'
           )}
         >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
+          <LogOut className="h-5 w-5 shrink-0" />
           <span
-            className="font-medium"
             style={{
               opacity: showLabels ? 1 : 0,
               width: showLabels ? 'auto' : 0,

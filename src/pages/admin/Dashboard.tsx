@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -8,81 +8,264 @@ import {
   Handshake,
   Mail,
   TrendingUp,
-  Eye,
   ArrowUpRight,
   Loader2,
   Users,
-  UserPlus,
-  Shield,
-  Trash2,
-  Film,
-  Zap,
+  Wrench,
+  MessageSquareQuote,
+  Activity,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import {
   getDashboardData,
+  getRecentActivity,
   type DashboardStats,
   type RecentInquiry,
   type RecentActivity,
   type SiteOverview,
 } from '@/services/dashboard';
-import { getAdminUsers, deleteAdminUser, type AdminUserRow } from '@/services/adminUsers';
-import { useAdmin } from '@/contexts/AdminContext';
-import { supabase } from '@/lib/supabase';
+import { adminSectionTitleClass } from '@/components/admin/adminStyles';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { cn } from '@/lib/utils';
 
-const quickActions = [
-  { title: 'Add New Event', href: '/admin/events?add=1', icon: Calendar },
-  { title: 'Create Album', href: '/admin/albums?add=1', icon: FolderOpen },
-  { title: 'Upload Images', href: '/admin/gallery?upload=1', icon: Images },
-  { title: 'Add Collaboration', href: '/admin/collaborations?add=1', icon: Handshake },
-  { title: 'Manage Videos', href: '/admin/media', icon: Film },
-  { title: 'Add Employee', href: '/admin/team', icon: UserPlus },
-];
+type OverviewCardData = {
+  label: string;
+  value: number;
+  hint?: string;
+  href: string;
+  icon: typeof Calendar;
+  highlight?: boolean;
+};
 
-const statMeta: { key: keyof DashboardStats; title: string; changeKey: 'thisMonth' | 'new' | 'active'; icon: typeof Calendar; color: string }[] = [
-  { key: 'events', title: 'Total Events', changeKey: 'thisMonth', icon: Calendar, color: 'from-primary to-rose-gold' },
-  { key: 'albums', title: 'Albums', changeKey: 'thisMonth', icon: FolderOpen, color: 'from-emerald to-accent' },
-  { key: 'galleryImages', title: 'Gallery Images', changeKey: 'thisMonth', icon: Images, color: 'from-blue-500 to-purple-500' },
-  { key: 'inquiries', title: 'Inquiries', changeKey: 'new', icon: Mail, color: 'from-orange-500 to-rose-500' },
-  { key: 'team', title: 'Team', changeKey: 'active', icon: Users, color: 'from-violet-500 to-indigo-500' },
-];
+function OverviewCard({
+  card,
+  index,
+  compact = false,
+}: {
+  card: OverviewCardData;
+  index: number;
+  compact?: boolean;
+}) {
+  const Icon = card.icon;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.03, 0.2), duration: 0.25 }}
+    >
+      <Link to={card.href} className="group block h-full">
+        <Card
+          className={cn(
+            'h-full border border-border/80 bg-card shadow-sm transition-all',
+            compact ? 'rounded-lg' : 'rounded-xl',
+            'hover:border-border hover:shadow-md active:scale-[0.98]',
+            card.highlight && 'ring-1 ring-[hsl(var(--admin-accent)/0.35)]'
+          )}
+        >
+          <CardContent className={cn('flex flex-col', compact ? 'p-2' : 'p-3')}>
+            <div className="mb-1 flex items-center gap-1">
+              <span
+                className={cn(
+                  'admin-stat-icon shrink-0',
+                  compact ? 'h-6 w-6' : 'h-7 w-7'
+                )}
+              >
+                <Icon className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
+              </span>
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate font-medium leading-tight text-muted-foreground',
+                  compact ? 'text-[9px]' : 'text-[10px] sm:text-xs'
+                )}
+              >
+                {compact && card.label === 'Gallery Images' ? 'Gallery' : card.label}
+              </span>
+            </div>
+            <p
+              className={cn(
+                'font-extrabold tabular-nums leading-none text-foreground',
+                compact ? 'text-base' : 'text-lg sm:text-xl'
+              )}
+            >
+              {card.value}
+            </p>
+            {card.hint ? (
+              <p
+                className={cn(
+                  'mt-0.5 flex items-center gap-0.5 truncate font-medium text-emerald-600 dark:text-emerald-400',
+                  compact ? 'text-[9px]' : 'text-[10px]'
+                )}
+              >
+                <TrendingUp className="h-2.5 w-2.5 shrink-0" aria-hidden />
+                <span className="truncate">{card.hint}</span>
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+      </Link>
+    </motion.div>
+  );
+}
 
-function formatChange(stats: DashboardStats, key: keyof DashboardStats, changeKey: 'thisMonth' | 'new' | 'active'): string {
-  const s = stats[key] as { total?: number; thisMonth?: number; new?: number; active?: number };
-  if (changeKey === 'thisMonth' && typeof s.thisMonth === 'number') {
-    return s.thisMonth > 0 ? `+${s.thisMonth} this month` : 'This month';
+function buildOverviewCards(
+  st: DashboardStats,
+  over: SiteOverview
+): OverviewCardData[] {
+  const eventHint =
+    st.events.thisMonth > 0 ? `+${st.events.thisMonth} this month` : undefined;
+  const albumHint =
+    st.albums.thisMonth > 0 ? `+${st.albums.thisMonth} this month` : undefined;
+  const galleryHint =
+    st.galleryImages.thisMonth > 0 ? `+${st.galleryImages.thisMonth} this month` : undefined;
+
+  return [
+    {
+      label: 'Total Events',
+      value: st.events.total,
+      hint: eventHint,
+      href: '/admin/events',
+      icon: Calendar,
+    },
+    {
+      label: 'Albums',
+      value: st.albums.total,
+      hint: albumHint,
+      href: '/admin/albums',
+      icon: FolderOpen,
+    },
+    {
+      label: 'Gallery Images',
+      value: st.galleryImages.total,
+      hint: galleryHint,
+      href: '/admin/gallery',
+      icon: Images,
+    },
+    {
+      label: 'Inquiries',
+      value: st.inquiries.total,
+      hint: st.inquiries.new > 0 ? `${st.inquiries.new} new` : undefined,
+      href: '/admin/notifications',
+      icon: Mail,
+      highlight: st.inquiries.new > 0,
+    },
+    {
+      label: 'Partners',
+      value: over.partners,
+      href: '/admin/collaborations',
+      icon: Handshake,
+    },
+    {
+      label: 'Services',
+      value: over.services,
+      href: '/admin/services',
+      icon: Wrench,
+    },
+    {
+      label: 'Testimonials',
+      value: over.testimonials,
+      href: '/admin/testimonials',
+      icon: MessageSquareQuote,
+    },
+    {
+      label: 'Team',
+      value: st.team.total,
+      hint: st.team.active > 0 ? `${st.team.active} active` : undefined,
+      href: '/admin/team',
+      icon: Users,
+    },
+  ];
+}
+
+function ActivityTimeline({ items, className }: { items: RecentActivity[]; className?: string }) {
+  if (items.length === 0) {
+    return (
+      <div className={cn('flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground', className)}>
+        <Activity className="h-8 w-8 opacity-25" aria-hidden />
+        <p className="text-sm">No recent activity yet.</p>
+        <p className="text-xs opacity-80">Updates to events, albums, and content will appear here.</p>
+      </div>
+    );
   }
-  if (changeKey === 'new' && typeof s.new === 'number') {
-    return s.new > 0 ? `+${s.new} new` : '';
-  }
-  if (changeKey === 'active' && typeof s.active === 'number') {
-    return `${s.active} active`;
-  }
-  return '';
+
+  return (
+    <ul className={cn('space-y-0', className)}>
+      {items.map((activity, index) => (
+        <li key={activity.id} className="relative flex gap-3 pb-6 last:pb-0">
+          {index < items.length - 1 && (
+            <span
+              className="absolute left-[11px] top-6 bottom-0 w-px bg-border"
+              aria-hidden
+            />
+          )}
+          <span
+            className="admin-timeline-dot relative z-[1] mt-1.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2"
+            aria-hidden
+          >
+            <span className="admin-timeline-dot-inner h-2 w-2 rounded-full" />
+          </span>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="text-sm font-medium leading-snug text-foreground">{activity.action}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{activity.target}</p>
+            <p className="mt-1.5 text-[11px] font-medium text-muted-foreground/90">{activity.time}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function InquiryRow({ inquiry }: { inquiry: RecentInquiry }) {
+  return (
+    <Link
+      to={`/admin/notifications?tab=inquiries&open=${inquiry.id}`}
+      className="flex items-center justify-between gap-3 p-3.5 transition-colors hover:bg-muted/40 active:bg-muted/50 sm:p-4"
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-foreground/70">
+          {inquiry.name
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase() || '?'}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{inquiry.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{inquiry.event}</p>
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <span
+          className={cn(
+            'inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+            inquiry.status === 'new'
+              ? 'admin-status-new'
+              : 'bg-muted text-muted-foreground'
+          )}
+        >
+          {inquiry.status}
+        </span>
+        <p className="mt-1 text-[10px] text-muted-foreground">{inquiry.date}</p>
+      </div>
+    </Link>
+  );
 }
 
 export default function AdminDashboard() {
-  const { user: currentUser } = useAdmin();
-  const [removeTarget, setRemoveTarget] = useState<AdminUserRow | null>(null);
-  const [removePassword, setRemovePassword] = useState('');
-  const [removeLoading, setRemoveLoading] = useState(false);
+  const [activitySheetOpen, setActivitySheetOpen] = useState(false);
 
-  const queryClient = useQueryClient();
   const dashboardQuery = useQuery({
     queryKey: ['dashboard-data'],
     queryFn: getDashboardData,
@@ -91,20 +274,17 @@ export default function AdminDashboard() {
     retry: false,
   });
 
-  const adminUsersQuery = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: () => getAdminUsers().catch(() => []),
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-    retry: false,
+  const allActivityQuery = useQuery({
+    queryKey: ['dashboard-all-activity'],
+    queryFn: () => getRecentActivity(25),
+    enabled: activitySheetOpen,
+    staleTime: 60 * 1000,
   });
 
-  const dashboardBlocking = dashboardQuery.isPending;
   const stats = dashboardQuery.data?.stats ?? null;
   const recentInquiries = dashboardQuery.data?.recentInquiries ?? [];
   const recentActivity = dashboardQuery.data?.recentActivity ?? [];
   const siteOverview = dashboardQuery.data?.siteOverview ?? null;
-  const adminUsers = adminUsersQuery.data ?? [];
 
   useEffect(() => {
     if (!dashboardQuery.isError) return;
@@ -115,411 +295,161 @@ export default function AdminDashboard() {
     });
   }, [dashboardQuery.isError, dashboardQuery.error]);
 
-  const handleRemoveUser = async () => {
-    if (!removeTarget || !currentUser?.email) return;
-    if (removeTarget.id === currentUser.id || removeTarget.email === currentUser.email) {
-      toast.error('You cannot remove yourself');
-      return;
-    }
-    if (!removePassword) {
-      toast.error('Enter your password to confirm');
-      return;
-    }
-    setRemoveLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: currentUser.email,
-        password: removePassword,
-      });
-      if (error) {
-        toast.error('Incorrect password', { description: 'Your password is required to remove a user.' });
-        setRemoveLoading(false);
-        return;
-      }
-      await deleteAdminUser(removeTarget.id);
-      queryClient.setQueryData<AdminUserRow[]>(['admin-users'], (prev) =>
-        (prev ?? []).filter((u) => u.id !== removeTarget.id)
-      );
-      setRemoveTarget(null);
-      setRemovePassword('');
-      toast.success(`${removeTarget.email} has been removed from admin users.`);
-    } catch (e: unknown) {
-      toast.error('Failed to remove user', { description: (e as Error)?.message });
-    } finally {
-      setRemoveLoading(false);
-    }
-  };
-
-  if (dashboardBlocking) {
+  if (dashboardQuery.isPending) {
     return (
-      <AdminLayout title="Welcome back!" subtitle="Here's what's happening with your events.">
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Card key={i} className="border border-border/60 sm:border-none shadow-sm bg-card/50 overflow-hidden rounded-2xl sm:rounded-lg">
-              <CardContent className="p-4 sm:p-5">
-                <div className="h-3.5 sm:h-4 w-16 sm:w-20 rounded bg-muted animate-pulse mb-2.5 sm:mb-3" />
-                <div className="h-7 sm:h-8 w-12 sm:w-16 rounded bg-muted animate-pulse" />
+      <AdminLayout title="Dashboard" subtitle="Website content at a glance.">
+        <div className="mb-6 grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2 md:grid-cols-4 xl:grid-cols-8">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="rounded-lg border border-border/80 bg-card shadow-sm">
+              <CardContent className="p-2">
+                <div className="mb-1 h-2.5 w-10 animate-pulse rounded bg-muted" />
+                <div className="h-5 w-6 animate-pulse rounded bg-muted" />
               </CardContent>
             </Card>
           ))}
         </div>
-        <div className="grid md:grid-cols-2 gap-5 sm:gap-6">
-          <Card className="border border-border/60 sm:border-none rounded-2xl sm:rounded-lg overflow-hidden bg-card/50">
-            <CardHeader className="py-3 px-4 sm:py-4 sm:px-6"><div className="h-4 sm:h-5 w-28 sm:w-32 rounded bg-muted animate-pulse" /></CardHeader>
-            <CardContent className="p-4 sm:p-6"><div className="h-20 sm:h-24 rounded bg-muted animate-pulse" /></CardContent>
-          </Card>
-          <Card className="border border-border/60 sm:border-none rounded-2xl sm:rounded-lg overflow-hidden bg-card/50">
-            <CardHeader className="py-3 px-4 sm:py-4 sm:px-6"><div className="h-4 sm:h-5 w-28 sm:w-32 rounded bg-muted animate-pulse" /></CardHeader>
-            <CardContent className="p-4 sm:p-6"><div className="h-20 sm:h-24 rounded bg-muted animate-pulse" /></CardContent>
-          </Card>
+        <div className="grid gap-5 lg:grid-cols-2">
+          {[1, 2].map((i) => (
+            <Card key={i} className="rounded-2xl border border-border/80 bg-card shadow-sm">
+              <CardHeader className="border-b border-border/40 py-4">
+                <div className="h-5 w-32 animate-pulse rounded bg-muted" />
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="h-32 animate-pulse rounded bg-muted" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </AdminLayout>
     );
   }
 
-  const st = stats ?? {
+  const st: DashboardStats = stats ?? {
     events: { total: 0, thisMonth: 0 },
     albums: { total: 0, thisMonth: 0 },
     galleryImages: { total: 0, thisMonth: 0 },
     inquiries: { total: 0, new: 0 },
     team: { total: 0, active: 0, thisMonth: 0 },
   };
-  const over = siteOverview ?? { eventTypes: 0, albums: 0, partners: 0, testimonials: 0, services: 0, employees: 0 };
+  const over: SiteOverview = siteOverview ?? {
+    eventTypes: 0,
+    albums: 0,
+    partners: 0,
+    testimonials: 0,
+    services: 0,
+    employees: 0,
+  };
+  const overviewCards = buildOverviewCards(st, over);
 
   return (
-    <AdminLayout title="Welcome back!" subtitle="Here's what's happening with your events.">
-      {/* Stats Grid - mobile: tighter gap, larger tap targets, clearer hierarchy */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 max-md:gap-3 mb-6 sm:mb-8">
-        {statMeta.map((m, index) => {
-          const s = st[m.key] as { total: number; thisMonth?: number; new?: number };
-          const change = formatChange(st, m.key, m.changeKey);
-          return (
-            <motion.div
-              key={m.key}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(index * 0.04, 0.16), duration: 0.22 }}
-            >
-              <Card className="relative overflow-hidden hover:shadow-lg transition-all border border-border/60 sm:border-none shadow-sm bg-card/50 backdrop-blur-sm rounded-2xl sm:rounded-lg max-md:rounded-xl max-md:min-h-[100px]">
-                <CardContent className="p-4 sm:p-5 max-md:p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm max-md:text-sm font-medium text-muted-foreground truncate">{m.title}</p>
-                      <p className="text-2xl sm:text-3xl max-md:text-3xl font-bold mt-1.5 sm:mt-2 tabular-nums">{s?.total ?? 0}</p>
-                      {change && (
-                        <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 font-medium truncate max-md:text-xs max-md:text-muted-foreground">
-                          <TrendingUp className="w-3 h-3 shrink-0" />
-                          <span className="truncate">{change}</span>
-                        </p>
-                      )}
-                    </div>
-                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${m.color} flex items-center justify-center shadow-md shrink-0`}>
-                      <m.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-                <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${m.color} opacity-50`} />
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Main Content Area - mobile: more vertical spacing, clearer sections */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
-
-        {/* Left Column (2/3 width on large screens) */}
-        <div className="xl:col-span-2 space-y-6 sm:space-y-8 max-md:space-y-4">
-
-          {/* Quick Actions - mobile: larger tap targets, rounded cards */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08, duration: 0.22 }}
-          >
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2 max-md:text-lg max-md:px-1">
-                <Zap className="w-5 h-5 text-primary shrink-0" />
-                Quick Actions
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-md:grid-cols-2 max-md:gap-3">
-              {quickActions.map((action) => (
-                <Link key={action.title} to={action.href} className="sm:min-h-0 max-md:h-16 max-md:min-h-[64px]">
-                  <Card className="h-full hover:shadow-md hover:border-primary/50 active:scale-[0.98] transition-all cursor-pointer group border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl">
-                    <CardContent className="p-4 sm:p-4 flex flex-col items-center justify-center text-center gap-2.5 sm:gap-3 min-h-[88px] sm:min-h-0 max-md:h-16 max-md:min-h-0 max-md:gap-1 max-md:text-sm">
-                      <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 shrink-0">
-                        <action.icon className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs sm:text-sm max-md:text-sm font-medium group-hover:text-primary transition-colors line-clamp-2 leading-tight">{action.title}</span>
-                    </CardContent>
-                  </Card>
-                </Link>
+    <AdminLayout title="Dashboard" subtitle="Website content at a glance.">
+      {/* Overview */}
+      <section className="mb-6 sm:mb-8">
+        <p className={cn(adminSectionTitleClass, 'mb-3 px-0.5')}>Overview</p>
+        <div className="space-y-1.5 sm:space-y-0">
+          {/* Mobile: 3×2 grid, then remaining cards in one row */}
+          <div className="grid grid-cols-3 grid-rows-2 gap-1.5 sm:hidden">
+            {overviewCards.slice(0, 6).map((card, index) => (
+              <OverviewCard key={card.label} card={card} index={index} compact />
+            ))}
+          </div>
+          {overviewCards.length > 6 ? (
+            <div className="grid grid-cols-2 gap-1.5 sm:hidden">
+              {overviewCards.slice(6).map((card, index) => (
+                <OverviewCard key={card.label} card={card} index={index + 6} compact />
               ))}
             </div>
-          </motion.div>
+          ) : null}
 
-          {/* Activity & Inquiries Split - mobile: nicer cards and list spacing */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-            {/* Recent Inquiries */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.22 }}
-              className="h-full"
-            >
-              <Card className="h-full flex flex-col border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
-                <CardHeader className="flex flex-row items-center justify-between py-3 px-4 sm:py-4 sm:px-6 border-b border-border/40 bg-muted/20 max-md:flex-col max-md:items-start max-md:gap-3">
-                  <CardTitle className="text-sm sm:text-base font-semibold">Recent Inquiries</CardTitle>
-                  <Link to="/admin/notifications">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-xs text-primary hover:bg-primary/10 -mr-2 max-md:w-full max-md:h-11 max-md:mt-2 max-md:mr-0"
-                    >
-                      View All <ArrowUpRight className="w-3 h-3 ml-1" />
-                    </Button>
-                  </Link>
-                </CardHeader>
-                <CardContent className="p-0 flex-1">
-                  <div className="divide-y divide-border/40">
-                    {recentInquiries.length === 0 ? (
-                      <div className="p-6 sm:p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
-                        <Mail className="w-8 h-8 opacity-20" />
-                        <p className="text-sm">No new inquiries.</p>
-                      </div>
-                    ) : (
-                      recentInquiries.slice(0, 5).map((inquiry) => (
-                        <div
-                          key={inquiry.id}
-                          className="flex items-center justify-between gap-3 p-3 sm:p-4 hover:bg-muted/30 active:bg-muted/40 transition-colors max-md:py-4 max-md:px-3 max-md:gap-3"
-                        >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-9 h-9 max-md:w-10 max-md:h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <span className="text-primary font-bold text-xs max-md:text-sm">
-                                {inquiry.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
-                              </span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm max-md:text-sm truncate">{inquiry.name}</p>
-                              <p className="text-xs text-muted-foreground max-md:text-sm max-md:font-medium truncate sm:max-w-[120px]">{inquiry.event}</p>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0 max-md:text-left max-md:flex max-md:flex-col max-md:items-start max-md:gap-1">
-                            <span
-                              className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${inquiry.status === 'new' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                                }`}
-                            >
-                              {inquiry.status}
-                            </span>
-                            <p className="text-[10px] text-muted-foreground mt-1 max-md:mt-0">{inquiry.date}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Recent Activity */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12, duration: 0.22 }}
-              className="h-full"
-            >
-              <Card className="h-full flex flex-col border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
-                <CardHeader className="py-3 px-4 sm:py-4 sm:px-6 border-b border-border/40 bg-muted/20">
-                  <CardTitle className="text-sm sm:text-base font-semibold">Recent Activity</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6 max-md:p-4 flex-1">
-                  <div className="space-y-5 sm:space-y-6">
-                    {recentActivity.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">No recent activity.</p>
-                    ) : (
-                      recentActivity.slice(0, 5).map((activity, index) => (
-                      <div
-                        key={activity.id}
-                        className="flex gap-3 sm:gap-4 relative max-md:py-3 max-md:gap-3 max-md:border-b max-md:border-border/40 max-md:pb-3"
-                      >
-                          <div className="flex flex-col items-center shrink-0">
-                            <div className="w-2.5 h-2.5 rounded-full bg-primary/20 ring-4 ring-background z-10" />
-                            {index < recentActivity.length - 1 && <div className="w-px flex-1 bg-border/50 absolute top-2.5 bottom-[-20px] sm:bottom-[-24px] left-[4.5px]" />}
-                          </div>
-                          <div className="flex-1 min-w-0 -mt-1">
-                            <p className="text-sm max-md:text-sm font-medium break-words">{activity.action}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 break-words">{activity.target}</p>
-                            <p className="text-[10px] text-muted-foreground mt-1 font-mono opacity-70 max-md:text-xs max-md:opacity-100 max-md:text-muted-foreground">{activity.time}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+          {/* Tablet+ */}
+          <div className="hidden grid-cols-4 gap-2 sm:grid xl:grid-cols-8">
+            {overviewCards.map((card, index) => (
+              <OverviewCard key={card.label} card={card} index={index} />
+            ))}
           </div>
         </div>
+      </section>
 
-        {/* Right Column (1/3 width) - mobile: same spacing and rounded cards */}
-        <div className="space-y-6 sm:space-y-8 max-md:space-y-4">
-          {/* Site Overview - mobile: slightly larger touch targets, rounded */}
-          <motion.div
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1, duration: 0.22 }}
-          >
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary shrink-0" />
-                Site Overview
-              </h2>
-            </div>
-            <Card className="border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
-              <CardContent className="p-3 sm:p-4 max-md:p-4">
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 max-md:grid-cols-3 max-md:gap-3">
-                  {[
-                    { label: 'Event Types', value: over.eventTypes, icon: Calendar },
-                    { label: 'Albums', value: over.albums, icon: Images },
-                    { label: 'Services', value: over.services, icon: Handshake },
-                    { label: 'Testimonials', value: over.testimonials, icon: Users },
-                    { label: 'Partners', value: over.partners, icon: Shield },
-                    { label: 'Employees', value: over.employees, icon: UserPlus },
-                  ].map((item, i) => (
-                    <div
-                      key={i}
-                      className="flex flex-col items-center justify-center p-3.5 sm:p-3 max-md:p-3 rounded-xl bg-muted/20 hover:bg-muted/40 active:bg-muted/50 transition-colors border border-border/20 min-h-[72px] sm:min-h-0 max-md:text-center"
-                    >
-                      <span className="text-lg sm:text-xl max-md:text-xl font-bold text-foreground tabular-nums">{item.value}</span>
-                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1 text-center leading-tight max-md:text-xs">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+      {/* Inquiries + Activity */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, duration: 0.25 }}
+        >
+          <Card className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
+            <CardHeader className="admin-muted-header flex flex-row items-center justify-between gap-2 px-4 py-3.5 sm:px-6 sm:py-4">
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <CardTitle className="text-base font-semibold">Recent Inquiries</CardTitle>
+              </div>
+              <Button variant="ghost" size="sm" className="admin-link-accent h-9 shrink-0" asChild>
+                <Link to="/admin/notifications">
+                  View all
+                  <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="flex-1 p-0">
+              <div className="divide-y divide-border/50">
+                {recentInquiries.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-muted-foreground">
+                    <Mail className="h-8 w-8 opacity-25" aria-hidden />
+                    <p className="text-sm">No inquiries yet.</p>
+                  </div>
+                ) : (
+                  recentInquiries.map((inquiry) => (
+                    <InquiryRow key={inquiry.id} inquiry={inquiry} />
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-          {/* Admin Users - mobile: clearer list rows, tap-friendly */}
-          <motion.div
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.12, duration: 0.22 }}
-          >
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary shrink-0" />
-                Team Access
-              </h2>
-            </div>
-            <Card className="border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
-              <CardContent className="p-0">
-                <div className="divide-y divide-border/40">
-                  {adminUsersQuery.isPending ? (
-                    <div className="p-4 space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full bg-muted animate-pulse shrink-0" />
-                          <div className="flex-1 space-y-2">
-                            <div className="h-3.5 w-24 rounded bg-muted animate-pulse" />
-                            <div className="h-3 w-40 max-w-full rounded bg-muted animate-pulse" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : adminUsers.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-5 px-4 text-center">No admin users.</p>
-                  ) : (
-                    adminUsers.map((u) => (
-                      <div
-                        key={u.id}
-                        className="flex items-center justify-between gap-3 p-3.5 sm:p-3 max-md:py-3 max-md:px-3 hover:bg-muted/30 active:bg-muted/40 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden min-w-0 flex-1">
-                          <div className="w-9 h-9 sm:w-8 sm:h-8 max-md:w-10 max-md:h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
-                            <span className="text-primary font-bold text-xs max-md:text-sm">{(u.name || u.email).charAt(0).toUpperCase()}</span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-xs sm:text-xs max-md:text-sm truncate">{u.name || u.email.split('@')[0]}</p>
-                            <p className="text-[10px] text-muted-foreground max-md:text-xs max-md:truncate truncate">{u.email}</p>
-                          </div>
-                        </div>
-                        {u.id !== currentUser?.id && u.email !== currentUser?.email ? (
-                          <div className="max-md:min-h-[44px] max-md:min-w-[44px] flex items-center justify-center">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 sm:h-7 sm:w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 touch-manipulation"
-                              onClick={() => setRemoveTarget(u)}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded font-medium shrink-0">You</span>
-                        )}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12, duration: 0.25 }}
+        >
+          <Card className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
+            <CardHeader className="admin-muted-header flex flex-row items-center justify-between gap-2 px-4 py-3.5 sm:px-6 sm:py-4">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+              </div>
+              <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm" className="admin-link-accent h-9 shrink-0">
+                    View all activity
+                    <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+                  <SheetHeader>
+                    <SheetTitle>Recent activity</SheetTitle>
+                    <SheetDescription>
+                      Latest changes across events, albums, gallery, and testimonials.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="flex-1 overflow-y-auto px-1 pb-6 pt-2">
+                    {allActivityQuery.isPending ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-        </div>
+                    ) : (
+                      <ActivityTimeline items={allActivityQuery.data ?? []} />
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </CardHeader>
+            <CardContent className="flex-1 px-4 py-5 sm:px-6 sm:py-6">
+              <ActivityTimeline items={recentActivity} />
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-
-      {/* Remove User Confirmation Dialog */}
-      <Dialog
-        open={!!removeTarget}
-        onOpenChange={(open) => {
-          if (!open) {
-            setRemoveTarget(null);
-            setRemovePassword('');
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remove user</DialogTitle>
-            <DialogDescription>
-              To remove {removeTarget?.email ?? 'this user'}, enter your own password to confirm.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="remove-password">Your password</Label>
-              <Input
-                id="remove-password"
-                type="password"
-                placeholder="Enter your password"
-                value={removePassword}
-                onChange={(e) => setRemovePassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleRemoveUser()}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setRemoveTarget(null);
-                setRemovePassword('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRemoveUser}
-              disabled={removeLoading || !removePassword}
-            >
-              {removeLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Remove
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AdminLayout>
   );
 }

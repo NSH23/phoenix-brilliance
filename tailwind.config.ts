@@ -20,6 +20,7 @@ export default {
       fontFamily: {
         // Luxury event brand: Cormorant (hero/display), Inter (UI/body). Refined weights, no heavy bold.
         sans: ["Inter", "system-ui", "sans-serif"],
+        brand: ["Sora", "Inter", "system-ui", "sans-serif"],
         serif: ["Cormorant Garamond", "Playfair Display", "Georgia", "serif"],
         display: ["Cormorant Garamond", "Playfair Display", "Georgia", "serif"],
         hero: ["Cormorant Garamond", "Playfair Display", "Georgia", "serif"],

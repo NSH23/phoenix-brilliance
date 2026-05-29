@@ -119,12 +119,12 @@ export default function WpDashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(index * 0.04, 0.16), duration: 0.22 }}
             >
-              <Card className="relative overflow-hidden border border-border/60 sm:border-none shadow-sm bg-card/50 backdrop-blur-sm rounded-2xl sm:rounded-lg max-md:rounded-xl max-md:min-h-[100px]">
+              <Card className="relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm transition-shadow hover:shadow-md max-md:min-h-[100px]">
                 <CardContent className="p-4 sm:p-5 max-md:p-3.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{t.label}</p>
-                      <p className="text-2xl sm:text-3xl max-md:text-[1.65rem] font-bold mt-1.5 tabular-nums">
+                      <p className="truncate text-xs font-medium text-muted-foreground sm:text-sm">{t.label}</p>
+                      <p className="mt-1.5 text-[22px] font-extrabold tabular-nums tracking-tight sm:text-3xl">
                         {wpSummaryQuery.isPending ? (
                           <span className="inline-block h-8 w-10 rounded bg-muted animate-pulse" />
                         ) : (
@@ -132,14 +132,11 @@ export default function WpDashboard() {
                         )}
                       </p>
                     </div>
-                    <div
-                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${t.gradient} flex items-center justify-center shadow-md shrink-0`}
-                    >
-                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                    <div className="admin-stat-icon">
+                      <Icon className="h-5 w-5" />
                     </div>
                   </div>
                 </CardContent>
-                <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${t.gradient} opacity-45`} />
               </Card>
             </motion.div>
           );
@@ -189,11 +186,11 @@ export default function WpDashboard() {
       </div>
 
       <Card className="border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
-        <CardHeader className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2 border-b border-border/40 bg-muted/20 py-3 px-4 sm:py-4 sm:px-6">
-          <CardTitle className="text-sm sm:text-base font-semibold">Recent leads</CardTitle>
+        <CardHeader className="admin-muted-header flex flex-col gap-2 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6 sm:py-4">
+          <CardTitle className="text-sm font-semibold sm:text-base">Recent leads</CardTitle>
           <Link
             to="/admin/wp-alerts"
-            className="text-xs text-primary hover:underline whitespace-nowrap max-md:self-start"
+            className="admin-link-accent whitespace-nowrap text-xs hover:underline max-md:self-start"
           >
             {(wpUnreadAlertsQuery.data ?? 0) > 0
               ? `${wpUnreadAlertsQuery.data} unread alerts`

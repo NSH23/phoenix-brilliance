@@ -28,6 +28,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getAdminVapidPublicKey, syncAdminPushSubscription } from '@/lib/adminPush';
 import { toast } from 'sonner';
 import AdminWorkspaceSwitcher from '@/components/admin/AdminWorkspaceSwitcher';
+import AdminBottomNav from '@/components/admin/AdminBottomNav';
+import { adminPageSubtitleClass, adminPageTitleClass } from '@/components/admin/adminStyles';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -432,18 +434,18 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         className="min-h-screen"
       >
         {/* Top Header — workspace switcher centered on laptop; full-width row under tools on small screens */}
-        <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-lg">
+        <header className="admin-glass-header sticky top-0 z-30 border-b pt-[env(safe-area-inset-top,0px)]">
           <div className="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] gap-x-2 gap-y-2 px-3 py-2 sm:px-4 md:px-6 md:grid-cols-[minmax(0,1fr)_minmax(200px,280px)_auto] md:grid-rows-1 md:items-center md:gap-4 md:py-0 md:min-h-16">
             <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2 sm:gap-3 md:max-w-2xl">
-            {/* Mobile Menu Trigger */}
-            <div className="md:hidden">
+            {/* Mobile menu — also available from bottom nav */}
+            <div className="hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  <button className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-muted">
+                  <button type="button" className="touch-target flex items-center justify-center rounded-xl hover:bg-muted/80">
                     <Menu className="w-5 h-5" />
                   </button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-[85vw] max-w-[320px]">
+                <SheetContent side="left" className="w-[min(88vw,320px)] p-0">
                   <SheetTitle className="sr-only">Navigation</SheetTitle>
                   <SheetDescription className="sr-only">Mobile navigation menu</SheetDescription>
                   <AdminSidebar mobile />
@@ -601,7 +603,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                             );
                           }}
                         >
-                          <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                          <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--admin-accent))]" />
                           <div className="flex-1 min-w-0">
                             <p className="text-[10px] uppercase text-muted-foreground">{item.kind === 'inquiry' ? 'Inquiry' : 'WP Alert'}</p>
                             <p className="text-sm font-medium truncate">{item.title}</p>
@@ -658,37 +660,38 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         </header>
 
         {/* Page Content */}
-        <main className="p-4 md:p-6">
-          {/* Page Header */}
-          <div className="mb-6 md:mb-8">
+        <main className="admin-animate-in mx-auto w-full max-w-7xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] pt-4 md:px-8 md:pb-6 md:pt-6">
+          <div className="mb-5 md:mb-8">
             <motion.h1
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-2xl md:text-3xl font-serif font-bold text-foreground"
+              className={adminPageTitleClass}
             >
               {title}
             </motion.h1>
             {subtitle && (
               <motion.p
-                initial={{ opacity: 0, y: -5 }}
+                initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="text-sm md:text-base text-muted-foreground mt-1"
+                transition={{ delay: 0.08 }}
+                className={adminPageSubtitleClass}
               >
                 {subtitle}
               </motion.p>
             )}
           </div>
 
-          {/* Page Body */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.12, duration: 0.35 }}
+            className="space-y-5 md:space-y-6"
           >
             {children}
           </motion.div>
         </main>
+
+        <AdminBottomNav />
       </motion.div>
     </div >
   );

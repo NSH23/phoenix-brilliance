@@ -1,5 +1,5 @@
 /* Typography: Cormorant Garamond (hero/display), Inter (UI/body). Elegant, refined weights. */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700&family=Sora:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -2479,103 +2479,271 @@
 }
 
 /* ─── Admin dashboard only (scoped; public site unchanged) ─── */
-/* Variables on `html` when any `.admin-dashboard` exists so portaled dialogs/sheets inherit the palette. */
+/* Neutral surfaces; blue reserved for CTAs, focus, and small active markers. */
 html:has(.admin-dashboard) {
-  --admin-surface-2: 214 32% 96%;
-  --admin-border: 214 24% 90%;
+  color-scheme: light;
 
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
+  --admin-surface-2: 220 14% 95%;
+  --admin-border: 220 13% 88%;
+  --admin-accent: 221 55% 46%;
+
+  --background: 220 14% 96.5%;
+  --foreground: 224 18% 14%;
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --surface: 210 40% 97%;
+  --card-foreground: 224 18% 14%;
+  --surface: 220 14% 96.5%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
+  --popover-foreground: 224 18% 14%;
 
-  --primary: 221 83% 53%;
+  --primary: 221 55% 46%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 214 32% 93%;
-  --secondary-foreground: 222 47% 11%;
+  --secondary: 220 13% 93%;
+  --secondary-foreground: 224 18% 14%;
 
-  --muted: 214 32% 94%;
-  --muted-foreground: 215 16% 46%;
+  --muted: 220 13% 93%;
+  --muted-foreground: 220 9% 42%;
 
-  --accent: 214 95% 93%;
-  --accent-foreground: 222 47% 11%;
+  --accent: 220 13% 91%;
+  --accent-foreground: 224 18% 14%;
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 214 24% 90%;
-  --input: 214 24% 90%;
-  --ring: 221 83% 53%;
+  --border: 220 13% 88%;
+  --input: 220 13% 86%;
+  --ring: 221 55% 46%;
+  --radius: 0.75rem;
 
-  --sidebar-background: 214 32% 96%;
-  --sidebar-foreground: 222 47% 11%;
-  --sidebar-primary: 221 83% 53%;
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 224 18% 14%;
+  --sidebar-primary: 221 55% 46%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 214 95% 92%;
-  --sidebar-accent-foreground: 222 47% 11%;
-  --sidebar-border: 214 24% 90%;
-  --sidebar-ring: 221 83% 53%;
+  --sidebar-accent: 220 13% 93%;
+  --sidebar-accent-foreground: 224 18% 14%;
+  --sidebar-border: 220 13% 88%;
+  --sidebar-ring: 221 55% 46%;
 
-  --gold: 221 83% 53%;
-  --gold-light: 214 95% 93%;
-  --gold-dark: 221 70% 45%;
-  --rose-gold: 221 83% 53%;
+  /* Keep legacy token names neutral inside admin (avoids blue gradients on old classes). */
+  --gold: 224 12% 32%;
+  --gold-light: 220 13% 91%;
+  --gold-dark: 224 14% 22%;
+  --rose-gold: 224 12% 32%;
 
-  --glass-bg: 0 0% 100% / 0.88;
-  --glass-border: 214 32% 88% / 0.55;
-  --glass-shadow: 0 10px 40px rgba(37, 99, 235, 0.08), 0 2px 10px rgba(15, 23, 42, 0.04);
+  --glass-bg: 0 0% 100% / 0.82;
+  --glass-border: 220 13% 88% / 0.9;
+  --glass-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.04);
+  --admin-glass-blur: blur(16px) saturate(110%);
 }
 
 html.dark:has(.admin-dashboard) {
-  --admin-surface-2: 222 40% 16%;
-  --admin-border: 217 33% 24%;
+  color-scheme: dark;
 
-  --background: 222 47% 11%;
-  --foreground: 210 40% 98%;
-  --card: 222 47% 14%;
-  --card-foreground: 210 40% 98%;
-  --surface: 222 44% 13%;
-  --popover: 222 47% 12%;
-  --popover-foreground: 210 40% 98%;
+  --admin-surface-2: 224 16% 16%;
+  --admin-border: 224 12% 22%;
+  --admin-accent: 214 65% 58%;
 
-  --primary: 217 91% 60%;
-  --primary-foreground: 0 0% 100%;
+  --background: 224 20% 9%;
+  --foreground: 210 18% 96%;
+  --card: 224 18% 12.5%;
+  --card-foreground: 210 18% 96%;
+  --surface: 224 18% 11%;
+  --popover: 224 18% 12%;
+  --popover-foreground: 210 18% 96%;
 
-  --secondary: 217 33% 18%;
-  --secondary-foreground: 210 40% 98%;
+  --primary: 214 65% 58%;
+  --primary-foreground: 224 22% 10%;
 
-  --muted: 217 33% 18%;
-  --muted-foreground: 215 20% 70%;
+  --secondary: 224 14% 16%;
+  --secondary-foreground: 210 18% 96%;
 
-  --accent: 217 33% 20%;
-  --accent-foreground: 213 97% 87%;
+  --muted: 224 14% 16%;
+  --muted-foreground: 220 10% 62%;
 
-  --destructive: 0 63% 45%;
+  --accent: 224 14% 17%;
+  --accent-foreground: 210 18% 92%;
+
+  --destructive: 0 62% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 217 33% 22%;
-  --input: 217 33% 22%;
-  --ring: 217 91% 60%;
+  --border: 224 12% 20%;
+  --input: 224 12% 20%;
+  --ring: 214 65% 58%;
 
-  --sidebar-background: 222 47% 12%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 217 91% 60%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 217 33% 18%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 22%;
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-background: 224 18% 11%;
+  --sidebar-foreground: 210 18% 96%;
+  --sidebar-primary: 214 65% 58%;
+  --sidebar-primary-foreground: 224 22% 10%;
+  --sidebar-accent: 224 14% 16%;
+  --sidebar-accent-foreground: 210 18% 96%;
+  --sidebar-border: 224 12% 20%;
+  --sidebar-ring: 214 65% 58%;
 
-  --gold: 217 91% 60%;
-  --gold-light: 213 97% 87%;
-  --gold-dark: 217 91% 52%;
-  --rose-gold: 217 91% 60%;
+  --gold: 210 12% 72%;
+  --gold-light: 224 14% 18%;
+  --gold-dark: 210 12% 58%;
+  --rose-gold: 210 12% 72%;
 
-  --glass-bg: 222 47% 14% / 0.92;
-  --glass-border: 217 91% 60% / 0.18;
-  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(96, 165, 250, 0.06);
+  --glass-bg: 224 18% 12% / 0.9;
+  --glass-border: 224 12% 22% / 0.95;
+  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --admin-glass-blur: blur(16px) saturate(115%);
+}
+
+/* Admin shell typography & surfaces (does not affect public site) */
+.admin-dashboard {
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
+}
+
+.admin-dashboard .font-brand {
+  font-family: Sora, Inter, system-ui, sans-serif;
+}
+
+.admin-glass-header {
+  background: hsl(var(--card) / 0.86);
+  border-color: hsl(var(--border));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--admin-glass-blur);
+  -webkit-backdrop-filter: var(--admin-glass-blur);
+}
+
+html.dark:has(.admin-dashboard) .admin-glass-header {
+  background: hsl(var(--card) / 0.9);
+  border-color: hsl(var(--border));
+  box-shadow: var(--glass-shadow);
+}
+
+.admin-glass-sidebar {
+  background: hsl(var(--card) / 0.98);
+  border-color: hsl(var(--border));
+  backdrop-filter: var(--admin-glass-blur);
+  -webkit-backdrop-filter: var(--admin-glass-blur);
+}
+
+html.dark:has(.admin-dashboard) .admin-glass-sidebar {
+  background: hsl(var(--card) / 0.98);
+}
+
+.admin-dashboard .admin-glass-card {
+  @apply relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm;
+  background: hsl(var(--glass-bg));
+  border-color: hsl(var(--glass-border));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--admin-glass-blur);
+  -webkit-backdrop-filter: var(--admin-glass-blur);
+}
+
+.admin-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: hsl(var(--card) / 0.9);
+  border-top: 1px solid hsl(var(--border));
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06);
+  backdrop-filter: var(--admin-glass-blur);
+  -webkit-backdrop-filter: var(--admin-glass-blur);
+}
+
+html.dark:has(.admin-dashboard) .admin-bottom-nav {
+  background: hsl(var(--card) / 0.94);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.admin-bottom-nav-item {
+  position: relative;
+}
+
+.admin-bottom-nav-item[aria-current='page'] {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.admin-bottom-nav-item[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.25rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: hsl(var(--admin-accent));
+}
+
+.admin-dashboard .touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.admin-dashboard .admin-nav-link-active {
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 hsl(var(--admin-accent));
+}
+
+.admin-dashboard .admin-nav-link-active svg {
+  color: hsl(var(--foreground) / 0.72);
+}
+
+.admin-dashboard .admin-stat-icon {
+  @apply flex shrink-0 items-center justify-center rounded-lg;
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground) / 0.65);
+}
+
+.admin-dashboard .admin-brand-accent {
+  color: hsl(var(--admin-accent));
+}
+
+.admin-dashboard .admin-link-accent {
+  color: hsl(var(--admin-accent));
+}
+
+.admin-dashboard .admin-link-accent:hover {
+  color: hsl(var(--admin-accent) / 0.85);
+}
+
+.admin-dashboard .admin-status-new {
+  background: hsl(var(--admin-accent) / 0.12);
+  color: hsl(var(--admin-accent));
+}
+
+.admin-dashboard .admin-muted-header {
+  @apply border-border/60 bg-muted/30;
+}
+
+.admin-dashboard .admin-timeline-dot {
+  @apply border-border bg-muted;
+}
+
+.admin-dashboard .admin-timeline-dot-inner {
+  @apply bg-foreground/35;
+}
+
+.admin-dashboard .admin-animate-in {
+  animation: admin-fade-in-up 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes admin-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard .admin-animate-in {
+    animation: none;
+  }
 }

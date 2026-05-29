@@ -237,8 +237,8 @@ export async function getSiteOverview(): Promise<SiteOverview> {
 export async function getDashboardData() {
   const [stats, recentInquiries, recentActivity, siteOverview] = await Promise.all([
     getDashboardStats(),
-    getRecentInquiries(4),
-    getRecentActivity(5),
+    getRecentInquiries(5),
+    getRecentActivity(6),
     getSiteOverview(),
   ]);
   return { stats, recentInquiries, recentActivity, siteOverview };

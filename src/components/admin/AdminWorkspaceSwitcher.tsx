@@ -50,7 +50,7 @@ export default function AdminWorkspaceSwitcher({
                 ? 'min-h-[40px] px-2 py-2 text-xs sm:min-h-[36px] sm:px-3 sm:text-sm'
                 : 'py-2.5 px-2 text-sm sm:text-base',
               active
-                ? 'bg-background text-foreground shadow-sm ring-1 ring-border/70'
+                ? 'bg-card text-foreground shadow-sm ring-1 ring-border/80'
                 : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
             )}
             aria-current={active ? 'page' : undefined}
