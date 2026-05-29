@@ -30,23 +30,26 @@ import { toast } from 'sonner';
 import AdminWorkspaceSwitcher from '@/components/admin/AdminWorkspaceSwitcher';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { adminPageSubtitleClass, adminPageTitleClass } from '@/components/admin/adminStyles';
+import { applyAdminTheme, getStoredAdminTheme, setStoredAdminTheme } from '@/lib/adminTheme';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
+  /** Optional actions beside the page title (e.g. WP settings). */
+  headerActions?: React.ReactNode;
 }
 
 const WP_UNREAD_QUERY_KEY = ['wp-unread-notifications-count'] as const;
 
-export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
+export default function AdminLayout({ children, title, subtitle, headerActions }: AdminLayoutProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('adminSidebarCollapsed');
     return saved ? JSON.parse(saved) : false;
   });
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => getStoredAdminTheme() === 'dark');
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -65,6 +68,11 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   useEffect(() => {
     localStorage.setItem('adminSidebarCollapsed', JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    const theme = getStoredAdminTheme();
+    setDarkMode(theme === 'dark');
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -397,8 +405,11 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   }, [notifications, wpNotifications]);
 
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark');
+    const next = !darkMode;
+    setDarkMode(next);
+    const theme = next ? 'dark' : 'light';
+    setStoredAdminTheme(theme);
+    applyAdminTheme(theme);
   };
 
   const pushConfigured = Boolean(getAdminVapidPublicKey());
@@ -661,24 +672,36 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
         {/* Page Content */}
         <main className="admin-animate-in mx-auto w-full max-w-7xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] pt-4 md:px-8 md:pb-6 md:pt-6">
-          <div className="mb-5 md:mb-8">
-            <motion.h1
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={adminPageTitleClass}
-            >
-              {title}
-            </motion.h1>
-            {subtitle && (
-              <motion.p
+          <div className="mb-5 flex items-start justify-between gap-3 md:mb-8">
+            <div className="min-w-0 flex-1">
+              <motion.h1
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={adminPageTitleClass}
+              >
+                {title}
+              </motion.h1>
+              {subtitle && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.08 }}
+                  className={adminPageSubtitleClass}
+                >
+                  {subtitle}
+                </motion.p>
+              )}
+            </div>
+            {headerActions ? (
+              <motion.div
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08 }}
-                className={adminPageSubtitleClass}
+                transition={{ delay: 0.06 }}
+                className="flex shrink-0 items-center gap-2"
               >
-                {subtitle}
-              </motion.p>
-            )}
+                {headerActions}
+              </motion.div>
+            ) : null}
           </div>
 
           <motion.div

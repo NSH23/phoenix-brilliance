@@ -13,7 +13,11 @@ export const WP_MOBILE_TAB_HREFS = [
   '/admin/wp-leads',
   '/admin/wp-alerts',
   '/admin/wp-analytics',
+  '/admin/wp-media',
 ] as const;
+
+/** WP mobile: settings live on dashboard header, not overflow menu. */
+export const WP_MOBILE_OVERFLOW_EXCLUDE_HREFS = ['/admin/wp-settings'] as const;
 
 function hrefBase(href: string): string {
   return href.split('?')[0] ?? href;
@@ -32,5 +36,10 @@ export function filterMenuItemsForMobileOverflow(
   workspace: 'website' | 'wp'
 ): AdminMenuItem[] {
   const tabHrefs = workspace === 'wp' ? WP_MOBILE_TAB_HREFS : WEBSITE_MOBILE_TAB_HREFS;
-  return items.filter((item) => !isExcludedFromOverflowMenu(item.href, tabHrefs));
+  const extraExclude = workspace === 'wp' ? WP_MOBILE_OVERFLOW_EXCLUDE_HREFS : [];
+  return items.filter(
+    (item) =>
+      !isExcludedFromOverflowMenu(item.href, tabHrefs) &&
+      !isExcludedFromOverflowMenu(item.href, extraExclude)
+  );
 }

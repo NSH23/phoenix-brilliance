@@ -2,9 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   MessageCircleMore,
-  ChartColumn,
   Mail,
-  Clapperboard,
   Cog,
   Loader2,
   Users,
@@ -12,6 +10,7 @@ import {
   Flame,
   Phone,
   Award,
+  ArrowUpRight,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -26,21 +25,31 @@ import {
   type WpDashboardSummary,
 } from '@/services/wpAgent';
 import { supabase } from '@/lib/supabase';
+import { adminSectionTitleClass } from '@/components/admin/adminStyles';
+import { cn } from '@/lib/utils';
 
-const statTiles: {
+type WpOverviewCard = {
   key: keyof WpDashboardSummary;
   label: string;
+  href: string;
   icon: typeof Users;
-  gradient: string;
-}[] = [
-  { key: 'totalLeads', label: 'Total leads', icon: Users, gradient: 'from-primary to-rose-gold' },
-  { key: 'newLeads', label: 'New', icon: UserPlus, gradient: 'from-emerald-500 to-teal-600' },
-  { key: 'highPriorityLeads', label: 'High priority', icon: Flame, gradient: 'from-orange-500 to-amber-600' },
-  { key: 'callbacksDue', label: 'Callbacks due', icon: Phone, gradient: 'from-blue-500 to-indigo-600' },
-  { key: 'avgLeadScore', label: 'Avg score', icon: Award, gradient: 'from-violet-500 to-purple-600' },
+  hint?: string;
+};
+
+const overviewCards: WpOverviewCard[] = [
+  { key: 'totalLeads', label: 'Total leads', href: '/admin/wp-leads', icon: Users },
+  { key: 'newLeads', label: 'New', href: '/admin/wp-leads', icon: UserPlus },
+  {
+    key: 'highPriorityLeads',
+    label: 'High priority',
+    href: '/admin/wp-leads',
+    icon: Flame,
+  },
+  { key: 'callbacksDue', label: 'Callbacks due', href: '/admin/wp-leads', icon: Phone },
+  { key: 'avgLeadScore', label: 'Avg score', href: '/admin/wp-analytics', icon: Award },
 ];
 
-function defaultSummary() {
+function defaultSummary(): WpDashboardSummary {
   return {
     totalLeads: 0,
     newLeads: 0,
@@ -48,6 +57,57 @@ function defaultSummary() {
     callbacksDue: 0,
     avgLeadScore: 0,
   };
+}
+
+function WpOverviewStatCard({
+  card,
+  value,
+  loading,
+  index,
+}: {
+  card: WpOverviewCard;
+  value: number;
+  loading: boolean;
+  index: number;
+}) {
+  const Icon = card.icon;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.03, 0.2), duration: 0.25 }}
+    >
+      <Link to={card.href} className="group block h-full">
+        <Card
+          className={cn(
+            'h-full border border-border/80 bg-card shadow-sm transition-all',
+            'rounded-lg sm:rounded-xl hover:border-border hover:shadow-md active:scale-[0.98]'
+          )}
+        >
+          <CardContent className="flex flex-col p-2.5 sm:p-3">
+            <div className="mb-1 flex items-center gap-1.5">
+              <span className="admin-stat-icon h-7 w-7 shrink-0 sm:h-8 sm:w-8">
+                <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[10px] font-medium leading-tight text-muted-foreground sm:text-xs">
+                {card.label}
+              </span>
+            </div>
+            <p className="text-lg font-extrabold tabular-nums leading-none text-foreground sm:text-xl">
+              {loading ? (
+                <span className="inline-block h-6 w-8 animate-pulse rounded bg-muted sm:h-7" />
+              ) : (
+                value
+              )}
+            </p>
+            {card.hint ? (
+              <p className="mt-0.5 truncate text-[10px] font-medium text-muted-foreground">{card.hint}</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      </Link>
+    </motion.div>
+  );
 }
 
 export default function WpDashboard() {
@@ -104,130 +164,115 @@ export default function WpDashboard() {
   }, [queryClient]);
 
   const wpSummary = wpSummaryQuery.data ?? defaultSummary();
+  const unreadAlerts = wpUnreadAlertsQuery.data ?? 0;
+
+  const cardsWithHints = overviewCards.map((card) => {
+    if (card.key === 'newLeads' && wpSummary.newLeads > 0) {
+      return { ...card, hint: 'Needs follow-up' };
+    }
+    if (card.key === 'callbacksDue' && wpSummary.callbacksDue > 0) {
+      return { ...card, hint: 'Due now' };
+    }
+    return card;
+  });
 
   return (
-    <AdminLayout title="WP Agent" subtitle="WhatsApp leads, media, and alerts.">
-      {/* Stats — same mobile rhythm as main admin dashboard */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8 max-md:gap-3">
-        {statTiles.map((t, index) => {
-          const Icon = t.icon;
-          const value = wpSummary[t.key];
-          return (
-            <motion.div
-              key={t.key}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(index * 0.04, 0.16), duration: 0.22 }}
-            >
-              <Card className="relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm transition-shadow hover:shadow-md max-md:min-h-[100px]">
-                <CardContent className="p-4 sm:p-5 max-md:p-3.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-muted-foreground sm:text-sm">{t.label}</p>
-                      <p className="mt-1.5 text-[22px] font-extrabold tabular-nums tracking-tight sm:text-3xl">
-                        {wpSummaryQuery.isPending ? (
-                          <span className="inline-block h-8 w-10 rounded bg-muted animate-pulse" />
-                        ) : (
-                          value
-                        )}
-                      </p>
-                    </div>
-                    <div className="admin-stat-icon">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      <div className="mb-6 sm:mb-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 max-md:gap-2.5">
-        <Button variant="outline" className="h-auto min-h-[52px] flex-col gap-1 py-3 max-md:min-h-[56px]" asChild>
-          <Link to="/admin/wp-leads">
-            <MessageCircleMore className="h-5 w-5" />
-            <span className="text-xs font-medium">Leads</span>
-          </Link>
-        </Button>
-        <Button variant="outline" className="h-auto min-h-[52px] flex-col gap-1 py-3 max-md:min-h-[56px]" asChild>
-          <Link to="/admin/wp-analytics">
-            <ChartColumn className="h-5 w-5" />
-            <span className="text-xs font-medium">Analytics</span>
-          </Link>
-        </Button>
-        <Button variant="outline" className="h-auto min-h-[52px] flex-col gap-1 py-3 max-md:min-h-[56px]" asChild>
-          <Link to="/admin/wp-media">
-            <Clapperboard className="h-5 w-5" />
-            <span className="text-xs font-medium">Media</span>
-          </Link>
-        </Button>
-        <Button variant="outline" className="h-auto min-h-[52px] flex-col gap-1 py-3 max-md:min-h-[56px]" asChild>
-          <Link to="/admin/wp-alerts">
-            <Mail className="h-5 w-5" />
-            <span className="text-xs font-medium">Alerts</span>
-          </Link>
-        </Button>
-        <Button variant="outline" className="h-auto min-h-[52px] flex-col gap-1 py-3 max-md:min-h-[56px]" asChild>
-          <Link to="/admin/wp-settings">
-            <Cog className="h-5 w-5" />
-            <span className="text-xs font-medium">WP settings</span>
-          </Link>
-        </Button>
+    <AdminLayout
+      title="WP Agent"
+      subtitle="WhatsApp leads, media, and alerts."
+      headerActions={
         <Button
           variant="outline"
-          className="h-auto min-h-[52px] flex-col gap-1 py-3 max-md:min-h-[56px] col-span-2 sm:col-span-1 lg:col-span-1"
+          size="icon"
+          className="h-10 w-10 shrink-0 rounded-xl"
           asChild
         >
-          <Link to="/admin/dashboard">
-            <span className="text-xs font-medium">Website dashboard</span>
+          <Link to="/admin/wp-settings" aria-label="WP settings">
+            <Cog className="h-5 w-5" />
           </Link>
         </Button>
-      </div>
+      }
+    >
+      <section className="mb-6 sm:mb-8">
+        <p className={cn(adminSectionTitleClass, 'mb-3 px-0.5')}>Overview</p>
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-5">
+          {cardsWithHints.map((card, index) => (
+            <WpOverviewStatCard
+              key={card.key}
+              card={card}
+              value={wpSummary[card.key]}
+              loading={wpSummaryQuery.isPending}
+              index={index}
+            />
+          ))}
+        </div>
+      </section>
 
-      <Card className="border border-border/60 sm:border-muted/60 rounded-2xl sm:rounded-lg max-md:rounded-xl overflow-hidden">
-        <CardHeader className="admin-muted-header flex flex-col gap-2 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6 sm:py-4">
-          <CardTitle className="text-sm font-semibold sm:text-base">Recent leads</CardTitle>
-          <Link
-            to="/admin/wp-alerts"
-            className="admin-link-accent whitespace-nowrap text-xs hover:underline max-md:self-start"
-          >
-            {(wpUnreadAlertsQuery.data ?? 0) > 0
-              ? `${wpUnreadAlertsQuery.data} unread alerts`
-              : 'Open alerts'}
-          </Link>
+      <Card className="admin-panel-card">
+        <CardHeader className="admin-muted-header flex flex-row items-center justify-between gap-2 px-4 py-3.5 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-2">
+            <MessageCircleMore className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <CardTitle className="text-base font-semibold">Recent leads</CardTitle>
+          </div>
+          <Button variant="ghost" size="sm" className="admin-link-accent h-9 shrink-0" asChild>
+            <Link to="/admin/wp-alerts">
+              {unreadAlerts > 0 ? `${unreadAlerts} unread alerts` : 'Open alerts'}
+              <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
           {recentWpLeadsQuery.isPending ? (
-            <div className="flex justify-center py-10 max-md:py-8">
+            <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : !recentWpLeadsQuery.data?.length ? (
-            <p className="py-8 sm:py-10 text-center text-sm text-muted-foreground px-4">No WP leads yet.</p>
+            <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-muted-foreground">
+              <MessageCircleMore className="h-8 w-8 opacity-25" aria-hidden />
+              <p className="text-sm">No WP leads yet.</p>
+            </div>
           ) : (
-            <div className="divide-y divide-border/40 max-md:divide-y-0 max-md:gap-2 max-md:p-2 max-md:flex max-md:flex-col">
-              {recentWpLeadsQuery.data.map((lead) => (
-                <Link
-                  key={lead.id}
-                  to={lead.phone ? `/admin/wp-leads?phone=${encodeURIComponent(lead.phone)}` : '/admin/wp-leads'}
-                  className="flex items-start gap-3 px-4 py-3 sm:py-3.5 transition-colors hover:bg-muted/40 active:bg-muted/50 max-md:rounded-xl max-md:border max-md:border-border/50 max-md:bg-card/80 max-md:px-3.5 max-md:py-3.5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{lead.name || 'Unknown'}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {lead.event_type || '—'} · {lead.source_channel || '—'}
-                    </p>
-                  </div>
-                  <span className="shrink-0 pt-0.5 text-[11px] text-muted-foreground whitespace-nowrap text-right max-md:text-xs">
-                    {new Date(lead.created_at).toLocaleString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </Link>
-              ))}
+            <div className="divide-y divide-border/50">
+              {recentWpLeadsQuery.data.map((lead) => {
+                const initials =
+                  (lead.name || '?')
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase() || '?';
+                return (
+                  <Link
+                    key={lead.id}
+                    to={
+                      lead.phone
+                        ? `/admin/wp-leads?phone=${encodeURIComponent(lead.phone)}`
+                        : '/admin/wp-leads'
+                    }
+                    className="flex items-center justify-between gap-3 p-3.5 transition-colors hover:bg-muted/40 active:bg-muted/50 sm:p-4"
+                  >
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="admin-avatar-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm">
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{lead.name || 'Unknown'}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {lead.event_type || '—'} · {lead.source_channel || '—'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
+                      {new Date(lead.created_at).toLocaleString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </CardContent>
