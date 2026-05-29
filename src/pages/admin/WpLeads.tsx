@@ -44,6 +44,7 @@ import {
   type WpLeadStatus,
 } from "@/services/wpAgent";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
@@ -54,6 +55,306 @@ const statusList: Array<{ value: WpLeadStatus; label: string }> = [
   { value: "converted", label: "Converted" },
   { value: "lost", label: "Lost" },
 ];
+
+function statusBadgeClass(status: WpLeadStatus): string {
+  switch (status) {
+    case "new":
+      return "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20";
+    case "contacted":
+      return "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20";
+    case "qualified":
+      return "bg-violet-500/10 text-violet-800 dark:text-violet-300 border-violet-500/20";
+    case "converted":
+      return "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/20";
+    case "lost":
+      return "bg-muted text-muted-foreground border-border/60";
+    default:
+      return "bg-muted text-muted-foreground border-border/60";
+  }
+}
+
+function leadInitials(name: string | null | undefined): string {
+  return (
+    (name || '?')
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || '?'
+  );
+}
+
+function WpLeadRow({
+  lead,
+  onOpenDetail,
+  onStatusChange,
+  onSend,
+  onDelete,
+}: {
+  lead: WpLead;
+  onOpenDetail: (lead: WpLead) => void;
+  onStatusChange: (id: string, status: WpLeadStatus) => void;
+  onSend: (lead: WpLead) => void;
+  onDelete: (lead: WpLead) => void;
+}) {
+  const contactLine = [lead.phone || 'No phone', lead.source_channel].filter(Boolean).join(' • ');
+  const initials = leadInitials(lead.name);
+  const hasMessage = Boolean(lead.last_message?.trim());
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm lg:flex lg:items-center lg:gap-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-4 lg:shadow-none lg:hover:bg-muted/30">
+      {/* Mobile card */}
+      <div className="lg:hidden">
+        <button
+          type="button"
+          className="w-full p-4 text-left active:bg-muted/20"
+          onClick={() => onOpenDetail(lead)}
+        >
+          <div className="flex items-start gap-3">
+            <div className="admin-avatar-chip flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <p className="truncate text-base font-semibold leading-tight text-foreground">
+                  {lead.name || 'Unknown'}
+                </p>
+                <Badge
+                  variant="outline"
+                  className={cn('shrink-0 capitalize text-[10px]', statusBadgeClass(lead.status))}
+                >
+                  {lead.status}
+                </Badge>
+              </div>
+              {(lead.event_type || lead.venue) && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {lead.event_type ? (
+                    <Badge variant="secondary" className="text-[10px] font-medium">
+                      {lead.event_type}
+                    </Badge>
+                  ) : null}
+                  {lead.venue ? (
+                    <Badge variant="outline" className="max-w-full truncate text-[10px] font-normal">
+                      {lead.venue}
+                    </Badge>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 space-y-2 pl-14">
+            <p className="text-sm text-muted-foreground break-all">{contactLine}</p>
+            <div
+              className={cn(
+                'rounded-lg px-3 py-2 text-xs leading-relaxed',
+                hasMessage ? 'bg-muted/35 text-foreground' : 'bg-muted/20 italic text-muted-foreground'
+              )}
+            >
+              {hasMessage ? lead.last_message : 'No message'}
+            </div>
+          </div>
+        </button>
+
+        <div
+          className="space-y-2.5 border-t border-border/50 bg-muted/15 px-3 py-3"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Status</p>
+            <Select value={lead.status} onValueChange={(v) => void onStatusChange(lead.id, v as WpLeadStatus)}>
+              <SelectTrigger className="h-10 w-full bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {statusList.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={() => onSend(lead)}>
+              <MessageSquarePlus className="mr-1.5 h-4 w-4" />
+              Send
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-10 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => onDelete(lead)}
+              disabled={!lead.phone}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop row */}
+      <div className="hidden lg:contents">
+        <button
+          type="button"
+          className="flex-1 p-0 text-left lg:hover:bg-transparent"
+          onClick={() => onOpenDetail(lead)}
+        >
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{lead.name || 'Unknown'}</p>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {lead.event_type ? (
+                <Badge variant="secondary" className="text-[11px] font-medium">
+                  {lead.event_type}
+                </Badge>
+              ) : null}
+              {lead.venue ? (
+                <Badge variant="outline" className="max-w-full truncate text-[11px] font-normal">
+                  {lead.venue}
+                </Badge>
+              ) : null}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground break-all">
+              {contactLine}
+              {lead.package_type ? ` · ${lead.package_type}` : ''}
+            </p>
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+              {lead.last_message || 'No message'}
+            </p>
+          </div>
+        </button>
+
+        <div
+          className="flex shrink-0 flex-wrap items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <Select value={lead.status} onValueChange={(v) => void onStatusChange(lead.id, v as WpLeadStatus)}>
+            <SelectTrigger className="h-9 w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusList.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button type="button" variant="secondary" size="sm" className="h-9" onClick={() => onSend(lead)}>
+            <MessageSquarePlus className="mr-1.5 h-4 w-4" />
+            Send message
+          </Button>
+          <Button type="button" variant="destructive" size="sm" className="h-9" onClick={() => onDelete(lead)} disabled={!lead.phone}>
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            Delete
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function PendingFollowupsPanel({
+  pendingLoading,
+  pendingToday,
+  pendingCount,
+  processFollowupsBusy,
+  onProcessFollowups,
+  rows,
+  onOpenLeadDetail,
+  compact = false,
+}: {
+  pendingLoading: boolean;
+  pendingToday: Array<WpFollowup & { lead_name: string | null }>;
+  pendingCount: number;
+  processFollowupsBusy: boolean;
+  onProcessFollowups: () => void;
+  rows: WpLead[];
+  onOpenLeadDetail: (lead: WpLead) => void;
+  compact?: boolean;
+}) {
+  const openFollowup = (p: WpFollowup & { lead_name: string | null }) => {
+    const row = rows.find((r) => r.phone != null && wpPhonesMatch(r.phone, p.lead_phone));
+    if (row) onOpenLeadDetail(row);
+    else {
+      void (async () => {
+        const lead = await getWpLeadByPhone(p.lead_phone);
+        if (lead) onOpenLeadDetail(lead);
+        else toast.error("Lead not found for this follow-up");
+      })();
+    }
+  };
+
+  return (
+    <Card className="rounded-2xl border border-border/60">
+      <CardHeader className={cn("gap-2", compact ? "flex-row items-center justify-between px-4 py-3" : "space-y-2 pb-2")}>
+        <div className="min-w-0">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <CalendarClock className="h-4 w-4 shrink-0" />
+            <span className="truncate">Pending follow-ups</span>
+            {!pendingLoading && pendingCount > 0 ? (
+              <Badge variant="destructive" className="ml-0.5">
+                {pendingCount}
+              </Badge>
+            ) : null}
+          </CardTitle>
+          <p className="mt-0.5 text-xs font-normal text-muted-foreground">Scheduled for today</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 shrink-0 gap-1 text-xs"
+          disabled={processFollowupsBusy}
+          onClick={onProcessFollowups}
+        >
+          {processFollowupsBusy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <PlayCircle className="h-3.5 w-3.5" />
+          )}
+          Run due
+        </Button>
+      </CardHeader>
+      <CardContent className={cn("pt-0", compact ? "px-4 pb-4" : undefined)}>
+        {pendingLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : pendingToday.length === 0 ? (
+          <p className="py-1 text-sm text-muted-foreground">None today.</p>
+        ) : (
+          <ul className={cn("space-y-2 overflow-y-auto pr-1", compact ? "max-h-[200px]" : "max-h-[min(60vh,420px)]")}>
+            {pendingToday.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  className="w-full rounded-lg border border-border/50 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                  onClick={() => openFollowup(p)}
+                >
+                  <p className="truncate text-sm font-medium">{p.lead_name || "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground">{p.lead_phone}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {new Date(p.scheduled_at).toLocaleString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function WpLeadsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -288,27 +589,20 @@ export default function WpLeadsPage() {
     <AdminLayout title="WP Leads" subtitle="Search, filter, and update WhatsApp leads.">
       <div className="xl:grid xl:grid-cols-[1fr_280px] xl:items-start gap-5 sm:gap-6">
         <div className="space-y-4 sm:space-y-6 min-w-0">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-md:gap-2.5">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-4">
             {[
               { title: "Total leads", value: summary.totalLeads },
               { title: "New today", value: summary.newToday },
               { title: "Website leads", value: summary.websiteLeads },
               { title: "WhatsApp leads", value: summary.whatsappLeads },
             ].map((c) => (
-              <Card
-                key={c.title}
-                className="rounded-2xl sm:rounded-lg border border-border/60 shadow-sm bg-card/50 max-md:min-h-[96px]"
-              >
-                <CardHeader className="pb-1.5 p-4 max-md:p-3 max-md:pb-1">
-                  <CardTitle className="text-[11px] sm:text-xs font-medium text-muted-foreground leading-tight">
-                    {c.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 p-4 max-md:p-3 max-md:pt-0">
+              <Card key={c.title} className="rounded-xl border border-border/60 bg-card shadow-sm sm:rounded-lg">
+                <CardContent className="p-3 sm:p-4">
+                  <p className="text-[11px] font-medium leading-tight text-muted-foreground sm:text-xs">{c.title}</p>
                   {summaryLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    <Loader2 className="mt-2 h-5 w-5 animate-spin text-primary" />
                   ) : (
-                    <p className="text-2xl max-md:text-[1.5rem] font-bold tabular-nums">{c.value}</p>
+                    <p className="mt-1 text-xl font-bold tabular-nums sm:text-2xl">{c.value}</p>
                   )}
                 </CardContent>
               </Card>
@@ -316,199 +610,82 @@ export default function WpLeadsPage() {
           </div>
 
           <div className="lg:hidden">
-            <Card className="rounded-2xl border border-border/60">
-              <CardHeader className="py-3 px-4 flex flex-row items-center justify-between gap-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <CalendarClock className="w-4 h-4" />
-                  Pending follow-ups
-                  {!pendingLoading && pendingCount > 0 ? (
-                    <Badge variant="destructive" className="ml-1">
-                      {pendingCount}
-                    </Badge>
-                  ) : null}
-                </CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 h-8 gap-1 text-xs"
-                  disabled={processFollowupsBusy}
-                  onClick={() => void onProcessFollowups()}
-                >
-                  {processFollowupsBusy ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <PlayCircle className="w-3.5 h-3.5" />
-                  )}
-                  Run due
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0">
-                {pendingLoading ? (
-                  <div className="flex justify-center py-6">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  </div>
-                ) : pendingToday.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">None scheduled for today.</p>
-                ) : (
-                  <ul className="space-y-2 max-h-[200px] overflow-y-auto">
-                    {pendingToday.map((p) => (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          className="w-full text-left rounded-lg border border-border/50 px-3 py-2 hover:bg-muted/50 transition-colors"
-                          onClick={() => {
-                            const row = rows.find((r) => r.phone != null && wpPhonesMatch(r.phone, p.lead_phone));
-                            if (row) openLeadDetail(row);
-                            else {
-                              void (async () => {
-                                const lead = await getWpLeadByPhone(p.lead_phone);
-                                if (lead) openLeadDetail(lead);
-                                else toast.error("Lead not found for this follow-up");
-                              })();
-                            }
-                          }}
-                        >
-                          <p className="text-sm font-medium truncate">{p.lead_name || p.lead_phone}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(p.scheduled_at).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </button>
-                      </li>
+            <PendingFollowupsPanel
+              compact
+              pendingLoading={pendingLoading}
+              pendingToday={pendingToday}
+              pendingCount={pendingCount}
+              processFollowupsBusy={processFollowupsBusy}
+              onProcessFollowups={() => void onProcessFollowups()}
+              rows={rows}
+              onOpenLeadDetail={openLeadDetail}
+            />
+          </div>
+
+          <Card className="rounded-2xl border border-border/60">
+            <CardContent className="space-y-3 p-3 sm:p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, phone or event"
+                  className="h-11 pl-10"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="h-11 w-full sm:w-[200px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All status</SelectItem>
+                    {statusList.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
                     ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                  </SelectContent>
+                </Select>
+                <Select value={source} onValueChange={(v) => setSource(v as "all" | "website" | "whatsapp")}>
+                  <SelectTrigger className="h-11 w-full sm:w-[200px]">
+                    <SelectValue placeholder="Source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All sources</SelectItem>
+                    <SelectItem value="website">Website inquiry form</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp direct</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button className="col-span-2 h-11 w-full sm:col-span-1 sm:w-auto" onClick={() => void loadRows(0)} disabled={loading}>
+                  Apply
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-1 sm:flex sm:flex-row flex-wrap gap-3 mb-1">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, phone or event"
-                className="pl-10 h-11 sm:h-10"
-              />
-            </div>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-full sm:w-[220px] h-11 sm:h-10">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All status</SelectItem>
-                {statusList.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={source} onValueChange={(v) => setSource(v as "all" | "website" | "whatsapp")}>
-              <SelectTrigger className="w-full sm:w-[220px] h-11 sm:h-10">
-                <SelectValue placeholder="Source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All sources</SelectItem>
-                <SelectItem value="website">Website inquiry form</SelectItem>
-                <SelectItem value="whatsapp">WhatsApp direct</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button className="h-11 sm:h-10 sm:px-5" onClick={() => void loadRows(0)} disabled={loading}>
-              Apply
-            </Button>
-          </div>
-
-          <Card className="rounded-2xl sm:rounded-lg border border-border/60 sm:border-border overflow-hidden">
-            <CardContent className="p-0 max-md:space-y-2 max-md:p-2">
+          <Card className="overflow-hidden rounded-2xl border border-border/60 sm:rounded-lg">
+            <CardContent className="p-0 max-md:space-y-3 max-md:p-3">
               {loading ? (
                 <div className="flex justify-center py-14 max-md:py-12">
-                  <Loader2 className="w-7 h-7 animate-spin text-primary" />
+                  <Loader2 className="h-7 w-7 animate-spin text-primary" />
                 </div>
               ) : rows.length === 0 ? (
-                <div className="text-center py-14 max-md:py-12 text-muted-foreground text-sm px-4">No leads found.</div>
+                <div className="px-4 py-14 text-center text-sm text-muted-foreground max-md:py-12">No leads found.</div>
               ) : (
-                <div className="divide-y divide-border/50 max-md:divide-y-0 max-md:flex max-md:flex-col max-md:gap-2">
+                <div className="max-md:flex max-md:flex-col max-md:gap-2 lg:divide-y lg:divide-border/50">
                   {rows.map((lead) => (
-                    <div
+                    <WpLeadRow
                       key={lead.id}
-                      role="button"
-                      tabIndex={0}
-                      className="p-4 sm:p-4 flex flex-col lg:flex-row lg:items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:rounded-xl max-md:border max-md:border-border/60 max-md:bg-card/80 max-md:active:scale-[0.99]"
-                      onClick={() => openLeadDetail(lead)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          openLeadDetail(lead);
-                        }
+                      lead={lead}
+                      onOpenDetail={openLeadDetail}
+                      onStatusChange={onStatusChange}
+                      onSend={(l) => {
+                        setSendLead(l);
+                        setSendMessage("");
                       }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                          <p className="font-semibold truncate max-w-full">{lead.name || "Unknown"}</p>
-                          <Badge variant="outline">{lead.event_type || "General"}</Badge>
-                          {lead.venue ? <Badge variant="outline">{lead.venue}</Badge> : null}
-                        </div>
-                        <p className="text-sm text-muted-foreground break-words">
-                          {lead.phone || "No phone"} {lead.package_type ? `• ${lead.package_type}` : ""}{" "}
-                          {lead.source_channel ? `• ${lead.source_channel}` : ""}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                          {lead.last_message || "No message"}
-                        </p>
-                      </div>
-                      <div
-                        className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full lg:w-auto"
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => e.stopPropagation()}
-                      >
-                        <Badge className="w-fit">{lead.status}</Badge>
-                        <Select value={lead.status} onValueChange={(v) => void onStatusChange(lead.id, v as WpLeadStatus)}>
-                          <SelectTrigger className="w-full sm:w-[170px] h-11 sm:h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statusList.map((s) => (
-                              <SelectItem key={s.value} value={s.value}>
-                                {s.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          className="h-11 sm:h-9 w-full sm:w-auto"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSendLead(lead);
-                            setSendMessage("");
-                          }}
-                        >
-                          <MessageSquarePlus className="w-4 h-4 mr-1" />
-                          Send message
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="h-11 sm:h-9 w-full sm:w-auto"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteLead(lead);
-                          }}
-                          disabled={!lead.phone}
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
+                      onDelete={setDeleteLead}
+                    />
                   ))}
                 </div>
               )}
@@ -540,76 +717,16 @@ export default function WpLeadsPage() {
           </div>
         </div>
 
-        <aside className="hidden xl:block space-y-4 sticky top-24">
-          <Card className="rounded-2xl border border-border/60">
-            <CardHeader className="pb-2 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <CalendarClock className="w-4 h-4" />
-                  Pending follow-ups
-                  {!pendingLoading && pendingCount > 0 ? (
-                    <Badge variant="destructive" className="ml-auto">
-                      {pendingCount}
-                    </Badge>
-                  ) : null}
-                </CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 h-8 gap-1 text-xs"
-                  disabled={processFollowupsBusy}
-                  onClick={() => void onProcessFollowups()}
-                  title="Calls the Railway agent to send follow-ups whose scheduled time has passed"
-                >
-                  {processFollowupsBusy ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <PlayCircle className="w-3.5 h-3.5" />
-                  )}
-                  Run due
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground font-normal">Scheduled for today</p>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {pendingLoading ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : pendingToday.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-2">None today.</p>
-              ) : (
-                <ul className="space-y-2 max-h-[min(60vh,420px)] overflow-y-auto pr-1">
-                  {pendingToday.map((p) => (
-                    <li key={p.id}>
-                      <button
-                        type="button"
-                        className="w-full text-left rounded-lg border border-border/50 px-3 py-2.5 hover:bg-muted/50 transition-colors"
-                        onClick={() => {
-                          const row = rows.find((r) => r.phone != null && wpPhonesMatch(r.phone, p.lead_phone));
-                          if (row) openLeadDetail(row);
-                          else {
-                            void (async () => {
-                              const lead = await getWpLeadByPhone(p.lead_phone);
-                              if (lead) openLeadDetail(lead);
-                              else toast.error("Lead not found for this follow-up");
-                            })();
-                          }
-                        }}
-                      >
-                        <p className="text-sm font-medium truncate">{p.lead_name || "Unknown"}</p>
-                        <p className="text-xs text-muted-foreground">{p.lead_phone}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(p.scheduled_at).toLocaleString()}
-                        </p>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+        <aside className="hidden xl:block sticky top-24 space-y-4">
+          <PendingFollowupsPanel
+            pendingLoading={pendingLoading}
+            pendingToday={pendingToday}
+            pendingCount={pendingCount}
+            processFollowupsBusy={processFollowupsBusy}
+            onProcessFollowups={() => void onProcessFollowups()}
+            rows={rows}
+            onOpenLeadDetail={openLeadDetail}
+          />
         </aside>
       </div>
 

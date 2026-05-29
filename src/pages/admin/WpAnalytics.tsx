@@ -4,9 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
+  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -23,7 +21,61 @@ import {
 } from "@/services/wpAgent";
 import { toast } from "sonner";
 
-const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground))", "hsl(var(--secondary))"];
+const SOURCE_COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground))", "hsl(var(--secondary))"];
+
+function SourceBreakdownList({
+  items,
+  loading,
+}: {
+  items: { name: string; value: number }[];
+  loading: boolean;
+}) {
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+
+  if (loading) {
+    return (
+      <div className="flex h-full min-h-[180px] items-center justify-center">
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return <p className="py-12 text-center text-sm text-muted-foreground">No leads yet.</p>;
+  }
+
+  return (
+    <div className="flex flex-col justify-center gap-4 py-2">
+      {items.map((item, index) => {
+        const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+        return (
+          <div key={item.name}>
+            <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
+              <span className="font-medium">{item.name}</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                <span className="font-semibold text-foreground">{item.value}</span>
+                <span className="mx-1">·</span>
+                {pct}%
+              </span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.max(pct, item.value > 0 ? 4 : 0)}%`,
+                  background: SOURCE_COLORS[index % SOURCE_COLORS.length],
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+      <p className="border-t border-border/50 pt-3 text-xs text-muted-foreground">
+        Total: <span className="font-semibold text-foreground">{total}</span> leads
+      </p>
+    </div>
+  );
+}
 
 export default function WpAnalyticsPage() {
   const [rows, setRows] = useState<WpAnalyticsRow[]>([]);
@@ -157,31 +209,8 @@ export default function WpAnalyticsPage() {
               <CardHeader className="px-4 py-3 sm:px-6 sm:py-4">
                 <CardTitle className="text-sm sm:text-base">Source breakdown</CardTitle>
               </CardHeader>
-              <CardContent className="h-[220px] sm:h-[280px] px-2 sm:px-6 pb-4">
-                {chartsLoading ? (
-                  <div className="h-full flex items-center justify-center">
-                    <Loader2 className="w-7 h-7 animate-spin text-primary" />
-                  </div>
-                ) : pieData.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-12">No leads yet.</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={52} outerRadius={88} paddingAngle={2}>
-                        {pieData.map((_, i) => (
-                          <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="hsl(var(--border))" strokeWidth={1} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
+              <CardContent className="min-h-[220px] px-4 pb-5 sm:min-h-[280px] sm:px-6">
+                <SourceBreakdownList items={pieData} loading={chartsLoading} />
               </CardContent>
             </Card>
 
@@ -224,9 +253,9 @@ export default function WpAnalyticsPage() {
               ) : barData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-12">No event types recorded.</p>
               ) : (
-                <div className="h-[240px] sm:h-[300px] min-w-[300px] w-full max-w-none">
+                <div className="h-[240px] sm:h-[300px] min-w-[280px] w-full max-w-none">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barData} layout="vertical" margin={{ left: 4, right: 8, top: 4, bottom: 4 }}>
+                    <BarChart data={barData} layout="vertical" margin={{ left: 4, right: 28, top: 4, bottom: 4 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                     <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
                     <YAxis type="category" dataKey="name" width={88} tick={{ fontSize: 9 }} className="max-sm:[&_text]:text-[9px]" />
@@ -242,7 +271,13 @@ export default function WpAnalyticsPage() {
                         borderRadius: "8px",
                       }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}>
+                      <LabelList
+                        dataKey="count"
+                        position="right"
+                        className="fill-foreground text-[10px] font-medium"
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
                 </div>

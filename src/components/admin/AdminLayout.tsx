@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, Bell, Search, Moon, Sun } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
@@ -14,7 +14,7 @@ import {
   CommandGroup,
   CommandItem,
 } from '@/components/ui/command';
-import { ADMIN_COMMAND_PALETTE_ITEMS } from '@/lib/adminMenu';
+import { ADMIN_COMMAND_PALETTE_ITEMS, getAdminWorkspace } from '@/lib/adminMenu';
 import { getUnreadInquiriesForNotifications, getUnreadInquiriesCount, markInquiryAsRead, type Inquiry } from '@/services';
 import {
   getUnreadWpNotifications,
@@ -31,6 +31,8 @@ import AdminWorkspaceSwitcher from '@/components/admin/AdminWorkspaceSwitcher';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { adminPageSubtitleClass, adminPageTitleClass } from '@/components/admin/adminStyles';
 import { applyAdminTheme, getStoredAdminTheme, setStoredAdminTheme } from '@/lib/adminTheme';
+import { useSiteConfig } from '@/contexts/SiteConfigContext';
+import { cn } from '@/lib/utils';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -44,6 +46,11 @@ const WP_UNREAD_QUERY_KEY = ['wp-unread-notifications-count'] as const;
 
 export default function AdminLayout({ children, title, subtitle, headerActions }: AdminLayoutProps) {
   const navigate = useNavigate();
+  const { pathname, search } = useLocation();
+  const workspace = getAdminWorkspace(pathname, search);
+  const { logoUrl } = useSiteConfig();
+  const logoSrc = logoUrl || '/logo.png';
+  const dashboardHref = workspace === 'wp' ? '/admin/wp-dashboard' : '/admin/dashboard';
   const queryClient = useQueryClient();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('adminSidebarCollapsed');
@@ -472,15 +479,31 @@ export default function AdminLayout({ children, title, subtitle, headerActions }
               <Menu className="w-5 h-5" />
             </button>
 
+            <Link
+              to={dashboardHref}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-muted/60 md:h-10 md:w-10"
+              aria-label="Admin home"
+            >
+              <img
+                src={logoSrc}
+                alt="Phoenix"
+                className="h-8 w-8 object-contain drop-shadow-sm md:h-9 md:w-9"
+                loading="lazy"
+                decoding="async"
+              />
+            </Link>
+
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-left hover:bg-muted/70 transition-colors md:max-w-80 md:flex-none md:px-4 h-11 md:h-auto"
+                  className={cn(
+                    'flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border/50 bg-muted/50 px-3 text-left transition-colors hover:bg-muted/70 h-10 max-w-[9.5rem] sm:max-w-[11rem] md:h-9 md:max-w-[12rem]'
+                  )}
                 >
                   <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="hidden truncate text-sm text-muted-foreground sm:inline md:inline">Search…</span>
-                  <kbd className="ml-auto hidden h-5 shrink-0 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground md:inline-flex">
+                  <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground sm:text-sm">Search…</span>
+                  <kbd className="hidden h-5 shrink-0 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground md:inline-flex">
                     <span>⌘</span>K
                   </kbd>
                 </button>
