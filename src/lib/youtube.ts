@@ -73,14 +73,9 @@ export function getYouTubeThumbnail(urlOrId: string): string {
   return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
 
-// Get YouTube embed URL
+// Get YouTube embed URL (privacy-enhanced host; fewer tracker requests than youtube.com/embed)
 export function getYouTubeEmbedUrl(urlOrId: string): string {
-  const id = getYouTubeId(urlOrId);
-  if (!id) return '';
-  // Shorts should still embed via /embed/VIDEO_ID (not /shorts/VIDEO_ID).
-  // We rely on correct ID extraction above.
-  // Note: browsers may still block autoplay with sound depending on user interaction/policies.
-  return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1`;
+  return getYouTubeNocookieEmbedUrl(urlOrId, { autoplay: true });
 }
 
 /** Privacy-enhanced host; prefer for embeds until the user opts in to play. */

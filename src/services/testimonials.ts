@@ -29,35 +29,10 @@ export interface Testimonial {
   is_featured?: boolean;
   display_order?: number;
 }
+
 const TESTIMONIAL_COLUMNS_PRIMARY = 'id, name, role, content, rating, avatar_url, created_at, event_type, is_featured, display_order';
 const TESTIMONIAL_COLUMNS_LEGACY = 'id, name, role, content, rating, avatar, created_at, event_type, is_featured, display_order';
 const AVATAR_URL_MISSING = /avatar_url/i;
-let testimonialsSchemaMode: 'unknown' | 'primary' | 'legacy' = 'unknown';
-
-async function resolveTestimonialsSchemaMode(): Promise<'primary' | 'legacy'> {
-  if (testimonialsSchemaMode !== 'unknown') return testimonialsSchemaMode;
-
-  const probe = await supabase
-    .from('testimonials')
-    .select('id, avatar_url')
-    .limit(1);
-
-  if (!probe.error) {
-    testimonialsSchemaMode = 'primary';
-    return testimonialsSchemaMode;
-  }
-
-  if (AVATAR_URL_MISSING.test(probe.error.message || '')) {
-    testimonialsSchemaMode = 'legacy';
-    return testimonialsSchemaMode;
-  }
-
-  throw probe.error;
-}
-
-function columnsForMode(mode: 'primary' | 'legacy'): string {
-  return mode === 'primary' ? TESTIMONIAL_COLUMNS_PRIMARY : TESTIMONIAL_COLUMNS_LEGACY;
-}
 
 type TestimonialsQueryResult = {
   data: Record<string, unknown>[] | null;
@@ -65,49 +40,51 @@ type TestimonialsQueryResult = {
   count?: number | null;
 };
 
+function mapRows(data: Record<string, unknown>[]): Testimonial[] {
+  return data.map(mapLegacyAvatarField).map(normalizeTestimonialRow);
+}
+
+async function runTestimonialsQuery(
+  build: (columns: string) => PromiseLike<TestimonialsQueryResult>
+): Promise<TestimonialsQueryResult> {
+  const primary = await build(TESTIMONIAL_COLUMNS_PRIMARY);
+  if (!primary.error) return primary;
+
+  if (AVATAR_URL_MISSING.test(primary.error.message || '')) {
+    return build(TESTIMONIAL_COLUMNS_LEGACY);
+  }
+
+  return primary;
+}
+
 async function selectTestimonialsWithFallback(
   build: (columns: string) => PromiseLike<TestimonialsQueryResult>
 ): Promise<{ data: Testimonial[]; count?: number }> {
-  const mode = await resolveTestimonialsSchemaMode();
-  const result = await build(columnsForMode(mode));
+  const result = await runTestimonialsQuery(build);
   if (result.error) throw result.error;
   return {
-    data: ((result.data || []) as Record<string, unknown>[]).map(mapLegacyAvatarField).map(normalizeTestimonialRow),
+    data: mapRows((result.data || []) as Record<string, unknown>[]),
     count: result.count ?? undefined,
   };
 }
 
-async function insertTestimonialWithFallback(payload: Record<string, unknown>) {
-  const mode = await resolveTestimonialsSchemaMode();
-  const outgoing = { ...payload };
-  if (mode === 'legacy') {
-    outgoing.avatar = outgoing.avatar_url;
-    delete outgoing.avatar_url;
+async function mutateTestimonialWithFallback(
+  run: (columns: string, useLegacyAvatar: boolean) => PromiseLike<{ data: Record<string, unknown> | null; error: { message?: string } | null }>
+): Promise<Testimonial> {
+  const primary = await run(TESTIMONIAL_COLUMNS_PRIMARY, false);
+  if (!primary.error && primary.data) {
+    return normalizeTestimonialRow(mapLegacyAvatarField(primary.data));
   }
-  const result = await supabase
-    .from('testimonials')
-    .insert([outgoing])
-    .select(columnsForMode(mode))
-    .single();
-  if (result.error) throw result.error;
-  return normalizeTestimonialRow(mapLegacyAvatarField(result.data as Record<string, unknown>));
-}
 
-async function updateTestimonialWithFallback(id: string, updates: Record<string, unknown>) {
-  const mode = await resolveTestimonialsSchemaMode();
-  const outgoing = { ...updates };
-  if (mode === 'legacy' && Object.prototype.hasOwnProperty.call(outgoing, 'avatar_url')) {
-    outgoing.avatar = outgoing.avatar_url;
-    delete outgoing.avatar_url;
+  if (primary.error && AVATAR_URL_MISSING.test(primary.error.message || '')) {
+    const legacy = await run(TESTIMONIAL_COLUMNS_LEGACY, true);
+    if (legacy.error) throw legacy.error;
+    if (!legacy.data) throw new Error('Testimonial mutation returned no data');
+    return normalizeTestimonialRow(mapLegacyAvatarField(legacy.data));
   }
-  const result = await supabase
-    .from('testimonials')
-    .update(outgoing)
-    .eq('id', id)
-    .select(columnsForMode(mode))
-    .single();
-  if (result.error) throw result.error;
-  return normalizeTestimonialRow(mapLegacyAvatarField(result.data as Record<string, unknown>));
+
+  if (primary.error) throw primary.error;
+  throw new Error('Testimonial mutation returned no data');
 }
 
 // Get all testimonials
@@ -183,12 +160,26 @@ export async function getTestimonialsByEventType(eventType: string) {
 
 // Create testimonial
 export async function createTestimonial(testimonial: Omit<Testimonial, 'id' | 'created_at' | 'updated_at'>) {
-  return insertTestimonialWithFallback(testimonial as unknown as Record<string, unknown>);
+  return mutateTestimonialWithFallback((columns, useLegacyAvatar) => {
+    const outgoing = { ...(testimonial as unknown as Record<string, unknown>) };
+    if (useLegacyAvatar) {
+      outgoing.avatar = outgoing.avatar_url;
+      delete outgoing.avatar_url;
+    }
+    return supabase.from('testimonials').insert([outgoing]).select(columns).single();
+  });
 }
 
 // Update testimonial
 export async function updateTestimonial(id: string, updates: Partial<Testimonial>) {
-  return updateTestimonialWithFallback(id, updates as unknown as Record<string, unknown>);
+  return mutateTestimonialWithFallback((columns, useLegacyAvatar) => {
+    const outgoing = { ...(updates as unknown as Record<string, unknown>) };
+    if (useLegacyAvatar && Object.prototype.hasOwnProperty.call(outgoing, 'avatar_url')) {
+      outgoing.avatar = outgoing.avatar_url;
+      delete outgoing.avatar_url;
+    }
+    return supabase.from('testimonials').update(outgoing).eq('id', id).select(columns).single();
+  });
 }
 
 // Delete testimonial

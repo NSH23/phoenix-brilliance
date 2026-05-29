@@ -358,7 +358,7 @@ CREATE TABLE IF NOT EXISTS testimonials (
   name TEXT NOT NULL,
   role TEXT,
   content TEXT NOT NULL,
-  avatar TEXT,
+  avatar_url TEXT,
   rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
   event_type TEXT,
   is_featured BOOLEAN DEFAULT false,
