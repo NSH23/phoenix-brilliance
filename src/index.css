@@ -2598,16 +2598,49 @@ html.dark:has(.admin-dashboard) {
   letter-spacing: -0.011em;
 }
 
+.admin-dashboard.admin-shell-bg {
+  background-color: hsl(var(--background));
+  background-image:
+    radial-gradient(ellipse 90% 55% at 100% -15%, hsl(221 85% 94% / 0.55), transparent 52%),
+    radial-gradient(ellipse 70% 45% at 0% 105%, hsl(262 70% 94% / 0.35), transparent 48%),
+    radial-gradient(ellipse 50% 40% at 50% 0%, hsl(199 80% 95% / 0.25), transparent 55%);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard.admin-shell-bg {
+  background-image:
+    radial-gradient(ellipse 85% 50% at 100% -10%, hsl(221 55% 22% / 0.45), transparent 50%),
+    radial-gradient(ellipse 65% 40% at 0% 100%, hsl(262 45% 18% / 0.35), transparent 48%),
+    radial-gradient(ellipse 45% 35% at 50% 0%, hsl(199 50% 16% / 0.2), transparent 50%);
+}
+
 .admin-dashboard .font-brand {
   font-family: Sora, Inter, system-ui, sans-serif;
 }
 
 .admin-glass-header {
+  position: relative;
   background: hsl(var(--card) / 0.86);
   border-color: hsl(var(--border));
   box-shadow: var(--glass-shadow);
   backdrop-filter: var(--admin-glass-blur);
   -webkit-backdrop-filter: var(--admin-glass-blur);
+}
+
+.admin-glass-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--admin-accent) / 0.55),
+    hsl(262 55% 58% / 0.35),
+    hsl(199 70% 48% / 0.2),
+    transparent 85%
+  );
+  pointer-events: none;
 }
 
 html.dark:has(.admin-dashboard) .admin-glass-header {
@@ -2682,20 +2715,160 @@ html.dark:has(.admin-dashboard) .admin-bottom-nav {
 }
 
 .admin-dashboard .admin-nav-link-active {
-  background: hsl(var(--accent));
+  background: linear-gradient(90deg, hsl(var(--admin-accent) / 0.12), hsl(var(--accent)));
   color: hsl(var(--foreground));
   font-weight: 600;
   box-shadow: inset 3px 0 0 hsl(var(--admin-accent));
 }
 
 .admin-dashboard .admin-nav-link-active svg {
-  color: hsl(var(--foreground) / 0.72);
+  color: hsl(var(--admin-accent));
+}
+
+.admin-dashboard .admin-overview-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-dashboard .admin-overview-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--admin-card-stripe, hsl(var(--admin-accent)));
+  opacity: 0.9;
+}
+
+.admin-dashboard .admin-overview-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -20% -40% auto;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 9999px;
+  background: var(--admin-card-glow, hsl(var(--admin-accent) / 0.12));
+  filter: blur(12px);
+  pointer-events: none;
 }
 
 .admin-dashboard .admin-stat-icon {
   @apply flex shrink-0 items-center justify-center rounded-lg;
-  background: hsl(var(--muted));
-  color: hsl(var(--foreground) / 0.65);
+  background: var(--admin-icon-bg, hsl(var(--muted)));
+  color: var(--admin-icon-fg, hsl(var(--foreground) / 0.65));
+}
+
+.admin-dashboard .admin-overview-card[data-tone='blue'] {
+  --admin-icon-bg: hsl(221 75% 95%);
+  --admin-icon-fg: hsl(221 55% 42%);
+  --admin-card-stripe: hsl(221 60% 52%);
+  --admin-card-glow: hsl(221 70% 60% / 0.2);
+}
+
+.admin-dashboard .admin-overview-card[data-tone='violet'] {
+  --admin-icon-bg: hsl(262 65% 95%);
+  --admin-icon-fg: hsl(262 45% 44%);
+  --admin-card-stripe: hsl(262 50% 55%);
+  --admin-card-glow: hsl(262 60% 60% / 0.18);
+}
+
+.admin-dashboard .admin-overview-card[data-tone='cyan'] {
+  --admin-icon-bg: hsl(199 75% 94%);
+  --admin-icon-fg: hsl(199 55% 36%);
+  --admin-card-stripe: hsl(199 55% 48%);
+  --admin-card-glow: hsl(199 65% 55% / 0.18);
+}
+
+.admin-dashboard .admin-overview-card[data-tone='amber'] {
+  --admin-icon-bg: hsl(38 90% 94%);
+  --admin-icon-fg: hsl(32 70% 38%);
+  --admin-card-stripe: hsl(38 85% 52%);
+  --admin-card-glow: hsl(38 90% 55% / 0.2);
+}
+
+.admin-dashboard .admin-overview-card[data-tone='indigo'] {
+  --admin-icon-bg: hsl(239 60% 95%);
+  --admin-icon-fg: hsl(239 45% 44%);
+  --admin-card-stripe: hsl(239 50% 55%);
+  --admin-card-glow: hsl(239 55% 60% / 0.16);
+}
+
+.admin-dashboard .admin-overview-card[data-tone='teal'] {
+  --admin-icon-bg: hsl(168 55% 93%);
+  --admin-icon-fg: hsl(168 45% 32%);
+  --admin-card-stripe: hsl(168 50% 42%);
+  --admin-card-glow: hsl(168 55% 50% / 0.16);
+}
+
+.admin-dashboard .admin-overview-card[data-tone='rose'] {
+  --admin-icon-bg: hsl(350 75% 96%);
+  --admin-icon-fg: hsl(350 50% 42%);
+  --admin-card-stripe: hsl(350 55% 55%);
+  --admin-card-glow: hsl(350 60% 58% / 0.16);
+}
+
+.admin-dashboard .admin-overview-card[data-tone='slate'] {
+  --admin-icon-bg: hsl(220 14% 92%);
+  --admin-icon-fg: hsl(220 12% 38%);
+  --admin-card-stripe: hsl(220 10% 55%);
+  --admin-card-glow: hsl(220 15% 50% / 0.1);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-overview-card[data-tone='blue'] {
+  --admin-icon-bg: hsl(221 45% 18%);
+  --admin-icon-fg: hsl(214 75% 72%);
+  --admin-card-stripe: hsl(214 65% 58%);
+  --admin-card-glow: hsl(214 65% 58% / 0.22);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-overview-card[data-tone='violet'] {
+  --admin-icon-bg: hsl(262 35% 20%);
+  --admin-icon-fg: hsl(262 70% 78%);
+  --admin-card-stripe: hsl(262 55% 62%);
+  --admin-card-glow: hsl(262 55% 62% / 0.2);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-overview-card[data-tone='cyan'] {
+  --admin-icon-bg: hsl(199 40% 17%);
+  --admin-icon-fg: hsl(199 70% 72%);
+  --admin-card-stripe: hsl(199 55% 52%);
+  --admin-card-glow: hsl(199 55% 52% / 0.18);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-overview-card[data-tone='amber'] {
+  --admin-icon-bg: hsl(38 45% 16%);
+  --admin-icon-fg: hsl(38 85% 68%);
+  --admin-card-stripe: hsl(38 80% 55%);
+  --admin-card-glow: hsl(38 80% 55% / 0.2);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-overview-card[data-tone='indigo'] {
+  --admin-icon-bg: hsl(239 35% 20%);
+  --admin-icon-fg: hsl(239 70% 78%);
+  --admin-card-stripe: hsl(239 55% 62%);
+  --admin-card-glow: hsl(239 55% 62% / 0.18);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-overview-card[data-tone='teal'] {
+  --admin-icon-bg: hsl(168 35% 16%);
+  --admin-icon-fg: hsl(168 55% 68%);
+  --admin-card-stripe: hsl(168 50% 48%);
+  --admin-card-glow: hsl(168 50% 48% / 0.18);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-overview-card[data-tone='rose'] {
+  --admin-icon-bg: hsl(350 35% 18%);
+  --admin-icon-fg: hsl(350 75% 76%);
+  --admin-card-stripe: hsl(350 55% 58%);
+  --admin-card-glow: hsl(350 55% 58% / 0.18);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-overview-card[data-tone='slate'] {
+  --admin-icon-bg: hsl(224 14% 18%);
+  --admin-icon-fg: hsl(220 12% 72%);
+  --admin-card-stripe: hsl(220 10% 48%);
+  --admin-card-glow: hsl(220 10% 48% / 0.12);
 }
 
 .admin-dashboard .admin-brand-accent {
@@ -2715,16 +2888,63 @@ html.dark:has(.admin-dashboard) .admin-bottom-nav {
   color: hsl(var(--admin-accent));
 }
 
+.admin-dashboard .admin-section-eyebrow {
+  @apply pl-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground;
+  border-left: 2px solid hsl(var(--admin-accent) / 0.65);
+}
+
 .admin-dashboard .admin-muted-header {
-  @apply border-border/60 bg-muted/30;
+  border-bottom: 1px solid hsl(var(--border));
+  background: linear-gradient(
+    105deg,
+    hsl(var(--admin-accent) / 0.07) 0%,
+    hsl(262 55% 58% / 0.04) 40%,
+    hsl(var(--muted) / 0.35) 100%
+  );
+}
+
+.admin-dashboard .admin-panel-card {
+  @apply overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 0 0 1px hsl(var(--admin-accent) / 0.04);
+}
+
+html.dark:has(.admin-dashboard) .admin-dashboard .admin-panel-card {
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.2),
+    0 0 0 1px hsl(var(--admin-accent) / 0.08);
+}
+
+.admin-dashboard .admin-timeline-line {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--admin-accent) / 0.45),
+    hsl(262 50% 58% / 0.2) 50%,
+    transparent
+  );
 }
 
 .admin-dashboard .admin-timeline-dot {
-  @apply border-border bg-muted;
+  border-color: hsl(var(--admin-accent) / 0.35);
+  background: hsl(var(--card));
 }
 
 .admin-dashboard .admin-timeline-dot-inner {
-  @apply bg-foreground/35;
+  background: hsl(var(--admin-accent));
+}
+
+.admin-dashboard .admin-avatar-chip {
+  background: linear-gradient(135deg, hsl(var(--admin-accent) / 0.18), hsl(262 55% 58% / 0.12));
+  color: hsl(var(--admin-accent));
+  font-weight: 600;
+}
+
+.admin-dashboard .admin-workspace-active {
+  background: linear-gradient(180deg, hsl(var(--card)), hsl(var(--admin-accent) / 0.06));
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    inset 0 -2px 0 hsl(var(--admin-accent) / 0.55);
 }
 
 .admin-dashboard .admin-animate-in {

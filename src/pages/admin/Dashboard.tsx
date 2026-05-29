@@ -40,6 +40,8 @@ import { logger } from '@/utils/logger';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 
+type OverviewTone = 'blue' | 'violet' | 'cyan' | 'amber' | 'indigo' | 'teal' | 'rose' | 'slate';
+
 type OverviewCardData = {
   label: string;
   value: number;
@@ -47,6 +49,7 @@ type OverviewCardData = {
   href: string;
   icon: typeof Calendar;
   highlight?: boolean;
+  tone: OverviewTone;
 };
 
 function OverviewCard({
@@ -67,8 +70,9 @@ function OverviewCard({
     >
       <Link to={card.href} className="group block h-full">
         <Card
+          data-tone={card.tone}
           className={cn(
-            'h-full border border-border/80 bg-card shadow-sm transition-all',
+            'admin-overview-card h-full border border-border/80 bg-card shadow-sm transition-all',
             compact ? 'rounded-lg' : 'rounded-xl',
             'hover:border-border hover:shadow-md active:scale-[0.98]',
             card.highlight && 'ring-1 ring-[hsl(var(--admin-accent)/0.35)]'
@@ -137,6 +141,7 @@ function buildOverviewCards(
       hint: eventHint,
       href: '/admin/events',
       icon: Calendar,
+      tone: 'blue',
     },
     {
       label: 'Albums',
@@ -144,6 +149,7 @@ function buildOverviewCards(
       hint: albumHint,
       href: '/admin/albums',
       icon: FolderOpen,
+      tone: 'violet',
     },
     {
       label: 'Gallery Images',
@@ -151,6 +157,7 @@ function buildOverviewCards(
       hint: galleryHint,
       href: '/admin/gallery',
       icon: Images,
+      tone: 'cyan',
     },
     {
       label: 'Inquiries',
@@ -159,24 +166,28 @@ function buildOverviewCards(
       href: '/admin/notifications',
       icon: Mail,
       highlight: st.inquiries.new > 0,
+      tone: 'amber',
     },
     {
       label: 'Partners',
       value: over.partners,
       href: '/admin/collaborations',
       icon: Handshake,
+      tone: 'indigo',
     },
     {
       label: 'Services',
       value: over.services,
       href: '/admin/services',
       icon: Wrench,
+      tone: 'teal',
     },
     {
       label: 'Testimonials',
       value: over.testimonials,
       href: '/admin/testimonials',
       icon: MessageSquareQuote,
+      tone: 'rose',
     },
     {
       label: 'Team',
@@ -184,6 +195,7 @@ function buildOverviewCards(
       hint: st.team.active > 0 ? `${st.team.active} active` : undefined,
       href: '/admin/team',
       icon: Users,
+      tone: 'slate',
     },
   ];
 }
@@ -205,7 +217,7 @@ function ActivityTimeline({ items, className }: { items: RecentActivity[]; class
         <li key={activity.id} className="relative flex gap-3 pb-6 last:pb-0">
           {index < items.length - 1 && (
             <span
-              className="absolute left-[11px] top-6 bottom-0 w-px bg-border"
+              className="admin-timeline-line absolute left-[11px] top-6 bottom-0 w-px"
               aria-hidden
             />
           )}
@@ -233,7 +245,7 @@ function InquiryRow({ inquiry }: { inquiry: RecentInquiry }) {
       className="flex items-center justify-between gap-3 p-3.5 transition-colors hover:bg-muted/40 active:bg-muted/50 sm:p-4"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-foreground/70">
+        <div className="admin-avatar-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm">
           {inquiry.name
             .split(' ')
             .map((n) => n[0])
@@ -377,10 +389,10 @@ export default function AdminDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.25 }}
         >
-          <Card className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
+          <Card className="admin-panel-card flex h-full flex-col">
             <CardHeader className="admin-muted-header flex flex-row items-center justify-between gap-2 px-4 py-3.5 sm:px-6 sm:py-4">
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <Mail className="h-4 w-4 text-[hsl(var(--admin-accent))]" aria-hidden />
                 <CardTitle className="text-base font-semibold">Recent Inquiries</CardTitle>
               </div>
               <Button variant="ghost" size="sm" className="admin-link-accent h-9 shrink-0" asChild>
@@ -412,10 +424,10 @@ export default function AdminDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.25 }}
         >
-          <Card className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
+          <Card className="admin-panel-card flex h-full flex-col">
             <CardHeader className="admin-muted-header flex flex-row items-center justify-between gap-2 px-4 py-3.5 sm:px-6 sm:py-4">
               <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <Activity className="h-4 w-4 text-[hsl(var(--admin-accent))]" aria-hidden />
                 <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
               </div>
               <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>

@@ -420,7 +420,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   }, []);
 
   return (
-    <div className="admin-dashboard min-h-screen bg-background text-foreground">
+    <div className="admin-dashboard admin-shell-bg min-h-screen text-foreground">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <AdminSidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />

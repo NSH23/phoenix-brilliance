@@ -2,13 +2,11 @@ import { cn } from '@/lib/utils';
 
 /** White dashboard panel — cards, sections */
 export const adminPanelClass = cn(
-  'rounded-2xl border border-border/80 bg-card text-card-foreground shadow-sm'
+  'admin-panel-card text-card-foreground'
 );
 
 /** Section eyebrow label */
-export const adminSectionTitleClass = cn(
-  'text-[11px] font-semibold uppercase tracking-widest text-muted-foreground'
-);
+export const adminSectionTitleClass = cn('admin-section-eyebrow');
 
 /** Page heading inside AdminLayout body */
 export const adminPageTitleClass = cn(
