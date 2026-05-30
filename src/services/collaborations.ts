@@ -42,6 +42,7 @@ export interface CollaborationFolder {
   name: string;
   display_order: number;
   is_enabled: boolean;
+  cover_image_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,7 +58,7 @@ export interface CollaborationStep {
 }
 const COLLAB_COLUMNS = 'id, name, logo_url, banner_url, description, location, map_url, is_active, display_order, created_at, updated_at';
 const COLLAB_IMAGE_COLUMNS = 'id, collaboration_id, folder_id, image_url, caption, display_order, media_type, created_at, updated_at';
-const COLLAB_FOLDER_COLUMNS = 'id, collaboration_id, parent_id, name, display_order, is_enabled, created_at, updated_at';
+const COLLAB_FOLDER_COLUMNS = 'id, collaboration_id, parent_id, name, display_order, is_enabled, cover_image_url, created_at, updated_at';
 const COLLAB_STEP_COLUMNS = 'id, collaboration_id, step_number, title, description, created_at, updated_at';
 
 // Get all active collaborations
@@ -380,7 +381,7 @@ export async function createCollaborationFolder(folder: Omit<CollaborationFolder
   return data as CollaborationFolder;
 }
 
-export async function updateCollaborationFolder(id: string, updates: Partial<Pick<CollaborationFolder, 'name' | 'parent_id' | 'display_order' | 'is_enabled'>>) {
+export async function updateCollaborationFolder(id: string, updates: Partial<Pick<CollaborationFolder, 'name' | 'parent_id' | 'display_order' | 'is_enabled' | 'cover_image_url'>>) {
   await requireSession();
   const { data, error } = await supabase
     .from('collaboration_folders')

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { 
@@ -9,8 +9,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getEventBySlug, Event } from "@/services/events";
-import { getAlbumById, getAlbumWithMedia, AlbumMedia } from "@/services/albums";
+import { getAlbumById, getAlbumWithMedia, AlbumMedia, AlbumFolder } from "@/services/albums";
 import { Album } from "@/services/albums";
+import PhoneGalleryExplorer from "@/components/PhoneGalleryExplorer";
+import type { ExplorerFolder, ExplorerMediaItem } from "@/lib/mediaFolderTree";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
 import { getYouTubeId, getYouTubeNocookieEmbedUrl, getYouTubeThumbnail } from "@/lib/youtube";
@@ -91,6 +93,7 @@ const GalleryAlbum = () => {
   const [event, setEvent] = useState<Event | null>(null);
   const [album, setAlbum] = useState<any | null>(null);
   const [media, setMedia] = useState<AlbumMedia[]>([]);
+  const [albumFolders, setAlbumFolders] = useState<AlbumFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -116,6 +119,7 @@ const GalleryAlbum = () => {
 
       setAlbum(albumData);
       setMedia(albumData.album_media || []);
+      setAlbumFolders((albumData as { album_folders?: AlbumFolder[] }).album_folders || []);
 
       // Load event if eventType is provided
       if (eventType && eventType !== 'all') {
@@ -141,6 +145,36 @@ const GalleryAlbum = () => {
   // Get photos and videos
   const photos = media.filter(m => m.type === 'image');
   const videos = media.filter(m => m.type === 'video');
+
+  const explorerFolders = useMemo<ExplorerFolder[]>(
+    () =>
+      albumFolders
+        .filter((f) => f.is_enabled !== false)
+        .map((f) => ({
+          id: f.id,
+          parent_id: f.parent_id,
+          name: f.name,
+          display_order: f.display_order,
+          is_enabled: f.is_enabled !== false,
+          cover_image_url: f.cover_image_url ?? null,
+        })),
+    [albumFolders]
+  );
+
+  const explorerPhotos = useMemo<ExplorerMediaItem[]>(
+    () =>
+      photos.map((p, i) => ({
+        id: p.id,
+        url: p.url || '',
+        folder_id: p.folder_id ?? null,
+        display_order: p.display_order ?? i,
+        media_type: 'image' as const,
+        caption: p.caption,
+      })),
+    [photos]
+  );
+
+  const hasFolderGallery = explorerFolders.length > 0 || explorerPhotos.some((p) => p.folder_id);
 
   // Lightbox navigation
   const navigateLightbox = useCallback((direction: "prev" | "next") => {
@@ -178,8 +212,8 @@ const GalleryAlbum = () => {
     );
   }
 
-  // If not found, redirect
-  if (!album) {
+  // If not found or hidden, redirect
+  if (!album || album.is_active === false) {
     return <Navigate to="/gallery" replace />;
   }
 
@@ -358,8 +392,18 @@ const GalleryAlbum = () => {
                 <h3 className="text-xl font-serif font-semibold mb-2">No Photos Yet</h3>
                 <p className="text-muted-foreground">Photos will appear here once they're added to this album.</p>
               </div>
+            ) : hasFolderGallery ? (
+              <PhoneGalleryExplorer
+                folders={explorerFolders}
+                media={explorerPhotos}
+                resolveUrl={(url) => url || '/placeholder.svg'}
+                onOpenLightbox={(index, folderPhotos) => {
+                  const target = folderPhotos[index];
+                  const globalIndex = target?.id ? photos.findIndex((p) => p.id === target.id) : index;
+                  setLightboxIndex(globalIndex >= 0 ? globalIndex : index);
+                }}
+              />
             ) : (
-              // Masonry Photo Grid
               <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 sm:gap-4">
                 {photos.map((photo, index) => (
                   <motion.div

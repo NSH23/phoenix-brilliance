@@ -38,13 +38,15 @@ interface AdminLayoutProps {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
-  /** Optional actions beside the page title (e.g. WP settings). */
+  /** Optional back link rendered above the title, aligned left. */
+  headerBack?: React.ReactNode;
+  /** Optional actions beside the page title (e.g. Save, settings). */
   headerActions?: React.ReactNode;
 }
 
 const WP_UNREAD_QUERY_KEY = ['wp-unread-notifications-count'] as const;
 
-export default function AdminLayout({ children, title, subtitle, headerActions }: AdminLayoutProps) {
+export default function AdminLayout({ children, title, subtitle, headerBack, headerActions }: AdminLayoutProps) {
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const workspace = getAdminWorkspace(pathname, search);
@@ -695,7 +697,18 @@ export default function AdminLayout({ children, title, subtitle, headerActions }
 
         {/* Page Content */}
         <main className="admin-animate-in mx-auto w-full max-w-7xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] pt-4 md:px-8 md:pb-6 md:pt-6">
-          <div className="mb-5 flex items-start justify-between gap-3 md:mb-8">
+          <div className="mb-5 md:mb-8">
+            {headerBack ? (
+              <motion.div
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.04 }}
+                className="mb-3 flex justify-start"
+              >
+                {headerBack}
+              </motion.div>
+            ) : null}
+            <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <motion.h1
                 initial={{ opacity: 0, y: -8 }}
@@ -725,6 +738,7 @@ export default function AdminLayout({ children, title, subtitle, headerActions }
                 {headerActions}
               </motion.div>
             ) : null}
+            </div>
           </div>
 
           <motion.div

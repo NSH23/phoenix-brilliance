@@ -108,6 +108,18 @@ export async function getAllContentMedia(category?: 'hero' | 'moment') {
     return list.map((item) => ({ ...item, url: resolveContentMediaUrl(item.url) }));
 }
 
+export async function getContentMediaById(id: string) {
+    const { data, error } = await supabase
+        .from('content_media')
+        .select(CONTENT_MEDIA_COLUMNS)
+        .eq('id', id)
+        .single();
+
+    if (error) throw error;
+    const item = data as ContentMedia;
+    return { ...item, url: resolveContentMediaUrl(item.url) };
+}
+
 // Create Content Media (hero or moment – both use content_media table)
 export async function createContentMedia(media: Omit<ContentMedia, 'id' | 'created_at' | 'updated_at'>) {
     const category = media.category === 'moment' ? 'moment' : 'hero';

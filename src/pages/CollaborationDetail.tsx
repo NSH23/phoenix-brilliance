@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   MapPin, ArrowLeft, ArrowRight, ExternalLink, Phone, X, ChevronLeft, ChevronRight,
-  Building2, Camera, Loader2, FolderOpen, Folder, ChevronDown, ChevronRight as ChevronRightIcon, Play
+  Building2, Camera, Loader2, Play
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,6 +13,8 @@ import { resolvePublicStorageUrl } from "@/services/storage";
 import { getYouTubeNocookieEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
+import PhoneGalleryExplorer from "@/components/PhoneGalleryExplorer";
+import type { ExplorerFolder, ExplorerMediaItem } from "@/lib/mediaFolderTree";
 
 function resolveCollaborationMediaUrl(urlOrPath: string): string {
   return resolvePublicStorageUrl(urlOrPath, "gallery-images");
@@ -32,170 +34,8 @@ function collabGalleryPosterSrc(m: CollabImage): string {
   }
   return resolveCollaborationMediaUrl(m.image_url);
 }
-type CollabFolder = { id: string; parent_id: string | null; name: string; display_order: number; is_enabled?: boolean };
+type CollabFolder = { id: string; parent_id: string | null; name: string; display_order: number; is_enabled?: boolean; cover_image_url?: string | null };
 type CollabStep = { id: string; step_number: number; title: string; description: string | null };
-type FolderNode = { folder: CollabFolder; children: FolderNode[]; images: CollabImage[] };
-
-const UNCategorizedId = '__uncategorized__';
-
-function GalleryTreeAndContent({
-  folderTree,
-  uncategorized,
-  images,
-  onOpenLightbox,
-}: {
-  folderTree: FolderNode[];
-  uncategorized: CollabImage[];
-  images: CollabImage[];
-  onOpenLightbox: (index: number) => void;
-}) {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set(folderTree.map(n => n.folder.id)));
-  const [selectedId, setSelectedId] = useState<string | null>(folderTree[0]?.folder.id ?? UNCategorizedId);
-
-  const toggleExpand = (id: string) => {
-    setExpandedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const selectedImages = (() => {
-    if (selectedId === UNCategorizedId) return uncategorized;
-    let out: CollabImage[] = [];
-    function collect(node: FolderNode) {
-      if (node.folder.id === selectedId) { out = node.images; return; }
-      node.children.forEach(collect);
-    }
-    folderTree.forEach(collect);
-    return out;
-  })();
-
-  const selectedLabel = (() => {
-    if (selectedId === UNCategorizedId) return 'Other';
-    let name = '';
-    function find(n: FolderNode) {
-      if (n.folder.id === selectedId) { name = n.folder.name; return; }
-      n.children.forEach(find);
-    }
-    folderTree.forEach(find);
-    return name || 'Gallery';
-  })();
-
-  function renderNode(node: FolderNode, depth: number) {
-    const isExpanded = expandedIds.has(node.folder.id);
-    const isSelected = selectedId === node.folder.id;
-    const hasChildren = node.children.length > 0;
-    return (
-      <div key={node.folder.id}>
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setSelectedId(node.folder.id)}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedId(node.folder.id); } }}
-          className={`w-full flex items-center gap-2 py-2 px-2 rounded-lg text-left transition-colors cursor-pointer ${isSelected ? 'bg-primary/15 text-primary' : 'hover:bg-muted/70'}`}
-          style={{ paddingLeft: `${0.5 + depth * 1.25}rem` }}
-        >
-          {hasChildren ? (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); toggleExpand(node.folder.id); }}
-              className="p-0.5 shrink-0 rounded hover:bg-muted"
-              aria-label={isExpanded ? "Collapse" : "Expand"}
-            >
-              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
-            </button>
-          ) : (
-            <span className="w-5 shrink-0" />
-          )}
-          {isExpanded || !hasChildren ? <FolderOpen className="w-4 h-4 shrink-0 text-primary" /> : <Folder className="w-4 h-4 shrink-0 text-muted-foreground" />}
-          <span className="text-sm font-medium truncate">{node.folder.name}</span>
-          {node.images.length > 0 && <span className="text-xs text-muted-foreground ml-auto">({node.images.length})</span>}
-        </div>
-        {hasChildren && isExpanded && node.children.map(child => renderNode(child, depth + 1))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 lg:gap-8">
-      <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        className="rounded-xl border bg-card overflow-hidden shrink-0"
-      >
-        <div className="p-3 border-b bg-muted/50">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Folders</span>
-        </div>
-        <div className="max-h-[400px] overflow-y-auto p-2">
-          {folderTree.map(node => renderNode(node, 0))}
-          <button
-            type="button"
-            onClick={() => setSelectedId(UNCategorizedId)}
-            className={`w-full flex items-center gap-2 py-2 px-2 rounded-lg text-left transition-colors hover:bg-muted/70 ${selectedId === UNCategorizedId ? 'bg-primary/15 text-primary' : ''}`}
-          >
-            <span className="w-5 shrink-0" />
-            <FolderOpen className="w-4 h-4 shrink-0 text-muted-foreground" />
-            <span className="text-sm font-medium">Other</span>
-            {uncategorized.length > 0 && <span className="text-xs text-muted-foreground ml-auto">({uncategorized.length})</span>}
-          </button>
-        </div>
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="min-h-[300px]"
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <FolderOpen className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">{selectedLabel}</h3>
-        </div>
-        {selectedImages.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                {selectedImages.map((media, i) => {
-              const globalIndex = images.indexOf(media);
-              const isVideo = media.media_type === 'video';
-              const isYt = isCollabYouTubeVideo(media);
-              const mediaSrc = resolveCollaborationMediaUrl(media.image_url);
-              const posterSrc = collabGalleryPosterSrc(media);
-              return (
-                <motion.div key={media.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.02 }} className="aspect-square min-h-0">
-                  <div className="relative w-full h-full rounded-xl overflow-hidden cursor-pointer group" onClick={() => globalIndex >= 0 && onOpenLightbox(globalIndex)}>
-                    {isYt ? (
-                      <>
-                        <img src={posterSrc} alt={media.caption || "YouTube video"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
-                          <Play className="w-12 h-12 text-white drop-shadow-md" fill="currentColor" />
-                        </div>
-                      </>
-                    ) : isVideo ? (
-                      <video
-                        src={mediaSrc}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        playsInline
-                        preload="none"
-                      />
-                    ) : (
-                      <img src={mediaSrc} alt={media.caption || "Collaboration media"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" />
-                    )}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="rounded-xl border-2 border-dashed border-muted bg-muted/20 flex items-center justify-center min-h-[200px] text-muted-foreground text-sm">
-            No photos or videos in this folder
-          </div>
-        )}
-      </motion.div>
-    </div>
-  );
-}
 
 export default function CollaborationDetail() {
   const { partnerId } = useParams();
@@ -224,33 +64,50 @@ export default function CollaborationDetail() {
     [collaboration]
   );
 
-  const { images, folderTree, uncategorized } = useMemo(() => {
-    const folders = rawFolders;
-    const imgs = rawImages;
-    const rootFolders = folders.filter(f => !f.parent_id).sort((a, b) => a.display_order - b.display_order);
-    const byParent = new Map<string, CollabFolder[]>();
-    folders.filter(f => f.parent_id).forEach(f => {
-      if (!byParent.has(f.parent_id!)) byParent.set(f.parent_id!, []);
-      byParent.get(f.parent_id!)!.push(f);
-    });
-    byParent.forEach(list => list.sort((a, b) => a.display_order - b.display_order));
-    const sortByOrder = (a: CollabImage, b: CollabImage) => ((a as { display_order?: number }).display_order ?? 0) - ((b as { display_order?: number }).display_order ?? 0);
-    const buildNode = (folder: CollabFolder): FolderNode => ({
-      folder,
-      children: (byParent.get(folder.id) || []).map(buildNode),
-      images: imgs.filter(img => (img.folder_id ?? null) === folder.id).sort(sortByOrder),
-    });
-    const folderTree: FolderNode[] = rootFolders.map(buildNode);
-    const uncategorized = imgs.filter(img => !img.folder_id).sort(sortByOrder);
-    const allOrdered: CollabImage[] = [];
-    function flatten(node: FolderNode) {
-      node.images.forEach(i => allOrdered.push(i));
-      node.children.forEach(flatten);
-    }
-    folderTree.forEach(flatten);
-    uncategorized.forEach(i => allOrdered.push(i));
-    return { images: allOrdered, folderTree, uncategorized };
-  }, [rawImages, rawFolders]);
+  const explorerFolders = useMemo<ExplorerFolder[]>(
+    () =>
+      rawFolders.map((f) => ({
+        id: f.id,
+        parent_id: f.parent_id,
+        name: f.name,
+        display_order: f.display_order,
+        is_enabled: f.is_enabled !== false,
+        cover_image_url: f.cover_image_url ?? null,
+      })),
+    [rawFolders]
+  );
+
+  const explorerMedia = useMemo<ExplorerMediaItem[]>(() => {
+    const sortByOrder = (a: CollabImage, b: CollabImage) =>
+      ((a as { display_order?: number }).display_order ?? 0) - ((b as { display_order?: number }).display_order ?? 0);
+    return [...rawImages].sort(sortByOrder).map((img, i) => ({
+      id: img.id,
+      url: img.image_url,
+      folder_id: img.folder_id ?? null,
+      display_order: (img as { display_order?: number }).display_order ?? i,
+      media_type: img.media_type === 'video' ? 'video' : 'image',
+      caption: img.caption,
+    }));
+  }, [rawImages]);
+
+  const images = useMemo<CollabImage[]>(() => {
+    const sortByOrder = (a: CollabImage, b: CollabImage) =>
+      ((a as { display_order?: number }).display_order ?? 0) - ((b as { display_order?: number }).display_order ?? 0);
+    const byId = new Map(rawImages.map((img) => [img.id, img]));
+    const ordered: CollabImage[] = [];
+    const visitFolder = (folderId: string) => {
+      explorerMedia
+        .filter((m) => m.folder_id === folderId)
+        .forEach((m) => {
+          const img = byId.get(m.id!);
+          if (img) ordered.push(img);
+        });
+      rawFolders.filter((f) => f.parent_id === folderId).forEach((f) => visitFolder(f.id));
+    };
+    rawFolders.filter((f) => !f.parent_id).forEach((f) => visitFolder(f.id));
+    rawImages.filter((img) => !img.folder_id).sort(sortByOrder).forEach((img) => ordered.push(img));
+    return ordered.length > 0 ? ordered : [...rawImages].sort(sortByOrder);
+  }, [rawImages, rawFolders, explorerMedia]);
 
   useEffect(() => {
     if (!partnerId) { setLoading(false); return; }
@@ -491,12 +348,21 @@ export default function CollaborationDetail() {
               </h2>
             </motion.div>
 
-            {folderTree.length > 0 || uncategorized.length > 0 ? (
-              <GalleryTreeAndContent
-                folderTree={folderTree}
-                uncategorized={uncategorized}
-                images={images}
-                onOpenLightbox={openLightbox}
+            {explorerFolders.length > 0 || explorerMedia.some((m) => !m.folder_id) ? (
+              <PhoneGalleryExplorer
+                folders={explorerFolders}
+                media={explorerMedia}
+                resolveUrl={resolveCollaborationMediaUrl}
+                isVideo={(item) => item.media_type === 'video'}
+                getPoster={(item) => {
+                  const img = rawImages.find((r) => r.id === item.id);
+                  return img ? collabGalleryPosterSrc(img) : resolveCollaborationMediaUrl(item.url);
+                }}
+                onOpenLightbox={(index, folderPhotos) => {
+                  const target = folderPhotos[index];
+                  const globalIndex = target?.id ? images.findIndex((img) => img.id === target.id) : index;
+                  openLightbox(globalIndex >= 0 ? globalIndex : index);
+                }}
               />
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">

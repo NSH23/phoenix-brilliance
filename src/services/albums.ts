@@ -29,6 +29,7 @@ export interface Album {
   cover_image: string | null;
   event_date: string | null;
   is_featured: boolean;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -42,13 +43,28 @@ export interface AlbumMedia {
   caption: string | null;
   is_featured: boolean;
   display_order: number;
+  folder_id: string | null;
   created_at: string;
   updated_at: string;
 }
-const ALBUM_COLUMNS = 'id, event_id, title, description, cover_image, event_date, is_featured, created_at, updated_at';
-const ALBUM_MEDIA_COLUMNS = 'id, album_id, type, url, youtube_url, caption, is_featured, display_order, created_at, updated_at';
 
-// Get all albums
+export interface AlbumFolder {
+  id: string;
+  album_id: string;
+  parent_id: string | null;
+  name: string;
+  display_order: number;
+  is_enabled: boolean;
+  cover_image_url?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const ALBUM_COLUMNS = 'id, event_id, title, description, cover_image, event_date, is_featured, is_active, created_at, updated_at';
+const ALBUM_MEDIA_COLUMNS = 'id, album_id, type, url, youtube_url, caption, is_featured, display_order, folder_id, created_at, updated_at';
+const ALBUM_FOLDER_COLUMNS = 'id, album_id, parent_id, name, display_order, is_enabled, cover_image_url, created_at, updated_at';
+
+// Get all albums (public — active only)
 export async function getAllAlbums() {
   const { data, error } = await supabase
     .from('event_albums')
@@ -56,6 +72,8 @@ export async function getAllAlbums() {
       ${ALBUM_COLUMNS},
       events!inner (id, title, slug, is_active)
     `)
+    .eq('is_active', true)
+    .eq('events.is_active', true)
     .order('is_featured', { ascending: false })
     .order('event_date', { ascending: false })
     .range(0, 49);
@@ -91,12 +109,13 @@ export async function getAdminAlbumsPage(params: {
   };
 }
 
-// Get albums by event ID
+// Get albums by event ID (public — active only)
 export async function getAlbumsByEventId(eventId: string) {
   const { data, error } = await supabase
     .from('event_albums')
     .select(ALBUM_COLUMNS)
     .eq('event_id', eventId)
+    .eq('is_active', true)
     .order('event_date', { ascending: false });
 
   if (error) throw error;
@@ -112,6 +131,7 @@ export async function getFeaturedAlbums(limit = 6) {
       events!inner (id, title, slug, is_active)
     `)
     .eq('is_featured', true)
+    .eq('is_active', true)
     .eq('events.is_active', true)
     .order('event_date', { ascending: false })
     .limit(limit);
@@ -135,20 +155,25 @@ export async function getAlbumById(id: string) {
   return normalizeAlbum(data as Album & { events?: unknown; album_media?: AlbumMedia[] });
 }
 
-// Get album with media
+// Get album with media and folders
 export async function getAlbumWithMedia(id: string) {
   const { data, error } = await supabase
     .from('event_albums')
     .select(`
       ${ALBUM_COLUMNS},
       events (id, title, slug, is_active),
-      album_media (${ALBUM_MEDIA_COLUMNS})
+      album_media (${ALBUM_MEDIA_COLUMNS}),
+      album_folders (${ALBUM_FOLDER_COLUMNS})
     `)
     .eq('id', id)
     .single();
 
   if (error) throw error;
-  return normalizeAlbum(data as Album & { events?: unknown; album_media?: AlbumMedia[] });
+  const row = data as Album & { events?: unknown; album_media?: AlbumMedia[]; album_folders?: AlbumFolder[] };
+  return {
+    ...normalizeAlbum(row),
+    album_folders: row.album_folders ?? [],
+  };
 }
 
 // Create album
@@ -286,4 +311,44 @@ export async function getAllAlbumMediaCounts(): Promise<Record<string, number>> 
     acc[albumId] = (acc[albumId] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+}
+
+// Album folders (gallery tree)
+export async function getAlbumFolders(albumId: string) {
+  const { data, error } = await supabase
+    .from('album_folders')
+    .select(ALBUM_FOLDER_COLUMNS)
+    .eq('album_id', albumId)
+    .order('display_order', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as AlbumFolder[];
+}
+
+export async function createAlbumFolder(folder: Omit<AlbumFolder, 'id' | 'created_at' | 'updated_at'>) {
+  const payload = {
+    album_id: folder.album_id,
+    parent_id: folder.parent_id ?? null,
+    name: String(folder.name).trim() || 'Unnamed folder',
+    display_order: Number(folder.display_order) || 0,
+    is_enabled: folder.is_enabled,
+    cover_image_url: folder.cover_image_url ?? null,
+  };
+  const { data, error } = await supabase.from('album_folders').insert([payload]).select().single();
+  if (error) throw new Error(`Failed to create folder: ${error.message}`);
+  return data as AlbumFolder;
+}
+
+export async function updateAlbumFolder(
+  id: string,
+  updates: Partial<Pick<AlbumFolder, 'name' | 'parent_id' | 'display_order' | 'is_enabled' | 'cover_image_url'>>
+) {
+  const { data, error } = await supabase.from('album_folders').update(updates).eq('id', id).select().single();
+  if (error) throw error;
+  return data as AlbumFolder;
+}
+
+export async function deleteAlbumFolder(id: string) {
+  const { error } = await supabase.from('album_folders').delete().eq('id', id);
+  if (error) throw error;
 }

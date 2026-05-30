@@ -1,61 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, MoreHorizontal, ImageIcon, Loader2 } from 'lucide-react';
+import { Plus, Search, Trash2, MoreHorizontal, Eye, EyeOff, ImageIcon, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
-import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import {
-  getAllServices,
-  createService,
-  updateService,
-  deleteService,
-  type Service,
-} from '@/services/services';
+import { getAllServices, updateService, deleteService, type Service } from '@/services/services';
 import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
 
 export default function AdminServices() {
+  const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [saving, setSaving] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    icon: '',
-    image_url: '',
-    features: '',
-    isActive: true,
-    display_order: 0,
-  });
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const load = async () => {
@@ -64,14 +37,14 @@ export default function AdminServices() {
       const data = await getAllServices();
       setServices(data);
     } catch (err: unknown) {
-      logger.error('Failed to load services', err, { component: 'AdminServices', action: 'loadServices' });
+      logger.error('Failed to load services', err, { component: 'AdminServices' });
       toast.error('Failed to load services', { description: (err as Error)?.message });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filteredServices = services.filter(s =>
+  const filteredServices = services.filter((s) =>
     s.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -90,7 +63,6 @@ export default function AdminServices() {
       });
       toast.success('Display order saved');
     } catch (err: unknown) {
-      logger.error('Failed to save service order', err, { component: 'AdminServices', action: 'persistOrder' });
       toast.error('Failed to save order', { description: (err as Error)?.message });
       void load();
     } finally {
@@ -98,223 +70,149 @@ export default function AdminServices() {
     }
   };
 
-  const handleOpenDialog = (service?: Service) => {
-    const nextOrder = services.length > 0
-      ? Math.max(...services.map(s => s.display_order ?? 0)) + 1
-      : 0;
-    if (service) {
-      setEditingService(service);
-      setFormData({
-        title: service.title,
-        description: service.description || '',
-        icon: service.icon || '',
-        image_url: service.image_url || '',
-        features: (service.features || []).join(', '),
-        isActive: service.is_active ?? true,
-        display_order: service.display_order ?? 0,
-      });
-    } else {
-      setEditingService(null);
-      setFormData({
-        title: '',
-        description: '',
-        icon: '',
-        image_url: '',
-        features: '',
-        isActive: true,
-        display_order: nextOrder,
-      });
-    }
-    setIsDialogOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!formData.title.trim()) {
-      toast.error('Title is required');
-      return;
-    }
-    const featuresArray = formData.features.split(',').map(f => f.trim()).filter(Boolean);
-    setSaving(true);
-    try {
-      if (editingService) {
-        const updated = await updateService(editingService.id, {
-          title: formData.title.trim(),
-          description: formData.description.trim() || null,
-          icon: formData.icon.trim() || null,
-          image_url: formData.image_url || null,
-          features: featuresArray,
-          is_active: formData.isActive,
-          display_order: formData.display_order,
-        });
-        setServices(prev => prev.map(s => (s.id === updated.id ? updated : s)));
-        toast.success('Service updated');
-      } else {
-        const created = await createService({
-          title: formData.title.trim(),
-          description: formData.description.trim() || null,
-          icon: formData.icon.trim() || null,
-          image_url: formData.image_url || null,
-          features: featuresArray,
-          is_active: formData.isActive,
-          display_order: formData.display_order,
-        });
-        setServices(prev => [created, ...prev]);
-        toast.success('Service created');
-      }
-      setIsDialogOpen(false);
-    } catch (err: unknown) {
-      toast.error('Failed to save', { description: (err as Error)?.message });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this service?')) return;
-    try {
-      await deleteService(id);
-      setServices(prev => prev.filter(s => s.id !== id));
-      toast.success('Service deleted');
-      if (editingService?.id === id) setIsDialogOpen(false);
-    } catch (err: unknown) {
-      toast.error('Failed to delete', { description: (err as Error)?.message });
-    }
-  };
-
-  const handleToggleActive = async (s: Service) => {
+  const handleToggleActive = async (s: Service, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       const updated = await updateService(s.id, { is_active: !s.is_active });
-      setServices(prev => prev.map(x => (x.id === updated.id ? updated : x)));
-      toast.success(updated.is_active ? 'Marked active' : 'Marked inactive');
+      setServices((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      toast.success(updated.is_active ? 'Active' : 'Inactive');
     } catch (err: unknown) {
       toast.error('Failed to update', { description: (err as Error)?.message });
     }
   };
 
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!confirm('Delete this service?')) return;
+    try {
+      await deleteService(id);
+      setServices((prev) => prev.filter((s) => s.id !== id));
+      toast.success('Service deleted');
+    } catch (err: unknown) {
+      toast.error('Failed to delete', { description: (err as Error)?.message });
+    }
+  };
+
+  const openEdit = (s: Service) => navigate(`/admin/services/${s.id}/edit`);
+
   const renderServiceCard = (s: Service) => (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
-      <CardContent className="p-3 md:p-6 flex flex-col h-full max-md:min-h-[140px]">
-        <div className="flex items-start justify-between mb-2 md:mb-4">
-          <div className="flex items-center gap-2 text-muted-foreground bg-muted p-1.5 md:p-2 rounded-lg">
-            {s.image_url ? (
-              <img
-                src={resolvePublicStorageUrl(s.image_url, 'service-images')}
-                alt={s.title}
-                className="w-8 h-8 md:w-10 md:h-10 object-cover rounded-md"
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <ImageIcon className="w-5 h-5 md:w-6 md:h-6" />
-            )}
+    <Card
+      className="flex h-full cursor-pointer flex-col overflow-hidden transition-shadow hover:shadow-lg"
+      onClick={() => openEdit(s)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openEdit(s);
+        }
+      }}
+    >
+      <div className="relative aspect-[16/10] bg-muted">
+        {s.image_url ? (
+          <img
+            src={resolvePublicStorageUrl(s.image_url, 'service-images')!}
+            alt={s.title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
+          </div>
+        )}
+        <Badge className="absolute left-2 top-2" variant={s.is_active ? 'default' : 'secondary'}>
+          {s.is_active ? 'Active' : 'Hidden'}
+        </Badge>
+      </div>
+      <CardContent className="flex flex-1 flex-col justify-between gap-2 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="truncate font-serif text-base font-bold">{s.title}</h3>
+            <p className="line-clamp-2 text-xs text-muted-foreground">{s.description || '—'}</p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:-mr-2">
-                <MoreHorizontal className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleOpenDialog(s)}>
-                <Edit className="w-4 h-4 mr-2" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive">
-                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              <DropdownMenuItem onClick={() => openEdit(s)}>Edit service</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onClick={(e) => void handleDelete(s.id, e as unknown as React.MouseEvent)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
-        <div className="flex-1">
-          <h3 className="text-base md:text-lg font-serif font-bold mb-1 md:mb-2 line-clamp-1">{s.title}</h3>
-          <p className="text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 md:hidden">{s.description || '—'}</p>
-          <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-2 hidden md:block">{s.description || '—'}</p>
-          <div className="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-0">
-            {(s.features || []).slice(0, 2).map((f, j) => (
-              <Badge key={j} variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">
-                {f}
-              </Badge>
-            ))}
-            {(s.features || []).length > 2 && (
-              <Badge variant="outline" className="text-xs md:text-xs px-1.5 py-0.5 h-auto">
-                +{s.features.length - 2}
-              </Badge>
-            )}
-          </div>
+        <div className="flex flex-wrap gap-1">
+          {(s.features || []).slice(0, 2).map((f, j) => (
+            <Badge key={j} variant="outline" className="text-[10px]">
+              {f}
+            </Badge>
+          ))}
         </div>
-
-        <div className="flex items-center justify-between gap-1 mt-auto pt-2 border-t text-xs">
-          <div className="flex items-center gap-1 md:gap-2">
-            <span className="text-xs text-muted-foreground">Order: {s.display_order ?? 0}</span>
-            <Switch checked={s.is_active} onCheckedChange={() => handleToggleActive(s)} className="h-6 w-11" />
-          </div>
-          <Badge variant={s.is_active ? 'default' : 'secondary'} className="text-xs px-1.5 py-0.5 h-auto">
-            {s.is_active ? 'Active' : 'Inactive'}
-          </Badge>
+        <div className="flex items-center justify-between border-t pt-2">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {s.is_active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5" />}
+            Order {s.display_order ?? 0}
+          </span>
+          <Switch checked={s.is_active} onCheckedChange={() => void handleToggleActive(s)} onClick={(e) => e.stopPropagation()} />
         </div>
       </CardContent>
     </Card>
   );
 
   return (
-    <AdminLayout title="Services" subtitle="Manage your service offerings">
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+    <AdminLayout title="Services" subtitle="Click a card to open the full editor">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search services..."
+            placeholder="Search services…"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 max-md:h-11"
           />
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2 max-md:h-11">
-          <Plus className="w-4 h-4" />
-          Add Service
+        <Button className="gap-2 max-md:h-11" asChild>
+          <Link to="/admin/services/new/edit">
+            <Plus className="h-4 w-4" />
+            Add service
+          </Link>
         </Button>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
+      ) : listForCards.length === 0 ? (
+        <div className="py-16 text-center text-muted-foreground">No services found.</div>
       ) : (
         <>
-          {services.length >= 2 && (
-            <p className="text-xs text-muted-foreground mb-2">
-              {showReorder
-                ? 'Drag the grip on a card to reorder. Changes apply on the site immediately.'
-                : 'Clear search to drag and reorder cards.'}
-            </p>
-          )}
+          {showReorder && services.length >= 2 ? (
+            <p className="mb-2 text-xs text-muted-foreground">Drag to reorder on the website.</p>
+          ) : null}
           {showReorder ? (
             <AdminSortableGrid
               itemIds={listForCards.map((s) => s.id)}
               disabled={isReordering}
               onReorder={persistServiceOrder}
-              className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6"
+              className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
             >
               {listForCards.map((s, i) => (
                 <AdminSortableItem key={s.id} id={s.id} disabled={isReordering}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                  >
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                     {renderServiceCard(s)}
                   </motion.div>
                 </AdminSortableItem>
               ))}
             </AdminSortableGrid>
           ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {listForCards.map((s, i) => (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
+                <motion.div key={s.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                   {renderServiceCard(s)}
                 </motion.div>
               ))}
@@ -322,101 +220,6 @@ export default function AdminServices() {
           )}
         </>
       )}
-
-      {!isLoading && filteredServices.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">No services found.</div>
-      )}
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
-            <DialogDescription>
-              {editingService ? 'Update the service details below.' : 'Create a new service offering. Saved to the database.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Service Image</Label>
-              <ImageUpload
-                value={formData.image_url}
-                onChange={(url) => setFormData({ ...formData, image_url: url as string })}
-                bucket="service-images"
-                uploadOnSelect={true}
-                previewClassName="aspect-video w-full object-cover"
-                enableCropAdjust={true}
-                cropAspect={16 / 9}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="title">Service Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Event Planning"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe the service..."
-                rows={3}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="icon">Icon Name (Lucide)</Label>
-              <Input
-                id="icon"
-                value={formData.icon}
-                onChange={e => setFormData({ ...formData, icon: e.target.value })}
-                placeholder="e.g., Calendar, Camera, Music, Palette, Sparkles"
-              />
-              <p className="text-xs text-muted-foreground">PascalCase: CalendarCheck, UtensilsCrossed, etc.</p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="features">Features (comma-separated)</Label>
-              <Input
-                id="features"
-                value={formData.features}
-                onChange={e => setFormData({ ...formData, features: e.target.value })}
-                placeholder="e.g., Venue Selection, Budget Management, Timeline Planning"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="display_order">Display Order</Label>
-              <Input
-                id="display_order"
-                type="number"
-                min={0}
-                value={formData.display_order}
-                onChange={e => setFormData({ ...formData, display_order: parseInt(e.target.value, 10) || 0 })}
-                placeholder="0"
-              />
-              <p className="text-xs text-muted-foreground">Auto-filled as next when adding. Lower numbers appear first.</p>
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="isActive">Active Status</Label>
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={v => setFormData({ ...formData, isActive: v })}
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="max-md:flex-col max-md:items-stretch max-md:gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:w-full max-md:h-11">Cancel</Button>
-            <Button onClick={handleSave} disabled={saving} className="max-md:w-full max-md:h-11">
-              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : (editingService ? 'Save Changes' : 'Create Service')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AdminLayout>
   );
 }

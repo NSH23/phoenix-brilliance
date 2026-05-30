@@ -1,7 +1,6 @@
 // Trigger Vercel rebuild
 import { useState, useEffect } from 'react';
-import { uploadToCloudinary } from '@/lib/cloudinary';
-import { useForm } from 'react-hook-form';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
     Play,
@@ -16,17 +15,6 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { formatDateTimeLocal } from '@/lib/formatDate';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from '@/components/ui/dialog';
 import {
     Tabs,
     TabsList,
@@ -34,59 +22,58 @@ import {
 } from '@/components/ui/tabs';
 import {
     getAllContentMedia,
-    createContentMedia,
-    updateContentMedia,
     deleteContentMedia,
     type ContentMedia
 } from '@/services/contentMedia';
-import { logger } from '@/utils/logger';
-import { getYouTubeId, getYouTubeThumbnail, isYouTubeValue } from '../../lib/youtube';
+import { getYouTubeThumbnail, isYouTubeValue } from '../../lib/youtube';
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov)(\?|$)/i.test(url);
-
-const CONTENT_MEDIA_BUCKET = 'content-media';
-
-/** Upload a video/image file to content-media bucket. Returns public URL. */
-async function uploadContentMediaFile(file: File, onProgress?: (percent: number) => void): Promise<string> {
-    return uploadToCloudinary(file, CONTENT_MEDIA_BUCKET as typeof CONTENT_MEDIA_BUCKET, onProgress);
-}
 
 function HeroSlotCard({
     slotLabel,
     slotIndex,
     mediaType,
     item,
-    onEdit,
+    onOpen,
     onDelete,
-    onAdd
 }: {
     slotLabel: string;
     slotIndex: number;
     mediaType: 'video' | 'image';
     item: ContentMedia | null;
-    onEdit: (item: ContentMedia) => void;
+    onOpen: (slotIndex: number) => void;
     onDelete: (item: ContentMedia) => void;
-    onAdd: (slotIndex: number, mediaType: 'video' | 'image') => void;
 }) {
     return (
-        <Card className="overflow-hidden group">
-            <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1 w-full">
-                    <div className="w-full sm:w-32 h-40 sm:h-20 bg-black/10 rounded-lg overflow-hidden relative flex-shrink-0">
+        <Card
+            className="cursor-pointer overflow-hidden transition-shadow hover:shadow-md"
+            onClick={() => onOpen(slotIndex)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onOpen(slotIndex);
+                }
+            }}
+        >
+            <CardContent className="flex flex-col items-center justify-between gap-4 p-4 sm:flex-row">
+                <div className="flex w-full flex-1 flex-col items-start gap-4 sm:flex-row sm:items-center">
+                    <div className="relative h-40 w-full flex-shrink-0 overflow-hidden rounded-lg bg-black/10 sm:h-20 sm:w-32">
                         {item?.url ? (
                             mediaType === 'video' ? (
                                 isYouTubeValue(item.url) ? (
                                     <img
                                         src={getYouTubeThumbnail(item.url)}
                                         alt=""
-                                        className="w-full h-full object-cover"
+                                        className="h-full w-full object-cover"
                                         loading="lazy"
                                         decoding="async"
                                     />
                                 ) : (
                                     <video
                                         src={item.url}
-                                        className="w-full h-full object-cover"
+                                        className="h-full w-full object-cover"
                                         muted
                                         loop
                                         playsInline
@@ -96,42 +83,44 @@ function HeroSlotCard({
                                     />
                                 )
                             ) : (
-                                <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                <img src={item.url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                             )
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                                 {mediaType === 'video' ? <Play size={24} /> : <ImageIcon size={24} />}
                             </div>
                         )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
                             {mediaType === 'video' ? <Play className="text-white/80" size={24} /> : <ImageIcon className="text-white/80" size={24} />}
                         </div>
                     </div>
-                    <div className="flex-1 min-w-0 w-full">
-                        <h3 className="font-medium truncate">{slotLabel}</h3>
-                        <p className="text-sm text-muted-foreground truncate font-mono">
+                    <div className="min-w-0 w-full flex-1">
+                        <h3 className="truncate font-medium">{slotLabel}</h3>
+                        <p className="truncate font-mono text-sm text-muted-foreground">
                             {item?.url || 'Not set'}
                         </p>
-                        {item && (
-                            <p className="text-xs text-muted-foreground mt-1">{formatDateTimeLocal(item.updated_at)}</p>
+                        {item ? (
+                            <p className="mt-1 text-xs text-muted-foreground">{formatDateTimeLocal(item.updated_at)}</p>
+                        ) : (
+                            <p className="mt-1 text-xs text-muted-foreground">Click to configure</p>
                         )}
                     </div>
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end max-md:flex-col max-md:items-stretch">
+                <div className="flex w-full items-center justify-end gap-2 max-md:flex-col max-md:items-stretch sm:w-auto">
                     <Button
                         size="sm"
                         variant="outline"
-                        className="max-md:w-full max-md:h-10"
-                        onClick={() => (item ? onEdit(item) : onAdd(slotIndex, mediaType))}
+                        className="max-md:h-10 max-md:w-full"
+                        onClick={(e) => { e.stopPropagation(); onOpen(slotIndex); }}
                     >
-                        <Pencil size={16} /> <span className="ml-2">Select</span>
+                        <Pencil size={16} /> <span className="ml-2">{item ? 'Edit' : 'Set up'}</span>
                     </Button>
                     <Button
                         size="sm"
                         variant="destructive"
                         disabled={!item}
-                        className="max-md:w-full max-md:h-10"
-                        onClick={() => item && onDelete(item)}
+                        className="max-md:h-10 max-md:w-full"
+                        onClick={(e) => { e.stopPropagation(); item && onDelete(item); }}
                     >
                         <Trash2 size={16} /> <span className="ml-2">Delete</span>
                     </Button>
@@ -143,16 +132,16 @@ function HeroSlotCard({
 
 function MediaList({
     items,
-    onEdit,
-    onDelete
+    onDelete,
+    onOpen,
 }: {
     items: ContentMedia[];
-    onEdit: (item: ContentMedia) => void;
     onDelete: (item: ContentMedia) => void;
+    onOpen: (item: ContentMedia) => void;
 }) {
     if (items.length === 0) {
         return (
-            <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-xl border border-dashed">
+            <div className="rounded-xl border border-dashed bg-muted/30 py-12 text-center text-muted-foreground">
                 <p>No media found. Add some content to get started.</p>
             </div>
         );
@@ -161,50 +150,57 @@ function MediaList({
     return (
         <div className="space-y-4">
             {items.map((item) => (
-                <Card key={item.id} className="overflow-hidden group">
-                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1 w-full">
-                            <div className="w-full sm:w-32 h-40 sm:h-20 bg-black/10 rounded-lg overflow-hidden relative flex-shrink-0">
+                <Card
+                    key={item.id}
+                    className="cursor-pointer overflow-hidden transition-shadow hover:shadow-md"
+                    onClick={() => onOpen(item)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item); } }}
+                >
+                    <CardContent className="flex flex-col items-center justify-between gap-4 p-4 sm:flex-row">
+                        <div className="flex w-full flex-1 flex-col items-start gap-4 sm:flex-row sm:items-center">
+                            <div className="relative h-40 w-full flex-shrink-0 overflow-hidden rounded-lg bg-black/10 sm:h-20 sm:w-32">
                                 {isYouTubeValue(item.url) ? (
                                     <img
                                         src={getYouTubeThumbnail(item.url)}
                                         alt=""
-                                        className="w-full h-full object-cover"
+                                        className="h-full w-full object-cover"
                                         loading="lazy"
                                         decoding="async"
                                     />
                                 ) : (
                                     <video
                                         src={item.url}
-                                        className="w-full h-full object-cover"
+                                        className="h-full w-full object-cover"
                                         muted
                                         playsInline
                                         preload="metadata"
                                     />
                                 )}
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                                <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
                                     <Film className="text-white/80" size={24} />
                                 </div>
                             </div>
-                            <div className="flex-1 min-w-0 w-full">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <h3 className="font-medium truncate">{item.title || 'Untitled Video'}</h3>
+                            <div className="min-w-0 w-full flex-1">
+                                <div className="mb-1 flex items-center gap-3">
+                                    <h3 className="truncate font-medium">{item.title || 'Untitled Video'}</h3>
                                     {!item.is_active && (
-                                        <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs">Inactive</span>
+                                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Inactive</span>
                                     )}
                                 </div>
-                                <p className="text-sm text-muted-foreground truncate font-mono">{item.url}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                <p className="truncate font-mono text-sm text-muted-foreground">{item.url}</p>
+                                <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                                     <span>Order: {item.display_order}</span>
                                     <span>{formatDateTimeLocal(item.created_at)}</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 mt-2 sm:mt-0 max-md:flex-col max-md:items-stretch max-md:gap-2 max-md:border-t-0 max-md:pt-0">
-                            <Button size="sm" variant="outline" onClick={() => onEdit(item)} className="max-md:w-full max-md:h-10">
-                                <Pencil size={16} /> <span className="ml-2">Select</span>
+                        <div className="mt-2 flex w-full items-center justify-end gap-2 border-t pt-3 max-md:flex-col max-md:items-stretch max-md:gap-2 max-md:border-t-0 max-md:pt-0 sm:mt-0 sm:w-auto sm:border-t-0 sm:pt-0">
+                            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onOpen(item); }} className="max-md:h-10 max-md:w-full">
+                                <Pencil size={16} /> <span className="ml-2">Edit</span>
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => onDelete(item)} className="max-md:w-full max-md:h-10">
+                            <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onDelete(item); }} className="max-md:h-10 max-md:w-full">
                                 <Trash2 size={16} /> <span className="ml-2">Delete</span>
                             </Button>
                         </div>
@@ -216,34 +212,24 @@ function MediaList({
 }
 
 export default function ContentMedia() {
-    const [uploading, setUploading] = useState(false);
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tabParam = searchParams.get('tab');
     const [items, setItems] = useState<ContentMedia[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'hero' | 'moment'>('hero');
-    const [editingItem, setEditingItem] = useState<ContentMedia | null>(null);
-    const [editingSlot, setEditingSlot] = useState<{ slotIndex: number; mediaType: 'video' | 'image' } | null>(null);
-    const [isDeploying, setIsDeploying] = useState(false);
-    const [uploadSuccess, setUploadSuccess] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
+    const [activeTab, setActiveTab] = useState<'hero' | 'moment'>(() =>
+        tabParam === 'moment' ? 'moment' : 'hero'
+    );
 
-    const { register, handleSubmit, reset, setValue, watch, formState: { isDirty } } = useForm<Partial<ContentMedia> & { file?: FileList }>();
-    const currentUrl = watch('url');
+    useEffect(() => {
+        if (tabParam === 'hero' || tabParam === 'moment') {
+            setActiveTab(tabParam);
+        }
+    }, [tabParam]);
 
     useEffect(() => {
         loadData();
     }, [activeTab]);
-
-    useEffect(() => {
-        if (isDialogOpen) {
-            setUploadSuccess(false);
-            const t = setTimeout(() => {
-                const img = document.getElementById('image-upload') as HTMLInputElement;
-                if (img) img.value = '';
-            }, 0);
-            return () => clearTimeout(t);
-        }
-    }, [isDialogOpen]);
 
     const loadData = async () => {
         setLoading(true);
@@ -268,20 +254,10 @@ export default function ContentMedia() {
 
     const momentItems = items.filter(i => i.category === 'moment');
 
-    const handleEdit = (item: ContentMedia) => {
-        setEditingItem(item);
-        setEditingSlot(item.category === 'hero'
-            ? { slotIndex: item.display_order, mediaType: (item.media_type === 'image' ? 'image' : 'video') }
-            : null);
-        reset({ ...item, url: item.url });
-        setIsDialogOpen(true);
-    };
-
-    const handleAddHeroSlot = (slotIndex: number, mediaType: 'video' | 'image') => {
-        setEditingItem(null);
-        setEditingSlot({ slotIndex, mediaType });
-        reset({ url: '', title: '', display_order: slotIndex, media_type: mediaType, is_active: true });
-        setIsDialogOpen(true);
+    const handleTabChange = (value: string) => {
+        const tab = value as 'hero' | 'moment';
+        setActiveTab(tab);
+        setSearchParams({ tab }, { replace: true });
     };
 
     const handleDelete = async (item: ContentMedia) => {
@@ -296,131 +272,15 @@ export default function ContentMedia() {
         }
     };
 
-    const clearFormMedia = () => {
-        setValue('url', '');
-        setUploadSuccess(false);
-        const img = document.getElementById('image-upload') as HTMLInputElement | null;
-        if (img) img.value = '';
-    };
-
-    const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !file.type.startsWith('image/')) return;
-        setUploading(true);
-        setUploadProgress(0);
-        setUploadSuccess(false);
-        try {
-            const url = await uploadContentMediaFile(file, setUploadProgress);
-            setValue('url', url);
-            setUploadSuccess(true);
-            toast.success('Image uploaded. Click Save to add it.');
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Upload failed';
-            toast.error('Upload failed', { description: msg });
-        } finally {
-            setUploadProgress(0);
-            setUploading(false);
-            e.target.value = '';
-        }
-    };
-
-    const onSubmit = async (data: Partial<ContentMedia> & { file?: FileList }) => {
-        try {
-            setIsDeploying(true);
-            let mediaUrl = (data.url ?? '').trim();
-
-            const submittingMediaType: 'video' | 'image' = editingSlot?.mediaType ?? (editingItem?.media_type === 'image' ? 'image' : 'video');
-
-            if (submittingMediaType === 'video') {
-                if (!mediaUrl) {
-                    toast.error('Please enter a YouTube video URL or video ID.');
-                    return;
-                }
-                const extractedId = getYouTubeId(mediaUrl);
-                const isValidId = /^[a-zA-Z0-9_-]{11}$/.test(extractedId);
-                if (!isValidId) {
-                    toast.error('Please enter a valid YouTube URL or video ID.');
-                    return;
-                }
-                mediaUrl = extractedId;
-            } else {
-                const fileInput = document.getElementById('image-upload') as HTMLInputElement | null;
-                const file = fileInput?.files?.[0];
-                if (file && !mediaUrl) {
-                    setUploading(true);
-                    try {
-                        setUploadProgress(0);
-                        mediaUrl = await uploadContentMediaFile(file, setUploadProgress);
-                    } finally {
-                        setUploadProgress(0);
-                        setUploading(false);
-                    }
-                }
-
-                if (!mediaUrl) {
-                    toast.error('Please upload an image file or enter an image URL.');
-                    return;
-                }
-            }
-
-            const payload: Partial<ContentMedia> = {
-                ...data,
-                url: mediaUrl,
-                category: activeTab,
-                is_active: data.is_active ?? true,
-            };
-            if (editingSlot) {
-                payload.display_order = editingSlot.slotIndex;
-                payload.media_type = editingSlot.mediaType;
-            } else if (editingItem) {
-                payload.display_order = editingItem.display_order;
-                payload.media_type = editingItem.media_type ?? 'video';
-            }
-
-            if (editingItem) {
-                const updated = await updateContentMedia(editingItem.id, payload);
-                setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
-                toast.success('Updated successfully');
-            } else {
-                const createPayload = {
-                    category: payload.category!,
-                    media_type: payload.media_type ?? 'video',
-                    title: payload.title ?? null,
-                    url: payload.url!,
-                    thumbnail_url: payload.thumbnail_url ?? null,
-                    is_active: payload.is_active ?? true,
-                    display_order: payload.display_order ?? 0,
-                };
-                const created = await createContentMedia(createPayload);
-                setItems(prev => [...prev, created]);
-                toast.success(activeTab === 'moment' ? 'Video added to Moments We\'ve Crafted.' : 'Added successfully');
-            }
-            setIsDialogOpen(false);
-            setEditingSlot(null);
-        } catch (error) {
-            logger.error('Failed to save media', error);
-            const msg = error instanceof Error ? error.message : (error && typeof (error as { message?: string }).message === 'string' ? (error as { message: string }).message : 'Failed to save');
-            toast.error('Failed to save', { description: msg });
-            setUploading(false);
-        } finally {
-            setIsDeploying(false);
-        }
-    };
-
-    const isHeroDialog = activeTab === 'hero' && (editingItem?.category === 'hero' || editingSlot);
-    const slotMediaType = editingSlot?.mediaType ?? (editingItem?.media_type === 'image' ? 'image' : 'video');
-    const youtubeIdPreview = getYouTubeId(currentUrl ?? '');
-    const isValidYouTubeIdPreview = /^[a-zA-Z0-9_-]{11}$/.test(youtubeIdPreview);
-
     return (
         <AdminLayout title="Manage Videos" subtitle="Hero: 1 video + 2 background images. Moments: reels for Moments We've Crafted.">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full sm:w-[400px]">
+            <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full sm:w-[400px]">
                     <TabsList className="w-full">
-                        <TabsTrigger value="hero" className="flex-1 flex items-center justify-center gap-2">
+                        <TabsTrigger value="hero" className="flex flex-1 items-center justify-center gap-2">
                             <Play size={16} /> Hero
                         </TabsTrigger>
-                        <TabsTrigger value="moment" className="flex-1 flex items-center justify-center gap-2">
+                        <TabsTrigger value="moment" className="flex flex-1 items-center justify-center gap-2">
                             <Film size={16} /> Moments
                         </TabsTrigger>
                     </TabsList>
@@ -433,219 +293,51 @@ export default function ContentMedia() {
                 </div>
             ) : activeTab === 'hero' ? (
                 <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Homepage hero shows one video in front and two images in the back. Set the video and two background images below.
+                    <p className="mb-4 text-sm text-muted-foreground">
+                        Homepage hero shows one video in front and two images in the back. Click a slot to open the full editor.
                     </p>
                     <HeroSlotCard
                         slotLabel="Hero Video (front)"
                         slotIndex={0}
                         mediaType="video"
                         item={heroSlots[0]}
-                        onEdit={handleEdit}
+                        onOpen={(slot) => navigate(`/admin/media/hero/${slot}/edit`)}
                         onDelete={handleDelete}
-                        onAdd={handleAddHeroSlot}
                     />
                     <HeroSlotCard
                         slotLabel="Background Image 1"
                         slotIndex={1}
                         mediaType="image"
                         item={heroSlots[1]}
-                        onEdit={handleEdit}
+                        onOpen={(slot) => navigate(`/admin/media/hero/${slot}/edit`)}
                         onDelete={handleDelete}
-                        onAdd={handleAddHeroSlot}
                     />
                     <HeroSlotCard
                         slotLabel="Background Image 2"
                         slotIndex={2}
                         mediaType="image"
                         item={heroSlots[2]}
-                        onEdit={handleEdit}
+                        onOpen={(slot) => navigate(`/admin/media/hero/${slot}/edit`)}
                         onDelete={handleDelete}
-                        onAdd={handleAddHeroSlot}
                     />
                 </div>
             ) : (
                 <>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Videos you add here are saved to the same <strong>content_media</strong> table (category: moment) and appear in the &quot;Moments We&apos;ve Crafted&quot; section on the homepage. Upload a file or paste a video URL, then click Save.
+                    <p className="mb-4 text-sm text-muted-foreground">
+                        Videos you add here appear in the &quot;Moments We&apos;ve Crafted&quot; section on the homepage. Click a card to edit.
                     </p>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                        <Button onClick={() => { setEditingItem(null); setEditingSlot({ slotIndex: momentItems.length, mediaType: 'video' }); reset({ is_active: true, display_order: momentItems.length, url: '', title: '' }); setIsDialogOpen(true); }}>
+                    <div className="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                        <Button onClick={() => navigate('/admin/media/moments/new/edit')}>
                             <Plus size={16} className="mr-2" /> Add Video
                         </Button>
                     </div>
-                    <MediaList items={momentItems} onEdit={handleEdit} onDelete={handleDelete} />
+                    <MediaList
+                        items={momentItems}
+                        onDelete={handleDelete}
+                        onOpen={(item) => navigate(`/admin/media/moments/${item.id}/edit`)}
+                    />
                 </>
             )}
-
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                if (!open) setEditingSlot(null);
-                setIsDialogOpen(open);
-            }}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            {editingItem
-                                ? `Edit ${slotMediaType === 'image' ? 'Image' : 'Video'}`
-                                : activeTab === 'moment'
-                                    ? 'Add Video'
-                                    : `Add ${slotMediaType === 'image' ? 'Background Image' : 'Hero Video'}`}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        {slotMediaType === 'video' ? (
-                            <>
-                                        <div className="space-y-2">
-                                            <Label>YouTube URL or Video ID</Label>
-                                            <Input
-                                                {...register('url')}
-                                                placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                                                disabled={uploading || isDeploying}
-                                                className="max-md:w-full max-md:h-11"
-                                            />
-
-                                            {!!currentUrl && (
-                                                <div className="flex justify-end">
-                                                    <Button type="button" variant="outline" size="sm" onClick={clearFormMedia}>
-                                                        Remove Video
-                                                    </Button>
-                                                </div>
-                                            )}
-
-                                            {isValidYouTubeIdPreview && (
-                                                <div className="space-y-2 pt-2">
-                                                    <div className="text-xs text-muted-foreground">YouTube thumbnail preview</div>
-                                                    <img
-                                                        src={getYouTubeThumbnail(currentUrl)}
-                                                        alt=""
-                                                        className="w-full aspect-video object-cover rounded-lg border border-border/60"
-                                                        loading="lazy"
-                                                        decoding="async"
-                                                    />
-                                                </div>
-                                            )}
-
-                                            <p className="text-xs text-muted-foreground">
-                                                Videos are embedded from YouTube. Paste a full link or the 11-character video ID.
-                                            </p>
-                                        </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="space-y-2">
-                                    <Label>Image File</Label>
-                                    <Input
-                                        id="image-upload"
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp,image/gif"
-                                        className="cursor-pointer"
-                                        onChange={handleImageFileChange}
-                                        disabled={uploading}
-                                    />
-                                    {uploading && (
-                                        <div className="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-3">
-                                            <p className="text-sm text-primary flex items-center justify-between gap-2">
-                                                <span className="inline-flex items-center gap-2">
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Uploading image...
-                                                </span>
-                                                <span className="font-medium">{uploadProgress}%</span>
-                                            </p>
-                                            <Progress value={uploadProgress} className="h-2" />
-                                        </div>
-                                    )}
-                                    {uploadSuccess && (
-                                        <p className="text-sm text-green-600 dark:text-green-400">Upload complete. Click Save below to add this image.</p>
-                                    )}
-                                    <p className="text-xs text-muted-foreground">JPG, PNG, WebP or GIF.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Or Image URL</Label>
-                                    <Input {...register('url')} placeholder="https://example.com/image.jpg" />
-                                    {!!currentUrl && (
-                                        <div className="flex justify-end">
-                                            <Button type="button" variant="outline" size="sm" onClick={clearFormMedia}>
-                                                Remove Image
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                        <div className="space-y-2">
-                            <Label>Thumbnail URL (Optional)</Label>
-                            <Input {...register('thumbnail_url')} placeholder="https://..." />
-                            {!!watch('thumbnail_url') && (
-                                <img
-                                    src={String(watch('thumbnail_url'))}
-                                    alt=""
-                                    className="w-full aspect-video object-cover rounded-lg border border-border/60"
-                                    loading="lazy"
-                                    decoding="async"
-                                />
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                                Optional preview image. For YouTube you can use: https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg
-                            </p>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Title (Optional)</Label>
-                            <Input {...register('title')} placeholder="e.g. Hero video" />
-                        </div>
-                        {activeTab === 'moment' && (
-                            <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
-                                <div className="space-y-2">
-                                    <Label>Display Order</Label>
-                                    <Input type="number" {...register('display_order', { valueAsNumber: true })} />
-                                </div>
-                                <div className="flex items-center gap-3 pt-8">
-                                    <Label htmlFor="is-active" className="cursor-pointer">Active</Label>
-                                    <Switch id="is-active" checked={watch('is_active')} onCheckedChange={(c) => setValue('is_active', c)} />
-                                </div>
-                            </div>
-                        )}
-                        {activeTab === 'hero' && (
-                            <div className="flex items-center gap-3">
-                                <Label htmlFor="is-active-hero" className="cursor-pointer">Active</Label>
-                                <Switch id="is-active-hero" checked={watch('is_active')} onCheckedChange={(c) => setValue('is_active', c)} />
-                            </div>
-                        )}
-                        <DialogFooter className="max-md:flex-col max-md:items-stretch max-md:gap-2">
-                            {editingItem && (
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    className="max-md:w-full max-md:h-10"
-                                    onClick={async () => {
-                                        await handleDelete(editingItem);
-                                        setIsDialogOpen(false);
-                                        setEditingSlot(null);
-                                    }}
-                                >
-                                    Delete
-                                </Button>
-                            )}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsDialogOpen(false)}
-                                className="max-md:w-full max-md:h-10"
-                            >
-                                Cancel
-                            </Button>
-                            {isDirty && (
-                                <span className="text-xs text-amber-500 flex items-center gap-1 max-md:justify-center">
-                                    ● Unsaved changes
-                                </span>
-                            )}
-                            <Button type="submit" disabled={isDeploying || uploading} className="max-md:w-full max-md:h-11">
-                                {(isDeploying || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {uploading ? 'Uploading video…' : isDeploying ? 'Saving…' : 'Save'}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
         </AdminLayout>
     );
 }

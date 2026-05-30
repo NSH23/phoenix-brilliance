@@ -48,10 +48,14 @@ const AdminEntry = lazy(() => import("./pages/admin/AdminEntry"));
 const LoginRedirect = lazy(() => import("./pages/admin/LoginRedirect"));
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AdminEvents = lazy(() => import("./pages/admin/Events"));
+const AdminEventEdit = lazy(() => import("./pages/admin/EventEdit"));
 const AdminAlbums = lazy(() => import("./pages/admin/Albums"));
+const AdminAlbumEdit = lazy(() => import("./pages/admin/AlbumEdit"));
 const AdminGallery = lazy(() => import("./pages/admin/Gallery"));
 const AdminServices = lazy(() => import("./pages/admin/Services"));
+const AdminServiceEdit = lazy(() => import("./pages/admin/ServiceEdit"));
 const AdminCollaborations = lazy(() => import("./pages/admin/Collaborations"));
+const AdminVenueEdit = lazy(() => import("./pages/admin/VenueEdit"));
 const AdminTestimonials = lazy(() => import("./pages/admin/Testimonials"));
 const AdminNotifications = lazy(() => import("./pages/admin/Notifications"));
 const AdminWpLeads = lazy(() => import("./pages/admin/WpLeads"));
@@ -61,6 +65,8 @@ const AdminContent = lazy(() => import("./pages/admin/Content"));
 
 
 const AdminContentMedia = lazy(() => import("./pages/admin/ContentMedia"));
+const AdminMomentVideoEdit = lazy(() => import("./pages/admin/MomentVideoEdit"));
+const AdminHeroSlotEdit = lazy(() => import("./pages/admin/HeroSlotEdit"));
 const AdminBackgroundImages = lazy(() => import("./pages/admin/BackgroundImages"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminTeam = lazy(() => import("./pages/admin/Team"));
@@ -133,10 +139,26 @@ function AppRoutes() {
             }
           />
           <Route
+            path="/admin/events/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AdminEventEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/events"
             element={
               <ProtectedRoute>
                 <AdminEvents />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/albums/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AdminAlbumEdit />
               </ProtectedRoute>
             }
           />
@@ -157,6 +179,14 @@ function AppRoutes() {
             }
           />
           <Route
+            path="/admin/services/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AdminServiceEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/services"
             element={
               <ProtectedRoute>
@@ -169,6 +199,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <AdminWhyUs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/collaborations/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AdminVenueEdit />
               </ProtectedRoute>
             }
           />
@@ -232,6 +270,22 @@ function AppRoutes() {
           />
 
 
+          <Route
+            path="/admin/media/hero/:slot/edit"
+            element={
+              <ProtectedRoute>
+                <AdminHeroSlotEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/media/moments/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AdminMomentVideoEdit />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/admin/media"
             element={

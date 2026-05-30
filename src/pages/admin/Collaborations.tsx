@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, MoreHorizontal, MapPin, Loader2, FolderPlus, FolderOpen, Video } from 'lucide-react';
+import { Plus, Search, Trash2, MoreHorizontal, MapPin, Loader2, Eye, EyeOff } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
-import ImageUpload from '@/components/admin/ImageUpload';
 import { logger } from '@/utils/logger';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,54 +16,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  getAllCollaborations,
   getAdminCollaborationsPage,
-  getCollaborationById,
-  createCollaboration,
   updateCollaboration,
   deleteCollaboration,
-  getCollaborationImages,
-  createCollaborationImage,
-  updateCollaborationImage,
-  deleteCollaborationImage,
-  getCollaborationFolders,
-  createCollaborationFolder,
-  updateCollaborationFolder,
-  deleteCollaborationFolder,
-  seedCollaborationFolders,
   type Collaboration,
-  type CollaborationFolder,
 } from '@/services/collaborations';
 import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
-import { getYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
 
-type GalleryImageRow = {
-  id?: string;
-  image_url: string;
-  folder_id: string | null;
-  display_order: number;
-  media_type: 'image' | 'video';
-  caption?: string | null;
-};
+const PAGE_SIZE = 12;
 
 function resolveLogoUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -71,43 +32,13 @@ function resolveLogoUrl(url: string | null | undefined): string | null {
 }
 
 export default function AdminCollaborations() {
-  const PAGE_SIZE = 12;
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [totalCollaborations, setTotalCollaborations] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCollab, setEditingCollab] = useState<Collaboration | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const [initialDialogState, setInitialDialogState] = useState('');
-  const [creatingFolder, setCreatingFolder] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    logoUrl: '',
-    bannerUrl: '',
-    description: '',
-    location: '',
-    mapUrl: '',
-    isActive: true,
-    display_order: 0,
-  });
-  const [venueImages, setVenueImages] = useState<string[]>([]);
-  const [galleryFolders, setGalleryFolders] = useState<Array<{ id: string; collaboration_id?: string; parent_id: string | null; name: string; display_order: number; is_enabled: boolean }>>([]);
-  const [galleryImages, setGalleryImages] = useState<GalleryImageRow[]>([]);
-  const [selectedRootFolderId, setSelectedRootFolderId] = useState<string | null>(null);
-  const [selectedSubfolderId, setSelectedSubfolderId] = useState<string | null>(null);
-  const [newRootFolderName, setNewRootFolderName] = useState('');
-  const [newSubfolderName, setNewSubfolderName] = useState('');
-  const [venueYoutubeInput, setVenueYoutubeInput] = useState('');
-  const [venueYoutubeTitle, setVenueYoutubeTitle] = useState('');
-  const serializeDialogState = (
-    nextFormData: typeof formData,
-    nextGalleryImages: GalleryImageRow[],
-    nextGalleryFolders: typeof galleryFolders,
-  ) => JSON.stringify({ formData: nextFormData, galleryImages: nextGalleryImages, galleryFolders: nextGalleryFolders });
 
   const currentPage = Math.max(1, Number(searchParams.get('page') || '1'));
   const currentQuery = (searchParams.get('q') || '').trim();
@@ -123,31 +54,27 @@ export default function AdminCollaborations() {
       setCollaborations(result.data);
       setTotalCollaborations(result.total);
     } catch (err: unknown) {
-      logger.error('Failed to load collaborations', err, { component: 'AdminCollaborations', action: 'loadCollaborations' });
-      toast.error('Failed to load collaborations', { description: (err as Error)?.message });
+      logger.error('Failed to load collaborations', err, { component: 'AdminCollaborations' });
+      toast.error('Failed to load venues', { description: (err as Error)?.message });
     } finally {
       setIsLoading(false);
     }
   }, [currentPage, currentQuery]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
-
-  useEffect(() => {
-    if (searchParams.get('add') === '1') {
-      setSearchParams({}, { replace: true });
-      handleOpenDialog();
-    }
-  }, [searchParams.get('add')]);
-
-  useEffect(() => {
-    setSelectedSubfolderId(null);
-  }, [selectedRootFolderId]);
 
   useEffect(() => {
     setSearchQuery(currentQuery);
   }, [currentQuery]);
+
+  useEffect(() => {
+    if (searchParams.get('add') === '1') {
+      setSearchParams({}, { replace: true });
+      navigate('/admin/collaborations/new/edit');
+    }
+  }, [searchParams, setSearchParams, navigate]);
 
   const updateQueryParams = (next: { page?: number; q?: string }) => {
     const params = new URLSearchParams(searchParams);
@@ -178,7 +105,6 @@ export default function AdminCollaborations() {
       });
       toast.success('Display order saved');
     } catch (err: unknown) {
-      logger.error('Failed to save venue order', err, { component: 'AdminCollaborations', action: 'persistOrder' });
       toast.error('Failed to save order', { description: (err as Error)?.message });
       void load();
     } finally {
@@ -186,549 +112,100 @@ export default function AdminCollaborations() {
     }
   };
 
-  const handleOpenDialog = async (collab?: Collaboration) => {
-    const nextOrder = collaborations.length > 0
-      ? Math.max(...collaborations.map(c => c.display_order ?? 0)) + 1
-      : 0;
-    if (collab) {
-      setEditingCollab(collab);
-      setFormData({
-        name: collab.name,
-        logoUrl: collab.logo_url || '',
-        bannerUrl: collab.banner_url || '',
-        description: collab.description || '',
-        location: collab.location || '',
-        mapUrl: collab.map_url || '',
-        isActive: collab.is_active ?? true,
-        display_order: collab.display_order ?? 0,
-      });
-      try {
-        const full = await getCollaborationById(collab.id) as {
-          collaboration_images?: Array<{ id: string; image_url: string; folder_id: string | null; display_order: number }>;
-          collaboration_folders?: CollaborationFolder[];
-        };
-        const imgs = full?.collaboration_images || [];
-        setVenueImages([]); // Venue images only used when creating; when editing we use gallery folders/images
-        setGalleryImages(imgs.map((img, i) => ({
-          id: img.id,
-          image_url: img.image_url,
-          folder_id: img.folder_id ?? null,
-          display_order: img.display_order ?? i,
-          media_type: (img as { media_type?: string }).media_type === 'video' ? 'video' : 'image',
-          caption: (img as { caption?: string | null }).caption ?? null,
-        })));
-        const folders = full?.collaboration_folders || [];
-        setGalleryFolders(folders.map(f => ({
-          id: f.id,
-          collaboration_id: f.collaboration_id,
-          parent_id: f.parent_id,
-          name: f.name,
-          display_order: f.display_order,
-          is_enabled: f.is_enabled ?? false,
-        })));
-        setInitialDialogState(serializeDialogState({
-          name: collab.name,
-          logoUrl: collab.logo_url || '',
-          bannerUrl: collab.banner_url || '',
-          description: collab.description || '',
-          location: collab.location || '',
-          mapUrl: collab.map_url || '',
-          isActive: collab.is_active ?? true,
-          display_order: collab.display_order ?? 0,
-        }, imgs.map((img, i) => ({
-          id: img.id,
-          image_url: img.image_url,
-          folder_id: img.folder_id ?? null,
-          display_order: img.display_order ?? i,
-          media_type: (img as { media_type?: string }).media_type === 'video' ? 'video' : 'image',
-          caption: (img as { caption?: string | null }).caption ?? null,
-        })), folders.map(f => ({
-          id: f.id,
-          collaboration_id: f.collaboration_id,
-          parent_id: f.parent_id,
-          name: f.name,
-          display_order: f.display_order,
-          is_enabled: f.is_enabled ?? false,
-        }))));
-      } catch {
-        setVenueImages([]);
-        setGalleryImages([]);
-        setGalleryFolders([]);
-        setInitialDialogState(serializeDialogState({
-          name: collab.name,
-          logoUrl: collab.logo_url || '',
-          bannerUrl: collab.banner_url || '',
-          description: collab.description || '',
-          location: collab.location || '',
-          mapUrl: collab.map_url || '',
-          isActive: collab.is_active ?? true,
-          display_order: collab.display_order ?? 0,
-        }, [], []));
-      }
-    } else {
-      setEditingCollab(null);
-      setFormData({
-        name: '',
-        logoUrl: '',
-        bannerUrl: '',
-        description: '',
-        location: '',
-        mapUrl: '',
-        isActive: true,
-        display_order: nextOrder,
-      });
-      setVenueImages([]);
-      setGalleryImages([]);
-      setGalleryFolders([]);
-      setInitialDialogState(serializeDialogState({
-        name: '',
-        logoUrl: '',
-        bannerUrl: '',
-        description: '',
-        location: '',
-        mapUrl: '',
-        isActive: true,
-        display_order: nextOrder,
-      }, [], []));
-    }
-    setSelectedRootFolderId(null);
-    setSelectedSubfolderId(null);
-    setNewRootFolderName('');
-    setNewSubfolderName('');
-    setVenueYoutubeInput('');
-    setVenueYoutubeTitle('');
-    setIsDirty(false);
-    setIsDialogOpen(true);
-  };
-
-  useEffect(() => {
-    if (!isDialogOpen || !initialDialogState) return;
-    setIsDirty(serializeDialogState(formData, galleryImages, galleryFolders) !== initialDialogState);
-  }, [formData, galleryImages, galleryFolders, isDialogOpen, initialDialogState]);
-
-  const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast.error('Partner name is required');
-      return;
-    }
-    setSaving(true);
-    try {
-      const base = {
-        name: formData.name.trim(),
-        logo_url: formData.logoUrl.trim() || null,
-        banner_url: formData.bannerUrl.trim() || null,
-        description: formData.description.trim() || null,
-        location: formData.location.trim() || null,
-        map_url: formData.mapUrl.trim() || null,
-        is_active: formData.isActive,
-        display_order: formData.display_order,
-      };
-
-      if (editingCollab) {
-        const updated = await updateCollaboration(editingCollab.id, base);
-        setCollaborations(prev => prev.map(c => (c.id === updated.id ? updated : c)));
-
-        const collabId = editingCollab.id;
-
-        for (const folder of galleryFolders) {
-          await updateCollaborationFolder(folder.id, {
-            name: folder.name,
-            display_order: folder.display_order,
-            is_enabled: folder.is_enabled,
-          });
-        }
-
-        const validFolderIds = new Set(galleryFolders.map(f => f.id));
-        const resolveFolderId = (id: string | null): string | null => {
-          if (!id) return null;
-          return validFolderIds.has(id) ? id : null;
-        };
-        const existingImages = await getCollaborationImages(collabId);
-        const existingIds = new Set(existingImages.map(i => i.id));
-        const currentImageIds = new Set(galleryImages.filter(i => i.id).map(i => i.id));
-
-        for (const img of galleryImages) {
-          const folderId = resolveFolderId(img.folder_id);
-          if (img.id && existingIds.has(img.id)) {
-            const existing = existingImages.find(e => e.id === img.id);
-            const updates: Parameters<typeof updateCollaborationImage>[1] = {};
-            if (existing?.folder_id !== folderId) updates.folder_id = folderId;
-            if (existing && (existing.image_url !== img.image_url || existing.media_type !== img.media_type)) {
-              updates.image_url = img.image_url;
-              updates.media_type = img.media_type;
-            }
-            if (existing && (existing.caption ?? '') !== (img.caption ?? '')) {
-              updates.caption = img.caption ?? null;
-            }
-            if (Object.keys(updates).length > 0) {
-              await updateCollaborationImage(img.id!, updates);
-            }
-          } else if (!img.id) {
-            await createCollaborationImage({
-              collaboration_id: collabId,
-              image_url: img.image_url,
-              caption: img.caption ?? null,
-              display_order: img.display_order,
-              folder_id: folderId,
-              media_type: img.media_type ?? 'image',
-            });
-          }
-        }
-        for (const e of existingImages) {
-          if (!currentImageIds.has(e.id)) await deleteCollaborationImage(e.id);
-        }
-
-        toast.success('Collaboration updated. Folders and images will appear on the public collaboration page.');
-      } else {
-        const created = await createCollaboration(base);
-        for (let i = 0; i < venueImages.length; i++) {
-          await createCollaborationImage({
-            collaboration_id: created.id,
-            image_url: venueImages[i],
-            caption: null,
-            display_order: i,
-            folder_id: null,
-            media_type: 'image',
-          });
-        }
-        setCollaborations(prev => [created, ...prev]);
-        toast.success('Collaboration created');
-      }
-      setIsDirty(false);
-      setIsDialogOpen(false);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : typeof (err as { message?: string })?.message === 'string' ? (err as { message: string }).message : String(err);
-      toast.error('Save failed', { description: message, duration: 8000 });
-      console.error('Collaboration save error:', err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this collaboration?')) return;
-    try {
-      await deleteCollaboration(id);
-      setCollaborations(prev => prev.filter(c => c.id !== id));
-      toast.success('Collaboration deleted');
-      if (editingCollab?.id === id) setIsDialogOpen(false);
-    } catch (err: unknown) {
-      toast.error('Failed to delete', { description: (err as Error)?.message });
-    }
-  };
-
-  const handleToggleActive = async (c: Collaboration) => {
+  const handleToggleActive = async (c: Collaboration, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       const updated = await updateCollaboration(c.id, { is_active: !c.is_active });
-      setCollaborations(prev => prev.map(x => (x.id === updated.id ? updated : x)));
-      toast.success(updated.is_active ? 'Marked active' : 'Marked inactive');
+      setCollaborations((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      toast.success(updated.is_active ? 'Visible on website' : 'Hidden from website');
     } catch (err: unknown) {
       toast.error('Failed to update', { description: (err as Error)?.message });
     }
   };
 
-  const toggleFolderEnabled = (id: string) => {
-    setGalleryFolders(prev => prev.map(f => f.id === id ? { ...f, is_enabled: !f.is_enabled } : f));
-  };
-
-  const handleSeedFolders = async () => {
-    if (!editingCollab) return;
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!confirm('Delete this venue?')) return;
     try {
-      await seedCollaborationFolders(editingCollab.id);
-      const folders = await getCollaborationFolders(editingCollab.id);
-      setGalleryFolders(folders.map(f => ({
-        id: f.id,
-        collaboration_id: f.collaboration_id,
-        parent_id: f.parent_id,
-        name: f.name,
-        display_order: f.display_order,
-        is_enabled: f.is_enabled ?? false,
-      })));
-      toast.success('Standard folders created. Enable the ones you need and add images, then Save.');
+      await deleteCollaboration(id);
+      setCollaborations((prev) => prev.filter((c) => c.id !== id));
+      toast.success('Venue deleted');
     } catch (err: unknown) {
-      toast.error('Failed to create folders', { description: (err as Error)?.message });
+      toast.error('Failed to delete', { description: (err as Error)?.message });
     }
   };
 
-  const getImagesForFolder = (folderId: string | null) =>
-    galleryImages
-      .filter((img) => (img.folder_id ?? null) === folderId && img.media_type !== 'video')
-      .map((img) => img.image_url);
-
-  const setImagesForFolder = (folderId: string | null, urls: string[]) => {
-    setGalleryImages((prev) => {
-      const others = prev.filter((img) => (img.folder_id ?? null) !== folderId);
-      const existingInFolder = prev.filter((img) => (img.folder_id ?? null) === folderId);
-      const videosInFolder = existingInFolder.filter((img) => img.media_type === 'video');
-      const merged = urls.map((url, i) => {
-        const found = existingInFolder.find((e) => e.image_url === url && e.media_type === 'image');
-        return found
-          ? { ...found, display_order: i }
-          : { image_url: url, folder_id: folderId, display_order: i, media_type: 'image' as const, caption: null };
-      });
-      const base = merged.length;
-      const videosAdjusted = videosInFolder.map((v, i) => ({
-        ...v,
-        folder_id: folderId,
-        display_order: base + i,
-      }));
-      return [...others, ...merged, ...videosAdjusted];
-    });
+  const openEdit = (c: Collaboration) => {
+    navigate(`/admin/collaborations/${c.id}/edit`);
   };
-
-  const getYoutubeVideosForFolder = (folderId: string | null) =>
-    galleryImages.filter((img) => (img.folder_id ?? null) === folderId && img.media_type === 'video');
-
-  const removeGalleryVideo = (folderId: string | null, imageUrl: string) => {
-    setGalleryImages((prev) => prev.filter((img) => !((img.folder_id ?? null) === folderId && img.media_type === 'video' && img.image_url === imageUrl)));
-  };
-
-  const handleAddVenueYoutubeVideo = () => {
-    const raw = venueYoutubeInput.trim();
-    if (!raw) {
-      toast.error('Enter a YouTube URL or video ID.');
-      return;
-    }
-    const id = getYouTubeId(raw);
-    if (!/^[a-zA-Z0-9_-]{11}$/.test(id)) {
-      toast.error('Enter a valid YouTube URL or 11-character video ID.');
-      return;
-    }
-    const folderId = selectedSubfolderId || selectedRootFolderId;
-    const inFolder = galleryImages.filter((img) => (img.folder_id ?? null) === (folderId ?? null));
-    const nextOrder =
-      inFolder.length > 0 ? Math.max(...inFolder.map((img) => img.display_order ?? 0)) + 1 : 0;
-    setGalleryImages((prev) => [
-      ...prev,
-      {
-        image_url: id,
-        folder_id: folderId ?? null,
-        display_order: nextOrder,
-        media_type: 'video',
-        caption: venueYoutubeTitle.trim() || null,
-      },
-    ]);
-    setVenueYoutubeInput('');
-    setVenueYoutubeTitle('');
-    toast.success('Video added (save venue to publish).');
-  };
-
-  const handleCreateRootFolder = async () => {
-    if (!editingCollab) return;
-    const name = newRootFolderName.trim();
-    if (!name) {
-      toast.error('Folder name is required');
-      return;
-    }
-
-    setCreatingFolder(true);
-    try {
-      const root = galleryFolders.filter(f => !f.parent_id);
-      const nextOrder = root.length > 0 ? Math.max(...root.map(f => f.display_order ?? 0)) + 1 : 0;
-
-      const created = await createCollaborationFolder({
-        collaboration_id: editingCollab.id,
-        parent_id: null,
-        name,
-        display_order: nextOrder,
-        is_enabled: true,
-      });
-
-      const folders = await getCollaborationFolders(editingCollab.id);
-      setGalleryFolders(
-        folders.map(f => ({
-          id: f.id,
-          collaboration_id: f.collaboration_id,
-          parent_id: f.parent_id,
-          name: f.name,
-          display_order: f.display_order,
-          is_enabled: f.is_enabled ?? false,
-        }))
-      );
-      setSelectedRootFolderId(created.id);
-      toast.success('Folder created.');
-    } catch (err: unknown) {
-      toast.error('Failed to create folder', { description: (err as Error)?.message });
-    } finally {
-      setCreatingFolder(false);
-      setNewRootFolderName('');
-    }
-  };
-
-  const handleCreateSubfolder = async () => {
-    if (!editingCollab) return;
-    if (!selectedRootFolderId) {
-      toast.error('Please select a parent folder first.');
-      return;
-    }
-    const name = newSubfolderName.trim();
-    if (!name) {
-      toast.error('Subfolder name is required');
-      return;
-    }
-    setCreatingFolder(true);
-    try {
-      const existingChildren = galleryFolders.filter(f => f.parent_id === selectedRootFolderId);
-      const nextOrder = existingChildren.length > 0 ? Math.max(...existingChildren.map(f => f.display_order ?? 0)) + 1 : 0;
-      const created = await createCollaborationFolder({
-        collaboration_id: editingCollab.id,
-        parent_id: selectedRootFolderId,
-        name,
-        display_order: nextOrder,
-        is_enabled: true,
-      });
-      setGalleryFolders((prev) => [...prev, created]);
-      setSelectedSubfolderId(created.id);
-      toast.success('Subfolder created.');
-    } catch (err: unknown) {
-      toast.error('Failed to create subfolder', { description: (err as Error)?.message });
-    } finally {
-      setCreatingFolder(false);
-      setNewSubfolderName('');
-    }
-  };
-
-  const handleDeleteFolder = async () => {
-    if (!editingCollab) return;
-    const targetFolderId = selectedSubfolderId || selectedRootFolderId;
-    if (!targetFolderId) {
-      toast.error('Select a folder/subfolder to delete.');
-      return;
-    }
-    if (!confirm('Delete this folder? Images will be moved to unassigned.')) return;
-    try {
-      const children = galleryFolders.filter(f => f.parent_id === targetFolderId).map(f => f.id);
-      const affectedFolderIds = [targetFolderId, ...children];
-
-      // Move images from deleted folders to "no folder"
-      for (const img of galleryImages) {
-        if (img.id && img.folder_id && affectedFolderIds.includes(img.folder_id)) {
-          await updateCollaborationImage(img.id, { folder_id: null });
-        }
-      }
-
-      // Delete child folders first, then parent
-      for (const childId of children) {
-        await deleteCollaborationFolder(childId);
-      }
-      await deleteCollaborationFolder(targetFolderId);
-
-      setGalleryFolders((prev) => prev.filter(f => !affectedFolderIds.includes(f.id)));
-      setGalleryImages((prev) =>
-        prev.map((img) => (img.folder_id && affectedFolderIds.includes(img.folder_id) ? { ...img, folder_id: null } : img))
-      );
-      setSelectedSubfolderId(null);
-      setSelectedRootFolderId(null);
-      toast.success('Folder deleted.');
-    } catch (err: unknown) {
-      toast.error('Failed to delete folder', { description: (err as Error)?.message });
-    }
-  };
-
-  const rootFolders = galleryFolders.filter(f => !f.parent_id).sort((a, b) => a.display_order - b.display_order);
-  const getChildFolders = (parentId: string) =>
-    galleryFolders.filter(f => f.parent_id === parentId).sort((a, b) => a.display_order - b.display_order);
-  const selectedUploadFolderId = selectedSubfolderId || selectedRootFolderId;
-  const selectedUploadFolderName = selectedUploadFolderId
-    ? galleryFolders.find((f) => f.id === selectedUploadFolderId)?.name || 'Selected folder'
-    : 'No folder (uncategorized)';
 
   const renderVenueCard = (c: Collaboration) => (
     <Card
-      className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col max-md:flex-row max-md:items-start max-md:gap-3 max-md:cursor-pointer"
-      onClick={() => {
-        if (window.innerWidth < 768) handleOpenDialog(c);
-      }}
+      className="flex h-full cursor-pointer flex-col overflow-hidden transition-shadow hover:shadow-lg"
+      onClick={() => openEdit(c)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          if (window.innerWidth < 768) handleOpenDialog(c);
+          e.preventDefault();
+          openEdit(c);
         }
       }}
     >
-      <div className="p-3 md:p-6 flex-1">
-        <div className="flex items-start justify-between mb-2 md:mb-4">
-          <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-muted shrink-0">
+      <div className="flex flex-1 p-4 md:p-6">
+        <div className="flex w-full items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-muted md:h-12 md:w-12">
               {c.logo_url ? (
-                <img
-                  src={resolveLogoUrl(c.logo_url)!}
-                  alt={c.name}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
+                <img src={resolveLogoUrl(c.logo_url)!} alt={c.name} className="h-full w-full object-cover" loading="lazy" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-xs md:text-sm">
+                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-muted-foreground">
                   {c.name.charAt(0)}
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <h3 className="font-serif font-bold text-base md:text-base truncate">{c.name}</h3>
-              <div className="flex items-center gap-1 text-xs md:text-xs text-muted-foreground truncate">
-                <MapPin className="w-3 h-3 shrink-0" />
+              <h3 className="truncate font-serif text-base font-bold">{c.name}</h3>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="h-3 w-3 shrink-0" />
                 <span className="truncate">{c.location || '—'}</span>
               </div>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:mr-0"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleOpenDialog(c)}>
-                <Edit className="w-4 h-4 mr-2" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-destructive">
-                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              <DropdownMenuItem onClick={() => openEdit(c)}>Edit venue</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onClick={(e) => void handleDelete(c.id, e as unknown as React.MouseEvent)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 hidden md:block">{c.description || '—'}</p>
-        <div className="flex items-center justify-between gap-2 mt-2 md:mt-0">
-          <span className="text-xs md:text-xs text-muted-foreground">Order: {c.display_order ?? 0}</span>
-          <span
-            className={`inline-flex items-center rounded-md px-1.5 py-0.5 md:px-2 md:py-1 text-xs md:text-xs font-medium ring-1 ring-inset ${
-              c.is_active
-                ? 'bg-primary/10 text-primary ring-primary/20'
-                : 'bg-muted text-muted-foreground ring-border'
-            }`}
-          >
-            {c.is_active ? 'Active' : 'Inactive'}
-          </span>
-        </div>
       </div>
-      <div className="px-3 py-2 md:px-6 md:py-3 bg-muted/50 border-t flex items-center justify-between">
-        <span className="text-xs md:text-xs text-muted-foreground">Status</span>
-        <Switch
-          checked={c.is_active}
-          onCheckedChange={() => handleToggleActive(c)}
-          onClick={(e) => e.stopPropagation()}
-          className="h-6 w-11"
-        />
+      <div className="flex items-center justify-between border-t bg-muted/40 px-4 py-2.5 md:px-6">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {c.is_active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5" />}
+          {c.is_active ? 'Visible' : 'Hidden'}
+        </span>
+        <Switch checked={c.is_active} onCheckedChange={() => void handleToggleActive(c)} onClick={(e) => e.stopPropagation()} />
       </div>
     </Card>
   );
 
   return (
-    <AdminLayout title="Venues" subtitle="Manage venue partners and their gallery folders">
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+    <AdminLayout title="Venues" subtitle="Manage venue partners and gallery folders">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search venues..."
             value={searchQuery}
-            onChange={e => {
+            onChange={(e) => {
               const v = e.target.value;
               setSearchQuery(v);
               updateQueryParams({ q: v, page: 1 });
@@ -736,58 +213,46 @@ export default function AdminCollaborations() {
             className="pl-10 max-md:h-11"
           />
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2 max-md:h-11">
-          <Plus className="w-4 h-4" />
-          Add Venue
+        <Button className="gap-2 max-md:h-11" asChild>
+          <Link to="/admin/collaborations/new/edit">
+            <Plus className="h-4 w-4" />
+            Add Venue
+          </Link>
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-2">
+        <div className="grid grid-cols-1 gap-4 py-2 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={`collab-skeleton-${i}`} className="rounded-xl p-4 animate-pulse bg-[hsl(var(--admin-surface-2))]">
-              <div className="h-4 rounded w-3/4 mb-3 bg-[hsl(var(--admin-border))]" />
-              <div className="h-3 rounded w-1/2 bg-[hsl(var(--admin-border))]" />
-            </Card>
+            <Card key={`sk-${i}`} className="h-32 animate-pulse rounded-xl bg-muted/40" />
           ))}
         </div>
+      ) : collaborations.length === 0 ? (
+        <div className="py-16 text-center text-muted-foreground">No venues found.</div>
       ) : (
         <>
-          {collaborations.length >= 2 && (
-            <p className="text-xs text-muted-foreground mb-2">
-              {showReorder
-                ? 'Drag the grip on a card to reorder. Changes apply on the site immediately.'
-                : 'Clear search to drag and reorder cards.'}
-            </p>
-          )}
+          {collaborations.length >= 2 && showReorder ? (
+            <p className="mb-2 text-xs text-muted-foreground">Drag the grip to reorder venues on the website.</p>
+          ) : null}
           {showReorder ? (
             <AdminSortableGrid
               itemIds={listForCards.map((c) => c.id)}
               disabled={isReordering}
               onReorder={persistCollaborationOrder}
-              className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1"
+              className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
             >
               {listForCards.map((c, i) => (
                 <AdminSortableItem key={c.id} id={c.id} disabled={isReordering}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                  >
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                     {renderVenueCard(c)}
                   </motion.div>
                 </AdminSortableItem>
               ))}
             </AdminSortableGrid>
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 md:gap-6 max-md:grid-cols-1">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {listForCards.map((c, i) => (
-                <motion.div
-                  key={c.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
+                <motion.div key={c.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                   {renderVenueCard(c)}
                 </motion.div>
               ))}
@@ -796,343 +261,19 @@ export default function AdminCollaborations() {
         </>
       )}
 
-      {!isLoading && collaborations.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">No venues found.</div>
-      )}
-
       {!isLoading && totalPages > 1 && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          <Button variant="outline" onClick={() => updateQueryParams({ page: currentPage - 1 })} disabled={currentPage <= 1}>
+          <Button variant="outline" disabled={currentPage <= 1} onClick={() => updateQueryParams({ page: currentPage - 1 })}>
             Previous
           </Button>
-          {Array.from({ length: totalPages }).slice(0, 7).map((_, idx) => {
-            const page = idx + 1;
-            return (
-              <Button
-                key={`collab-page-${page}`}
-                variant={page === currentPage ? 'default' : 'outline'}
-                onClick={() => updateQueryParams({ page })}
-              >
-                {page}
-              </Button>
-            );
-          })}
-          <Button variant="outline" onClick={() => updateQueryParams({ page: currentPage + 1 })} disabled={currentPage >= totalPages}>
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button variant="outline" disabled={currentPage >= totalPages} onClick={() => updateQueryParams({ page: currentPage + 1 })}>
             Next
           </Button>
         </div>
       )}
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingCollab ? 'Edit Venue' : 'Add New Venue'}</DialogTitle>
-            <DialogDescription>
-              {editingCollab ? 'Update venue details and gallery folders.' : 'Add a new venue partner. It will be saved to the database.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 mt-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Venue Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Grand Hyatt, Taj Hotels"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Partner Logo</Label>
-              <ImageUpload
-                value={formData.logoUrl}
-                onChange={v => setFormData({ ...formData, logoUrl: (v as string) || '' })}
-                multiple={false}
-                previewClassName="object-contain"
-                bucket="partner-logos"
-                uploadOnSelect={true}
-                enableCropAdjust={true}
-                cropAspect={1}
-              />
-              <p className="text-xs text-muted-foreground">Or paste image URL:</p>
-              <Input
-                value={formData.logoUrl}
-                onChange={e => setFormData({ ...formData, logoUrl: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Partner Banner</Label>
-              <ImageUpload
-                value={formData.bannerUrl}
-                onChange={v => setFormData({ ...formData, bannerUrl: (v as string) || '' })}
-                multiple={false}
-                previewClassName="object-cover"
-                bucket="gallery-images"
-                uploadOnSelect={true}
-                enableCropAdjust={true}
-                cropAspect={16 / 9}
-              />
-              <p className="text-xs text-muted-foreground">Hero/banner image for the venue page. Or paste URL:</p>
-              <Input
-                value={formData.bannerUrl}
-                onChange={e => setFormData({ ...formData, bannerUrl: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe the venue/partner..."
-                rows={4}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={e => setFormData({ ...formData, location: e.target.value })}
-                placeholder="e.g., Mumbai, Maharashtra"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="mapUrl">Google Maps URL</Label>
-              <Input
-                id="mapUrl"
-                value={formData.mapUrl}
-                onChange={e => setFormData({ ...formData, mapUrl: e.target.value })}
-                placeholder="https://maps.google.com/..."
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="display_order">Display Order</Label>
-              <Input
-                id="display_order"
-                type="number"
-                min={0}
-                value={formData.display_order}
-                onChange={e => setFormData({ ...formData, display_order: parseInt(e.target.value, 10) || 0 })}
-                placeholder="0"
-              />
-              <p className="text-xs text-muted-foreground">
-                Auto-filled as next (e.g. 0→1, 1→2) when adding. Lower numbers appear first. You can change it.
-              </p>
-            </div>
-            {!editingCollab && (
-              <div className="grid gap-2">
-                <Label>Venue Images</Label>
-                <ImageUpload
-                  value={venueImages}
-                  onChange={v => setVenueImages((v as string[]) || [])}
-                  multiple
-                  maxFiles={20}
-                  previewClassName="object-cover"
-                  bucket="gallery-images"
-                  uploadOnSelect={true}
-                />
-              </div>
-            )}
-            {editingCollab && (
-              <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <Label className="text-base font-semibold">Gallery</Label>
-                  {rootFolders.length === 0 ? (
-                    <Button type="button" variant="outline" size="sm" onClick={handleSeedFolders} className="gap-1">
-                      <FolderPlus className="w-4 h-4" />
-                      Create standard folders
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Select folder and subfolder from dropdowns, then upload images.</span>
-                  )}
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-3 rounded-lg border bg-card p-3">
-                    <Label className="text-sm">Folder</Label>
-                    <Select
-                      value={selectedRootFolderId ?? '__none__'}
-                      onValueChange={(v) => setSelectedRootFolderId(v === '__none__' ? null : v)}
-                    >
-                      <SelectTrigger className="max-md:h-11">
-                        <SelectValue placeholder="Select folder" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">No folder (uncategorized)</SelectItem>
-                        {rootFolders.map((f) => (
-                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Label className="text-sm">Subfolder</Label>
-                    <Select
-                      value={selectedSubfolderId ?? '__none__'}
-                      onValueChange={(v) => setSelectedSubfolderId(v === '__none__' ? null : v)}
-                    >
-                      <SelectTrigger className="max-md:h-11">
-                        <SelectValue placeholder="Select subfolder (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">No subfolder</SelectItem>
-                        {selectedRootFolderId &&
-                          getChildFolders(selectedRootFolderId).map((sub) => (
-                            <SelectItem key={sub.id} value={sub.id}>{sub.name}</SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-
-                    {selectedRootFolderId && (
-                      <div className="flex items-center justify-between rounded-md border p-2">
-                        <span className="text-xs text-muted-foreground">Show selected folder on site</span>
-                        <Switch
-                          checked={galleryFolders.find((f) => f.id === (selectedSubfolderId || selectedRootFolderId))?.is_enabled ?? false}
-                          onCheckedChange={() => toggleFolderEnabled(selectedSubfolderId || selectedRootFolderId)}
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-2 border-t pt-2">
-                      <Label className="text-xs text-muted-foreground">Create new folder</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={newRootFolderName}
-                          onChange={(e) => setNewRootFolderName(e.target.value)}
-                          placeholder="e.g., Wedding"
-                          className="max-md:h-11"
-                        />
-                        <Button type="button" variant="outline" onClick={handleCreateRootFolder} disabled={creatingFolder} className="max-md:h-11">
-                          <FolderPlus className="w-4 h-4 mr-1" /> Add
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Create subfolder</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={newSubfolderName}
-                          onChange={(e) => setNewSubfolderName(e.target.value)}
-                          placeholder="e.g., Ceremony"
-                          className="max-md:h-11"
-                        />
-                        <Button type="button" variant="outline" onClick={handleCreateSubfolder} disabled={creatingFolder || !selectedRootFolderId} className="max-md:h-11">
-                          <FolderOpen className="w-4 h-4 mr-1" /> Add
-                        </Button>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={handleDeleteFolder}
-                      disabled={!selectedRootFolderId && !selectedSubfolderId}
-                      className="w-full max-md:h-11"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete selected folder/subfolder
-                    </Button>
-                  </div>
-
-                  <div className="rounded-lg border bg-card p-4 min-h-[200px]">
-                    <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                      <FolderOpen className="w-4 h-4" />
-                      Uploading to: {selectedUploadFolderName}
-                    </p>
-                    <ImageUpload
-                      value={getImagesForFolder(selectedUploadFolderId)}
-                      onChange={(v) => setImagesForFolder(selectedUploadFolderId, (v as string[]) || [])}
-                      multiple
-                      maxFiles={20}
-                      previewClassName="object-cover"
-                      bucket="gallery-images"
-                      enableBulkDelete={true}
-                      uploadOnSelect={true}
-                    />
-                    <div className="mt-4 space-y-3 border-t pt-3">
-                      <Label className="text-sm font-medium inline-flex items-center gap-2">
-                        <Video className="w-4 h-4" />
-                        Add video (YouTube)
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Paste a full YouTube link or the 11-character video ID. Playback is embedded from YouTube (nothing stored on our servers). Videos appear after photos in this folder.
-                      </p>
-                      <Input
-                        value={venueYoutubeInput}
-                        onChange={(e) => setVenueYoutubeInput(e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=… or video ID"
-                        className="max-md:h-11"
-                      />
-                      <Input
-                        value={venueYoutubeTitle}
-                        onChange={(e) => setVenueYoutubeTitle(e.target.value)}
-                        placeholder="Title (optional)"
-                        className="max-md:h-11"
-                      />
-                      <Button type="button" variant="secondary" onClick={handleAddVenueYoutubeVideo} className="max-md:h-11">
-                        Add video to folder
-                      </Button>
-                      {getYoutubeVideosForFolder(selectedUploadFolderId).length > 0 && (
-                        <ul className="space-y-2">
-                          {getYoutubeVideosForFolder(selectedUploadFolderId).map((v) => (
-                            <li
-                              key={`${v.image_url}-${v.display_order}`}
-                              className="flex items-center gap-3 rounded-md border bg-background p-2"
-                            >
-                              <img
-                                src={getYouTubeThumbnail(v.image_url)}
-                                alt=""
-                                className="h-14 w-24 shrink-0 rounded object-cover bg-muted"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                              <div className="min-w-0 flex-1 text-xs">
-                                <p className="font-medium truncate">{v.caption || v.image_url}</p>
-                                <p className="text-muted-foreground truncate">YouTube · {v.image_url}</p>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="shrink-0 text-destructive"
-                                onClick={() => removeGalleryVideo(selectedUploadFolderId, v.image_url)}
-                              >
-                                Remove
-                              </Button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <Label htmlFor="isActive">Active (visible on website)</Label>
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={v => setFormData({ ...formData, isActive: v })}
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="mt-6 max-md:flex-col max-md:items-stretch max-md:gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="max-md:h-11">Cancel</Button>
-            {isDirty && (
-              <span className="text-xs text-amber-500 flex items-center gap-1 max-md:justify-center">
-                ● Unsaved changes
-              </span>
-            )}
-            <Button onClick={handleSave} disabled={saving} className="max-md:h-11">
-              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving... </> : (editingCollab ? 'Save Changes' : 'Create Venue')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AdminLayout>
   );
 }
