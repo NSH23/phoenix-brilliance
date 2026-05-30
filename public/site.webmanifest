@@ -1,6 +1,10 @@
 {
+  "id": "/",
   "name": "Phoenix Events & Production",
   "short_name": "Phoenix Events",
+  "description": "Premium event planning and production services in Pune, Maharashtra",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

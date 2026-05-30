@@ -13,6 +13,7 @@ import GlobalBackground from "@/components/GlobalBackground";
 import LeadCaptureModal from "@/components/LeadCaptureModal";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 import AdminThemeSync from "./components/admin/AdminThemeSync";
+import AdminPwaManager from "./components/admin/AdminPwaManager";
 
 // Lazy load all route components for code splitting
 /** Preserve ?open= and other query params when redirecting legacy /admin/inquiries links (e.g. push notifications). */
@@ -338,6 +339,7 @@ const App = () => (
           <BrowserRouter>
             <LeadCaptureProvider>
               <AdminThemeSync />
+              <AdminPwaManager />
               <ScrollToTop />
               <GlobalBackground />
               <div className="global-grain-overlay" aria-hidden />
