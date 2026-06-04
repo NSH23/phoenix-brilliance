@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Eye, EyeOff, Star } from 'lucide-react';
 import AdminRecordEditShell from '@/components/admin/AdminRecordEditShell';
@@ -10,7 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { adminPanelClass } from '@/components/admin/adminStyles';
+import {
+  adminPanelClass,
+  adminRecordEditFormStackClass,
+  adminRecordEditLayoutClass,
+  adminRecordEditPreviewAsideClass,
+} from '@/components/admin/adminStyles';
 import {
   Select,
   SelectContent,
@@ -28,8 +33,7 @@ import {
   deleteAlbum,
   deleteAlbumFolder,
   deleteAlbumMedia,
-  getAlbumMedia,
-  getAlbumWithMedia,
+  getAlbumForAdminEdit,
   updateAlbum,
   updateAlbumFolder,
   updateAlbumMedia,
@@ -39,6 +43,9 @@ import { GALLERY_ROOT_ID, type ExplorerFolder, type ExplorerMediaItem } from '@/
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { cn } from '@/lib/utils';
+import type { MediaAutosaveSnapshot } from '@/components/admin/AdminMediaExplorer';
+
+const GALLERY_AUTOSAVE_KEY = 'admin-album-gallery-autosave';
 
 type GalleryMediaRow = ExplorerMediaItem & { id?: string };
 
@@ -86,16 +93,35 @@ export default function AlbumEditPage() {
   const [galleryFolders, setGalleryFolders] = useState<ExplorerFolder[]>([]);
   const [galleryMedia, setGalleryMedia] = useState<GalleryMediaRow[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(GALLERY_ROOT_ID);
+  const selectedFolderIdRef = useRef<string | null>(GALLERY_ROOT_ID);
+  const [autosaveGallery, setAutosaveGallery] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem(GALLERY_AUTOSAVE_KEY) !== 'false'
+  );
+  const galleryAutosavingRef = useRef(false);
+  const galleryDbSnapshotRef = useRef<
+    Array<{
+      id: string;
+      folder_id: string | null;
+      url: string | null;
+      youtube_url: string | null;
+      type: string;
+      caption: string | null;
+    }>
+  >([]);
 
   useEffect(() => {
     void getAllEvents().then(setEvents).catch(() => setEvents([]));
   }, []);
 
+  useEffect(() => {
+    selectedFolderIdRef.current = selectedFolderId;
+  }, [selectedFolderId]);
+
   const loadAlbum = useCallback(
-    async (albumId: string) => {
-      setLoading(true);
+    async (albumId: string, options?: { preserveFolderSelection?: boolean; quiet?: boolean }) => {
+      if (!options?.quiet) setLoading(true);
       try {
-        const full = await getAlbumWithMedia(albumId);
+        const full = await getAlbumForAdminEdit(albumId);
         setEditingAlbum(full);
         setFormData({
           title: full.title,
@@ -108,15 +134,26 @@ export default function AlbumEditPage() {
         });
         const folders = (full as { album_folders?: AlbumFolder[] }).album_folders || [];
         const media = full.album_media || [];
-        setGalleryMedia(mapMedia(media));
+        const mapped = mapMedia(media);
+        setGalleryMedia(mapped);
         setGalleryFolders(mapFolders(folders));
-        setSelectedFolderId(GALLERY_ROOT_ID);
+        galleryDbSnapshotRef.current = (full.album_media || []).map((m) => ({
+          id: m.id,
+          folder_id: m.folder_id,
+          url: m.url,
+          youtube_url: m.youtube_url,
+          type: m.type,
+          caption: m.caption,
+        }));
+        setSelectedFolderId(
+          options?.preserveFolderSelection ? selectedFolderIdRef.current ?? GALLERY_ROOT_ID : GALLERY_ROOT_ID
+        );
       } catch (err) {
         logger.error('Failed to load album', err, { component: 'AlbumEditPage' });
         toast.error('Failed to load album');
         navigate('/admin/albums');
       } finally {
-        setLoading(false);
+        if (!options?.quiet) setLoading(false);
       }
     },
     [navigate]
@@ -129,6 +166,122 @@ export default function AlbumEditPage() {
     }
     if (id) void loadAlbum(id);
   }, [id, isNew, loadAlbum]);
+
+  const persistGallery = useCallback(
+    async (opts?: { silent?: boolean; snapshot?: MediaAutosaveSnapshot }) => {
+      if (!editingAlbum || galleryAutosavingRef.current) return;
+      galleryAutosavingRef.current = true;
+
+      const mediaToSave = opts?.snapshot?.media ?? galleryMedia;
+      const foldersToSave = opts?.snapshot?.folders ?? galleryFolders;
+
+      try {
+        const albumId = editingAlbum.id;
+
+        for (const folder of foldersToSave) {
+          await updateAlbumFolder(folder.id, {
+            name: folder.name,
+            display_order: folder.display_order,
+            is_enabled: folder.is_enabled,
+            cover_image_url: folder.cover_image_url ?? null,
+          });
+        }
+
+        const validFolderIds = new Set(foldersToSave.map((f) => f.id));
+        const resolveFolderId = (fid: string | null): string | null => {
+          if (!fid) return null;
+          return validFolderIds.has(fid) ? fid : null;
+        };
+
+        const existingMedia = galleryDbSnapshotRef.current;
+        const existingIds = new Set(existingMedia.map((m) => m.id));
+        const currentIds = new Set(mediaToSave.filter((m) => m.id).map((m) => m.id!));
+
+        let resultMedia: GalleryMediaRow[] = mediaToSave.map((m) => ({ ...m }));
+
+        for (const item of mediaToSave) {
+          const folderId = resolveFolderId(item.folder_id);
+          const isVideo = item.media_type === 'video';
+          if (item.id && existingIds.has(item.id)) {
+            const existing = existingMedia.find((e) => e.id === item.id);
+            const updates: Parameters<typeof updateAlbumMedia>[1] = {};
+            if (existing?.folder_id !== folderId) updates.folder_id = folderId;
+            if (isVideo) {
+              if (existing?.youtube_url !== item.url) updates.youtube_url = item.url;
+            } else if (existing?.url !== item.url) {
+              updates.url = item.url;
+            }
+            if (existing && (existing.caption ?? '') !== (item.caption ?? '')) {
+              updates.caption = item.caption ?? null;
+            }
+            if (Object.keys(updates).length > 0) {
+              await updateAlbumMedia(item.id, updates);
+            }
+          } else if (!item.id) {
+            const created = await createAlbumMedia({
+              album_id: albumId,
+              type: isVideo ? 'video' : 'image',
+              url: isVideo ? null : item.url,
+              youtube_url: isVideo ? item.url : null,
+              caption: item.caption ?? null,
+              is_featured: false,
+              display_order: item.display_order,
+              folder_id: folderId,
+            });
+            resultMedia = resultMedia.map((m) =>
+              !m.id && m.url === item.url && (m.folder_id ?? null) === (item.folder_id ?? null)
+                ? { ...m, id: created.id }
+                : m
+            );
+          }
+        }
+        for (const e of existingMedia) {
+          if (!currentIds.has(e.id)) {
+            await deleteAlbumMedia(e.id);
+            resultMedia = resultMedia.filter((m) => m.id !== e.id);
+          }
+        }
+
+        setGalleryMedia(resultMedia);
+        setGalleryFolders(foldersToSave);
+        galleryDbSnapshotRef.current = resultMedia
+          .filter((row): row is GalleryMediaRow & { id: string } => !!row.id)
+          .map((row) => ({
+            id: row.id,
+            folder_id: row.folder_id,
+            url: row.media_type === 'video' ? null : row.url,
+            youtube_url: row.media_type === 'video' ? row.url : null,
+            type: row.media_type === 'video' ? 'video' : 'image',
+            caption: row.caption ?? null,
+          }));
+
+        if (!opts?.silent) {
+          toast.success('Gallery saved');
+        }
+      } catch (err: unknown) {
+        toast.error('Could not save gallery', {
+          description: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
+      } finally {
+        galleryAutosavingRef.current = false;
+      }
+    },
+    [editingAlbum, galleryFolders, galleryMedia]
+  );
+
+  const handleGalleryAutosave = useCallback(
+    (snapshot: MediaAutosaveSnapshot) => {
+      if (!autosaveGallery) return;
+      return persistGallery({ silent: true, snapshot });
+    },
+    [autosaveGallery, persistGallery]
+  );
+
+  const toggleAutosaveGallery = (enabled: boolean) => {
+    setAutosaveGallery(enabled);
+    localStorage.setItem(GALLERY_AUTOSAVE_KEY, enabled ? 'true' : 'false');
+  };
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
@@ -160,64 +313,8 @@ export default function AlbumEditPage() {
 
       if (!editingAlbum) return;
       await updateAlbum(editingAlbum.id, base);
-      const albumId = editingAlbum.id;
-
-      for (const folder of galleryFolders) {
-        await updateAlbumFolder(folder.id, {
-          name: folder.name,
-          display_order: folder.display_order,
-          is_enabled: folder.is_enabled,
-          cover_image_url: folder.cover_image_url ?? null,
-        });
-      }
-
-      const validFolderIds = new Set(galleryFolders.map((f) => f.id));
-      const resolveFolderId = (fid: string | null): string | null => {
-        if (!fid) return null;
-        return validFolderIds.has(fid) ? fid : null;
-      };
-
-      const existingMedia = await getAlbumMedia(albumId);
-      const existingIds = new Set(existingMedia.map((m) => m.id));
-      const currentIds = new Set(galleryMedia.filter((m) => m.id).map((m) => m.id!));
-
-      for (const item of galleryMedia) {
-        const folderId = resolveFolderId(item.folder_id);
-        const isVideo = item.media_type === 'video';
-        if (item.id && existingIds.has(item.id)) {
-          const existing = existingMedia.find((e) => e.id === item.id);
-          const updates: Parameters<typeof updateAlbumMedia>[1] = {};
-          if (existing?.folder_id !== folderId) updates.folder_id = folderId;
-          if (isVideo) {
-            if (existing?.youtube_url !== item.url) updates.youtube_url = item.url;
-          } else if (existing?.url !== item.url) {
-            updates.url = item.url;
-          }
-          if (existing && (existing.caption ?? '') !== (item.caption ?? '')) {
-            updates.caption = item.caption ?? null;
-          }
-          if (Object.keys(updates).length > 0) {
-            await updateAlbumMedia(item.id, updates);
-          }
-        } else if (!item.id) {
-          await createAlbumMedia({
-            album_id: albumId,
-            type: isVideo ? 'video' : 'image',
-            url: isVideo ? null : item.url,
-            youtube_url: isVideo ? item.url : null,
-            caption: item.caption ?? null,
-            is_featured: false,
-            display_order: item.display_order,
-            folder_id: folderId,
-          });
-        }
-      }
-      for (const e of existingMedia) {
-        if (!currentIds.has(e.id)) await deleteAlbumMedia(e.id);
-      }
-
+      await persistGallery();
       toast.success('Album saved');
-      void loadAlbum(albumId);
     } catch (err: unknown) {
       toast.error('Save failed', { description: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -283,7 +380,7 @@ export default function AlbumEditPage() {
   };
 
   const handleDeleteFolder = async (folderId: string) => {
-    if (!confirm('Delete this folder? Media inside will move to Uncategorized on save.')) return;
+    if (!confirm('Delete this folder? Media inside will appear as unassigned at gallery root until you move or delete it.')) return;
     try {
       await deleteAlbumFolder(folderId);
       const childIds = galleryFolders.filter((f) => f.parent_id === folderId).map((f) => f.id);
@@ -305,8 +402,8 @@ export default function AlbumEditPage() {
   const eventTitle = events.find((e) => e.id === formData.eventId)?.title;
 
   const detailsContent = (
-    <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-      <div className="space-y-5">
+    <div className={adminRecordEditLayoutClass}>
+      <div className={adminRecordEditFormStackClass}>
         <AdminFormSection
           title="Publishing"
           description="Control album visibility on the public gallery"
@@ -370,7 +467,7 @@ export default function AlbumEditPage() {
         </AdminFormSection>
       </div>
 
-      <aside className="lg:sticky lg:top-28 lg:self-start">
+      <aside className={adminRecordEditPreviewAsideClass}>
         <div className={cn(adminPanelClass, 'overflow-hidden')}>
           <div className="relative aspect-video bg-muted">
             {formData.coverImage ? <img src={formData.coverImage} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No cover</div>}
@@ -406,6 +503,17 @@ export default function AlbumEditPage() {
       gallery={
         !isNew ? (
           <div className="space-y-3">
+            <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 max-md:items-stretch sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Autosave gallery</p>
+                <p className="text-xs text-muted-foreground">
+                  {autosaveGallery
+                    ? 'Uploads are saved to the server automatically.'
+                    : 'Uploads stay here until you tap Save changes.'}
+                </p>
+              </div>
+              <Switch checked={autosaveGallery} onCheckedChange={toggleAutosaveGallery} aria-label="Autosave gallery" />
+            </div>
             <AdminMediaExplorer
               folders={galleryFolders}
               media={galleryMedia}
@@ -418,8 +526,14 @@ export default function AlbumEditPage() {
               onCreateSubfolder={handleCreateSubfolder}
               onDeleteFolder={handleDeleteFolder}
               creatingFolder={creatingFolder}
+              autosaveEnabled={autosaveGallery}
+              onAutosave={handleGalleryAutosave}
             />
-            <p className="text-xs text-muted-foreground">Save changes after uploading or editing folders.</p>
+            <p className="text-xs text-muted-foreground">
+              {autosaveGallery
+                ? 'Album title, cover, and other details still use Save changes.'
+                : 'Turn on autosave or use Save changes to store gallery uploads.'}
+            </p>
           </div>
         ) : undefined
       }

@@ -40,6 +40,34 @@ export interface SiteOverview {
   employees: number;
 }
 
+type AdminDashboardSummaryRow = {
+  eventsTotal: number;
+  eventsThisMonth: number;
+  albumsTotal: number;
+  albumsThisMonth: number;
+  galleryImagesTotal: number;
+  galleryImagesThisMonth: number;
+  inquiriesTotal: number;
+  inquiriesNew: number;
+  partnersTotal: number;
+  testimonialsTotal: number;
+  servicesTotal: number;
+  teamTotal: number;
+  teamActive: number;
+  teamThisMonth: number;
+};
+
+async function getAdminDashboardSummaryRpc(): Promise<AdminDashboardSummaryRow | null> {
+  const { data, error } = await supabase.rpc('get_admin_dashboard_summary');
+  if (error) {
+    if (error.code === 'PGRST202' || /function.*does not exist/i.test(error.message ?? '')) {
+      return null;
+    }
+    throw error;
+  }
+  return (data ?? null) as AdminDashboardSummaryRow | null;
+}
+
 async function getTableCount(table: string): Promise<number> {
   const { count, error } = await supabase
     .from(table)
@@ -65,6 +93,21 @@ export function relativeTime(dateStr: string): string {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
+  const summary = await getAdminDashboardSummaryRpc();
+  if (summary) {
+    return {
+      events: { total: summary.eventsTotal, thisMonth: summary.eventsThisMonth },
+      albums: { total: summary.albumsTotal, thisMonth: summary.albumsThisMonth },
+      galleryImages: { total: summary.galleryImagesTotal, thisMonth: summary.galleryImagesThisMonth },
+      inquiries: { total: summary.inquiriesTotal, new: summary.inquiriesNew },
+      team: {
+        total: summary.teamTotal,
+        active: summary.teamActive,
+        thisMonth: summary.teamThisMonth,
+      },
+    };
+  }
+
   const start = startOfThisMonth().toISOString();
   const [
     eventsTotal,
@@ -101,22 +144,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   ]);
 
   return {
-    events: {
-      total: eventsTotal,
-      thisMonth: eventsThisMonth,
-    },
-    albums: {
-      total: albumsTotal,
-      thisMonth: albumsThisMonth,
-    },
-    galleryImages: {
-      total: galleryTotal,
-      thisMonth: galleryThisMonth,
-    },
-    inquiries: {
-      total: inquiriesTotal,
-      new: inquiriesNew,
-    },
+    events: { total: eventsTotal, thisMonth: eventsThisMonth },
+    albums: { total: albumsTotal, thisMonth: albumsThisMonth },
+    galleryImages: { total: galleryTotal, thisMonth: galleryThisMonth },
+    inquiries: { total: inquiriesTotal, new: inquiriesNew },
     team: {
       total: teamStats.total,
       active: teamStats.active,
@@ -215,6 +246,18 @@ export async function getRecentActivity(limit = 5): Promise<RecentActivity[]> {
 }
 
 export async function getSiteOverview(): Promise<SiteOverview> {
+  const summary = await getAdminDashboardSummaryRpc();
+  if (summary) {
+    return {
+      eventTypes: summary.eventsTotal,
+      albums: summary.albumsTotal,
+      partners: summary.partnersTotal,
+      testimonials: summary.testimonialsTotal,
+      services: summary.servicesTotal,
+      employees: summary.teamTotal,
+    };
+  }
+
   const [events, albums, partners, testimonials, services, teamStats] = await Promise.all([
     getTableCount('events'),
     getTableCount('event_albums'),
@@ -234,12 +277,38 @@ export async function getSiteOverview(): Promise<SiteOverview> {
   };
 }
 
+function dashboardStatsFromSummary(summary: AdminDashboardSummaryRow): DashboardStats {
+  return {
+    events: { total: summary.eventsTotal, thisMonth: summary.eventsThisMonth },
+    albums: { total: summary.albumsTotal, thisMonth: summary.albumsThisMonth },
+    galleryImages: { total: summary.galleryImagesTotal, thisMonth: summary.galleryImagesThisMonth },
+    inquiries: { total: summary.inquiriesTotal, new: summary.inquiriesNew },
+    team: {
+      total: summary.teamTotal,
+      active: summary.teamActive,
+      thisMonth: summary.teamThisMonth,
+    },
+  };
+}
+
+function siteOverviewFromSummary(summary: AdminDashboardSummaryRow): SiteOverview {
+  return {
+    eventTypes: summary.eventsTotal,
+    albums: summary.albumsTotal,
+    partners: summary.partnersTotal,
+    testimonials: summary.testimonialsTotal,
+    services: summary.servicesTotal,
+    employees: summary.teamTotal,
+  };
+}
+
 export async function getDashboardData() {
-  const [stats, recentInquiries, recentActivity, siteOverview] = await Promise.all([
-    getDashboardStats(),
+  const summary = await getAdminDashboardSummaryRpc();
+  const [recentInquiries, recentActivity] = await Promise.all([
     getRecentInquiries(5),
     getRecentActivity(6),
-    getSiteOverview(),
   ]);
+  const stats = summary ? dashboardStatsFromSummary(summary) : await getDashboardStats();
+  const siteOverview = summary ? siteOverviewFromSummary(summary) : await getSiteOverview();
   return { stats, recentInquiries, recentActivity, siteOverview };
 }

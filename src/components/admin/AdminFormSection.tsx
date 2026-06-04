@@ -19,14 +19,14 @@ export default function AdminFormSection({
 }: AdminFormSectionProps) {
   return (
     <section className={cn(adminPanelClass, 'overflow-hidden', className)}>
-      <header className="flex items-start justify-between gap-3 border-b border-border/50 bg-muted/20 px-5 py-3.5">
-        <div>
+      <header className="flex flex-col gap-3 border-b border-border/50 bg-muted/20 px-4 py-3 max-md:items-stretch sm:flex-row sm:items-start sm:px-5 sm:py-3.5">
+        <div className="min-w-0">
           <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
           {description ? <p className="mt-0.5 text-xs text-muted-foreground">{description}</p> : null}
         </div>
-        {headerRight ? <div className="shrink-0">{headerRight}</div> : null}
+        {headerRight ? <div className="shrink-0 self-start sm:self-auto">{headerRight}</div> : null}
       </header>
-      <div className="space-y-4 px-5 py-4">{children}</div>
+      <div className="space-y-4 px-4 py-4 max-md:px-3 sm:px-5">{children}</div>
     </section>
   );
 }

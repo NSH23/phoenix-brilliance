@@ -11,7 +11,6 @@ import {
   FolderOpen,
   FolderPlus,
   HardDrive,
-  ImageIcon,
   Loader2,
   MoreHorizontal,
   Scissors,
@@ -55,6 +54,8 @@ import {
 import { uploadToCloudinary, type BucketName } from '@/lib/cloudinary';
 import { cn } from '@/lib/utils';
 import { getYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { adminDialogMobileClass } from '@/components/admin/adminStyles';
 import { toast } from 'sonner';
 import {
   buildFolderTree,
@@ -80,7 +81,15 @@ export type AdminMediaExplorerProps = {
   onDeleteFolder: (folderId: string) => Promise<void>;
   onSeedStandardFolders?: () => Promise<void>;
   creatingFolder?: boolean;
+  /** When false, uploads stay local until Save changes. */
+  autosaveEnabled?: boolean;
+  /** Persist gallery; receives current media/folders snapshot (avoids stale React state). */
+  onAutosave?: (snapshot: { media: ExplorerMediaItem[]; folders: ExplorerFolder[] }) => void | Promise<void>;
 };
+
+export type MediaAutosaveSnapshot = { media: ExplorerMediaItem[]; folders: ExplorerFolder[] };
+
+const LONG_PRESS_MS = 480;
 
 function isExternalFileDrag(e: React.DragEvent) {
   return e.dataTransfer.types.includes('Files');
@@ -173,6 +182,10 @@ function FolderTile({
   onDelete,
   canDelete,
   hasClipboard,
+  isMobile,
+  folderSelectionMode,
+  onFolderLongPress,
+  suppressClickRef,
 }: {
   name: string;
   count: number;
@@ -189,16 +202,66 @@ function FolderTile({
   onDelete?: () => void;
   canDelete?: boolean;
   hasClipboard?: boolean;
+  isMobile?: boolean;
+  folderSelectionMode?: boolean;
+  onFolderLongPress?: () => void;
+  suppressClickRef?: React.MutableRefObject<boolean>;
 }) {
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+    touchStartRef.current = null;
+  };
+
+  const handleFolderClick = (e: React.MouseEvent) => {
+    if (suppressClickRef?.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    if (isMobile && folderSelectionMode) {
+      onSelect(e);
+      return;
+    }
+    if (isMobile) {
+      onOpen();
+      return;
+    }
+    onSelect(e);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isMobile || !onFolderLongPress || e.button !== 0) return;
+    touchStartRef.current = { x: e.clientX, y: e.clientY };
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null;
+      onFolderLongPress();
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!touchStartRef.current || !longPressTimerRef.current) return;
+    const dx = Math.abs(e.clientX - touchStartRef.current.x);
+    const dy = Math.abs(e.clientY - touchStartRef.current.y);
+    if (dx > 12 || dy > 12) cancelLongPress();
+  };
+
   const tile = (
     <div
       data-explorer-item="folder"
       role="button"
       tabIndex={0}
-      onClick={onSelect}
+      onClick={handleFolderClick}
+      onPointerDown={handlePointerDown}
+      onPointerUp={cancelLongPress}
+      onPointerCancel={cancelLongPress}
+      onPointerLeave={cancelLongPress}
+      onPointerMove={handlePointerMove}
       onDoubleClick={(e) => {
         e.preventDefault();
-        onOpen();
+        if (!isMobile) onOpen();
       }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') onOpen();
@@ -273,7 +336,30 @@ export default function AdminMediaExplorer({
   onDeleteFolder,
   onSeedStandardFolders,
   creatingFolder = false,
+  autosaveEnabled = true,
+  onAutosave,
 }: AdminMediaExplorerProps) {
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingAutosaveRef = useRef<MediaAutosaveSnapshot | null>(null);
+
+  const triggerAutosave = (snapshot: MediaAutosaveSnapshot) => {
+    if (!autosaveEnabled || !onAutosave) return;
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    pendingAutosaveRef.current = snapshot;
+    autosaveTimerRef.current = setTimeout(() => {
+      autosaveTimerRef.current = null;
+      const snap = pendingAutosaveRef.current;
+      pendingAutosaveRef.current = null;
+      if (snap) void Promise.resolve(onAutosave(snap));
+    }, 700);
+  };
+
+  useEffect(
+    () => () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    },
+    []
+  );
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -293,6 +379,14 @@ export default function AdminMediaExplorer({
   const [externalUploading, setExternalUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadBatch, setUploadBatch] = useState<{ current: number; total: number; name: string } | null>(null);
+  const isMobile = useIsMobile();
+  const [mobileFileSelectMode, setMobileFileSelectMode] = useState(false);
+  const [mobileFolderSelectMode, setMobileFolderSelectMode] = useState(false);
+  const [previewItem, setPreviewItem] = useState<ExplorerMediaItem | null>(null);
+  const fileLongPressItemRef = useRef<ExplorerMediaItem | null>(null);
+  const fileLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressNextClickRef = useRef(false);
 
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
@@ -319,17 +413,16 @@ export default function AdminMediaExplorer({
   }, [folders, mediaCounts]);
 
   const isAtRoot = selectedFolderId === GALLERY_ROOT_ID || selectedFolderId === null;
-  const isUncategorized = selectedFolderId === UNCategorized_FOLDER_ID;
 
   const selectedFolder =
-    selectedFolderId && selectedFolderId !== UNCategorized_FOLDER_ID && selectedFolderId !== GALLERY_ROOT_ID
+    selectedFolderId && selectedFolderId !== GALLERY_ROOT_ID
       ? folders.find((f) => f.id === selectedFolderId)
       : null;
 
   const breadcrumb = useMemo(() => {
-    if (isAtRoot || isUncategorized) return [];
+    if (isAtRoot) return [];
     return getFolderBreadcrumb(selectedFolderId, folders);
-  }, [isAtRoot, isUncategorized, selectedFolderId, folders]);
+  }, [isAtRoot, selectedFolderId, folders]);
 
   const childFolders = useMemo(() => {
     if (isAtRoot) return folders.filter((f) => !f.parent_id).sort((a, b) => a.display_order - b.display_order);
@@ -342,20 +435,23 @@ export default function AdminMediaExplorer({
     return getMediaInFolder(selectedFolderId, media);
   }, [isAtRoot, selectedFolderId, media]);
 
+  const unassignedMedia = useMemo(
+    () => getMediaInFolder(UNCategorized_FOLDER_ID, media),
+    [media]
+  );
+
+  useEffect(() => {
+    if (selectedFolderId === UNCategorized_FOLDER_ID) onSelectFolder(GALLERY_ROOT_ID);
+  }, [selectedFolderId, onSelectFolder]);
+
   const imageUrls = folderMedia.filter((m) => m.media_type !== 'video').map((m) => m.url);
   const videos = folderMedia.filter((m) => m.media_type === 'video');
 
-  const canCreateFolder = isAtRoot || (!!selectedFolder && !isUncategorized);
+  const canCreateFolder = isAtRoot || !!selectedFolder;
   const canUpload = !isAtRoot;
   const contentTargetId = isAtRoot ? GALLERY_ROOT_ID : selectedFolderId;
 
-  const visibleFolderTileIds = useMemo(() => {
-    const ids = childFolders.map((f) => f.id);
-    if (isAtRoot && (mediaCounts.get(UNCategorized_FOLDER_ID) ?? 0) > 0) {
-      ids.push(UNCategorized_FOLDER_ID);
-    }
-    return ids;
-  }, [childFolders, isAtRoot, mediaCounts]);
+  const visibleFolderTileIds = useMemo(() => childFolders.map((f) => f.id), [childFolders]);
 
   useEffect(() => {
     if (!selectedFolderId || selectedFolderId === GALLERY_ROOT_ID || selectedFolderId === UNCategorized_FOLDER_ID) return;
@@ -374,8 +470,109 @@ export default function AdminMediaExplorer({
     lastSelectedFolderTileId.current = null;
   };
 
-  const navigateToFolder = (folderId: string) => {
+  const exitMobileSelectMode = () => {
     clearSelection();
+    setMobileFileSelectMode(false);
+    setMobileFolderSelectMode(false);
+  };
+
+  const enterFileSelectMode = (item: ExplorerMediaItem) => {
+    const key = mediaKey(item);
+    setMobileFileSelectMode(true);
+    setMobileFolderSelectMode(false);
+    setSelectedFolderTileIds(new Set());
+    setSelectedKeys(new Set([key]));
+    lastSelectedFileKey.current = key;
+    suppressNextClickRef.current = true;
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+  };
+
+  const enterFolderSelectMode = (folderId: string) => {
+    setMobileFolderSelectMode(true);
+    setMobileFileSelectMode(false);
+    setSelectedKeys(new Set());
+    setSelectedFolderTileIds(new Set([folderId]));
+    lastSelectedFolderTileId.current = folderId;
+    suppressNextClickRef.current = true;
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+  };
+
+  const cancelFileLongPress = () => {
+    if (fileLongPressTimerRef.current) clearTimeout(fileLongPressTimerRef.current);
+    fileLongPressTimerRef.current = null;
+    fileTouchStartRef.current = null;
+    fileLongPressItemRef.current = null;
+  };
+
+  const handleFilePointerDown = (item: ExplorerMediaItem) => (e: React.PointerEvent) => {
+    if (!isMobile || e.button !== 0) return;
+    fileLongPressItemRef.current = item;
+    fileTouchStartRef.current = { x: e.clientX, y: e.clientY };
+    fileLongPressTimerRef.current = setTimeout(() => {
+      fileLongPressTimerRef.current = null;
+      const target = fileLongPressItemRef.current;
+      if (target) enterFileSelectMode(target);
+    }, LONG_PRESS_MS);
+  };
+
+  const handleFilePointerMove = (e: React.PointerEvent) => {
+    if (!fileTouchStartRef.current || !fileLongPressTimerRef.current) return;
+    const dx = Math.abs(e.clientX - fileTouchStartRef.current.x);
+    const dy = Math.abs(e.clientY - fileTouchStartRef.current.y);
+    if (dx > 12 || dy > 12) cancelFileLongPress();
+  };
+
+  useEffect(
+    () => () => {
+      if (fileLongPressTimerRef.current) clearTimeout(fileLongPressTimerRef.current);
+    },
+    []
+  );
+
+  const deleteSelectedFolderTile = () => {
+    if (selectedFolderTileIds.size !== 1) return;
+    const folderId = [...selectedFolderTileIds][0];
+    void onDeleteFolder(folderId).then(() => exitMobileSelectMode());
+  };
+
+  const deleteAllUnassigned = () => {
+    const count = unassignedMedia.length;
+    if (!count) return;
+    if (!confirm(`Delete ${count} file${count === 1 ? '' : 's'} not in any folder?`)) return;
+    const keys = new Set(unassignedMedia.map(mediaKey));
+    const nextMedia = media.filter((m) => !keys.has(mediaKey(m)));
+    onMediaChange(nextMedia);
+    triggerAutosave({ media: nextMedia, folders });
+    exitMobileSelectMode();
+    toast.success(`Removed ${count} file${count === 1 ? '' : 's'}`);
+  };
+
+  const deleteSelectedFiles = () => {
+    const items = getItemsByKeys(selectedKeys);
+    if (!items.length) return;
+    const deletingUnassignedOnly = items.every((i) => (i.folder_id ?? null) === null);
+    if (deletingUnassignedOnly) {
+      const keys = selectedKeys;
+      const nextMedia = media.filter((m) => !keys.has(mediaKey(m)));
+      onMediaChange(nextMedia);
+      triggerAutosave({ media: nextMedia, folders });
+      exitMobileSelectMode();
+      toast.success(`Removed ${items.length} file${items.length === 1 ? '' : 's'}`);
+      return;
+    }
+    const urlsToRemove = new Set(items.filter((i) => i.media_type !== 'video').map((i) => i.url));
+    for (const item of items) {
+      if (item.media_type === 'video') removeVideo(item.url, item.folder_id ?? null);
+    }
+    if (urlsToRemove.size > 0) {
+      setImagesForFolder(imageUrls.filter((u) => !urlsToRemove.has(u)));
+    }
+    exitMobileSelectMode();
+    toast.success(`Removed ${items.length} file${items.length === 1 ? '' : 's'}`);
+  };
+
+  const navigateToFolder = (folderId: string) => {
+    exitMobileSelectMode();
     const path = getFolderBreadcrumb(folderId, folders);
     setExpandedIds((prev) => {
       const next = new Set(prev);
@@ -400,9 +597,35 @@ export default function AdminMediaExplorer({
   const selectFile = (item: ExplorerMediaItem, e: React.MouseEvent) => {
     e.stopPropagation();
     const key = mediaKey(item);
-    const fileKeys = folderMedia.map(mediaKey);
+    const listForItem = (item.folder_id ?? null) === null ? unassignedMedia : folderMedia;
+    const fileKeys = listForItem.map(mediaKey);
 
     setSelectedFolderTileIds(new Set());
+
+    if (isMobile) {
+      if (suppressNextClickRef.current) {
+        suppressNextClickRef.current = false;
+        return;
+      }
+      if (!mobileFileSelectMode) {
+        if (item.media_type === 'video') {
+          const id = getYouTubeId(item.url);
+          if (id) window.open(`https://www.youtube.com/watch?v=${id}`, '_blank', 'noopener,noreferrer');
+          else toast.error('Invalid video URL');
+        } else {
+          setPreviewItem(item);
+        }
+        return;
+      }
+      setSelectedKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
+      lastSelectedFileKey.current = key;
+      return;
+    }
 
     if (e.shiftKey && lastSelectedFileKey.current) {
       setSelectedKeys(selectRange(fileKeys, lastSelectedFileKey.current, key));
@@ -426,6 +649,17 @@ export default function AdminMediaExplorer({
     e.stopPropagation();
     setSelectedKeys(new Set());
 
+    if (isMobile && mobileFolderSelectMode) {
+      setSelectedFolderTileIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(folderId)) next.delete(folderId);
+        else next.add(folderId);
+        return next;
+      });
+      lastSelectedFolderTileId.current = folderId;
+      return;
+    }
+
     if (e.shiftKey && lastSelectedFolderTileId.current) {
       setSelectedFolderTileIds(selectRange(visibleFolderTileIds, lastSelectedFolderTileId.current, folderId));
       return;
@@ -447,7 +681,6 @@ export default function AdminMediaExplorer({
   const getPasteTargetFolderId = (): string | null => {
     if (selectedFolderTileIds.size === 1) return [...selectedFolderTileIds][0] ?? null;
     if (selectedFolderTileIds.size > 1) return null;
-    if (isUncategorized) return UNCategorized_FOLDER_ID;
     if (!isAtRoot && selectedFolderId) return selectedFolderId;
     return null;
   };
@@ -469,6 +702,14 @@ export default function AdminMediaExplorer({
 
   const handlePaste = (targetFolderId: string | null = getPasteTargetFolderId()) => {
     if (!clipboard?.items.length) return;
+    if (selectedFolderTileIds.size > 1) {
+      toast.error('Select only one folder to paste into');
+      return;
+    }
+    if (!targetFolderId) {
+      toast.error('Select one folder to paste into');
+      return;
+    }
     if (targetFolderId === GALLERY_ROOT_ID) {
       toast.error('Open or select a folder to paste into');
       return;
@@ -531,8 +772,10 @@ export default function AdminMediaExplorer({
         setUploadProgress(Math.round(((i + 1) / files.length) * 100));
       }
 
-      onMediaChange([...media, ...added]);
+      const nextMedia = [...media, ...added];
+      onMediaChange(nextMedia);
       toast.success(`Uploaded ${added.length} file${added.length === 1 ? '' : 's'}`);
+      triggerAutosave({ media: nextMedia, folders });
     } catch (err) {
       toast.error('Upload failed', { description: (err as Error).message });
     } finally {
@@ -575,11 +818,7 @@ export default function AdminMediaExplorer({
   };
 
   const goBack = () => {
-    clearSelection();
-    if (isUncategorized) {
-      onSelectFolder(GALLERY_ROOT_ID);
-      return;
-    }
+    exitMobileSelectMode();
     if (selectedFolder?.parent_id) {
       onSelectFolder(selectedFolder.parent_id);
       return;
@@ -615,7 +854,7 @@ export default function AdminMediaExplorer({
   };
 
   const setImagesForFolder = (urls: string[]) => {
-    const folderId = isUncategorized ? null : selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId;
+    const folderId = selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId;
     const others = media.filter((m) => (m.folder_id ?? null) !== folderId);
     const existingInFolder = media.filter((m) => (m.folder_id ?? null) === folderId);
     const videosInFolder = existingInFolder.filter((m) => m.media_type === 'video');
@@ -627,7 +866,9 @@ export default function AdminMediaExplorer({
     });
     const base = merged.length;
     const videosAdjusted = videosInFolder.map((v, i) => ({ ...v, folder_id: folderId, display_order: base + i }));
-    onMediaChange([...others, ...merged, ...videosAdjusted]);
+    const nextMedia = [...others, ...merged, ...videosAdjusted];
+    onMediaChange(nextMedia);
+    triggerAutosave({ media: nextMedia, folders });
   };
 
   const addYoutubeVideo = () => {
@@ -641,7 +882,7 @@ export default function AdminMediaExplorer({
       toast.error('Enter a valid YouTube URL or 11-character video ID.');
       return;
     }
-    const folderId = isUncategorized ? null : selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId;
+    const folderId = selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId;
     const inFolder = media.filter((m) => (m.folder_id ?? null) === folderId);
     const nextOrder = inFolder.length > 0 ? Math.max(...inFolder.map((m) => m.display_order ?? 0)) + 1 : 0;
     onMediaChange([
@@ -654,12 +895,87 @@ export default function AdminMediaExplorer({
     toast.success('Video added — save to publish.');
   };
 
-  const removeVideo = (url: string) => {
-    const folderId = isUncategorized ? null : selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId;
+  const removeVideo = (url: string, folderId: string | null = selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId) => {
     onMediaChange(media.filter((m) => !((m.folder_id ?? null) === folderId && m.media_type === 'video' && m.url === url)));
   };
 
   const folderGridLabel = isAtRoot ? 'Categories' : 'Folders';
+
+  const renderMediaTiles = (items: ExplorerMediaItem[]) => (
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+      {items.map((item) => {
+        const key = mediaKey(item);
+        const selected = selectedKeys.has(key);
+        const tile = (
+          <div
+            data-explorer-item="file"
+            draggable={!isMobile}
+            onDragStart={isMobile ? undefined : () => startDrag(item)}
+            onDragEnd={isMobile ? undefined : () => setDraggingKeys(new Set())}
+            onClick={(e) => selectFile(item, e)}
+            onPointerDown={handleFilePointerDown(item)}
+            onPointerUp={cancelFileLongPress}
+            onPointerCancel={cancelFileLongPress}
+            onPointerLeave={cancelFileLongPress}
+            onPointerMove={handleFilePointerMove}
+            className={cn(
+              'group relative aspect-square cursor-pointer overflow-hidden rounded-md border bg-muted transition-all touch-manipulation',
+              selected ? 'border-primary ring-2 ring-primary/40' : 'border-border/60 hover:border-primary/40',
+              mobileFileSelectMode && !selected && 'opacity-90'
+            )}
+          >
+            {item.media_type === 'video' ? (
+              <>
+                <img src={getYouTubeThumbnail(item.url)} alt="" className="h-full w-full object-cover" draggable={false} />
+                <div className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-[10px] text-white">
+                  {item.caption || 'Video'}
+                </div>
+              </>
+            ) : (
+              <img src={item.url} alt="" className="h-full w-full object-cover" draggable={false} />
+            )}
+            {selected ? (
+              <div className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow">
+                ✓
+              </div>
+            ) : null}
+          </div>
+        );
+        return (
+          <ContextMenu key={key}>
+            <ContextMenuTrigger asChild>{tile}</ContextMenuTrigger>
+            <ContextMenuContent className="w-48">
+              <ContextMenuItem onClick={() => { setSelectedKeys(new Set([key])); handleCopy(); }}>
+                <Copy className="mr-2 h-4 w-4" /> Copy
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => { setSelectedKeys(new Set([key])); handleCut(); }}>
+                <Scissors className="mr-2 h-4 w-4" /> Cut
+              </ContextMenuItem>
+              {clipboard?.items.length ? (
+                <ContextMenuItem onClick={() => handlePaste()}>
+                  <ClipboardPaste className="mr-2 h-4 w-4" /> Paste
+                </ContextMenuItem>
+              ) : null}
+              <ContextMenuSeparator />
+              <ContextMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => {
+                  if (item.media_type === 'video') removeVideo(item.url, item.folder_id ?? null);
+                  else if ((item.folder_id ?? null) === null) {
+                    onMediaChange(media.filter((m) => mediaKey(m) !== key));
+                    triggerAutosave({ media: media.filter((m) => mediaKey(m) !== key), folders });
+                  } else setImagesForFolder(imageUrls.filter((u) => u !== item.url));
+                  setSelectedKeys((prev) => { const n = new Set(prev); n.delete(key); return n; });
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
+        );
+      })}
+    </div>
+  );
 
   const handleContentDragOver = (e: React.DragEvent) => {
     if (!canUpload) return;
@@ -678,106 +994,112 @@ export default function AdminMediaExplorer({
   const pasteTargetId = getPasteTargetFolderId();
   const totalSelected = selectedKeys.size + selectedFolderTileIds.size;
 
-  return (
-    <div className="flex min-h-[560px] flex-col overflow-hidden rounded-xl border border-border/70 bg-[hsl(var(--admin-surface-2))] shadow-sm">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/25 px-3 py-2">
+  const renderToolbarActions = (mobile: boolean) => (
+    <>
+      {canCreateFolder ? (
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
-          disabled={isAtRoot}
-          onClick={goBack}
-          title="Go back"
+          className={cn('gap-1.5', mobile ? 'h-10 flex-1' : 'h-8')}
+          disabled={creatingFolder || externalUploading}
+          onClick={() => openNewFolderDialog(isAtRoot ? 'category' : 'subfolder')}
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back
+          <FolderPlus className="h-3.5 w-3.5 shrink-0" />
+          {mobile ? (isAtRoot ? 'Category' : 'Folder') : isAtRoot ? 'New category' : 'New folder'}
         </Button>
+      ) : null}
+      {canUpload ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn('gap-1.5', mobile ? 'h-10 flex-1' : 'h-8')}
+          disabled={externalUploading}
+          onClick={() => {
+            setShowUpload(true);
+            setShowVideoForm(false);
+          }}
+        >
+          <Upload className="h-3.5 w-3.5 shrink-0" />
+          Upload
+        </Button>
+      ) : null}
+      {!mobile && selectedKeys.size > 0 ? (
+        <>
+          <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={handleCopy}>
+            <Copy className="h-3.5 w-3.5" /> Copy
+          </Button>
+          <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={handleCut}>
+            <Scissors className="h-3.5 w-3.5" /> Cut
+          </Button>
+        </>
+      ) : null}
+      {!mobile && clipboard?.items.length && pasteTargetId ? (
+        <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => handlePaste(pasteTargetId)}>
+          <ClipboardPaste className="h-3.5 w-3.5" /> Paste
+        </Button>
+      ) : null}
+      {!mobile && canUpload ? (
+        <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => setShowVideoForm((v) => !v)}>
+          <Video className="h-3.5 w-3.5" />
+          Add video
+        </Button>
+      ) : null}
+    </>
+  );
 
-        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-md border border-border/60 bg-background px-2 py-1.5 text-sm">
-          <HardDrive className="mx-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <button
+  return (
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-[hsl(var(--admin-surface-2))] shadow-sm md:min-h-[560px]">
+      {/* Toolbar */}
+      <div className="border-b border-border/60 bg-muted/25 px-3 py-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button
             type="button"
-            className={cn('shrink-0 rounded px-1.5 py-0.5 hover:bg-muted/60', isAtRoot && 'font-medium text-foreground')}
-            onClick={() => {
-              clearSelection();
-              onSelectFolder(GALLERY_ROOT_ID);
-            }}
+            variant="ghost"
+            size="sm"
+            className="h-10 shrink-0 gap-1.5 px-2 text-muted-foreground hover:text-foreground md:h-8"
+            disabled={isAtRoot}
+            onClick={goBack}
+            title="Go back"
           >
-            Gallery
-          </button>
-          {breadcrumb.map((crumb, i) => (
-            <span key={crumb.id} className="flex min-w-0 items-center gap-1">
-              <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <button
-                type="button"
-                className={cn(
-                  'truncate rounded px-1.5 py-0.5 hover:bg-muted/60',
-                  i === breadcrumb.length - 1 && 'font-medium text-foreground'
-                )}
-                onClick={() => navigateToFolder(crumb.id)}
-              >
-                {crumb.name}
-              </button>
-            </span>
-          ))}
-          {isUncategorized ? (
-            <span className="flex items-center gap-1">
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              <span className="font-medium">Uncategorized</span>
-            </span>
-          ) : null}
+            <ArrowLeft className="h-4 w-4" />
+            <span className="md:inline">Back</span>
+          </Button>
+
+          <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-md border border-border/60 bg-background px-2 py-1.5 text-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <HardDrive className="mx-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <button
+              type="button"
+              className={cn('shrink-0 rounded px-1.5 py-0.5 hover:bg-muted/60', isAtRoot && 'font-medium text-foreground')}
+              onClick={() => {
+                clearSelection();
+                onSelectFolder(GALLERY_ROOT_ID);
+              }}
+            >
+              Gallery
+            </button>
+            {breadcrumb.map((crumb, i) => (
+              <span key={crumb.id} className="flex shrink-0 items-center gap-0.5">
+                <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <button
+                  type="button"
+                  className={cn(
+                    'max-w-[7rem] truncate rounded px-1.5 py-0.5 hover:bg-muted/60 sm:max-w-[10rem]',
+                    i === breadcrumb.length - 1 && 'font-medium text-foreground'
+                  )}
+                  onClick={() => navigateToFolder(crumb.id)}
+                >
+                  {crumb.name}
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          {canCreateFolder ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5"
-              disabled={creatingFolder || externalUploading}
-              onClick={() => openNewFolderDialog(isAtRoot ? 'category' : 'subfolder')}
-            >
-              <FolderPlus className="h-3.5 w-3.5" />
-              {isAtRoot ? 'New category' : 'New folder'}
-            </Button>
-          ) : null}
-          {selectedKeys.size > 0 ? (
-            <>
-              <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={handleCopy}>
-                <Copy className="h-3.5 w-3.5" /> Copy
-              </Button>
-              <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={handleCut}>
-                <Scissors className="h-3.5 w-3.5" /> Cut
-              </Button>
-            </>
-          ) : null}
-          {clipboard?.items.length && pasteTargetId ? (
-            <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => handlePaste(pasteTargetId)}>
-              <ClipboardPaste className="h-3.5 w-3.5" /> Paste
-            </Button>
-          ) : null}
-          {canUpload ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5"
-                disabled={externalUploading}
-                onClick={() => setShowUpload((v) => !v)}
-              >
-                <Upload className="h-3.5 w-3.5" />
-                Upload
-              </Button>
-              <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => setShowVideoForm((v) => !v)}>
-                <Video className="h-3.5 w-3.5" />
-                Add video
-              </Button>
-            </>
-          ) : null}
+        {/* Desktop toolbar actions */}
+        <div className="mt-2 hidden flex-wrap items-center gap-1.5 md:flex">
+          {renderToolbarActions(false)}
           {onSeedStandardFolders ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -791,11 +1113,53 @@ export default function AdminMediaExplorer({
             </DropdownMenu>
           ) : null}
         </div>
+
+        {/* Mobile toolbar — primary actions + overflow menu */}
+        <div className="mt-2 flex items-center gap-2 md:hidden">
+          {renderToolbarActions(true)}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="More actions">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {selectedKeys.size > 0 ? (
+                <>
+                  <DropdownMenuItem onClick={handleCopy}>
+                    <Copy className="mr-2 h-4 w-4" /> Copy selected
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCut}>
+                    <Scissors className="mr-2 h-4 w-4" /> Cut selected
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+              {clipboard?.items.length && pasteTargetId ? (
+                <DropdownMenuItem onClick={() => handlePaste(pasteTargetId)}>
+                  <ClipboardPaste className="mr-2 h-4 w-4" /> Paste
+                </DropdownMenuItem>
+              ) : null}
+              {canUpload ? (
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShowVideoForm((v) => !v);
+                    setShowUpload(false);
+                  }}
+                >
+                  <Video className="mr-2 h-4 w-4" /> Add video
+                </DropdownMenuItem>
+              ) : null}
+              {onSeedStandardFolders ? (
+                <DropdownMenuItem onClick={() => void onSeedStandardFolders()}>Import standard categories…</DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Navigation pane — tree collapsed by default; expand as you navigate */}
-        <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-muted/15 lg:w-[220px] lg:border-b-0 lg:border-r xl:w-[240px]">
+        <aside className="hidden w-full shrink-0 flex-col border-b border-border/60 bg-muted/15 md:flex lg:w-[220px] lg:border-b-0 lg:border-r xl:w-[240px]">
           <div className="border-b border-border/50 px-3 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Navigation</p>
           </div>
@@ -826,25 +1190,6 @@ export default function AdminMediaExplorer({
                 mediaCounts={mediaCounts}
               />
             ))}
-            <button
-              type="button"
-              className={cn(
-                'mt-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors',
-                isUncategorized ? 'bg-primary/12 text-primary' : 'hover:bg-muted/70'
-              )}
-              onClick={() => {
-                clearSelection();
-                onSelectFolder(UNCategorized_FOLDER_ID);
-              }}
-            >
-              <ImageIcon className="h-3.5 w-3.5 shrink-0" />
-              <span className="font-medium">Uncategorized</span>
-              {(mediaCounts.get(UNCategorized_FOLDER_ID) ?? 0) > 0 ? (
-                <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
-                  {mediaCounts.get(UNCategorized_FOLDER_ID)}
-                </span>
-              ) : null}
-            </button>
           </div>
         </aside>
 
@@ -886,27 +1231,96 @@ export default function AdminMediaExplorer({
           )}
 
           {selectedFolder ? (
-            <div className="flex items-center justify-between gap-3 border-b border-border/50 px-4 py-2">
-              <div className="flex items-center gap-2 text-sm">
-                <FolderOpen className="h-4 w-4 text-amber-500" />
-                <span className="font-medium">{selectedFolder.name}</span>
-                <span className="text-xs text-muted-foreground">
+            <div className="flex flex-col gap-2 border-b border-border/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+              <div className="flex min-w-0 items-center gap-2 text-sm">
+                <FolderOpen className="h-4 w-4 shrink-0 text-amber-500" />
+                <span className="truncate font-medium">{selectedFolder.name}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
                   {selectedFolder.parent_id ? 'Folder' : 'Category'} · {folderDescendantCounts.get(selectedFolder.id) ?? folderMedia.length} items
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 <span className="text-xs text-muted-foreground">Public</span>
                 <Switch checked={selectedFolder.is_enabled} onCheckedChange={() => toggleFolderVisible(selectedFolder.id)} />
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  className="h-8 text-destructive hover:text-destructive"
+                  size="icon"
+                  className="h-10 w-10 text-destructive hover:text-destructive md:h-8 md:w-8"
                   onClick={() => void onDeleteFolder(selectedFolder.id)}
+                  aria-label="Delete folder"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
+            </div>
+          ) : null}
+
+          {isMobile && (mobileFileSelectMode || mobileFolderSelectMode) ? (
+            <div className="flex flex-wrap items-center gap-2 border-b border-primary/25 bg-primary/8 px-3 py-2 md:hidden">
+              <Button type="button" variant="ghost" size="sm" className="h-9 shrink-0 px-2" onClick={exitMobileSelectMode}>
+                Cancel
+              </Button>
+              <span className="min-w-[5rem] flex-1 text-sm font-medium tabular-nums">
+                {totalSelected} selected
+              </span>
+              {mobileFileSelectMode ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-2.5"
+                    disabled={selectedKeys.size === 0}
+                    onClick={handleCopy}
+                  >
+                    Copy
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-2.5"
+                    disabled={selectedKeys.size === 0}
+                    onClick={handleCut}
+                  >
+                    Cut
+                  </Button>
+                  {clipboard?.items.length && pasteTargetId ? (
+                    <Button type="button" size="sm" variant="outline" className="h-9 px-2.5" onClick={() => handlePaste(pasteTargetId)}>
+                      Paste
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    className="h-9 px-2.5"
+                    disabled={selectedKeys.size === 0}
+                    onClick={deleteSelectedFiles}
+                  >
+                    Delete
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {clipboard?.items.length && pasteTargetId ? (
+                    <Button type="button" size="sm" variant="outline" className="h-9 px-2.5" onClick={() => handlePaste(pasteTargetId)}>
+                      Paste
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    className="h-9 px-2.5"
+                    disabled={selectedFolderTileIds.size !== 1}
+                    onClick={deleteSelectedFolderTile}
+                  >
+                    Delete
+                  </Button>
+                </>
+              )}
             </div>
           ) : null}
 
@@ -918,6 +1332,7 @@ export default function AdminMediaExplorer({
             onMouseDown={(e) => {
               const target = e.target as HTMLElement;
               if (target.closest('[data-explorer-item]')) return;
+              if (isMobile && (mobileFileSelectMode || mobileFolderSelectMode)) return;
               clearSelection();
             }}
           >
@@ -956,42 +1371,50 @@ export default function AdminMediaExplorer({
                           setExternalDragOver(null);
                         }}
                         onDropOnFolder={handleFolderDrop}
+                        isMobile={isMobile}
+                        folderSelectionMode={mobileFolderSelectMode}
+                        suppressClickRef={suppressNextClickRef}
+                        onFolderLongPress={() => enterFolderSelectMode(f.id)}
                       />
                     );
                   })}
-                  {isAtRoot && (mediaCounts.get(UNCategorized_FOLDER_ID) ?? 0) > 0 ? (
-                    <FolderTile
-                      folderId={UNCategorized_FOLDER_ID}
-                      name="Uncategorized"
-                      count={mediaCounts.get(UNCategorized_FOLDER_ID) ?? 0}
-                      selected={selectedFolderTileIds.has(UNCategorized_FOLDER_ID)}
-                      isDropTarget={dragOverFolderId === UNCategorized_FOLDER_ID || externalDragOver === UNCategorized_FOLDER_ID}
-                      hasClipboard={!!clipboard?.items.length}
-                      onSelect={(e) => selectFolderTile(UNCategorized_FOLDER_ID, e)}
-                      onOpen={() => {
-                        clearSelection();
-                        onSelectFolder(UNCategorized_FOLDER_ID);
-                      }}
-                      onPaste={() => handlePaste(UNCategorized_FOLDER_ID)}
-                      onDragOverFolder={(id, external) => {
-                        if (external) setExternalDragOver(id);
-                        else setDragOverFolderId(id);
-                      }}
-                      onDragLeaveFolder={() => {
-                        setDragOverFolderId(null);
-                        setExternalDragOver(null);
-                      }}
-                      onDropOnFolder={handleFolderDrop}
-                    />
-                  ) : null}
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground">
+                <p className="mt-2 hidden text-[11px] text-muted-foreground md:block">
                   Click to select · Ctrl+click multi-select · Shift+click range · Double-click to open · Right-click for menu
+                </p>
+                <p className="mt-2 text-[11px] text-muted-foreground md:hidden">
+                  {mobileFolderSelectMode
+                    ? 'Tap categories to select · Cancel when done'
+                    : isAtRoot
+                      ? 'Tap to open a category · Long-press to select folders'
+                      : 'Long-press a photo to select · Then tap more photos'}
                 </p>
               </div>
             )}
 
-            {isAtRoot && childFolders.length === 0 && (mediaCounts.get(UNCategorized_FOLDER_ID) ?? 0) === 0 && (
+            {isAtRoot && unassignedMedia.length > 0 && (
+              <div className="mb-6">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Not in any folder · {unassignedMedia.length}
+                    {selectedKeys.size > 0 && unassignedMedia.some((m) => selectedKeys.has(mediaKey(m)))
+                      ? ` · ${[...selectedKeys].filter((k) => unassignedMedia.some((m) => mediaKey(m) === k)).length} selected`
+                      : ''}
+                  </p>
+                  <Button type="button" size="sm" variant="destructive" className="h-9" onClick={deleteAllUnassigned}>
+                    Delete all
+                  </Button>
+                </div>
+                {isMobile && !mobileFileSelectMode ? (
+                  <p className="mb-2 text-[11px] text-muted-foreground md:hidden">
+                    Tap to preview · Long-press to select · Move into a category with Cut/Copy + Paste
+                  </p>
+                ) : null}
+                {renderMediaTiles(unassignedMedia)}
+              </div>
+            )}
+
+            {isAtRoot && childFolders.length === 0 && unassignedMedia.length === 0 && (
               <div
                 className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/70 py-16 text-center"
                 onDragOver={(e) => {
@@ -1071,70 +1494,12 @@ export default function AdminMediaExplorer({
                 <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Files in this folder {selectedKeys.size > 0 ? `· ${selectedKeys.size} selected` : ''}
                 </p>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-                  {folderMedia.map((item) => {
-                    const key = mediaKey(item);
-                    const selected = selectedKeys.has(key);
-                    const tile = (
-                      <div
-                        data-explorer-item="file"
-                        draggable
-                        onDragStart={() => startDrag(item)}
-                        onDragEnd={() => setDraggingKeys(new Set())}
-                        onClick={(e) => selectFile(item, e)}
-                        className={cn(
-                          'group relative aspect-square cursor-pointer overflow-hidden rounded-md border bg-muted transition-all',
-                          selected ? 'border-primary ring-2 ring-primary/40' : 'border-border/60 hover:border-primary/40'
-                        )}
-                      >
-                        {item.media_type === 'video' ? (
-                          <>
-                            <img src={getYouTubeThumbnail(item.url)} alt="" className="h-full w-full object-cover" draggable={false} />
-                            <div className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-[10px] text-white">
-                              {item.caption || 'Video'}
-                            </div>
-                          </>
-                        ) : (
-                          <img src={item.url} alt="" className="h-full w-full object-cover" draggable={false} />
-                        )}
-                        {selected ? (
-                          <div className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow">
-                            ✓
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                    return (
-                      <ContextMenu key={key}>
-                        <ContextMenuTrigger asChild>{tile}</ContextMenuTrigger>
-                        <ContextMenuContent className="w-48">
-                          <ContextMenuItem onClick={() => { setSelectedKeys(new Set([key])); handleCopy(); }}>
-                            <Copy className="mr-2 h-4 w-4" /> Copy
-                          </ContextMenuItem>
-                          <ContextMenuItem onClick={() => { setSelectedKeys(new Set([key])); handleCut(); }}>
-                            <Scissors className="mr-2 h-4 w-4" /> Cut
-                          </ContextMenuItem>
-                          {clipboard?.items.length ? (
-                            <ContextMenuItem onClick={() => handlePaste()}>
-                              <ClipboardPaste className="mr-2 h-4 w-4" /> Paste
-                            </ContextMenuItem>
-                          ) : null}
-                          <ContextMenuSeparator />
-                          <ContextMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => {
-                              if (item.media_type === 'video') removeVideo(item.url);
-                              else setImagesForFolder(imageUrls.filter((u) => u !== item.url));
-                              setSelectedKeys((prev) => { const n = new Set(prev); n.delete(key); return n; });
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </ContextMenu>
-                    );
-                  })}
-                </div>
+                {isMobile && !mobileFileSelectMode ? (
+                  <p className="mb-2 text-[11px] text-muted-foreground md:hidden">
+                    Tap a photo to preview · Long-press to select multiple
+                  </p>
+                ) : null}
+                {renderMediaTiles(folderMedia)}
               </div>
             )}
           </div>
@@ -1149,8 +1514,20 @@ export default function AdminMediaExplorer({
         </main>
       </div>
 
+      <Dialog open={!!previewItem} onOpenChange={(open) => !open && setPreviewItem(null)}>
+        <DialogContent className={cn('max-w-4xl gap-0 overflow-hidden border-0 p-0 sm:max-w-4xl', adminDialogMobileClass)}>
+          {previewItem?.media_type !== 'video' ? (
+            <img
+              src={previewItem?.url}
+              alt=""
+              className="max-h-[85dvh] w-full object-contain bg-black/95"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={cn('max-w-md', adminDialogMobileClass)}>
           <DialogHeader>
             <DialogTitle>{newFolderMode === 'category' ? 'New category folder' : 'New folder'}</DialogTitle>
           </DialogHeader>

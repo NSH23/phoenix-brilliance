@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search, Edit, Trash2, MoreHorizontal, Loader2, Users, Mail, Phone, Briefcase, Upload, FileText, Download, X, Eye, MapPin, Calendar, Banknote } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { adminDialogMobileClass } from '@/components/admin/adminStyles';
+import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -643,7 +645,7 @@ export default function AdminTeam() {
       </Sheet>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-4 overflow-hidden p-6">
+        <DialogContent className={cn('max-w-2xl max-h-[90vh] flex flex-col gap-4 overflow-hidden p-6', adminDialogMobileClass)}>
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editing ? 'Edit Team Member' : 'Add Employee'}</DialogTitle>
             <DialogDescription>

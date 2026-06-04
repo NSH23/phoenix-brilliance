@@ -155,6 +155,40 @@ export async function getAlbumById(id: string) {
   return normalizeAlbum(data as Album & { events?: unknown; album_media?: AlbumMedia[] });
 }
 
+/** Admin edit: parallel flat queries (faster than nested embed at scale). */
+export async function getAlbumForAdminEdit(id: string) {
+  const [albumRes, mediaRes, foldersRes] = await Promise.all([
+    supabase
+      .from('event_albums')
+      .select(`${ALBUM_COLUMNS}, events (id, title, slug, is_active)`)
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('album_media')
+      .select(ALBUM_MEDIA_COLUMNS)
+      .eq('album_id', id)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('album_folders')
+      .select(ALBUM_FOLDER_COLUMNS)
+      .eq('album_id', id)
+      .order('display_order', { ascending: true }),
+  ]);
+
+  if (albumRes.error) throw albumRes.error;
+  if (!albumRes.data) return albumRes.data;
+
+  const row = albumRes.data as Album & { events?: unknown; album_media?: AlbumMedia[]; album_folders?: AlbumFolder[] };
+  const media = ((mediaRes.data || []) as AlbumMedia[]).map(normalizeAlbumMedia);
+  const folders = (foldersRes.data || []) as AlbumFolder[];
+
+  return {
+    ...normalizeAlbum(row),
+    album_media: media,
+    album_folders: folders,
+  };
+}
+
 // Get album with media and folders
 export async function getAlbumWithMedia(id: string) {
   const { data, error } = await supabase

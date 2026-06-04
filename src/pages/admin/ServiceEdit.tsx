@@ -8,7 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { adminPanelClass } from '@/components/admin/adminStyles';
+import {
+  adminPanelClass,
+  adminRecordEditFormStackClass,
+  adminRecordEditLayoutClass,
+  adminRecordEditPreviewAsideClass,
+} from '@/components/admin/adminStyles';
 import { createService, deleteService, getAllServices, updateService } from '@/services/services';
 import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
@@ -113,8 +118,8 @@ export default function ServiceEditPage() {
     : null;
 
   const detailsContent = (
-    <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-      <div className="space-y-5">
+    <div className={adminRecordEditLayoutClass}>
+      <div className={adminRecordEditFormStackClass}>
         <AdminFormSection
           title="Publishing"
           headerRight={<Switch checked={formData.isActive} onCheckedChange={(v) => setFormData({ ...formData, isActive: v })} />}
@@ -171,7 +176,7 @@ export default function ServiceEditPage() {
         </AdminFormSection>
       </div>
 
-      <aside className="lg:sticky lg:top-28 lg:self-start">
+      <aside className={adminRecordEditPreviewAsideClass}>
         <div className={cn(adminPanelClass, 'overflow-hidden p-4')}>
           <div className="mb-3 flex h-24 items-center justify-center overflow-hidden rounded-lg bg-muted">
             {imagePreview ? (

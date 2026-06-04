@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { adminDialogMobileClass } from '@/components/admin/adminStyles';
 import Cropper, { Area } from 'react-easy-crop';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -31,6 +33,7 @@ type Point = { x: number; y: number };
 const MIN_CROP_ZOOM = 0.5;
 const MAX_CROP_ZOOM = 3;
 const DEFAULT_CROP_ZOOM = 1;
+const LONG_PRESS_MS = 480;
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -100,11 +103,73 @@ export default function ImageUpload({
   const images = Array.isArray(value) ? value : value ? [value] : [];
   const isBulkDeleteEnabled = multiple && enableBulkDelete !== false;
   const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(new Set());
+  const isMobile = useIsMobile();
+  const [mobileBulkSelectMode, setMobileBulkSelectMode] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const bulkLongPressIndexRef = useRef<number | null>(null);
+  const bulkLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bulkTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressBulkClickRef = useRef(false);
 
   useEffect(() => {
     // Clear selection whenever the underlying set of items changes.
     setSelectedIndexes(new Set());
+    setMobileBulkSelectMode(false);
   }, [images.length, previews.length, multiple]);
+
+  const exitMobileBulkSelect = () => {
+    setSelectedIndexes(new Set());
+    setMobileBulkSelectMode(false);
+  };
+
+  const enterMobileBulkSelect = (index: number) => {
+    setMobileBulkSelectMode(true);
+    setSelectedIndexes(new Set([index]));
+    suppressBulkClickRef.current = true;
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+  };
+
+  const cancelBulkLongPress = () => {
+    if (bulkLongPressTimerRef.current) clearTimeout(bulkLongPressTimerRef.current);
+    bulkLongPressTimerRef.current = null;
+    bulkTouchStartRef.current = null;
+    bulkLongPressIndexRef.current = null;
+  };
+
+  const handleBulkPointerDown = (index: number) => (e: React.PointerEvent) => {
+    if (!isMobile || !isBulkDeleteEnabled || e.button !== 0) return;
+    bulkLongPressIndexRef.current = index;
+    bulkTouchStartRef.current = { x: e.clientX, y: e.clientY };
+    bulkLongPressTimerRef.current = setTimeout(() => {
+      bulkLongPressTimerRef.current = null;
+      const target = bulkLongPressIndexRef.current;
+      if (target != null) enterMobileBulkSelect(target);
+    }, LONG_PRESS_MS);
+  };
+
+  const handleBulkPointerMove = (e: React.PointerEvent) => {
+    if (!bulkTouchStartRef.current || !bulkLongPressTimerRef.current) return;
+    const dx = Math.abs(e.clientX - bulkTouchStartRef.current.x);
+    const dy = Math.abs(e.clientY - bulkTouchStartRef.current.y);
+    if (dx > 12 || dy > 12) cancelBulkLongPress();
+  };
+
+  const handleThumbClick = (index: number) => {
+    if (!isMobile || !isBulkDeleteEnabled) return;
+    if (suppressBulkClickRef.current) {
+      suppressBulkClickRef.current = false;
+      return;
+    }
+    if (mobileBulkSelectMode) toggleSelectedIndex(index);
+    else setPreviewIndex(index);
+  };
+
+  useEffect(
+    () => () => {
+      if (bulkLongPressTimerRef.current) clearTimeout(bulkLongPressTimerRef.current);
+    },
+    []
+  );
 
   const fileMatchesAccept = (file: File): boolean => {
     if (!accept || accept === '*/*') return true;
@@ -378,6 +443,7 @@ export default function ImageUpload({
 
     setPreviews(newPreviews);
     setSelectedIndexes(new Set());
+    setMobileBulkSelectMode(false);
     onChange(multiple ? newImages : '');
     toast.success(`${count} image(s) deleted`);
   };
@@ -479,6 +545,33 @@ export default function ImageUpload({
           </div>
         ) : (
           <div className="p-4">
+            {isMobile && isBulkDeleteEnabled && displayImages.length > 0 ? (
+              <p className="mb-3 text-[11px] text-muted-foreground md:hidden">
+                {mobileBulkSelectMode
+                  ? 'Tap images to select · Cancel when done'
+                  : 'Tap to preview · Long-press to select multiple'}
+              </p>
+            ) : null}
+            {isMobile && isBulkDeleteEnabled && mobileBulkSelectMode ? (
+              <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary/25 bg-primary/8 px-2 py-2 md:hidden">
+                <Button type="button" variant="ghost" size="sm" className="h-9 shrink-0 px-2" onClick={exitMobileBulkSelect}>
+                  Cancel
+                </Button>
+                <span className="min-w-[4rem] flex-1 text-sm font-medium tabular-nums">
+                  {selectedIndexes.size} selected
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  className="h-9 px-2.5"
+                  disabled={selectedIndexes.size === 0}
+                  onClick={deleteSelected}
+                >
+                  Delete
+                </Button>
+              </div>
+            ) : null}
             <div className={cn(
               'grid gap-4',
               multiple ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'
@@ -490,16 +583,24 @@ export default function ImageUpload({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
+                    onClick={() => handleThumbClick(index)}
+                    onPointerDown={handleBulkPointerDown(index)}
+                    onPointerUp={cancelBulkLongPress}
+                    onPointerCancel={cancelBulkLongPress}
+                    onPointerLeave={cancelBulkLongPress}
+                    onPointerMove={handleBulkPointerMove}
                     className={cn(
-                      "relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted",
+                      'relative group aspect-square cursor-pointer overflow-hidden rounded-lg border border-border bg-muted touch-manipulation',
                       previewWrapperClassName,
+                      isBulkDeleteEnabled && selectedIndexes.has(index) && 'border-primary ring-2 ring-primary/40'
                     )}
                   >
                       {isBulkDeleteEnabled && (
                         <label
-                          className={`absolute top-2 left-2 z-10 rounded bg-background/80 dark:bg-background/60 backdrop-blur px-2 py-1 flex items-center gap-2 border ${
+                          className={cn(
+                            'absolute top-2 left-2 z-10 flex items-center gap-2 rounded border bg-background/80 px-2 py-1 backdrop-blur dark:bg-background/60 max-md:hidden',
                             selectedIndexes.has(index) ? 'border-primary/60' : 'border-border/50'
-                          }`}
+                          )}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <input
@@ -511,6 +612,11 @@ export default function ImageUpload({
                           <span className="text-[10px] text-muted-foreground">Select</span>
                         </label>
                       )}
+                      {isMobile && isBulkDeleteEnabled && mobileBulkSelectMode && selectedIndexes.has(index) ? (
+                        <div className="absolute left-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow">
+                          ✓
+                        </div>
+                      ) : null}
                     <img
                       src={image}
                       alt={`Preview ${index + 1}`}
@@ -520,14 +626,18 @@ export default function ImageUpload({
                       )}
                       loading="lazy"
                       decoding="async"
+                      draggable={false}
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40 max-md:bg-transparent">
                       <Button
                         type="button"
                         size="icon"
                         variant="destructive"
-                        className="opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity h-9 w-9"
-                        onClick={() => removeImage(index)}
+                        className="h-9 w-9 opacity-0 transition-opacity group-hover:opacity-100 max-md:hidden"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(index);
+                        }}
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -552,7 +662,7 @@ export default function ImageUpload({
               )}
             </div>
 
-            {isBulkDeleteEnabled && selectedIndexes.size > 0 && (
+            {isBulkDeleteEnabled && selectedIndexes.size > 0 && !isMobile && (
               <div className="mt-4 flex items-center justify-end">
                 <Button type="button" variant="destructive" onClick={deleteSelected}>
                   Delete selected
@@ -603,8 +713,20 @@ export default function ImageUpload({
         </div>
       )}
 
+      <Dialog open={previewIndex !== null} onOpenChange={(open) => !open && setPreviewIndex(null)}>
+        <DialogContent className={cn('max-w-4xl gap-0 overflow-hidden border-0 p-0 sm:max-w-4xl', adminDialogMobileClass)}>
+          {previewIndex !== null && displayImages[previewIndex] ? (
+            <img
+              src={displayImages[previewIndex]}
+              alt=""
+              className="max-h-[85dvh] w-full object-contain bg-black/95"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isCropOpen} onOpenChange={(open) => { if (!open) closeCropDialog(); }}>
-        <DialogContent className="max-w-lg w-[95vw] p-0 overflow-hidden">
+        <DialogContent className={cn('max-w-lg w-[95vw] overflow-hidden p-0', adminDialogMobileClass)}>
           <DialogHeader className="px-4 pt-4 pb-0">
             <DialogTitle>Adjust cover image</DialogTitle>
           </DialogHeader>

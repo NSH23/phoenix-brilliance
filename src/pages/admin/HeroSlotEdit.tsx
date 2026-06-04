@@ -9,7 +9,12 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { adminPanelClass } from '@/components/admin/adminStyles';
+import {
+  adminPanelClass,
+  adminRecordEditFormStackClass,
+  adminRecordEditLayoutClass,
+  adminRecordEditPreviewAsideClass,
+} from '@/components/admin/adminStyles';
 import {
   createContentMedia,
   deleteContentMedia,
@@ -170,8 +175,8 @@ export default function HeroSlotEditPage() {
   };
 
   const detailsContent = (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-5">
+    <div className={adminRecordEditLayoutClass}>
+      <div className={adminRecordEditFormStackClass}>
         <AdminFormSection
           title="Publishing"
           description="Show or hide this slot on the homepage hero"
@@ -330,7 +335,7 @@ export default function HeroSlotEditPage() {
         </AdminFormSection>
       </div>
 
-      <aside className="space-y-4 lg:sticky lg:top-28 lg:self-start">
+      <aside className={adminRecordEditPreviewAsideClass}>
         <div className={cn(adminPanelClass, 'overflow-hidden')}>
           <div className="relative aspect-video bg-muted">
             {isVideo ? (

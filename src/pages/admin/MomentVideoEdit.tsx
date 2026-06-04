@@ -8,7 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { adminPanelClass } from '@/components/admin/adminStyles';
+import {
+  adminPanelClass,
+  adminRecordEditFormStackClass,
+  adminRecordEditLayoutClass,
+  adminRecordEditPreviewAsideClass,
+} from '@/components/admin/adminStyles';
 import {
   createContentMedia,
   deleteContentMedia,
@@ -103,8 +108,8 @@ export default function MomentVideoEditPage() {
   };
 
   const detailsContent = (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-5">
+    <div className={adminRecordEditLayoutClass}>
+      <div className={adminRecordEditFormStackClass}>
         <AdminFormSection
           title="Publishing"
           description="Show or hide on the homepage Moments section"
@@ -186,7 +191,7 @@ export default function MomentVideoEditPage() {
         </AdminFormSection>
       </div>
 
-      <aside className="space-y-4 lg:sticky lg:top-28 lg:self-start">
+      <aside className={adminRecordEditPreviewAsideClass}>
         <div className={cn(adminPanelClass, 'overflow-hidden')}>
           <div className="relative aspect-[9/16] max-h-[420px] bg-muted">
             {previewThumb ? (

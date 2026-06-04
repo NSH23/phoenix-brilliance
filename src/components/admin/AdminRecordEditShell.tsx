@@ -67,16 +67,17 @@ export default function AdminRecordEditShell({
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9 text-destructive hover:text-destructive"
+              className="h-10 w-10 shrink-0 text-destructive hover:text-destructive md:h-9 md:w-9"
               onClick={onDelete}
               aria-label="Delete record"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           ) : null}
-          <Button size="sm" className="gap-1.5" disabled={saving} onClick={onSave}>
+          <Button size="sm" className="h-10 gap-1.5 max-md:px-3 md:h-9" disabled={saving} onClick={onSave}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save changes
+            <span className="hidden sm:inline">Save changes</span>
+            <span className="sm:hidden">Save</span>
           </Button>
         </div>
       }
@@ -84,7 +85,7 @@ export default function AdminRecordEditShell({
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList
           className={cn(
-            'mb-6 h-auto w-full justify-start gap-1 rounded-lg border border-border/60 bg-muted/30 p-1 sm:w-auto'
+            'mb-4 flex h-auto w-full max-w-full justify-start gap-1 overflow-x-auto rounded-lg border border-border/60 bg-muted/30 p-1 [-ms-overflow-style:none] [scrollbar-width:none] md:mb-6 sm:w-auto [&::-webkit-scrollbar]:hidden'
           )}
         >
           {tabs.map((tab) => (
@@ -92,7 +93,7 @@ export default function AdminRecordEditShell({
               key={tab.value}
               value={tab.value}
               disabled={tab.disabled}
-              className="rounded-md px-4 py-2 text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="shrink-0 rounded-md px-4 py-2.5 text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm max-md:min-h-10"
             >
               {tab.label}
             </TabsTrigger>

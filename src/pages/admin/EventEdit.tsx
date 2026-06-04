@@ -9,7 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { adminPanelClass } from '@/components/admin/adminStyles';
+import {
+  adminPanelClass,
+  adminRecordEditFormStackClass,
+  adminRecordEditLayoutClass,
+  adminRecordEditPreviewAsideClass,
+} from '@/components/admin/adminStyles';
 import { createEvent, deleteEvent, getEventById, updateEvent } from '@/services/events';
 import { getEventImages, setEventImages } from '@/services/eventImages';
 import { toast } from 'sonner';
@@ -114,8 +119,8 @@ export default function EventEditPage() {
   };
 
   const detailsContent = (
-    <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-      <div className="space-y-5">
+    <div className={adminRecordEditLayoutClass}>
+      <div className={adminRecordEditFormStackClass}>
         <AdminFormSection
           title="Publishing"
           description="Control visibility on the public website"
@@ -230,7 +235,7 @@ export default function EventEditPage() {
         </AdminFormSection>
       </div>
 
-      <aside className="lg:sticky lg:top-28 lg:self-start">
+      <aside className={adminRecordEditPreviewAsideClass}>
         <div className={cn(adminPanelClass, 'overflow-hidden')}>
           <div className="relative aspect-video bg-muted">
             {formData.cover_image ? (

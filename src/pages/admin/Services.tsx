@@ -19,6 +19,7 @@ import {
 import { getAllServices, updateService, deleteService, type Service } from '@/services/services';
 import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
+import { adminCardMenuTriggerClass } from '@/components/admin/adminStyles';
 
 export default function AdminServices() {
   const navigate = useNavigate();
@@ -133,7 +134,7 @@ export default function AdminServices() {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className={adminCardMenuTriggerClass} onClick={(e) => e.stopPropagation()}>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

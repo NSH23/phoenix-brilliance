@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Eye, EyeOff, MapPin } from 'lucide-react';
 import AdminRecordEditShell from '@/components/admin/AdminRecordEditShell';
@@ -10,7 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { adminPanelClass } from '@/components/admin/adminStyles';
+import {
+  adminPanelClass,
+  adminRecordEditFormStackClass,
+  adminRecordEditLayoutClass,
+  adminRecordEditPreviewAsideClass,
+} from '@/components/admin/adminStyles';
 import {
   createCollaboration,
   createCollaborationFolder,
@@ -18,9 +23,8 @@ import {
   deleteCollaboration,
   deleteCollaborationFolder,
   deleteCollaborationImage,
-  getCollaborationById,
+  getCollaborationForAdminEdit,
   getCollaborationFolders,
-  getCollaborationImages,
   seedCollaborationFolders,
   updateCollaboration,
   updateCollaborationFolder,
@@ -33,6 +37,9 @@ import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { cn } from '@/lib/utils';
+import type { MediaAutosaveSnapshot } from '@/components/admin/AdminMediaExplorer';
+
+const GALLERY_AUTOSAVE_KEY = 'admin-venue-gallery-autosave';
 
 type GalleryImageRow = ExplorerMediaItem & { id?: string };
 
@@ -82,13 +89,32 @@ export default function VenueEditPage() {
   const [galleryFolders, setGalleryFolders] = useState<ExplorerFolder[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImageRow[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(GALLERY_ROOT_ID);
+  const selectedFolderIdRef = useRef<string | null>(GALLERY_ROOT_ID);
   const [venueImages, setVenueImages] = useState<string[]>([]);
+  const [autosaveGallery, setAutosaveGallery] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem(GALLERY_AUTOSAVE_KEY) !== 'false'
+  );
+  const galleryAutosavingRef = useRef(false);
+  /** Last persisted gallery rows — avoids re-fetching all images on every autosave. */
+  const galleryDbSnapshotRef = useRef<
+    Array<{
+      id: string;
+      folder_id: string | null;
+      image_url: string;
+      media_type: string;
+      caption: string | null;
+    }>
+  >([]);
+
+  useEffect(() => {
+    selectedFolderIdRef.current = selectedFolderId;
+  }, [selectedFolderId]);
 
   const loadVenue = useCallback(
-    async (venueId: string) => {
-      setLoading(true);
+    async (venueId: string, options?: { preserveFolderSelection?: boolean; quiet?: boolean }) => {
+      if (!options?.quiet) setLoading(true);
       try {
-        const full = (await getCollaborationById(venueId)) as Collaboration & {
+        const full = (await getCollaborationForAdminEdit(venueId)) as Collaboration & {
           collaboration_images?: Array<{ id: string; image_url: string; folder_id: string | null; display_order: number; media_type?: string; caption?: string | null }>;
           collaboration_folders?: CollaborationFolder[];
         };
@@ -107,13 +133,15 @@ export default function VenueEditPage() {
         const folders = full.collaboration_folders || [];
         setGalleryImages(mapImages(imgs));
         setGalleryFolders(mapFolders(folders));
-        setSelectedFolderId(GALLERY_ROOT_ID);
+        setSelectedFolderId(
+          options?.preserveFolderSelection ? selectedFolderIdRef.current ?? GALLERY_ROOT_ID : GALLERY_ROOT_ID
+        );
       } catch (err) {
         logger.error('Failed to load venue', err, { component: 'VenueEditPage' });
         toast.error('Failed to load venue');
         navigate('/admin/collaborations');
       } finally {
-        setLoading(false);
+        if (!options?.quiet) setLoading(false);
       }
     },
     [navigate]
@@ -126,6 +154,117 @@ export default function VenueEditPage() {
     }
     if (id) void loadVenue(id);
   }, [id, isNew, loadVenue]);
+
+  const persistGallery = useCallback(
+    async (opts?: { silent?: boolean; snapshot?: MediaAutosaveSnapshot }) => {
+      if (!editingCollab || galleryAutosavingRef.current) return;
+      galleryAutosavingRef.current = true;
+
+      const imagesToSave = opts?.snapshot?.media ?? galleryImages;
+      const foldersToSave = opts?.snapshot?.folders ?? galleryFolders;
+
+      try {
+        const collabId = editingCollab.id;
+
+        for (const folder of foldersToSave) {
+          await updateCollaborationFolder(folder.id, {
+            name: folder.name,
+            display_order: folder.display_order,
+            is_enabled: folder.is_enabled,
+            cover_image_url: folder.cover_image_url ?? null,
+          });
+        }
+
+        const validFolderIds = new Set(foldersToSave.map((f) => f.id));
+        const resolveFolderId = (fid: string | null): string | null => {
+          if (!fid) return null;
+          return validFolderIds.has(fid) ? fid : null;
+        };
+
+        const existingImages = galleryDbSnapshotRef.current;
+        const existingIds = new Set(existingImages.map((i) => i.id));
+        const currentImageIds = new Set(imagesToSave.filter((i) => i.id).map((i) => i.id!));
+
+        let resultImages: GalleryImageRow[] = imagesToSave.map((img) => ({ ...img }));
+
+        for (const img of imagesToSave) {
+          const folderId = resolveFolderId(img.folder_id);
+          if (img.id && existingIds.has(img.id)) {
+            const existing = existingImages.find((e) => e.id === img.id);
+            const updates: Parameters<typeof updateCollaborationImage>[1] = {};
+            if (existing?.folder_id !== folderId) updates.folder_id = folderId;
+            if (existing && (existing.image_url !== img.url || existing.media_type !== img.media_type)) {
+              updates.image_url = img.url;
+              updates.media_type = img.media_type;
+            }
+            if (existing && (existing.caption ?? '') !== (img.caption ?? '')) {
+              updates.caption = img.caption ?? null;
+            }
+            if (Object.keys(updates).length > 0) {
+              await updateCollaborationImage(img.id, updates);
+            }
+          } else if (!img.id) {
+            const created = await createCollaborationImage({
+              collaboration_id: collabId,
+              image_url: img.url,
+              caption: img.caption ?? null,
+              display_order: img.display_order,
+              folder_id: folderId,
+              media_type: img.media_type ?? 'image',
+            });
+            resultImages = resultImages.map((m) =>
+              !m.id && m.url === img.url && (m.folder_id ?? null) === (img.folder_id ?? null)
+                ? { ...m, id: created.id }
+                : m
+            );
+          }
+        }
+        for (const e of existingImages) {
+          if (!currentImageIds.has(e.id)) {
+            await deleteCollaborationImage(e.id);
+            resultImages = resultImages.filter((m) => m.id !== e.id);
+          }
+        }
+
+        setGalleryImages(resultImages);
+        setGalleryFolders(foldersToSave);
+        galleryDbSnapshotRef.current = resultImages
+          .filter((row): row is GalleryImageRow & { id: string } => !!row.id)
+          .map((row) => ({
+            id: row.id,
+            folder_id: row.folder_id,
+            image_url: row.url,
+            media_type: row.media_type ?? 'image',
+            caption: row.caption ?? null,
+          }));
+
+        if (!opts?.silent) {
+          toast.success('Gallery saved');
+        }
+      } catch (err: unknown) {
+        toast.error('Could not save gallery', {
+          description: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
+      } finally {
+        galleryAutosavingRef.current = false;
+      }
+    },
+    [editingCollab, galleryFolders, galleryImages]
+  );
+
+  const handleGalleryAutosave = useCallback(
+    (snapshot: MediaAutosaveSnapshot) => {
+      if (!autosaveGallery) return;
+      return persistGallery({ silent: true, snapshot });
+    },
+    [autosaveGallery, persistGallery]
+  );
+
+  const toggleAutosaveGallery = (enabled: boolean) => {
+    setAutosaveGallery(enabled);
+    localStorage.setItem(GALLERY_AUTOSAVE_KEY, enabled ? 'true' : 'false');
+  };
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -164,60 +303,8 @@ export default function VenueEditPage() {
 
       if (!editingCollab) return;
       await updateCollaboration(editingCollab.id, base);
-      const collabId = editingCollab.id;
-
-      for (const folder of galleryFolders) {
-        await updateCollaborationFolder(folder.id, {
-          name: folder.name,
-          display_order: folder.display_order,
-          is_enabled: folder.is_enabled,
-          cover_image_url: folder.cover_image_url ?? null,
-        });
-      }
-
-      const validFolderIds = new Set(galleryFolders.map((f) => f.id));
-      const resolveFolderId = (fid: string | null): string | null => {
-        if (!fid) return null;
-        return validFolderIds.has(fid) ? fid : null;
-      };
-
-      const existingImages = await getCollaborationImages(collabId);
-      const existingIds = new Set(existingImages.map((i) => i.id));
-      const currentImageIds = new Set(galleryImages.filter((i) => i.id).map((i) => i.id!));
-
-      for (const img of galleryImages) {
-        const folderId = resolveFolderId(img.folder_id);
-        if (img.id && existingIds.has(img.id)) {
-          const existing = existingImages.find((e) => e.id === img.id);
-          const updates: Parameters<typeof updateCollaborationImage>[1] = {};
-          if (existing?.folder_id !== folderId) updates.folder_id = folderId;
-          if (existing && (existing.image_url !== img.url || existing.media_type !== img.media_type)) {
-            updates.image_url = img.url;
-            updates.media_type = img.media_type;
-          }
-          if (existing && (existing.caption ?? '') !== (img.caption ?? '')) {
-            updates.caption = img.caption ?? null;
-          }
-          if (Object.keys(updates).length > 0) {
-            await updateCollaborationImage(img.id, updates);
-          }
-        } else if (!img.id) {
-          await createCollaborationImage({
-            collaboration_id: collabId,
-            image_url: img.url,
-            caption: img.caption ?? null,
-            display_order: img.display_order,
-            folder_id: folderId,
-            media_type: img.media_type ?? 'image',
-          });
-        }
-      }
-      for (const e of existingImages) {
-        if (!currentImageIds.has(e.id)) await deleteCollaborationImage(e.id);
-      }
-
+      await persistGallery();
       toast.success('Venue saved');
-      void loadVenue(collabId);
     } catch (err: unknown) {
       toast.error('Save failed', { description: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -283,7 +370,7 @@ export default function VenueEditPage() {
   };
 
   const handleDeleteFolder = async (folderId: string) => {
-    if (!confirm('Delete this folder? Images inside will move to Uncategorized on save.')) return;
+    if (!confirm('Delete this folder? Photos inside will appear as unassigned at gallery root until you move or delete them.')) return;
     try {
       await deleteCollaborationFolder(folderId);
       const childIds = galleryFolders.filter((f) => f.parent_id === folderId).map((f) => f.id);
@@ -323,8 +410,8 @@ export default function VenueEditPage() {
     : null;
 
   const detailsContent = (
-    <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-      <div className="space-y-5">
+    <div className={adminRecordEditLayoutClass}>
+      <div className={adminRecordEditFormStackClass}>
         <AdminFormSection
           title="Publishing"
           description="Control whether this venue appears on the public website"
@@ -465,7 +552,7 @@ export default function VenueEditPage() {
         ) : null}
       </div>
 
-      <aside className="space-y-4 lg:sticky lg:top-28 lg:self-start">
+      <aside className={adminRecordEditPreviewAsideClass}>
         <div className={cn(adminPanelClass, 'overflow-hidden')}>
           <div className="relative aspect-[16/10] bg-muted">
             {bannerPreview ? (
@@ -527,6 +614,17 @@ export default function VenueEditPage() {
       gallery={
         !isNew ? (
           <div className="space-y-3">
+            <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 max-md:items-stretch sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Autosave gallery</p>
+                <p className="text-xs text-muted-foreground">
+                  {autosaveGallery
+                    ? 'Uploads are saved to the server automatically.'
+                    : 'Uploads stay here until you tap Save changes.'}
+                </p>
+              </div>
+              <Switch checked={autosaveGallery} onCheckedChange={toggleAutosaveGallery} aria-label="Autosave gallery" />
+            </div>
             <AdminMediaExplorer
               folders={galleryFolders}
               media={galleryImages}
@@ -540,8 +638,14 @@ export default function VenueEditPage() {
               onDeleteFolder={handleDeleteFolder}
               onSeedStandardFolders={handleSeedFolders}
               creatingFolder={creatingFolder}
+              autosaveEnabled={autosaveGallery}
+              onAutosave={handleGalleryAutosave}
             />
-            <p className="text-xs text-muted-foreground">Changes to folders and media are saved when you click Save changes.</p>
+            <p className="text-xs text-muted-foreground">
+              {autosaveGallery
+                ? 'Venue name, logo, and other details still use Save changes.'
+                : 'Turn on autosave or use Save changes to store gallery uploads.'}
+            </p>
           </div>
         ) : undefined
       }

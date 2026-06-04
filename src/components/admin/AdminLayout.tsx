@@ -708,8 +708,8 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
                 {headerBack}
               </motion.div>
             ) : null}
-            <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 basis-0 min-[0px]">
               <motion.h1
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -733,7 +733,7 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.06 }}
-                className="flex shrink-0 items-center gap-2"
+                className="flex shrink-0 flex-wrap items-center justify-end gap-2 max-md:ml-auto"
               >
                 {headerActions}
               </motion.div>

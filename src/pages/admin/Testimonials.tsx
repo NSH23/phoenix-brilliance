@@ -45,6 +45,7 @@ import {
 import { getAllEvents } from '@/services/events';
 import type { Event } from '@/services/events';
 import { toast } from 'sonner';
+import { adminCardMenuTriggerClass } from '@/components/admin/adminStyles';
 
 export default function AdminTestimonials() {
   const PAGE_SIZE = 12;
@@ -277,7 +278,7 @@ export default function AdminTestimonials() {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 max-md:h-10 max-md:w-10 -mr-1 md:-mr-2">
+              <Button variant="ghost" size="icon" className={adminCardMenuTriggerClass}>
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>

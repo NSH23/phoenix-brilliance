@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getAdminEventsPage, updateEvent, deleteEvent, type Event } from '@/services/events';
 import { toast } from 'sonner';
+import { adminCardMenuTriggerOverlayClass } from '@/components/admin/adminStyles';
 
 const PAGE_SIZE = 12;
 
@@ -162,7 +163,7 @@ export default function AdminEvents() {
             <Button
               variant="secondary"
               size="icon"
-              className="absolute right-3 top-3 h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
+              className={adminCardMenuTriggerOverlayClass}
               onClick={(e) => e.stopPropagation()}
             >
               <MoreHorizontal className="h-4 w-4" />

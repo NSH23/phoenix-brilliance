@@ -122,6 +122,48 @@ export async function getAdminCollaborationsPage(params: {
   };
 }
 
+/** Admin edit: parallel flat queries (faster than nested embed at scale). */
+export async function getCollaborationForAdminEdit(id: string) {
+  const [collabRes, imagesRes, foldersRes, stepsRes] = await Promise.all([
+    supabase.from('collaborations').select(COLLAB_COLUMNS).eq('id', id).single(),
+    supabase
+      .from('collaboration_images')
+      .select(COLLAB_IMAGE_COLUMNS)
+      .eq('collaboration_id', id)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('collaboration_folders')
+      .select(COLLAB_FOLDER_COLUMNS)
+      .eq('collaboration_id', id)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('collaboration_steps')
+      .select(COLLAB_STEP_COLUMNS)
+      .eq('collaboration_id', id)
+      .order('step_number', { ascending: true }),
+  ]);
+
+  if (collabRes.error) throw collabRes.error;
+  if (!collabRes.data) return collabRes.data;
+
+  const collab = collabRes.data as Collaboration;
+  const imagesArr = (imagesRes.data || []) as CollaborationImage[];
+  const foldersArr = (foldersRes.data || []) as CollaborationFolder[];
+  const stepsArr = (stepsRes.data || []) as CollaborationStep[];
+
+  return {
+    ...collab,
+    logo_url: collab.logo_url ? resolvePublicStorageUrl(collab.logo_url, 'partner-logos') : null,
+    banner_url: collab.banner_url ? resolvePublicStorageUrl(collab.banner_url, 'gallery-images') : null,
+    collaboration_images: imagesArr.map((img) => ({
+      ...img,
+      image_url: resolvePublicStorageUrl(img.image_url, 'gallery-images'),
+    })),
+    collaboration_folders: foldersArr,
+    collaboration_steps: stepsArr,
+  };
+}
+
 // Get collaboration by ID with images, folders, and steps.
 // Normalizes nested relations so collaboration_images and collaboration_folders are always arrays (sorted).
 export async function getCollaborationById(id: string) {
