@@ -13,6 +13,7 @@ import {
   HardDrive,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Scissors,
   Trash2,
   Upload,
@@ -78,6 +79,7 @@ export type AdminMediaExplorerProps = {
   uploadBucket: string;
   onCreateRootFolder: (name: string) => Promise<void>;
   onCreateSubfolder: (parentId: string, name: string) => Promise<void>;
+  onRenameFolder: (folderId: string, name: string) => Promise<void>;
   onDeleteFolder: (folderId: string) => Promise<void>;
   onSeedStandardFolders?: () => Promise<void>;
   creatingFolder?: boolean;
@@ -179,6 +181,7 @@ function FolderTile({
   onDragLeaveFolder,
   onDropOnFolder,
   onPaste,
+  onRename,
   onDelete,
   canDelete,
   hasClipboard,
@@ -199,6 +202,7 @@ function FolderTile({
   onDragLeaveFolder: () => void;
   onDropOnFolder: (folderId: string | null, files: FileList | null) => void;
   onPaste?: () => void;
+  onRename?: () => void;
   onDelete?: () => void;
   canDelete?: boolean;
   hasClipboard?: boolean;
@@ -310,6 +314,11 @@ function FolderTile({
             <ClipboardPaste className="mr-2 h-4 w-4" /> Paste
           </ContextMenuItem>
         ) : null}
+        {onRename ? (
+          <ContextMenuItem onClick={onRename}>
+            <Pencil className="mr-2 h-4 w-4" /> Rename
+          </ContextMenuItem>
+        ) : null}
         {canDelete && onDelete ? (
           <>
             <ContextMenuSeparator />
@@ -333,6 +342,7 @@ export default function AdminMediaExplorer({
   uploadBucket,
   onCreateRootFolder,
   onCreateSubfolder,
+  onRenameFolder,
   onDeleteFolder,
   onSeedStandardFolders,
   creatingFolder = false,
@@ -364,6 +374,10 @@ export default function AdminMediaExplorer({
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderMode, setNewFolderMode] = useState<'category' | 'subfolder'>('category');
+  const [renameFolderOpen, setRenameFolderOpen] = useState(false);
+  const [renameFolderId, setRenameFolderId] = useState<string | null>(null);
+  const [renameFolderName, setRenameFolderName] = useState('');
+  const [renamingFolder, setRenamingFolder] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [showVideoForm, setShowVideoForm] = useState(false);
   const [youtubeInput, setYoutubeInput] = useState('');
@@ -533,6 +547,47 @@ export default function AdminMediaExplorer({
     if (selectedFolderTileIds.size !== 1) return;
     const folderId = [...selectedFolderTileIds][0];
     void onDeleteFolder(folderId).then(() => exitMobileSelectMode());
+  };
+
+  const openRenameFolderDialog = (folderId: string) => {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    setRenameFolderId(folderId);
+    setRenameFolderName(folder.name);
+    setRenameFolderOpen(true);
+  };
+
+  const renameSelectedFolderTile = () => {
+    if (selectedFolderTileIds.size !== 1) return;
+    openRenameFolderDialog([...selectedFolderTileIds][0]);
+  };
+
+  const submitRenameFolder = async () => {
+    const name = renameFolderName.trim();
+    if (!name) {
+      toast.error('Enter a folder name');
+      return;
+    }
+    if (!renameFolderId) return;
+    const existing = folders.find((f) => f.id === renameFolderId);
+    if (existing?.name === name) {
+      setRenameFolderOpen(false);
+      setRenameFolderId(null);
+      setRenameFolderName('');
+      return;
+    }
+    setRenamingFolder(true);
+    try {
+      await onRenameFolder(renameFolderId, name);
+      setRenameFolderOpen(false);
+      setRenameFolderId(null);
+      setRenameFolderName('');
+      exitMobileSelectMode();
+    } catch {
+      // Parent shows error toast
+    } finally {
+      setRenamingFolder(false);
+    }
   };
 
   const deleteAllUnassigned = () => {
@@ -1040,6 +1095,17 @@ export default function AdminMediaExplorer({
           <ClipboardPaste className="h-3.5 w-3.5" /> Paste
         </Button>
       ) : null}
+      {!mobile && selectedFolderTileIds.size === 1 ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5"
+          onClick={renameSelectedFolderTile}
+        >
+          <Pencil className="h-3.5 w-3.5" /> Rename
+        </Button>
+      ) : null}
       {!mobile && canUpload ? (
         <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => setShowVideoForm((v) => !v)}>
           <Video className="h-3.5 w-3.5" />
@@ -1246,6 +1312,16 @@ export default function AdminMediaExplorer({
                   type="button"
                   variant="ghost"
                   size="icon"
+                  className="h-10 w-10 md:h-8 md:w-8"
+                  onClick={() => openRenameFolderDialog(selectedFolder.id)}
+                  aria-label="Rename folder"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
                   className="h-10 w-10 text-destructive hover:text-destructive md:h-8 md:w-8"
                   onClick={() => void onDeleteFolder(selectedFolder.id)}
                   aria-label="Delete folder"
@@ -1312,6 +1388,16 @@ export default function AdminMediaExplorer({
                   <Button
                     type="button"
                     size="sm"
+                    variant="outline"
+                    className="h-9 px-2.5"
+                    disabled={selectedFolderTileIds.size !== 1}
+                    onClick={renameSelectedFolderTile}
+                  >
+                    Rename
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
                     variant="destructive"
                     className="h-9 px-2.5"
                     disabled={selectedFolderTileIds.size !== 1}
@@ -1361,6 +1447,7 @@ export default function AdminMediaExplorer({
                         onSelect={(e) => selectFolderTile(f.id, e)}
                         onOpen={() => navigateToFolder(f.id)}
                         onPaste={() => handlePaste(f.id)}
+                        onRename={() => openRenameFolderDialog(f.id)}
                         onDelete={() => void onDeleteFolder(f.id)}
                         onDragOverFolder={(id, external) => {
                           if (external) setExternalDragOver(id);
@@ -1384,7 +1471,7 @@ export default function AdminMediaExplorer({
                 </p>
                 <p className="mt-2 text-[11px] text-muted-foreground md:hidden">
                   {mobileFolderSelectMode
-                    ? 'Tap categories to select · Cancel when done'
+                    ? 'Tap folders to select · Rename or delete one at a time'
                     : isAtRoot
                       ? 'Tap to open a category · Long-press to select folders'
                       : 'Long-press a photo to select · Then tap more photos'}
@@ -1553,6 +1640,52 @@ export default function AdminMediaExplorer({
             </Button>
             <Button type="button" disabled={creatingFolder} onClick={() => void submitNewFolder()}>
               Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={renameFolderOpen}
+        onOpenChange={(open) => {
+          setRenameFolderOpen(open);
+          if (!open) {
+            setRenameFolderId(null);
+            setRenameFolderName('');
+          }
+        }}
+      >
+        <DialogContent className={cn('max-w-md', adminDialogMobileClass)}>
+          <DialogHeader>
+            <DialogTitle>Rename folder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="rename-folder-name">Folder name</Label>
+            <Input
+              id="rename-folder-name"
+              value={renameFolderName}
+              onChange={(e) => setRenameFolderName(e.target.value)}
+              placeholder="Enter a new name"
+              onKeyDown={(e) => e.key === 'Enter' && void submitRenameFolder()}
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Updates the label on the public gallery and in admin navigation.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setRenameFolderOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={renamingFolder} onClick={() => void submitRenameFolder()}>
+              {renamingFolder ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                'Save'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

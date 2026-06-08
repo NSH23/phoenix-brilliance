@@ -379,6 +379,18 @@ export default function AlbumEditPage() {
     }
   };
 
+  const handleRenameFolder = async (folderId: string, name: string) => {
+    if (!editingAlbum) return;
+    try {
+      await updateAlbumFolder(folderId, { name });
+      setGalleryFolders((prev) => prev.map((f) => (f.id === folderId ? { ...f, name } : f)));
+      toast.success('Folder renamed');
+    } catch (err) {
+      toast.error('Failed to rename folder', { description: (err as Error).message });
+      throw err;
+    }
+  };
+
   const handleDeleteFolder = async (folderId: string) => {
     if (!confirm('Delete this folder? Media inside will appear as unassigned at gallery root until you move or delete it.')) return;
     try {
@@ -524,6 +536,7 @@ export default function AlbumEditPage() {
               uploadBucket="album-images"
               onCreateRootFolder={handleCreateRootFolder}
               onCreateSubfolder={handleCreateSubfolder}
+              onRenameFolder={handleRenameFolder}
               onDeleteFolder={handleDeleteFolder}
               creatingFolder={creatingFolder}
               autosaveEnabled={autosaveGallery}

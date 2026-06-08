@@ -369,6 +369,18 @@ export default function VenueEditPage() {
     }
   };
 
+  const handleRenameFolder = async (folderId: string, name: string) => {
+    if (!editingCollab) return;
+    try {
+      await updateCollaborationFolder(folderId, { name });
+      setGalleryFolders((prev) => prev.map((f) => (f.id === folderId ? { ...f, name } : f)));
+      toast.success('Folder renamed');
+    } catch (err) {
+      toast.error('Failed to rename folder', { description: (err as Error).message });
+      throw err;
+    }
+  };
+
   const handleDeleteFolder = async (folderId: string) => {
     if (!confirm('Delete this folder? Photos inside will appear as unassigned at gallery root until you move or delete them.')) return;
     try {
@@ -639,6 +651,7 @@ export default function VenueEditPage() {
               uploadBucket="gallery-images"
               onCreateRootFolder={handleCreateRootFolder}
               onCreateSubfolder={handleCreateSubfolder}
+              onRenameFolder={handleRenameFolder}
               onDeleteFolder={handleDeleteFolder}
               onSeedStandardFolders={handleSeedFolders}
               creatingFolder={creatingFolder}
