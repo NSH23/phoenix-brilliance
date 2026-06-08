@@ -161,7 +161,7 @@ export default function AdminAlbums() {
     >
       <div className="relative aspect-[16/10] bg-muted">
         {album.cover_image ? (
-          <img src={album.cover_image} alt={album.title} className="h-full w-full object-cover" loading="lazy" />
+          <img src={album.cover_image} alt={album.title} className="h-full w-full object-contain bg-muted/25 p-1" loading="lazy" />
         ) : (
           <div className="flex h-full items-center justify-center">
             <Image className="h-10 w-10 text-muted-foreground/40" />

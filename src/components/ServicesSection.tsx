@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExpandingCards, CardItem } from "@/components/ui/expanding-cards";
+import HomeSectionShell from "@/components/ui/home-section-shell";
+import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { getActiveServices, type Service } from "@/services/services";
 import { resolvePublicStorageUrl } from "@/services/storage";
 import {
@@ -64,7 +66,7 @@ const MobileServiceCarousel = ({ services }: { services: CardItem[] }) => {
               <img
                 src={currentService.imgSrc}
                 alt={currentService.title}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-contain bg-muted/25 p-2"
                 loading="lazy"
                 decoding="async"
                 onError={(e) => {
@@ -168,38 +170,15 @@ const ServicesSection = ({ prefetchedServices, homepageDataPending }: ServicesSe
   if (!loading && services.length === 0) return null; // Hide if no services
 
   return (
-    <section id="services" className="py-12 md:py-16 overflow-hidden relative bg-transparent">
-
-      {/* Light theme: 7.jpg. Dark theme: background image */}
-      <div
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-100 dark:opacity-0"
-        style={{ backgroundImage: "var(--bg-image-7, url('/7.jpg'))" }}
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-100"
-        style={{ backgroundImage: "var(--bg-image-1-5, url('/1.5.jpg'))" }}
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 -z-[5] bg-transparent dark:bg-black/40"
-        aria-hidden
-      />
-
-      <div className="container px-4 mx-auto max-w-7xl relative z-10">
-        {/* Header – editorial left-accent (same as Events, Reels, Collaborations) */}
-        <header className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1">
-          <p className="text-primary font-sans font-semibold text-xs md:text-sm tracking-[0.2em] uppercase">
-            What We Create
-          </p>
-          <h2 className="font-serif font-medium leading-tight text-3xl md:text-4xl lg:text-5xl text-foreground dark:text-white">
-            Our Services
-          </h2>
-          <p className="mt-4 max-w-xl text-muted-foreground dark:text-white/70 text-base md:text-lg leading-relaxed font-sans">
-            Comprehensive event design, meticulous planning, and flawless execution — thoughtfully tailored to transform your vision into an extraordinary experience.
-          </p>
-        </header>
-
+    <HomeSectionShell
+      ariaLabelledBy="services-heading"
+      badge="What We Offer"
+      title={<HomeSectionSplitTitle line1="Our" accent="Services" />}
+      fullBleed
+      contentPanel
+      contentPanelClassName="p-5 sm:p-6 md:p-8"
+      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
+    >
         {/* Desktop View: Expanding Cards */}
         <div className="hidden md:block w-full">
           {row1.length > 0 && (
@@ -234,8 +213,7 @@ const ServicesSection = ({ prefetchedServices, homepageDataPending }: ServicesSe
           </div>
         )}
 
-      </div>
-    </section>
+    </HomeSectionShell>
   );
 };
 

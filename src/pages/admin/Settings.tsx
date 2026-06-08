@@ -279,12 +279,14 @@ export default function AdminSettings() {
                     value={avatarDisplayUrl || resolvePublicStorageUrl(profileData.avatar, 'admin-avatars')}
                     onChange={handleProfileAvatarChange}
                     multiple={false}
-                    previewClassName="object-cover"
+                    previewFit="contain"
+                    previewAspectRatio={1}
                     previewWrapperClassName="max-md:w-24 max-md:h-24 max-md:aspect-auto max-md:flex max-md:items-center max-md:justify-center max-md:mx-auto"
                     bucket="admin-avatars"
                     uploadOnSelect={true}
                     enableCropAdjust={true}
                     cropAspect={1}
+                    adjustTitle="Adjust avatar"
                   />
                   {avatarSaving && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -566,8 +568,11 @@ export default function AdminSettings() {
                     multiple={false}
                     bucket="site-logo"
                     uploadOnSelect={true}
-                    previewClassName="object-contain max-h-24"
+                    previewFit="contain"
+                    previewAspectRatio={1}
                     previewWrapperClassName="max-md:w-24 max-md:h-24 max-md:aspect-auto max-md:flex max-md:items-center max-md:justify-center max-md:mx-auto"
+                    enableCropAdjust
+                    adjustTitle="Adjust site logo"
                   />
                   {siteLogoSaving && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">

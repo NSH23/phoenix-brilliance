@@ -145,7 +145,7 @@ export default function AdminEvents() {
         <img
           src={event.cover_image || '/placeholder.svg'}
           alt={event.title}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="h-full w-full object-contain bg-muted/25 p-1 transition-transform duration-300 group-hover:scale-[1.02]"
           loading="lazy"
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/placeholder.svg';

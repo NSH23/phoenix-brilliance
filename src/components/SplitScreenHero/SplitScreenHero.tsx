@@ -403,7 +403,7 @@ const SplitScreenHero = ({
                       <img
                         src={s.imageUrl}
                         alt={s.imageAlt}
-                        className="w-full h-full object-cover object-center"
+                        className="h-full w-full object-contain object-center bg-muted/20"
                         loading={i === 0 ? "eager" : "lazy"}
                         fetchPriority={i === 0 ? "high" : "low"}
                         decoding="async"

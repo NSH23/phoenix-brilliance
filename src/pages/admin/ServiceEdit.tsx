@@ -169,9 +169,11 @@ export default function ServiceEditPage() {
             onChange={(url) => setFormData({ ...formData, image_url: (url as string) || '' })}
             bucket="service-images"
             uploadOnSelect
-            previewClassName="aspect-video w-full object-cover"
+            previewFit="contain"
+            previewAspectRatio={16 / 9}
             enableCropAdjust
             cropAspect={16 / 9}
+            adjustTitle="Adjust service image"
           />
         </AdminFormSection>
       </div>
@@ -180,7 +182,7 @@ export default function ServiceEditPage() {
         <div className={cn(adminPanelClass, 'overflow-hidden p-4')}>
           <div className="mb-3 flex h-24 items-center justify-center overflow-hidden rounded-lg bg-muted">
             {imagePreview ? (
-              <img src={imagePreview} alt="" className="h-full w-full object-cover" />
+              <img src={imagePreview} alt="" className="h-full w-full object-contain p-2" />
             ) : (
               <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
             )}

@@ -422,7 +422,7 @@ const GalleryAlbum = () => {
                         src={photo.url || '/placeholder.svg'}
                         alt={photo.caption || 'Photo'}
                         draggable={false}
-                        className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-auto max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
                         loading="lazy"
                         decoding="async"
                         onError={(e) => {
@@ -606,7 +606,7 @@ const GalleryAlbum = () => {
                         src={photo.url || '/placeholder.svg'}
                         alt={photo.caption || `Photo in ${album.title}`}
                         draggable={false}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-contain bg-muted/30 p-0.5"
                         loading="lazy"
                         decoding="async"
                         onError={(e) => {

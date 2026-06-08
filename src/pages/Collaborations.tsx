@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { MapPin, ArrowRight, Building2, Handshake, Star, Users, Loader2 } from "lucide-react";
+import { ArrowRight, Building2, Handshake, Star, Users, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -10,6 +10,8 @@ import { getActiveCollaborations } from "@/services/collaborations";
 import { getPageHeroContent } from "@/services/pageHeroContent";
 import { SEO } from "@/components/SEO";
 import { shortLocationForCard } from "@/lib/addressUtils";
+import { resolvePublicStorageUrl } from "@/services/storage";
+import { PartnerVenueCard, type PartnerVenueCardData } from "@/components/ui/partner-venue-card";
 
 const DEFAULT_STATS = [
   { icon: Building2, value: "25+", label: "Partner Venues" },
@@ -284,101 +286,29 @@ export default function Collaborations() {
               <Loader2 className="w-10 h-10 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {activeCollaborations.map((collab, index) => {
-                const hasLogo = !!collab.logo_url;
+                const venue: PartnerVenueCardData = {
+                  id: collab.id,
+                  name: collab.name,
+                  location: shortLocationForCard(collab.location),
+                  logoUrl: collab.logo_url
+                    ? resolvePublicStorageUrl(collab.logo_url, "partner-logos")
+                    : "/placeholder.svg",
+                  bannerUrl: collab.banner_url,
+                };
 
                 return (
                   <motion.div
                     key={collab.id}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    transition={{ duration: 0.45, delay: index * 0.05 }}
                   >
-                    <Link
-                      to={`/collaborations/${collab.id}`}
-                      replace
-                      className="group block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                    >
-                      <div className="group/card relative h-full rounded-[20px] overflow-hidden bg-card dark:bg-card/40 dark:backdrop-blur-md 
-                                border border-border/60 dark:border-white/10
-                                hover:border-primary/20 dark:hover:border-primary/30
-                                shadow-[0_4px_24px_rgba(26,26,46,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]
-                                hover:shadow-[0_24px_56px_rgba(26,26,46,0.12)] dark:hover:shadow-[0_24px_56px_rgba(0,0,0,0.25)]
-                                hover:-translate-y-2
-                                transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
-                        {/* Card header - show logo in circle if present, otherwise show name prominently */}
-                        <div className={`relative ${hasLogo ? 'h-32 sm:h-48' : 'h-28 sm:h-40'} overflow-hidden bg-gradient-to-br from-muted/30 to-muted/10`}>
-                          {hasLogo ? (
-                            <>
-                              {/* Decorative background pattern when logo exists */}
-                              <div className="absolute inset-0 opacity-5">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary rounded-full blur-3xl" />
-                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary rounded-full blur-2xl" />
-                              </div>
-                              {/* Logo displayed in center as circular avatar */}
-                              <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
-                                <div className="relative w-16 h-16 sm:w-28 sm:h-28 rounded-full bg-background/80 backdrop-blur-sm border-2 sm:border-4 border-primary/20 
-                                          shadow-xl group-hover/card:border-primary/40 group-hover/card:scale-105 
-                                          transition-all duration-400 flex items-center justify-center overflow-hidden">
-                                  <img
-                                    src={collab.logo_url}
-                                    alt={`${collab.name} logo`}
-                                    className="w-full h-full object-contain p-2 sm:p-3"
-                                    loading="lazy"
-                                    decoding="async"
-                                  />
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            /* When no logo, show name prominently */
-                            <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
-                              <h3 className="text-sm sm:text-xl md:text-2xl font-serif font-semibold text-foreground group-hover/card:text-primary 
-                                       transition-colors duration-300 text-center line-clamp-2">
-                                {collab.name}
-                              </h3>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="p-3 sm:p-5 lg:p-6">
-                          {/* Name below logo (if logo exists) */}
-                          {hasLogo && (
-                            <div className="mb-2 sm:mb-3">
-                              <h3 className="text-sm sm:text-lg font-serif font-semibold text-foreground group-hover/card:text-primary 
-                                       transition-colors duration-300 text-center line-clamp-2">
-                                {collab.name}
-                              </h3>
-                            </div>
-                          )}
-
-                          {/* Location badge - positioned below name/logo, above description */}
-                          {collab.location && (
-                            <div className="flex items-start gap-1.5 sm:gap-2 mb-2 sm:mb-3 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg 
-                                      bg-muted/50 dark:bg-muted/30 border border-border/50">
-                              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-primary flex-shrink-0 mt-0.5" />
-                              <p className="text-muted-foreground text-[10px] sm:text-xs leading-relaxed line-clamp-2">
-                                {shortLocationForCard(collab.location)}
-                              </p>
-                            </div>
-                          )}
-
-                          <p className="text-muted-foreground text-xs sm:text-sm line-clamp-3 mb-2 sm:mb-4 text-center min-h-[2.5rem] sm:min-h-[3.75rem]">
-                            {collab.description || "—"}
-                          </p>
-
-                          <div className="flex items-center justify-center text-primary font-semibold text-xs sm:text-sm 
-                                     group-hover/card:gap-3 gap-1.5 sm:gap-2 transition-all duration-300">
-                            <span>View Details</span>
-                            <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover/card:translate-x-1 transition-transform" />
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
+                    <PartnerVenueCard venue={venue} />
                   </motion.div>
-                )
+                );
               })}
             </div>
           )}

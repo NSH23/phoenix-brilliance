@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, FolderOpen, Images, Play } from 'lucide-react';
+import { ArrowLeft, Images } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import FolderPhotoGallery from '@/components/ui/folder-photo-gallery';
+import { GalleryFolderGrid } from '@/components/ui/gallery-folder-card';
 import {
   buildFolderTree,
   folderHasVisibleContent,
@@ -115,40 +116,53 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
         ? currentRoot?.name ?? 'Gallery'
         : [currentRoot?.name, enabledFolders.find((f) => f.id === displayFolderId)?.name].filter(Boolean).join(' / ');
 
-  const renderCoverTile = (
-    folderId: string,
-    name: string,
-    count: number,
-    onClick: () => void,
-    delay: number
-  ) => {
-    const cover = getFolderCoverUrl(folderId, enabledFolders, media, resolveUrl);
-    return (
-      <motion.button
-        key={folderId}
-        type="button"
-        initial={{ opacity: 0, y: 10 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ delay }}
-        onClick={onClick}
-        className="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/60 bg-muted text-left shadow-sm"
-      >
-        {cover ? (
-          <img src={cover} alt={name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-muted">
-            <FolderOpen className="h-10 w-10 text-muted-foreground/50" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <p className="font-semibold text-white drop-shadow">{name}</p>
-          <p className="text-xs text-white/80">{count} items</p>
-        </div>
-      </motion.button>
-    );
-  };
+  const rootFolderCards = useMemo(() => {
+    const cards = visibleRoots.map((node) => {
+      const count =
+        getMediaInFolder(node.folder.id, media).length +
+        enabledFolders
+          .filter((f) => f.parent_id === node.folder.id)
+          .reduce((sum, sf) => sum + getMediaInFolder(sf.id, media).length, 0);
+      return {
+        id: node.folder.id,
+        name: node.folder.name,
+        count,
+        coverUrl: getFolderCoverUrl(node.folder.id, enabledFolders, media, resolveUrl),
+        description: 'Virtual tour album',
+        onClick: () => openRoot(node.folder.id),
+      };
+    });
+
+    if (uncategorized.length > 0) {
+      cards.push({
+        id: UNCategorized_FOLDER_ID,
+        name: uncategorizedLabel,
+        count: uncategorized.length,
+        coverUrl: getFolderCoverUrl(UNCategorized_FOLDER_ID, enabledFolders, media, resolveUrl),
+        description: 'Photos not in a folder',
+        onClick: () => {
+          setRootId(null);
+          setSubfolderId(UNCategorized_FOLDER_ID);
+          setLevel('photos');
+        },
+      });
+    }
+
+    return cards;
+  }, [visibleRoots, enabledFolders, media, resolveUrl, uncategorized, uncategorizedLabel]);
+
+  const subfolderCards = useMemo(
+    () =>
+      subfolders.map((sf) => ({
+        id: sf.id,
+        name: sf.name,
+        count: getMediaInFolder(sf.id, media).length,
+        coverUrl: getFolderCoverUrl(sf.id, enabledFolders, media, resolveUrl),
+        description: currentRoot?.name ? `Inside ${currentRoot.name}` : 'Subfolder',
+        onClick: () => openSubfolder(sf.id),
+      })),
+    [subfolders, enabledFolders, media, resolveUrl, currentRoot?.name],
+  );
 
   return (
     <div className="space-y-4">
@@ -165,45 +179,9 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
         </div>
       </div>
 
-      {level === 'roots' && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {visibleRoots.map((node, i) => {
-            const count =
-              getMediaInFolder(node.folder.id, media).length +
-              enabledFolders
-                .filter((f) => f.parent_id === node.folder.id)
-                .reduce((sum, sf) => sum + getMediaInFolder(sf.id, media).length, 0);
-            return renderCoverTile(node.folder.id, node.folder.name, count, () => openRoot(node.folder.id), i * 0.04);
-          })}
-          {uncategorized.length > 0
-            ? renderCoverTile(
-                UNCategorized_FOLDER_ID,
-                uncategorizedLabel,
-                uncategorized.length,
-                () => {
-                  setRootId(null);
-                  setSubfolderId(UNCategorized_FOLDER_ID);
-                  setLevel('photos');
-                },
-                visibleRoots.length * 0.04
-              )
-            : null}
-        </div>
-      )}
+      {level === 'roots' && <GalleryFolderGrid folders={rootFolderCards} />}
 
-      {level === 'subfolders' && rootId && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {subfolders.map((sf, i) =>
-            renderCoverTile(
-              sf.id,
-              sf.name,
-              getMediaInFolder(sf.id, media).length,
-              () => openSubfolder(sf.id),
-              i * 0.04
-            )
-          )}
-        </div>
-      )}
+      {level === 'subfolders' && rootId && <GalleryFolderGrid folders={subfolderCards} />}
 
       {level === 'photos' && (
         <>
@@ -212,32 +190,16 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
               No photos or videos in this folder
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {photos.map((item, i) => {
-                const video = isVideo(item);
-                const src = resolveUrl(item.url);
-                const poster = getPoster ? getPoster(item) : src;
-                return (
-                  <motion.button
-                    key={item.id ?? `${item.url}-${i}`}
-                    type="button"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.02 }}
-                    className="relative aspect-square overflow-hidden rounded-xl"
-                    onClick={() => onOpenLightbox(i, photos)}
-                  >
-                    <img src={poster} alt={item.caption || 'Gallery'} className="h-full w-full object-cover" loading="lazy" />
-                    {video ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/25">
-                        <Play className="h-10 w-10 text-white" fill="currentColor" />
-                      </div>
-                    ) : null}
-                  </motion.button>
-                );
-              })}
-            </div>
+            <FolderPhotoGallery
+              items={photos.map((item, i) => ({
+                id: item.id ?? `${item.url}-${i}`,
+                posterSrc: getPoster ? getPoster(item) : resolveUrl(item.url),
+                alt: item.caption ?? 'Gallery',
+                caption: item.caption ?? undefined,
+                isVideo: isVideo(item),
+              }))}
+              onItemClick={(index) => onOpenLightbox(index, photos)}
+            />
           )}
         </>
       )}

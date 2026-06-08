@@ -926,13 +926,13 @@ export default function AdminMediaExplorer({
           >
             {item.media_type === 'video' ? (
               <>
-                <img src={getYouTubeThumbnail(item.url)} alt="" className="h-full w-full object-cover" draggable={false} />
+                <img src={getYouTubeThumbnail(item.url)} alt="" className="h-full w-full object-contain bg-muted/20 p-1" draggable={false} />
                 <div className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-[10px] text-white">
                   {item.caption || 'Video'}
                 </div>
               </>
             ) : (
-              <img src={item.url} alt="" className="h-full w-full object-cover" draggable={false} />
+              <img src={item.url} alt="" className="h-full w-full object-contain bg-muted/20 p-1" draggable={false} />
             )}
             {selected ? (
               <div className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow">
@@ -1468,7 +1468,7 @@ export default function AdminMediaExplorer({
                   onChange={(v) => setImagesForFolder((v as string[]) || [])}
                   multiple
                   maxFiles={40}
-                  previewClassName="object-cover"
+                  previewFit="contain"
                   bucket={uploadBucket as BucketName}
                   enableBulkDelete
                   uploadOnSelect

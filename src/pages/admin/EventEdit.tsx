@@ -212,11 +212,13 @@ export default function EventEditPage() {
                 value={formData.cover_image}
                 onChange={(v) => setFormData({ ...formData, cover_image: (v as string) || '' })}
                 multiple={false}
-                previewClassName="object-cover"
+                previewFit="contain"
+                previewAspectRatio={16 / 9}
                 bucket="event-images"
                 uploadOnSelect
                 enableCropAdjust
                 cropAspect={16 / 9}
+                adjustTitle="Adjust cover image"
               />
             </div>
             <div className="space-y-2">
@@ -226,7 +228,7 @@ export default function EventEditPage() {
                 onChange={(v) => setEventImagesForm((v as string[]) || [])}
                 multiple
                 maxFiles={MAX_EVENT_IMAGES}
-                previewClassName="object-cover"
+                previewFit="contain"
                 bucket="event-images"
                 uploadOnSelect
               />
@@ -239,7 +241,7 @@ export default function EventEditPage() {
         <div className={cn(adminPanelClass, 'overflow-hidden')}>
           <div className="relative aspect-video bg-muted">
             {formData.cover_image ? (
-              <img src={formData.cover_image} alt="" className="h-full w-full object-cover" />
+              <img src={formData.cover_image} alt="" className="h-full w-full object-contain bg-muted/25 p-2" />
             ) : (
               <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No cover</div>
             )}

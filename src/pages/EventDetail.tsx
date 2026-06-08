@@ -11,7 +11,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getEventWithSteps, Event, EventStep } from "@/services/events";
-import { getAlbumsByEventId, Album } from "@/services/albums";
+import { getAlbumsByEventId, getAlbumMedia, Album } from "@/services/albums";
+import { GalleryFolderGrid } from "@/components/ui/gallery-folder-card";
 import { getAllTestimonials, Testimonial } from "@/services/testimonials";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
@@ -27,7 +28,7 @@ const EventDetail = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [event, setEvent] = useState<any | null>(null);
   const [steps, setSteps] = useState<EventStep[]>([]);
-  const [relatedAlbums, setRelatedAlbums] = useState<Album[]>([]);
+  const [relatedAlbums, setRelatedAlbums] = useState<(Album & { mediaCount?: number })[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
@@ -76,7 +77,17 @@ const EventDetail = () => {
       // Load related albums
       try {
         const albumsData = await getAlbumsByEventId(eventData.id);
-        setRelatedAlbums(albumsData.slice(0, 3));
+        const albumsWithCounts = await Promise.all(
+          albumsData.slice(0, 3).map(async (album) => {
+            try {
+              const media = await getAlbumMedia(album.id);
+              return { ...album, mediaCount: media.length };
+            } catch {
+              return { ...album, mediaCount: 0 };
+            }
+          }),
+        );
+        setRelatedAlbums(albumsWithCounts as Album[]);
       } catch (error) {
         logger.error('Error loading albums', error, { component: 'EventDetail', action: 'loadAlbums', eventId: eventData.id });
         setRelatedAlbums([]);
@@ -137,11 +148,11 @@ const EventDetail = () => {
       {/* Hero Section */}
       <section className="relative min-h-[60vh] flex items-end overflow-hidden">
         {/* Background Image */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
           <img
             src={event.cover_image || '/placeholder.svg'}
             alt={event.title}
-            className="w-full h-full object-cover"
+            className="h-full w-full object-contain"
             loading="lazy"
             decoding="async"
             onError={(e) => {
@@ -414,46 +425,17 @@ const EventDetail = () => {
               </Link>
             </motion.div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-              {relatedAlbums.map((album, index) => (
-                <motion.div
-                  key={album.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Link
-                    to={`/gallery/${event.slug}/${album.id}`}
-                    className="group block bg-card rounded-2xl overflow-hidden border border-border
-                             hover:border-primary/50 hover:shadow-xl transition-all duration-300"
-                  >
-                    <div className="relative aspect-[16/10] overflow-hidden">
-                      <img
-                        src={album.cover_image || '/placeholder.svg'}
-                        alt={album.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 to-transparent" />
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-serif text-lg font-bold text-foreground mb-1 
-                                   group-hover:text-primary transition-colors">
-                        {album.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-1">
-                        {album.description || 'No description'}
-                      </p>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+            <GalleryFolderGrid
+              folders={relatedAlbums.map((album) => ({
+                id: album.id,
+                name: album.title,
+                count: album.mediaCount ?? 0,
+                coverUrl: album.cover_image,
+                description: album.description || "View gallery",
+                href: `/gallery/${event.slug}/${album.id}`,
+              }))}
+              className="gap-4 sm:gap-6"
+            />
 
             <div className="mt-8 text-center sm:hidden">
               <Link

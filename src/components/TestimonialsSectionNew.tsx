@@ -1,4 +1,6 @@
 import { TestimonialsSection } from "@/components/ui/testimonials-1";
+import HomeSectionShell from "@/components/ui/home-section-shell";
+import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { getFeaturedTestimonials } from "@/services/testimonials";
 import type { Testimonial } from "@/services/testimonials";
 import { useEffect, useState } from "react";
@@ -109,7 +111,6 @@ const TestimonialsSectionWrapper = ({
       .finally(() => setIsLoading(false));
   }, [homepageDataPending, prefetchedTestimonials]);
 
-  // Transform data for the new component
   const formattedTestimonials = testimonials.map((t) => ({
     name: t.author.name,
     role: t.author.handle,
@@ -120,27 +121,23 @@ const TestimonialsSectionWrapper = ({
 
   if (isLoading) {
     return (
-      <div className="relative bg-transparent overflow-hidden py-12 md:py-16">
-        <div className="relative z-10">
-          <section id="testimonials" className="w-full py-0">
-            <div className="container px-4 mx-auto max-w-7xl">
-              <header className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1">
-                <div className="h-4 w-24 bg-primary/20 rounded animate-pulse" />
-                <div className="h-9 w-72 bg-muted rounded animate-pulse" />
-                <div className="mt-4 h-5 max-w-xl bg-muted/60 rounded animate-pulse" />
-              </header>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-8">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl border border-border dark:border-white/10 bg-card shadow-elevation-1 dark:shadow-elevation-1-dark p-6 animate-pulse h-48"
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
+      <HomeSectionShell
+        ariaLabelledBy="testimonials-heading"
+        badge="Client Love"
+        title={<HomeSectionSplitTitle line1="Kind Words" accent="From Our Clients" />}
+        fullBleed
+        contentPanel
+        contentPanelClassName="p-6 md:p-8"
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-48 animate-pulse rounded-xl border border-border bg-muted/40 dark:border-white/10"
+            />
+          ))}
         </div>
-      </div>
+      </HomeSectionShell>
     );
   }
 
@@ -149,29 +146,23 @@ const TestimonialsSectionWrapper = ({
   }
 
   return (
-      <div className="relative bg-transparent overflow-hidden py-12 md:py-16">
-      {/* Light theme only: lgt4.jpg; dark theme: no section background */}
-      <div
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-100 dark:opacity-0"
-        style={{ backgroundImage: "var(--bg-image-lgt4, url('/lgt4.jpg'))" }}
-        aria-hidden
+    <HomeSectionShell
+      ariaLabelledBy="testimonials-heading"
+      badge="Client Love"
+      title={<HomeSectionSplitTitle line1="Kind Words" accent="From Our Clients" />}
+      fullBleed
+      contentPanel
+      contentPanelClassName="p-4 sm:p-5 md:p-6 lg:p-8"
+      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
+    >
+      <TestimonialsSection
+        testimonials={formattedTestimonials}
+        showHeader={false}
+        embedded
+        className="bg-transparent py-0"
       />
-      <div
-        className="absolute inset-0 -z-[5] bg-white/35 dark:bg-transparent"
-        aria-hidden
-      />
-      <div className="relative z-10">
-        <TestimonialsSection
-          title="Kind Words from Our Clients"
-          subtitle="Stories from weddings, celebrations, and experiences crafted with heart by Phoenix Events & Production."
-          badgeText="Client Love"
-          testimonials={formattedTestimonials}
-          className="bg-transparent py-0"
-        />
-      </div>
-    </div>
+    </HomeSectionShell>
   );
 };
 
 export default TestimonialsSectionWrapper;
-

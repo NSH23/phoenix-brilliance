@@ -1,4 +1,4 @@
-﻿# Phoenix Admin Dashboard â€” Mobile & Tablet UX Guide
+# Phoenix Admin Dashboard â€” Mobile & Tablet UX Guide
 
 Use this document to replicate **how the Phoenix admin dashboard works on phones and tablets**: navigation, touch targets, responsive layouts, and interaction patterns.
 
@@ -331,6 +331,8 @@ Works on phone without modals:
 
 Gallery tab (`AdminMediaExplorer`) on mobile:
 
+> **Full folder/file operations reference (PC vs mobile):** [`ADMIN_VENUE_GALLERY_EXPLORER.md`](./ADMIN_VENUE_GALLERY_EXPLORER.md)
+
 - Toolbar **wraps** (`flex-wrap`).
 - Explorer: **column layout** until `lg` â€” nav tree on top (`max-h-[200px] scroll`), files below.
 - Folder grid: `grid-cols-3` minimum on phone, scales up to 8 on xl.
@@ -457,6 +459,7 @@ Mobile: **Upload button** + native file picker (drag less common on phone). Prog
 | Card click â†’ edit | `src/pages/admin/Events.tsx`, `Collaborations.tsx`, â€¦ |
 | CRM editor shell | `src/components/admin/AdminRecordEditShell.tsx` |
 | Media explorer responsive | `src/components/admin/AdminMediaExplorer.tsx` |
+| Gallery explorer behavior (folders, clipboard, mobile) | `docs/ADMIN_VENUE_GALLERY_EXPLORER.md` |
 | Admin PWA install banner | `src/components/admin/AdminPwaManager.tsx` |
 | Settings mobile forms | `src/pages/admin/Settings.tsx` |
 

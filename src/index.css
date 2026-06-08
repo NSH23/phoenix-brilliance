@@ -615,6 +615,10 @@
     background-image: var(--bg-image-home-why-choose-us, var(--bg-image-5, url('/5.jpg')));
   }
 
+  .homepage-bg-7 {
+    background-image: var(--bg-image-home-services, var(--bg-image-7, url('/7.jpg')));
+  }
+
   /* Flat sections: no gradient overlay, no noise – same colour everywhere */
   .section-flat.section-depth-bg::before,
   .section-flat.section-depth-bg::after {

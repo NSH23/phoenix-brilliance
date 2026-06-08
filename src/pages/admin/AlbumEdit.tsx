@@ -451,7 +451,7 @@ export default function AlbumEditPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Cover image</Label>
-              <ImageUpload value={formData.coverImage} onChange={(v) => setFormData({ ...formData, coverImage: (v as string) || '' })} multiple={false} previewClassName="object-cover" bucket="album-images" uploadOnSelect enableCropAdjust cropAspect={16 / 9} />
+              <ImageUpload value={formData.coverImage} onChange={(v) => setFormData({ ...formData, coverImage: (v as string) || '' })} multiple={false} previewFit="contain" previewAspectRatio={16 / 9} bucket="album-images" uploadOnSelect enableCropAdjust cropAspect={16 / 9} adjustTitle="Adjust cover image" />
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-4 py-3">
               <div className="flex items-center gap-2">
@@ -470,7 +470,7 @@ export default function AlbumEditPage() {
       <aside className={adminRecordEditPreviewAsideClass}>
         <div className={cn(adminPanelClass, 'overflow-hidden')}>
           <div className="relative aspect-video bg-muted">
-            {formData.coverImage ? <img src={formData.coverImage} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No cover</div>}
+            {formData.coverImage ? <img src={formData.coverImage} alt="" className="h-full w-full object-contain bg-muted/25 p-2" /> : <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No cover</div>}
           </div>
           <div className="space-y-2 p-4">
             <p className="font-semibold">{formData.title || 'Untitled album'}</p>

@@ -133,9 +133,16 @@ const Index = () => {
               />
             </div>
 
-            {/* Services */}
-            <div id="services" className="my-0 section-band-1 section-depth-bg section-flat section-border-t">
+            {/* Services – light: 7.jpg + overlay; dark: solid band */}
+            <div id="services" className="my-0 section-band-1 section-depth-bg section-flat section-border-t relative">
               <div className="section-depth-noise" aria-hidden />
+              <div
+                className="absolute inset-0 z-[1] pointer-events-none dark:opacity-0"
+                aria-hidden
+              >
+                <div className="absolute inset-0 bg-cover bg-center bg-no-repeat homepage-bg-7" />
+                <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
+              </div>
               <ServicesSection
                 homepageDataPending={homepageDataPending}
                 prefetchedServices={homepageDataSuccess ? homepageData?.services : undefined}

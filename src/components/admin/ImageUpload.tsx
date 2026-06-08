@@ -23,10 +23,15 @@ interface ImageUploadProps {
   label?: string;
   previewClassName?: string;
   previewWrapperClassName?: string;
+  /** How previews fill their frame. Default `contain` shows the full upload without cropping. */
+  previewFit?: 'contain' | 'cover';
+  /** Fixed preview frame ratio (e.g. 1 for logos, 16/9 for banners). Omit for a flexible min-height frame. */
+  previewAspectRatio?: number;
   bucket?: BucketName; // Supabase storage bucket name
   uploadOnSelect?: boolean; // If true, upload immediately on file select
-  enableCropAdjust?: boolean; // If true and single image, allow mobile-friendly crop before upload
-  cropAspect?: number; // Crop frame ratio, defaults to 16/9
+  enableCropAdjust?: boolean; // If true and single image, allow crop/adjust before upload
+  cropAspect?: number; // Crop frame ratio; omit for free-form logo crops
+  adjustTitle?: string; // Dialog title override
 }
 
 type Point = { x: number; y: number };
@@ -81,10 +86,13 @@ export default function ImageUpload({
   label,
   previewClassName,
   previewWrapperClassName,
+  previewFit = 'contain',
+  previewAspectRatio,
   bucket,
   uploadOnSelect = false,
   enableCropAdjust = false,
-  cropAspect = 16 / 9,
+  cropAspect,
+  adjustTitle,
 }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<File[]>([]); // Store File objects for upload (can't attach to string)
@@ -495,6 +503,9 @@ export default function ImageUpload({
   };
 
   const displayImages = [...images, ...previews];
+  const previewObjectFit = previewFit === 'cover' ? 'object-cover' : 'object-contain';
+  const cropperObjectFit = previewFit === 'cover' ? 'cover' : 'contain';
+  const cropDialogTitle = adjustTitle ?? (previewFit === 'contain' && cropAspect === 1 ? 'Adjust logo' : 'Adjust image frame');
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -589,8 +600,10 @@ export default function ImageUpload({
                     onPointerCancel={cancelBulkLongPress}
                     onPointerLeave={cancelBulkLongPress}
                     onPointerMove={handleBulkPointerMove}
+                    style={!multiple && previewAspectRatio ? { aspectRatio: String(previewAspectRatio) } : undefined}
                     className={cn(
-                      'relative group aspect-square cursor-pointer overflow-hidden rounded-lg border border-border bg-muted touch-manipulation',
+                      'relative group cursor-pointer overflow-hidden rounded-lg border border-border bg-muted/25 touch-manipulation',
+                      multiple ? 'aspect-square' : previewAspectRatio ? 'w-full' : 'min-h-[180px] w-full',
                       previewWrapperClassName,
                       isBulkDeleteEnabled && selectedIndexes.has(index) && 'border-primary ring-2 ring-primary/40'
                     )}
@@ -621,7 +634,9 @@ export default function ImageUpload({
                       src={image}
                       alt={`Preview ${index + 1}`}
                       className={cn(
-                        'w-full h-full object-cover',
+                        'h-full w-full',
+                        previewObjectFit,
+                        previewFit === 'contain' && 'p-2',
                         previewClassName
                       )}
                       loading="lazy"
@@ -728,11 +743,12 @@ export default function ImageUpload({
       <Dialog open={isCropOpen} onOpenChange={(open) => { if (!open) closeCropDialog(); }}>
         <DialogContent className={cn('max-w-lg w-[95vw] overflow-hidden p-0', adminDialogMobileClass)}>
           <DialogHeader className="px-4 pt-4 pb-0">
-            <DialogTitle>Adjust cover image</DialogTitle>
+            <DialogTitle>{cropDialogTitle}</DialogTitle>
           </DialogHeader>
           <div className="px-4 pt-2 pb-3">
             <p className="text-xs text-muted-foreground mb-2">
-              Drag image inside the frame and pinch/zoom (or use slider). Then tap <strong>Use This Crop</strong>.
+              Drag and zoom to reposition inside the frame, or upload the original file unchanged.
+              {previewFit === 'contain' ? ' Logos and artwork keep their full shape when you upload as-is.' : null}
             </p>
             <div className="relative w-full h-[320px] rounded-lg overflow-hidden bg-black/80">
               {cropSource && (
@@ -746,7 +762,7 @@ export default function ImageUpload({
                   onCropChange={setCropPosition}
                   onZoomChange={setCropZoom}
                   onCropComplete={handleCropComplete}
-                  objectFit="cover"
+                  objectFit={cropperObjectFit}
                   showGrid={true}
                 />
               )}
@@ -764,21 +780,28 @@ export default function ImageUpload({
               />
             </div>
           </div>
-          <DialogFooter className="px-4 pb-4 pt-0 flex-row justify-end gap-2">
-            <Button type="button" variant="outline" onClick={closeCropDialog} disabled={isUploading}>
+          <DialogFooter className="px-4 pb-4 pt-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={closeCropDialog} disabled={isUploading} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="button" variant="secondary" onClick={uploadOriginalImage} disabled={isUploading}>
-              Upload Original
-            </Button>
-            <Button type="button" onClick={uploadCroppedImage} disabled={isUploading || !croppedPixels}>
+            <Button type="button" variant="secondary" onClick={uploadCroppedImage} disabled={isUploading || !croppedPixels} className="w-full sm:w-auto">
               {isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Uploading...
                 </>
               ) : (
-                'Use This Crop'
+                'Use adjusted crop'
+              )}
+            </Button>
+            <Button type="button" onClick={uploadOriginalImage} disabled={isUploading || !cropOriginalFile} className="w-full sm:w-auto">
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Upload as-is'
               )}
             </Button>
           </DialogFooter>

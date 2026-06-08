@@ -9,6 +9,8 @@ import {
 } from "@/services/whyChooseUs";
 import { getSiteContentByKey } from "@/services/siteContent";
 import type { SiteContent } from "@/services/siteContent";
+import HomeSectionShell from "@/components/ui/home-section-shell";
+import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import {
   Trophy,
   Heart,
@@ -128,32 +130,15 @@ export default function WhyChooseUsSection({
   if (loading) return null;
 
   return (
-    <section
-      id="why-choose-us"
-      className="relative isolate z-0 py-12 md:py-14 overflow-hidden bg-transparent"
+    <HomeSectionShell
+      ariaLabelledBy="why-choose-us-heading"
+      badge={header.subtitle}
+      title={<HomeSectionSplitTitle line1="Why Phoenix" accent="Events?" />}
+      fullBleed
+      contentPanel
+      contentPanelClassName="p-5 sm:p-6 md:p-8"
+      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
     >
-      <div className="relative z-10 container px-4 mx-auto max-w-7xl">
-        {/* Header – compact editorial block */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
-          className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1"
-        >
-          <span className="text-primary font-sans font-semibold tracking-[0.2em] uppercase text-xs md:text-sm">
-            {header.subtitle}
-          </span>
-          <h2 className="font-serif font-medium leading-tight text-3xl md:text-4xl lg:text-5xl text-foreground">
-            {header.title}
-          </h2>
-          {header.description && (
-            <p className="mt-4 max-w-xl text-muted-foreground text-base md:text-lg leading-relaxed font-sans">
-              {header.description}
-            </p>
-          )}
-        </motion.div>
-
         {/* Stats – compact row */}
         {stats.length > 0 && (
           <motion.div
@@ -230,7 +215,6 @@ export default function WhyChooseUsSection({
             </div>
           </motion.div>
         )}
-      </div>
-    </section>
+    </HomeSectionShell>
   );
 }

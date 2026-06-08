@@ -478,11 +478,12 @@ export default function VenueEditPage() {
                 value={formData.logoUrl}
                 onChange={(v) => setFormData({ ...formData, logoUrl: (v as string) || '' })}
                 multiple={false}
-                previewClassName="object-contain"
+                previewFit="contain"
+                previewAspectRatio={1}
                 bucket="partner-logos"
                 uploadOnSelect
                 enableCropAdjust
-                cropAspect={1}
+                adjustTitle="Adjust logo"
               />
               <Input
                 value={formData.logoUrl}
@@ -497,11 +498,13 @@ export default function VenueEditPage() {
                 value={formData.bannerUrl}
                 onChange={(v) => setFormData({ ...formData, bannerUrl: (v as string) || '' })}
                 multiple={false}
-                previewClassName="object-cover"
+                previewFit="contain"
+                previewAspectRatio={16 / 9}
                 bucket="gallery-images"
                 uploadOnSelect
                 enableCropAdjust
                 cropAspect={16 / 9}
+                adjustTitle="Adjust banner"
               />
               <Input
                 value={formData.bannerUrl}
@@ -545,6 +548,7 @@ export default function VenueEditPage() {
               onChange={(v) => setVenueImages((v as string[]) || [])}
               multiple
               maxFiles={20}
+              previewFit="contain"
               bucket="gallery-images"
               uploadOnSelect
             />
@@ -556,7 +560,7 @@ export default function VenueEditPage() {
         <div className={cn(adminPanelClass, 'overflow-hidden')}>
           <div className="relative aspect-[16/10] bg-muted">
             {bannerPreview ? (
-              <img src={bannerPreview} alt="" className="h-full w-full object-cover" />
+              <img src={bannerPreview} alt="" className="h-full w-full object-contain bg-muted/25 p-2" />
             ) : (
               <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No banner</div>
             )}

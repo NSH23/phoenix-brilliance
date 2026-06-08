@@ -31,14 +31,14 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
           <div className="absolute inset-1 sm:inset-1.5 md:inset-2 border border-primary/20 rounded-md sm:rounded-lg pointer-events-none" />
           
           {/* Image Container - Consistent aspect ratio for mobile grid */}
-          <div className="relative overflow-hidden rounded-md sm:rounded-lg aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4]">
+          <div className="relative overflow-hidden rounded-md sm:rounded-lg aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4] bg-muted/25">
             <img
               src={image}
               alt={title}
               loading="lazy"
               decoding="async"
-              className="w-full h-full object-cover transition-transform duration-700
-                       group-hover:scale-110"
+              className="w-full h-full object-contain bg-muted/25 p-2 transition-transform duration-700
+                       group-hover:scale-[1.02]"
             />
             
             {/* Overlay - Darker for light theme contrast */}
@@ -111,8 +111,8 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             
-            <div className="aspect-[16/10] sm:aspect-video">
-              <img src={image} alt={title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+            <div className="aspect-[16/10] sm:aspect-video bg-muted/25">
+              <img src={image} alt={title} className="h-full w-full object-contain p-2" loading="lazy" decoding="async" />
             </div>
             
             <div className="p-5 sm:p-6 md:p-8">

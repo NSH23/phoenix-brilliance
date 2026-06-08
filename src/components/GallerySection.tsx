@@ -209,13 +209,13 @@ const GallerySection = () => {
                                   ${image.is_featured ? 'ring-1 sm:ring-2 ring-primary/30' : ''}`}
                     >
                       {/* Inner Image Container */}
-                      <div className="relative h-full w-full rounded-lg sm:rounded-xl overflow-hidden aspect-[3/4] sm:aspect-auto">
+                      <div className="relative h-full w-full rounded-lg sm:rounded-xl overflow-hidden aspect-[3/4] sm:aspect-auto bg-muted/25">
                         <img
                           src={image.url || '/placeholder.svg'}
                           alt={image.title || 'Gallery image'}
                           draggable={false}
-                          className={`w-full h-full object-cover transition-all duration-500 
-                                    ${hoveredIndex === index ? 'scale-110 brightness-90' : 'scale-100'}`}
+                          className={`w-full h-full object-contain p-1 transition-all duration-500 
+                                    ${hoveredIndex === index ? 'scale-[1.02] brightness-95' : 'scale-100'}`}
                           loading="lazy"
                           decoding="async"
                           onError={(e) => {
@@ -445,7 +445,7 @@ const GallerySection = () => {
                       : 'opacity-50 hover:opacity-100'
                   }`}
                 >
-                  <img src={img.url || '/placeholder.svg'} alt={img.title || 'Gallery image'} draggable={false} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  <img src={img.url || '/placeholder.svg'} alt={img.title || 'Gallery image'} draggable={false} className="w-full h-full object-contain bg-muted/30 p-0.5" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>

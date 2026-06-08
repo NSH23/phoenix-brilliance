@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getEventsForHomepage } from "@/services/events";
 import { Loader2 } from "lucide-react";
 import { StackedCards } from "@/components/ui/stacked-cards";
+import { EventCategoryCard } from "@/components/ui/event-category-card";
+import HomeSectionShell from "@/components/ui/home-section-shell";
+import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { EVENT_CATEGORY_DESCRIPTIONS } from "@/data/eventCategoryCopy";
 
 /* Event Categories: Three-column layout - left (StackedCards), center (categories), right (StackedCards).
@@ -131,27 +134,17 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
   }
 
   return (
-    <section id="events" className="relative overflow-visible pt-12 md:pt-16 lg:pt-20 pb-0 bg-transparent z-20">
-      <div className="container px-4 mx-auto max-w-7xl relative z-10">
-        {/* Header – editorial left-accent (same as Reels, Collaborations, About) */}
-        <header className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1">
-          <p className="text-primary font-sans font-semibold text-xs md:text-sm tracking-[0.2em] uppercase">
-            What We Create
-          </p>
-          <h2 className="font-serif font-medium leading-tight text-3xl md:text-4xl lg:text-5xl text-foreground dark:text-white">
-            Event Categories
-          </h2>
-          <p className="mt-4 max-w-xl text-muted-foreground dark:text-white/70 text-base md:text-lg leading-relaxed font-sans">
-            From intimate gatherings to grand celebrations, we bring every vision to life.
-          </p>
-        </header>
-      </div>
-
-        {/* Content container – glass; light: 9.jpg; dark: bg2.jpg behind container */}
-        <div className="relative w-full rounded-2xl md:rounded-3xl border border-white/50 py-6 md:py-8 px-4 sm:px-6 lg:px-8 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.3)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] bg-white/5 backdrop-blur-sm dark:bg-black/10 dark:backdrop-blur-sm dark:border-white/25">
+    <HomeSectionShell
+      ariaLabelledBy="events-heading"
+      badge="What We Create"
+      title={<HomeSectionSplitTitle line1="Event" accent="Categories" />}
+      fullBleed
+      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
+    >
+        <div className="relative w-full overflow-hidden border-y border-border/40 py-6 md:py-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:border-white/10 dark:shadow-none">
           {/* Light theme only: 9.jpg as section background – slightly above center, soft blur */}
           <div
-            className="absolute inset-0 rounded-2xl md:rounded-3xl bg-cover bg-no-repeat opacity-100 dark:opacity-0 pointer-events-none z-0"
+            className="absolute inset-0 bg-cover bg-no-repeat opacity-100 dark:opacity-0 pointer-events-none z-0"
             style={{
               backgroundImage: "var(--bg-image-9, url('/9.jpg'))",
               backgroundPosition: "center calc(50% - 2cm)",
@@ -160,33 +153,19 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
             }}
             aria-hidden
           />
-          {/* Dark theme only: bg2.jpg – 1 cm above center */}
-          <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-cover bg-no-repeat opacity-0 dark:opacity-100 pointer-events-none z-0" style={{ backgroundImage: "var(--bg-image-bg2, url('/bg2.jpg'))", backgroundPosition: "center calc(50% - 1cm)" }} aria-hidden />
-          {/* Dark: subtle gradient so text stays readable over the image */}
-          <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-transparent dark:bg-gradient-to-b dark:from-black/40 dark:via-black/25 dark:to-black/50 pointer-events-none z-[1]" aria-hidden />
-          <div className="relative z-10">
-          {/* Mobile horizontal scroll view (manual swipe/scroll) */}
+          <div className="absolute inset-0 bg-cover bg-no-repeat opacity-0 dark:opacity-100 pointer-events-none z-0" style={{ backgroundImage: "var(--bg-image-bg2, url('/bg2.jpg'))", backgroundPosition: "center calc(50% - 1cm)" }} aria-hidden />
+          <div className="absolute inset-0 bg-white/45 dark:bg-gradient-to-b dark:from-black/40 dark:via-black/25 dark:to-black/50 pointer-events-none z-[1]" aria-hidden />
+          <div className="relative z-10 px-4 sm:px-6 lg:px-8">
           <div className="block lg:hidden w-full mb-6">
-            <div className="overflow-x-auto overflow-y-hidden px-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x">
-              <div className="flex gap-4 w-max snap-x snap-mandatory">
+            <div className="overflow-x-auto overflow-y-hidden pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x">
+              <div className="flex gap-4 w-max snap-x snap-mandatory px-1">
                 {categories.map((cat) => (
-                  <Link
+                  <EventCategoryCard
                     key={`${cat.slug}-mobile`}
-                    to={`/events/${cat.slug}`}
-                    className="snap-start flex-shrink-0 w-[230px] group relative rounded-xl overflow-hidden aspect-[3/4] border border-border/90 dark:border-white/10 bg-card shadow-[0_10px_26px_rgba(0,0,0,0.12)] dark:shadow-elevation-1-dark transition-all duration-300 ease-out hover:border-primary/40 dark:hover:border-primary/50 hover:shadow-card-hover dark:hover:shadow-card-hover-dark hover:ring-1 hover:ring-primary/20 hover:-translate-y-1"
-                  >
-                    <img
-                      src={cat.images[0] || FALLBACK_IMAGES[0]}
-                      alt={cat.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5 opacity-90" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
-                      <h3 className="text-white font-serif text-lg font-semibold tracking-wide">{cat.title}</h3>
-                    </div>
-                  </Link>
+                    title={cat.title}
+                    slug={cat.slug}
+                    coverUrl={cat.images[0] || FALLBACK_IMAGES[0]}
+                  />
                 ))}
               </div>
             </div>
@@ -271,7 +250,7 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
         </div>
           </div>
         </div>
-    </section>
+    </HomeSectionShell>
   );
 };
 

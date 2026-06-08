@@ -3,12 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Eye, EyeOff, ImageIcon, Loader2, Play } from 'lucide-react';
 import AdminRecordEditShell from '@/components/admin/AdminRecordEditShell';
 import AdminFormSection from '@/components/admin/AdminFormSection';
+import ImageUpload from '@/components/admin/ImageUpload';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import {
   adminPanelClass,
   adminRecordEditFormStackClass,
@@ -21,7 +21,6 @@ import {
   getAllContentMedia,
   updateContentMedia,
 } from '@/services/contentMedia';
-import { uploadContentMediaFile } from '@/lib/contentMediaUpload';
 import { getYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -57,8 +56,6 @@ export default function HeroSlotEditPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [existingId, setExistingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     url: '',
@@ -103,24 +100,6 @@ export default function HeroSlotEditPage() {
   const videoPreviewThumb =
     form.thumbnail_url?.trim() || (validYoutube ? getYouTubeThumbnail(youtubeId) : '');
   const imagePreview = !isVideo && form.url.trim() ? form.url.trim() : '';
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
-    setUploading(true);
-    setUploadProgress(0);
-    try {
-      const url = await uploadContentMediaFile(file, setUploadProgress);
-      setForm((prev) => ({ ...prev, url }));
-      toast.success('Image uploaded — click Save changes to apply');
-    } catch (err) {
-      toast.error('Upload failed', { description: (err as Error).message });
-    } finally {
-      setUploadProgress(0);
-      setUploading(false);
-      e.target.value = '';
-    }
-  };
 
   const handleSave = async () => {
     let mediaUrl = form.url.trim();
@@ -230,7 +209,7 @@ export default function HeroSlotEditPage() {
               {validYoutube && videoPreviewThumb ? (
                 <div className="overflow-hidden rounded-xl border border-border/60 bg-muted/20">
                   <div className="relative aspect-video max-h-64 w-full bg-black">
-                    <img src={videoPreviewThumb} alt="" className="h-full w-full object-cover" />
+                    <img src={videoPreviewThumb} alt="" className="h-full w-full object-contain bg-black/80 p-1" />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/25">
                       <Play className="h-14 w-14 text-white drop-shadow-lg" fill="currentColor" />
                     </div>
@@ -246,33 +225,21 @@ export default function HeroSlotEditPage() {
         ) : (
           <AdminFormSection
             title="Background image"
-            description="Upload a file or paste a direct image URL"
+            description="Upload a file or paste a direct image URL. Use Adjust Frame to reposition without cropping the original."
           >
             <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="image-upload">Image file</Label>
-                <Input
-                  id="image-upload"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="cursor-pointer"
-                  onChange={(e) => void handleImageUpload(e)}
-                  disabled={uploading}
-                />
-                {uploading ? (
-                  <div className="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-3">
-                    <p className="flex items-center justify-between gap-2 text-sm text-primary">
-                      <span className="inline-flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Uploading…
-                      </span>
-                      <span className="font-medium">{uploadProgress}%</span>
-                    </p>
-                    <Progress value={uploadProgress} className="h-2" />
-                  </div>
-                ) : null}
-                <p className="text-xs text-muted-foreground">JPG, PNG, WebP or GIF.</p>
-              </div>
+              <ImageUpload
+                value={form.url}
+                onChange={(url) => setForm((prev) => ({ ...prev, url: (url as string) || '' }))}
+                multiple={false}
+                bucket="content-media"
+                uploadOnSelect
+                previewFit="contain"
+                previewAspectRatio={16 / 9}
+                enableCropAdjust
+                cropAspect={16 / 9}
+                adjustTitle="Adjust hero background"
+              />
               <div className="grid gap-2">
                 <Label htmlFor="image-url">Or image URL</Label>
                 <Input
@@ -295,11 +262,6 @@ export default function HeroSlotEditPage() {
                   </div>
                 ) : null}
               </div>
-              {imagePreview ? (
-                <div className="overflow-hidden rounded-xl border border-border/60">
-                  <img src={imagePreview} alt="" className="max-h-64 w-full object-cover" />
-                </div>
-              ) : null}
             </div>
           </AdminFormSection>
         )}
@@ -341,7 +303,7 @@ export default function HeroSlotEditPage() {
             {isVideo ? (
               videoPreviewThumb ? (
                 <>
-                  <img src={videoPreviewThumb} alt="" className="h-full w-full object-cover" />
+                  <img src={videoPreviewThumb} alt="" className="h-full w-full object-contain bg-black/80 p-1" />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                     <Play className="h-10 w-10 text-white/90" fill="currentColor" />
                   </div>
@@ -353,7 +315,7 @@ export default function HeroSlotEditPage() {
                 </div>
               )
             ) : imagePreview ? (
-              <img src={imagePreview} alt="" className="h-full w-full object-cover" />
+              <img src={imagePreview} alt="" className="h-full w-full object-contain bg-muted/25 p-2" />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
                 <ImageIcon className="h-10 w-10 opacity-40" />
@@ -382,7 +344,7 @@ export default function HeroSlotEditPage() {
       backHref="/admin/media?tab=hero"
       backLabel="Manage videos"
       loading={loading}
-      saving={saving || uploading}
+      saving={saving}
       onSave={() => void handleSave()}
       onDelete={existingId ? () => void handleDelete() : undefined}
       tabs={[{ value: 'details', label: isVideo ? 'Video details' : 'Image details' }]}

@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { HeroBackgroundPattern } from "@/components/ui/HeroBackgroundPattern";
 import { Link } from "react-router-dom";
 import {
   Camera,
   ArrowRight,
-  Sparkles,
   Loader2,
-  Calendar,
   Check,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -20,6 +18,7 @@ import type { Event } from "@/services/events";
 import type { Album } from "@/services/albums";
 import { getPageHeroContent } from "@/services/pageHeroContent";
 import { getEventIcon } from "@/lib/eventIcons";
+import { GalleryFolderGrid } from "@/components/ui/gallery-folder-card";
 
 interface AlbumWithCount extends Album {
   mediaCount?: number;
@@ -372,8 +371,8 @@ const Gallery = () => {
                               <img
                                 src={eventImage}
                                 alt={option.title}
-                                className={`w-full h-full object-cover transition-all duration-500 ${isSelected || isHovered
-                                  ? "scale-110"
+                                className={`w-full h-full object-contain bg-muted/25 p-1 transition-all duration-500 ${isSelected || isHovered
+                                  ? "scale-[1.02]"
                                   : "scale-100"
                                   }`}
                                 loading="lazy"
@@ -443,9 +442,9 @@ const Gallery = () => {
               </div>
             </section>
 
-            {/* Featured / Filtered Albums - Premium cards */}
-            <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6">
-              <div className="max-w-[1400px] mx-auto">
+            {/* Featured / Filtered Albums */}
+            <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto max-w-[1400px]">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -494,97 +493,21 @@ const Gallery = () => {
                     <p className="text-sm text-muted-foreground">Try selecting a different event type</p>
                   </motion.div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
-                    <AnimatePresence mode="wait">
-                      {displayAlbums.map((album, index) => {
-                        const event = events.find((e) => e.id === album.event_id);
-                        const slug = event?.slug ?? "all";
-
-                        return (
-                          <motion.article
-                            key={album.id}
-                            initial={{ opacity: 0, y: 24 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.98 }}
-                            transition={{
-                              duration: 0.4,
-                              delay: prefersReducedMotion ? 0 : index * 0.08,
-                              ease: [0.4, 0, 0.2, 1],
-                            }}
-                            className="group"
-                          >
-                            <Link
-                              to={`/gallery/${slug}/${album.id}`}
-                              className="group/album block relative h-full rounded-[20px] overflow-hidden
-                              bg-card border border-border/60 dark:border-white/10
-                              shadow-[0_4px_24px_rgba(26,26,46,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]
-                              transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]
-                              hover:shadow-[0_24px_56px_rgba(26,26,46,0.12)] dark:hover:shadow-[0_24px_56px_rgba(0,0,0,0.4)]
-                              hover:-translate-y-2 hover:border-primary/20 dark:hover:border-primary/40
-                              focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                            >
-                              <div className="relative aspect-[3/4] flex flex-col">
-                                {/* Image section */}
-                                <div className="relative h-[62%] overflow-hidden bg-muted/50">
-                                  <img
-                                    src={album.cover_image ?? "/placeholder.svg"}
-                                    alt={album.title}
-                                    className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover/album:scale-105 brightness-[0.92] group-hover/album:brightness-100"
-                                    loading="lazy"
-                                    decoding="async"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                    }}
-                                  />
-                                  <div className="absolute inset-0 hidden dark:block bg-gradient-to-t from-background via-background/30 to-transparent" />
-
-                                  {album.is_featured && (
-                                    <div className="hidden sm:flex absolute top-5 left-5 items-center gap-2 px-4 py-2 rounded-full bg-primary/95 backdrop-blur-sm text-primary-foreground text-[11px] font-semibold uppercase tracking-widest shadow-[0_4px_14px_hsl(var(--primary)_/_0.35)]">
-                                      <Sparkles className="w-3.5 h-3.5" />
-                                      Featured
-                                    </div>
-                                  )}
-
-                                  <div className="hidden sm:flex absolute bottom-5 right-5 items-center gap-2 px-3.5 py-2 rounded-full bg-background/95 dark:bg-[#1A1A2E]/95 backdrop-blur-md border border-border/60 text-foreground dark:text-white text-[13px] font-medium">
-                                    <Camera className="w-3.5 h-3.5 text-primary" />
-                                    {album.mediaCount ?? 0} photos
-                                  </div>
-                                </div>
-
-                                {/* Content section */}
-                                <div className="relative flex flex-col justify-between flex-1 min-h-0 p-3 sm:p-6 bg-card">
-                                  <div>
-                                    <span className="inline-block text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.15em] text-primary mb-1.5 sm:mb-2 leading-none">
-                                      {album.eventTitle}
-                                    </span>
-                                    <h3 className="font-serif text-sm sm:text-xl font-bold text-foreground mb-1 sm:mb-2 line-clamp-2 leading-tight tracking-tight
-                                                  group-hover/album:text-primary transition-colors duration-300">
-                                      {album.title}
-                                    </h3>
-                                    {album.event_date && (
-                                      <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-                                        <Calendar className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                                        {new Date(album.event_date).toLocaleDateString("en-US", {
-                                          month: "short",
-                                          day: "numeric",
-                                          year: "numeric",
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="hidden sm:inline-flex mt-4 items-center gap-2 w-fit px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold
-                                    opacity-0 translate-y-1 group-hover/album:opacity-100 group-hover/album:translate-y-0 transition-all duration-300 ease-out
-                                    shadow-[0_4px_14px_hsl(var(--primary)_/_0.3)] group-hover/album:shadow-[0_6px_20px_hsl(var(--primary)_/_0.4)]">
-                                    View Album <ArrowRight className="w-4 h-4" />
-                                  </span>
-                                </div>
-                              </div>
-                            </Link>
-                          </motion.article>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
+                  <GalleryFolderGrid
+                    folders={displayAlbums.map((album) => {
+                      const event = events.find((e) => e.id === album.event_id);
+                      const slug = event?.slug ?? "all";
+                      return {
+                        id: album.id,
+                        name: album.title,
+                        count: album.mediaCount ?? 0,
+                        coverUrl: album.cover_image,
+                        description: album.eventTitle,
+                        href: `/gallery/${slug}/${album.id}`,
+                      };
+                    })}
+                    className="gap-4 sm:gap-6 lg:gap-8"
+                  />
                 )}
 
                 {displayAlbums.length > 0 && (

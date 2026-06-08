@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useParams, Navigate } from "react-router-dom";
-import { Camera, Play, ArrowLeft, ArrowRight, Calendar, Images, Sparkles, Loader2 } from "lucide-react";
+import { Camera, ArrowLeft, ArrowRight, Images, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -9,6 +9,7 @@ import { getActiveEvents, getEventBySlug, Event } from "@/services/events";
 import { getAllAlbums, getAlbumMedia, Album } from "@/services/albums";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
+import { GalleryFolderGrid } from "@/components/ui/gallery-folder-card";
 
 interface AlbumWithCount extends Album {
   mediaCount?: number;
@@ -17,7 +18,6 @@ interface AlbumWithCount extends Album {
 
 const GalleryEventType = () => {
   const { eventType } = useParams<{ eventType: string }>();
-  const [hoveredAlbum, setHoveredAlbum] = useState<string | null>(null);
   const [event, setEvent] = useState<Event | null>(null);
   const [albums, setAlbums] = useState<AlbumWithCount[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
@@ -262,108 +262,20 @@ const GalleryEventType = () => {
               </Link>
             </motion.div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {albums.map((album, index) => {
-                const albumEvent = allEvents.find(e => e.id === album.event_id);
-                
-                return (
-                  <motion.div
-                    key={album.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                    onMouseEnter={() => setHoveredAlbum(album.id)}
-                    onMouseLeave={() => setHoveredAlbum(null)}
-                  >
-                    <Link
-                      to={`/gallery/${albumEvent?.slug || 'all'}/${album.id}`}
-                      className="group block bg-card rounded-2xl overflow-hidden border border-border
-                               hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 
-                               transition-all duration-500"
-                    >
-                      {/* Cover Image */}
-                      <div className="relative aspect-[4/3] overflow-hidden">
-                        <img
-                          src={album.cover_image || '/placeholder.svg'}
-                          alt={album.title}
-                          className={`w-full h-full object-cover transition-all duration-700
-                                    ${hoveredAlbum === album.id ? 'scale-110' : 'scale-100'}`}
-                          loading="lazy"
-                          decoding="async"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder.svg';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent" />
-                        
-                        {/* Featured Badge */}
-                        {album.is_featured && (
-                          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 
-                                        bg-primary/90 rounded-full text-xs font-medium text-primary-foreground">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Featured
-                          </div>
-                        )}
-
-                        {/* Video indicator */}
-                        <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-ivory/20 
-                                      backdrop-blur-sm flex items-center justify-center
-                                      opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Play className="w-4 h-4 text-ivory fill-ivory" />
-                        </div>
-
-                        {/* Photo count */}
-                        <div className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 
-                                      bg-charcoal/60 backdrop-blur-sm rounded-full text-xs text-ivory">
-                          <Camera className="w-3.5 h-3.5" />
-                          {album.mediaCount || 0}
-                        </div>
-
-                        {/* View button on hover */}
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ 
-                            opacity: hoveredAlbum === album.id ? 1 : 0,
-                            scale: hoveredAlbum === album.id ? 1 : 0.8
-                          }}
-                          className="absolute inset-0 flex items-center justify-center"
-                        >
-                          <div className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm
-                                        flex items-center justify-center shadow-xl">
-                            <ArrowRight className="w-6 h-6 text-primary-foreground" />
-                          </div>
-                        </motion.div>
-                      </div>
-
-                      {/* Album Info */}
-                      <div className="p-5 sm:p-6">
-                        {isAllAlbums && album.eventTitle && (
-                          <div className="text-xs text-primary font-medium mb-2">{album.eventTitle}</div>
-                        )}
-                        <h3 className="font-serif text-lg sm:text-xl font-bold text-foreground mb-2 
-                                     group-hover:text-primary transition-colors line-clamp-1">
-                          {album.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                          {album.description || 'No description'}
-                        </p>
-                        {album.event_date && (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {new Date(album.event_date).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  </motion.div>
-                );
+            <GalleryFolderGrid
+              folders={albums.map((album) => {
+                const albumEvent = allEvents.find((e) => e.id === album.event_id);
+                return {
+                  id: album.id,
+                  name: album.title,
+                  count: album.mediaCount ?? 0,
+                  coverUrl: album.cover_image,
+                  description: isAllAlbums ? album.eventTitle : album.description || "View gallery",
+                  href: `/gallery/${albumEvent?.slug || "all"}/${album.id}`,
+                };
               })}
-            </div>
+              className="gap-4 sm:gap-6 lg:gap-8"
+            />
           )}
         </div>
       </section>

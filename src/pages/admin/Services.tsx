@@ -114,7 +114,7 @@ export default function AdminServices() {
           <img
             src={resolvePublicStorageUrl(s.image_url, 'service-images')!}
             alt={s.title}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain bg-muted/25 p-1"
             loading="lazy"
           />
         ) : (

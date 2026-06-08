@@ -100,7 +100,7 @@ function FrameImage({ src, alt, category, frameId }: FrameImageProps) {
       >
         <div
           className={cn(
-            "aspect-[4/5] overflow-hidden bg-muted transition-transform duration-300 group-hover:scale-[1.03]",
+            "aspect-[4/5] overflow-hidden bg-muted/25 transition-transform duration-300 group-hover:scale-[1.03]",
             frameId === "polaroid" && "rounded-sm",
             frameId === "rounded" && "rounded-xl",
             frameId === "shadow" && "rounded-lg",
@@ -112,7 +112,7 @@ function FrameImage({ src, alt, category, frameId }: FrameImageProps) {
             <img
               src={src}
               alt={alt}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain p-1.5"
               loading="lazy"
               decoding="async"
               onError={() => setImgError(true)}

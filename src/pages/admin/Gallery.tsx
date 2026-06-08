@@ -109,7 +109,7 @@ export default function AdminGallery() {
                 <div key={`f-${i}`} className="space-y-1">
                   <div className="aspect-square rounded-lg border bg-muted overflow-hidden max-md:min-h-[120px]">
                     {url ? (
-                      <img src={url} alt={`Front ${i + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.src = '')} />
+                      <img src={url} alt={`Front ${i + 1}`} className="h-full w-full object-contain bg-muted/25 p-1" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.src = '')} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">Slot {i + 1}</div>
                     )}
@@ -158,7 +158,7 @@ export default function AdminGallery() {
                 <div key={`b-${i}`} className="space-y-1">
                   <div className="aspect-square rounded-lg border bg-muted overflow-hidden max-md:min-h-[120px]">
                     {url ? (
-                      <img src={url} alt={`Back ${i + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.src = '')} />
+                      <img src={url} alt={`Back ${i + 1}`} className="h-full w-full object-contain bg-muted/25 p-1" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.src = '')} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">Slot {i + 1}</div>
                     )}
@@ -237,8 +237,10 @@ export default function AdminGallery() {
               }}
               bucket="gallery-images"
               uploadOnSelect={true}
+              previewFit="contain"
+              previewAspectRatio={1}
               enableCropAdjust={true}
-              cropAspect={1}
+              adjustTitle="Adjust photo"
             />
           </div>
         </DialogContent>
