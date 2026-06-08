@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import { resolvePublicStorageUrl } from "@/services/storage";
 import { shortLocationForCard } from "@/lib/addressUtils";
 import { getActiveCollaborations, type Collaboration } from "@/services/collaborations";
@@ -7,6 +9,7 @@ import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import PartnersVenueShowcase from "@/components/ui/partners-venue-showcase";
 import type { PartnerVenueCardData } from "@/components/ui/partner-venue-card";
+import { VENUES_LIST_PATH } from "@/lib/venueRoutes";
 
 function resolveLogoUrl(url: string | null | undefined): string {
   if (!url) return "/placeholder.svg";
@@ -64,6 +67,15 @@ const CollaborationsSection = ({ prefetchedCollaborations, homepageDataPending }
       ariaLabelledBy="partners-heading"
       badge="Our Partners"
       title={<HomeSectionSplitTitle line1="Trusted By" accent="Elegant Venues" />}
+      action={
+        <Link
+          to={VENUES_LIST_PATH}
+          className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10"
+        >
+          View all venues
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      }
       fullBleed
       contentClassName="py-6 md:py-8"
     >

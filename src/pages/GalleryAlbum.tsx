@@ -16,6 +16,8 @@ import type { ExplorerFolder, ExplorerMediaItem } from "@/lib/mediaFolderTree";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
 import { getYouTubeId, getYouTubeNocookieEmbedUrl, getYouTubeThumbnail } from "@/lib/youtube";
+import { OptimizedImage } from "@/components/ui/optimized-image";
+import { optimizeMediaUrl } from "@/lib/mediaDelivery";
 
 function AlbumYoutubeLazyCard({ video, animationDelay }: { video: AlbumMedia; animationDelay: number }) {
   const [played, setPlayed] = useState(false);
@@ -249,12 +251,11 @@ const GalleryAlbum = () => {
       <section className="relative pt-24 pb-8 sm:pt-32 sm:pb-12 overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0">
-          <img
+          <OptimizedImage
             src={album.cover_image || '/placeholder.svg'}
             alt={album.title}
+            preset="banner"
             className="w-full h-full object-cover opacity-15"
-            loading="lazy"
-            decoding="async"
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/placeholder.svg';
             }}
@@ -418,13 +419,12 @@ const GalleryAlbum = () => {
                       className="group relative cursor-pointer rounded-xl overflow-hidden
                                bg-muted aspect-auto"
                     >
-                      <img
+                      <OptimizedImage
                         src={photo.url || '/placeholder.svg'}
                         alt={photo.caption || 'Photo'}
-                        draggable={false}
+                        preset="card"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         className="w-full h-auto max-h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
-                        loading="lazy"
-                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}
@@ -567,11 +567,11 @@ const GalleryAlbum = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                src={photos[lightboxIndex].url || '/placeholder.svg'}
+                src={optimizeMediaUrl(photos[lightboxIndex].url, { preset: 'lightbox' }) || '/placeholder.svg'}
                 alt={photos[lightboxIndex].caption || 'Photo'}
                 draggable={false}
                 className="max-w-full max-h-full object-contain rounded-lg"
-                loading="lazy"
+                loading="eager"
                 decoding="async"
                 onClick={(e) => e.stopPropagation()}
                 onError={(e) => {
@@ -602,13 +602,12 @@ const GalleryAlbum = () => {
                           : 'opacity-50 hover:opacity-100'
                       }`}
                     >
-                      <img
+                      <OptimizedImage
                         src={photo.url || '/placeholder.svg'}
                         alt={photo.caption || `Photo in ${album.title}`}
-                        draggable={false}
+                        preset="thumb"
+                        responsive={false}
                         className="h-full w-full object-contain bg-muted/30 p-0.5"
-                        loading="lazy"
-                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}

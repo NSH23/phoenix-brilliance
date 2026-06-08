@@ -5,6 +5,7 @@ import { X, ChevronLeft, ChevronRight, Heart, ZoomIn, Loader2 } from "lucide-rea
 import { getGalleryImagesForHomepage, getGalleryCategories, GalleryImage } from "@/services/gallery";
 import { getSiteSettingOptional } from "@/services/siteContent";
 import { logger } from "@/utils/logger";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 const HOMEPAGE_GALLERY_FETCH_LIMIT = 50;
 
@@ -210,14 +211,12 @@ const GallerySection = () => {
                     >
                       {/* Inner Image Container */}
                       <div className="relative h-full w-full rounded-lg sm:rounded-xl overflow-hidden aspect-[3/4] sm:aspect-auto bg-muted/25">
-                        <img
+                        <OptimizedImage
                           src={image.url || '/placeholder.svg'}
                           alt={image.title || 'Gallery image'}
-                          draggable={false}
+                          preset="card"
                           className={`w-full h-full object-contain p-1 transition-all duration-500 
                                     ${hoveredIndex === index ? 'scale-[1.02] brightness-95' : 'scale-100'}`}
-                          loading="lazy"
-                          decoding="async"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/placeholder.svg';
                           }}
@@ -387,13 +386,12 @@ const GallerySection = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                <img
+                <OptimizedImage
                   src={displayed[lightboxImage].url || '/placeholder.svg'}
                   alt={displayed[lightboxImage].title || 'Gallery image'}
-                  draggable={false}
+                  preset="lightbox"
+                  loading="eager"
                   className="max-w-full max-h-[75vh] object-contain mx-auto"
-                  loading="lazy"
-                  decoding="async"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/placeholder.svg';
                   }}
@@ -445,7 +443,7 @@ const GallerySection = () => {
                       : 'opacity-50 hover:opacity-100'
                   }`}
                 >
-                  <img src={img.url || '/placeholder.svg'} alt={img.title || 'Gallery image'} draggable={false} className="w-full h-full object-contain bg-muted/30 p-0.5" loading="lazy" decoding="async" />
+                  <OptimizedImage src={img.url || '/placeholder.svg'} alt={img.title || 'Gallery image'} preset="thumb" responsive={false} className="w-full h-full object-contain bg-muted/30 p-0.5" />
                 </button>
               ))}
             </div>

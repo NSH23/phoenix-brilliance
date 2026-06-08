@@ -10,6 +10,7 @@ import {
   CardFooter,
   CardTitle,
 } from "@/components/ui/card-2";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 export type GalleryFolderCardProps = {
   name: string;
@@ -41,12 +42,11 @@ export function GalleryFolderCard({
         <AspectRatio ratio={4 / 3} className="bg-muted">
           {coverUrl ? (
             <>
-              <img
+              <OptimizedImage
                 src={coverUrl}
                 alt={name}
+                preset="card"
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-                decoding="async"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-90 transition-opacity duration-300 sm:opacity-70 sm:group-hover:opacity-100" />
             </>

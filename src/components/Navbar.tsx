@@ -4,20 +4,17 @@ import { Menu, X, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Events", href: "/events" },
+  { name: "Venues", href: "/venues" },
   { name: "Gallery", href: "/gallery" },
   { name: "Contact", href: "/contact" },
 ];
 
 export default function Navbar() {
-  // Desktop keeps the original links; mobile gets an extra "Venues" link.
-  const mobileNavLinks = [
-    ...navLinks,
-    { name: "Venues", href: "/collaborations" },
-  ];
   const { contact, logoUrl } = useSiteConfig();
   const logoSrc = logoUrl || '/logo.png';
   const [isOpen, setIsOpen] = useState(false);
@@ -104,12 +101,12 @@ export default function Navbar() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
               <div className="relative">
-                <img
+                <OptimizedImage
                   src={logoSrc}
                   alt="Phoenix Events & Production Logo"
+                  preset="thumb"
+                  responsive={false}
                   className="w-10 h-10 sm:w-12 sm:h-12 object-contain transition-all duration-300 group-hover:scale-105 opacity-100"
-                  loading="lazy"
-                  decoding="async"
                 />
               </div>
               <div className="flex flex-col leading-tight">
@@ -248,7 +245,7 @@ export default function Navbar() {
 
               {/* Navigation Links */}
               <nav className="flex flex-col gap-2 relative">
-                {mobileNavLinks.map((link, index) => (
+                {navLinks.map((link, index) => (
                   <motion.div
                     key={link.name}
                     initial={{ opacity: 0, x: -30 }}
@@ -299,7 +296,7 @@ export default function Navbar() {
                 transition={{ delay: 0.5, duration: 0.3 }}
                 className="mt-auto pt-8 flex items-center justify-center gap-2 text-muted-foreground"
               >
-                <img src={logoSrc} alt="Phoenix" className="w-6 h-6 object-contain" loading="lazy" decoding="async" />
+                <OptimizedImage src={logoSrc} alt="Phoenix" preset="thumb" responsive={false} className="w-6 h-6 object-contain" />
                 <span className="text-sm font-sans text-muted-foreground">Creating Magical Moments</span>
               </motion.div>
             </motion.div>

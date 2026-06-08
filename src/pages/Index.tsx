@@ -18,6 +18,10 @@ const CollaborationsSection = lazy(() => import("@/components/CollaborationsSect
 const TestimonialsSection = lazy(() => import("@/components/TestimonialsSectionNew"));
 const AboutSection = lazy(() => import("@/components/AboutSection"));
 
+const SectionSuspense = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={null}>{children}</Suspense>
+);
+
 const Index = () => {
   const { contact, socialLinks } = useSiteConfig();
   const { data: homepageData, isPending: homepageDataPending, isSuccess: homepageDataSuccess } =
@@ -72,10 +76,8 @@ const Index = () => {
             <HeroSection />
           </div>
 
-          {/* Fallback Loader */}
-          <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
-
             {/* Collaborations / Elegant Venues – light: 3.jpg + overlay; dark: bg12.jpg */}
+            <SectionSuspense>
             <div id="venues" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-collaborations">
               <div className="section-depth-noise" aria-hidden />
               {/* Light theme only: 3.jpg – full section, subtle overlay for readability */}
@@ -94,14 +96,18 @@ const Index = () => {
                 prefetchedCollaborations={homepageDataSuccess ? homepageData?.collaborations : undefined}
               />
             </div>
+            </SectionSuspense>
 
             {/* Reels (Moments We've Crafted) – no background image */}
+            <SectionSuspense>
             <div id="reels" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-reels">
               <div className="section-depth-noise" aria-hidden />
               <ReelsSection />
             </div>
+            </SectionSuspense>
 
             {/* About Us */}
+            <SectionSuspense>
             <div id="about" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-about">
               <div className="section-depth-noise" aria-hidden />
               <div className="section-about-bg-image" aria-hidden />
@@ -113,8 +119,10 @@ const Index = () => {
                 }
               />
             </div>
+            </SectionSuspense>
 
             {/* Events – light: 9.jpg + overlay; dark: solid band */}
+            <SectionSuspense>
             <div id="events" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-events relative">
               <div className="section-depth-noise" aria-hidden />
               {/* Light theme only: 9.jpg – full section, subtle overlay for readability */}
@@ -132,8 +140,10 @@ const Index = () => {
                 prefetchedEvents={homepageDataSuccess ? homepageData?.events : undefined}
               />
             </div>
+            </SectionSuspense>
 
             {/* Services – light: 7.jpg + overlay; dark: solid band */}
+            <SectionSuspense>
             <div id="services" className="my-0 section-band-1 section-depth-bg section-flat section-border-t relative">
               <div className="section-depth-noise" aria-hidden />
               <div
@@ -148,8 +158,10 @@ const Index = () => {
                 prefetchedServices={homepageDataSuccess ? homepageData?.services : undefined}
               />
             </div>
+            </SectionSuspense>
 
             {/* Why Choose Us – light: 5.jpg + overlay; dark: solid band */}
+            <SectionSuspense>
             <div id="why-choose-us" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-why-choose-us relative">
               <div className="section-depth-noise" aria-hidden />
               {/* Light theme only: 5.jpg – full section, subtle overlay for readability */}
@@ -171,8 +183,10 @@ const Index = () => {
                 prefetchedWhyContent={homepageDataSuccess ? homepageData?.whyContent : undefined}
               />
             </div>
+            </SectionSuspense>
 
             {/* Testimonials */}
+            <SectionSuspense>
             <div id="testimonials" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-testimonials">
               <div className="section-depth-noise" aria-hidden />
               <div className="section-testimonials-bg-image" aria-hidden />
@@ -182,8 +196,8 @@ const Index = () => {
                 prefetchedTestimonials={homepageDataSuccess ? homepageData?.testimonials : undefined}
               />
             </div>
+            </SectionSuspense>
 
-          </Suspense>
         </main>
         <Footer />
         <WhatsAppButton />

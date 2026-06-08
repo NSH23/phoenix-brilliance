@@ -3,6 +3,8 @@ import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Card, CardContent } from "@/components/ui/card-2";
+import { OptimizedImage } from "@/components/ui/optimized-image";
+import { venueDetailPath } from "@/lib/venueRoutes";
 
 export type PartnerVenueCardData = {
   id: string;
@@ -22,7 +24,7 @@ export function PartnerVenueCard({ venue, className }: PartnerVenueCardProps) {
 
   return (
     <Link
-      to={`/collaborations/${venue.id}`}
+      to={venueDetailPath(venue.id)}
       className={cn("group block h-full touch-manipulation", className)}
     >
       <Card className="flex h-full flex-col border-border/60 bg-card/95 backdrop-blur-sm">
@@ -30,13 +32,12 @@ export function PartnerVenueCard({ venue, className }: PartnerVenueCardProps) {
           <AspectRatio ratio={4 / 3} className="bg-muted">
             {cover ? (
               <>
-                <img
+                <OptimizedImage
                   src={cover}
                   alt=""
                   aria-hidden
+                  preset="banner"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  loading="lazy"
-                  decoding="async"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
               </>
@@ -47,12 +48,12 @@ export function PartnerVenueCard({ venue, className }: PartnerVenueCardProps) {
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-3 sm:p-4">
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/90 p-1.5 shadow-sm dark:bg-card/90">
-                  <img
+                  <OptimizedImage
                     src={venue.logoUrl}
                     alt=""
+                    preset="thumb"
+                    responsive={false}
                     className="max-h-full max-w-full object-contain"
-                    loading="lazy"
-                    decoding="async"
                   />
                 </div>
                 <div className="min-w-0">

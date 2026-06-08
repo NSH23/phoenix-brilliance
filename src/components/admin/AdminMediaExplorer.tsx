@@ -19,6 +19,7 @@ import {
   Upload,
   Video,
 } from 'lucide-react';
+import { optimizeMediaUrl } from '@/lib/mediaDelivery';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -987,7 +988,14 @@ export default function AdminMediaExplorer({
                 </div>
               </>
             ) : (
-              <img src={item.url} alt="" className="h-full w-full object-contain bg-muted/20 p-1" draggable={false} />
+              <img
+                src={optimizeMediaUrl(item.url, { preset: 'thumb' })}
+                alt=""
+                className="h-full w-full object-contain bg-muted/20 p-1"
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+              />
             )}
             {selected ? (
               <div className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow">
@@ -1605,9 +1613,11 @@ export default function AdminMediaExplorer({
         <DialogContent className={cn('max-w-4xl gap-0 overflow-hidden border-0 p-0 sm:max-w-4xl', adminDialogMobileClass)}>
           {previewItem?.media_type !== 'video' ? (
             <img
-              src={previewItem?.url}
+              src={previewItem?.url ? optimizeMediaUrl(previewItem.url, { preset: 'lightbox' }) : ''}
               alt=""
               className="max-h-[85dvh] w-full object-contain bg-black/95"
+              loading="eager"
+              decoding="async"
             />
           ) : null}
         </DialogContent>

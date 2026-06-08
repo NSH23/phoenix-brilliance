@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { X, Play } from "lucide-react";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 export type BentoGalleryItem = {
   id: number | string;
@@ -57,9 +58,11 @@ const ImageModal = ({ item, onClose }: { item: BentoGalleryItem; onClose: () => 
         className="relative w-full max-w-4xl p-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
+        <OptimizedImage
           src={item.url}
           alt={item.title}
+          preset="lightbox"
+          loading="eager"
           className="h-auto max-h-[90vh] w-full rounded-lg object-contain"
         />
       </motion.div>
@@ -163,11 +166,11 @@ const InteractiveImageBentoGallery: React.FC<InteractiveImageBentoGalleryProps> 
                 onClick={() => handleItemClick(item, index)}
                 aria-label={`View ${item.title}`}
               >
-                <img
+                <OptimizedImage
                   src={item.url}
                   alt={item.title}
+                  preset="card"
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100" />
                 {item.isVideo ? (

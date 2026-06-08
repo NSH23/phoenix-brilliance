@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 export interface CarouselCardData {
   id: number | string;
@@ -140,12 +141,11 @@ const CarouselCard = ({ data, showCarousel = true, cardsPerView = 3, onCardClick
                   className="group relative block h-full w-full overflow-hidden rounded-xl border border-border/60 bg-card text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <div className="h-56 w-full sm:h-64">
-                    <img
+                    <OptimizedImage
                       src={card.imgUrl}
                       alt={card.title ?? ""}
+                      preset="card"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                      decoding="async"
                     />
                   </div>
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-80 sm:opacity-0 sm:transition-opacity sm:duration-300 sm:group-hover:opacity-100" />

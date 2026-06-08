@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { createInquiry, isValidPhone10, getNormalizedPhone10 } from "@/services/inquiries";
 import { getVenueOptions, getEventTypeOptions, DEFAULT_VENUES, DEFAULT_EVENT_TYPES, NOT_BOOKED_VENUE } from "@/services/formOptions";
 import { getActiveCollaborations } from "@/services/collaborations";
+import { venueDetailPath } from "@/lib/venueRoutes";
 import { useLeadCapture } from "@/contexts/LeadCaptureContext";
 import { Loader2, CheckCircle, Lock, ChevronDown, ChevronUp, ExternalLink, BookOpen, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
@@ -227,7 +228,7 @@ export default function LeadCaptureModal() {
                                     <Button
                                         type="button"
                                         className="w-full bg-gradient-to-r from-primary to-rose-gold text-white gap-2"
-                                        onClick={() => matchedCollaborationId ? closeAndNavigate(`/collaborations/${matchedCollaborationId}`, { replace: true }) : closeAndScrollToVenues()}
+                                        onClick={() => matchedCollaborationId ? closeAndNavigate(venueDetailPath(matchedCollaborationId), { replace: true }) : closeAndScrollToVenues()}
                                     >
                                         <FolderOpen className="w-4 h-4" />
                                         {matchedCollaborationId ? `View ${submittedVenueName}` : "View venues"}

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Card, CardContent } from "@/components/ui/card-2";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 type EventCategoryCardProps = {
   title: string;
@@ -21,12 +22,11 @@ export function EventCategoryCard({ title, slug, coverUrl, className }: EventCat
           <AspectRatio ratio={3 / 4} className="bg-muted">
             {coverUrl ? (
               <>
-                <img
+                <OptimizedImage
                   src={coverUrl}
                   alt={title}
+                  preset="card"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  loading="lazy"
-                  decoding="async"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/5" />
               </>

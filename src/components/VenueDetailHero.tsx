@@ -4,6 +4,7 @@ import { MapPin, Phone, ExternalLink, Building2, Camera, Play } from "lucide-rea
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 export type VenueDetailHeroProps = {
   name: string;
@@ -43,12 +44,12 @@ export default function VenueDetailHero({
           >
             <AspectRatio ratio={16 / 10} className="overflow-hidden rounded-2xl bg-muted shadow-sm">
               {bannerMedia ?? (
-                <img
+                <OptimizedImage
                   src={bannerSrc}
                   alt={bannerAlt}
-                  className="h-full w-full object-cover"
+                  preset="banner"
                   loading="eager"
-                  decoding="async"
+                  className="h-full w-full object-cover"
                 />
               )}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
@@ -72,12 +73,12 @@ export default function VenueDetailHero({
           >
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-border bg-muted/25 p-1.5 sm:h-16 sm:w-16">
-                <img
+                <OptimizedImage
                   src={logoSrc}
                   alt={`${name} logo`}
+                  preset="thumb"
+                  responsive={false}
                   className="max-h-full max-w-full object-contain"
-                  loading="lazy"
-                  decoding="async"
                 />
               </div>
               <div className="min-w-0">
@@ -140,12 +141,12 @@ export function VenueBannerVideoPoster({ posterSrc, alt, onPlay }: VenueBannerVi
       onClick={onPlay}
       aria-label="Play venue video"
     >
-      <img
+      <OptimizedImage
         src={posterSrc}
         alt={alt}
-        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+        preset="banner"
         loading="eager"
-        decoding="async"
+        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
       <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/40">
         <Play className="h-14 w-14 text-white drop-shadow-lg sm:h-16 sm:w-16" fill="currentColor" />

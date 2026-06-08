@@ -13,6 +13,7 @@ import { getCollaborationById } from "@/services/collaborations";
 import { resolvePublicStorageUrl } from "@/services/storage";
 import { getYouTubeNocookieEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 import { SEO } from "@/components/SEO";
+import { VENUES_LIST_PATH, venueDetailPath } from "@/lib/venueRoutes";
 import PhoneGalleryExplorer from "@/components/PhoneGalleryExplorer";
 import type { ExplorerFolder, ExplorerMediaItem } from "@/lib/mediaFolderTree";
 
@@ -128,17 +129,17 @@ export default function CollaborationDetail() {
   if (!collaboration) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <SEO title="Partner Not Found" description="This collaboration may no longer be available." url={partnerId ? `/collaborations/${partnerId}` : "/collaborations"} />
+        <SEO title="Venue Not Found" description="This venue may no longer be available." url={partnerId ? venueDetailPath(partnerId) : VENUES_LIST_PATH} />
         <Navbar />
         <main className="flex-1 flex items-center justify-center px-4 py-16">
           <div className="text-center max-w-md">
-            <h1 className="text-2xl font-serif font-semibold mb-2 text-foreground">Partner Not Found</h1>
-            <p className="text-muted-foreground mb-6">This collaboration may no longer be available.</p>
+            <h1 className="text-2xl font-serif font-semibold mb-2 text-foreground">Venue Not Found</h1>
+            <p className="text-muted-foreground mb-6">This venue may no longer be available.</p>
             <Link
-              to="/"
+              to={VENUES_LIST_PATH}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
             >
-              Back to Home
+              Back to Venues
             </Link>
           </div>
         </main>
@@ -216,7 +217,7 @@ export default function CollaborationDetail() {
       <SEO
         title={collaborationName}
         description={collaborationDescription ? `${collaborationDescription.slice(0, 155)}${collaborationDescription.length > 155 ? "…" : ""}` : `${collaborationName} – partner venue in Pune. Premium event collaborations.`}
-        url={partnerId ? `/collaborations/${partnerId}` : "/collaborations"}
+        url={partnerId ? venueDetailPath(partnerId) : VENUES_LIST_PATH}
       />
       <Navbar />
 
@@ -227,11 +228,11 @@ export default function CollaborationDetail() {
           className="mb-2 pt-24"
         >
           <Link
-            to="/"
+            to={VENUES_LIST_PATH}
             className="inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back to Home</span>
+            <span>Back to Venues</span>
           </Link>
         </motion.div>
       </div>

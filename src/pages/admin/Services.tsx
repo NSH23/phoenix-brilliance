@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getAllServices, updateService, deleteService, type Service } from '@/services/services';
 import { resolvePublicStorageUrl } from '@/services/storage';
+import { optimizeMediaUrl } from '@/lib/mediaDelivery';
 import { toast } from 'sonner';
 import { adminCardMenuTriggerClass } from '@/components/admin/adminStyles';
 
@@ -112,10 +113,11 @@ export default function AdminServices() {
       <div className="relative aspect-[16/10] bg-muted">
         {s.image_url ? (
           <img
-            src={resolvePublicStorageUrl(s.image_url, 'service-images')!}
+            src={optimizeMediaUrl(resolvePublicStorageUrl(s.image_url, 'service-images'), { preset: 'card' })}
             alt={s.title}
             className="h-full w-full object-contain bg-muted/25 p-1"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="flex h-full items-center justify-center">

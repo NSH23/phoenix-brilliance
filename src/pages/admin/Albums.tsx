@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Search, Trash2, MoreHorizontal, Calendar, Loader2, Eye, EyeOff, Image, Star } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { optimizeMediaUrl } from '@/lib/mediaDelivery';
 import { logger } from '@/utils/logger';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -161,7 +162,7 @@ export default function AdminAlbums() {
     >
       <div className="relative aspect-[16/10] bg-muted">
         {album.cover_image ? (
-          <img src={album.cover_image} alt={album.title} className="h-full w-full object-contain bg-muted/25 p-1" loading="lazy" />
+          <img src={optimizeMediaUrl(album.cover_image, { preset: 'card' })} alt={album.title} className="h-full w-full object-contain bg-muted/25 p-1" loading="lazy" decoding="async" />
         ) : (
           <div className="flex h-full items-center justify-center">
             <Image className="h-10 w-10 text-muted-foreground/40" />

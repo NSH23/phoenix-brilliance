@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { X } from "lucide-react";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface EventCardProps {
   title: string;
@@ -32,11 +33,10 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
           
           {/* Image Container - Consistent aspect ratio for mobile grid */}
           <div className="relative overflow-hidden rounded-md sm:rounded-lg aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4] bg-muted/25">
-            <img
+            <OptimizedImage
               src={image}
               alt={title}
-              loading="lazy"
-              decoding="async"
+              preset="card"
               className="w-full h-full object-contain bg-muted/25 p-2 transition-transform duration-700
                        group-hover:scale-[1.02]"
             />
@@ -112,7 +112,7 @@ const EventCard = ({ title, description, image, index }: EventCardProps) => {
             </button>
             
             <div className="aspect-[16/10] sm:aspect-video bg-muted/25">
-              <img src={image} alt={title} className="h-full w-full object-contain p-2" loading="lazy" decoding="async" />
+              <OptimizedImage src={image} alt={title} preset="lightbox" loading="eager" className="h-full w-full object-contain p-2" />
             </div>
             
             <div className="p-5 sm:p-6 md:p-8">

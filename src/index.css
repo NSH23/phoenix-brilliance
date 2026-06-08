@@ -604,19 +604,43 @@
 
   /* Homepage above-the-fold section backgrounds (avoid inline style recreation). */
   .homepage-bg-3 {
-    background-image: var(--bg-image-home-venues, var(--bg-image-3, url('/3.jpg')));
+    background-image: var(
+      --bg-image-home-venues,
+      var(
+        --bg-image-3,
+        image-set(url('/webp/3.webp') type('image/webp'), url('/3.jpg') type('image/jpeg'))
+      )
+    );
   }
 
   .homepage-bg-9 {
-    background-image: var(--bg-image-home-events, var(--bg-image-9, url('/9.jpg')));
+    background-image: var(
+      --bg-image-home-events,
+      var(
+        --bg-image-9,
+        image-set(url('/webp/9.webp') type('image/webp'), url('/9.jpg') type('image/jpeg'))
+      )
+    );
   }
 
   .homepage-bg-5 {
-    background-image: var(--bg-image-home-why-choose-us, var(--bg-image-5, url('/5.jpg')));
+    background-image: var(
+      --bg-image-home-why-choose-us,
+      var(
+        --bg-image-5,
+        image-set(url('/webp/5.webp') type('image/webp'), url('/5.jpg') type('image/jpeg'))
+      )
+    );
   }
 
   .homepage-bg-7 {
-    background-image: var(--bg-image-home-services, var(--bg-image-7, url('/7.jpg')));
+    background-image: var(
+      --bg-image-home-services,
+      var(
+        --bg-image-7,
+        image-set(url('/webp/7.webp') type('image/webp'), url('/7.jpg') type('image/jpeg'))
+      )
+    );
   }
 
   /* Flat sections: no gradient overlay, no noise – same colour everywhere */
@@ -2100,22 +2124,30 @@
    * Screen, device buttons, etc.). We only disable context menu, selection, drag,
    * and print to reduce casual copying.
    */
-  .public-site {
+  .public-site img,
+  .public-site video,
+  .public-site picture,
+  .public-site [data-protected-media] {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
-  }
-
-  .public-site img,
-  .public-site video {
     -webkit-user-drag: none;
     -khtml-user-drag: none;
     -moz-user-drag: none;
     -o-user-drag: none;
     user-drag: none;
-    pointer-events: auto;
+  }
+
+  .public-site input,
+  .public-site textarea,
+  .public-site select,
+  .public-site [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
   }
 
   @media print {

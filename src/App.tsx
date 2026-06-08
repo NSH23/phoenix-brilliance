@@ -2,7 +2,8 @@ import { lazy, Suspense } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
+import { VENUES_LIST_PATH, venueDetailPath } from "@/lib/venueRoutes";
 import { Loader2 } from "lucide-react";
 import ScrollToTop from "./components/ScrollToTop";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -14,6 +15,7 @@ import LeadCaptureModal from "@/components/LeadCaptureModal";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 import AdminThemeSync from "./components/admin/AdminThemeSync";
 import AdminPwaManager from "./components/admin/AdminPwaManager";
+import PublicSiteLayout from "./components/PublicSiteLayout";
 
 // Lazy load all route components for code splitting
 /** Preserve ?open= and other query params when redirecting legacy /admin/inquiries links (e.g. push notifications). */
@@ -22,6 +24,12 @@ function RedirectInquiriesToNotifications() {
   const params = new URLSearchParams(search);
   params.set("tab", "inquiries");
   return <Navigate to={`/admin/notifications?${params.toString()}`} replace />;
+}
+
+function RedirectLegacyVenueDetail() {
+  const { partnerId } = useParams();
+  if (!partnerId) return <Navigate to={VENUES_LIST_PATH} replace />;
+  return <Navigate to={venueDetailPath(partnerId)} replace />;
 }
 
 const Index = lazy(() => import("./pages/Index"));
@@ -37,7 +45,8 @@ const GalleryAlbum = lazy(() => import("./pages/GalleryAlbum"));
 const Events = lazy(() => import("./pages/Events"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
 
-// Public Collaborations Pages
+// Public Venues Pages (legacy /collaborations redirects here)
+const Venues = lazy(() => import("./pages/Venues"));
 const Collaborations = lazy(() => import("./pages/Collaborations"));
 const CollaborationDetail = lazy(() => import("./pages/CollaborationDetail"));
 
@@ -91,17 +100,21 @@ function AppRoutes() {
     <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/gallery" element={<Gallery />} />
-          <Route path="/gallery/:eventType" element={<GalleryEventType />} />
-          <Route path="/gallery/:eventType/:albumId" element={<GalleryAlbum />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/events/:eventType" element={<EventDetail />} />
-          <Route path="/collaborations" element={<Collaborations />} />
-          <Route path="/collaborations/:partnerId" element={<CollaborationDetail />} />
-          <Route path="/services" element={<Services />} />
+          {/* Public Routes — image protection + optimized delivery */}
+          <Route element={<PublicSiteLayout />}>
+            <Route path="/" element={<Index />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/gallery/:eventType" element={<GalleryEventType />} />
+            <Route path="/gallery/:eventType/:albumId" element={<GalleryAlbum />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/events/:eventType" element={<EventDetail />} />
+            <Route path="/venues" element={<Venues />} />
+            <Route path="/venues/:partnerId" element={<CollaborationDetail />} />
+            <Route path="/collaborations" element={<Collaborations />} />
+            <Route path="/collaborations/:partnerId" element={<RedirectLegacyVenueDetail />} />
+            <Route path="/services" element={<Services />} />
+          </Route>
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<LoginRedirect />} />

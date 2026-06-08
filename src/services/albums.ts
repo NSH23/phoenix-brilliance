@@ -257,6 +257,23 @@ export async function getAlbumMedia(albumId: string) {
   return ((data || []) as AlbumMedia[]).map(normalizeAlbumMedia);
 }
 
+/** Single query for album list pages — avoids N+1 getAlbumMedia calls. */
+export async function getAlbumMediaCounts(albumIds: string[]): Promise<Record<string, number>> {
+  if (!albumIds.length) return {};
+  const { data, error } = await supabase
+    .from('album_media')
+    .select('album_id')
+    .in('album_id', albumIds);
+
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = row.album_id as string;
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 // Create album media
 export async function createAlbumMedia(media: Omit<AlbumMedia, 'id' | 'created_at' | 'updated_at'>) {
   const { data, error } = await supabase

@@ -13,12 +13,13 @@ import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { SEO } from "@/components/SEO";
 import { getActiveEvents } from "@/services/events";
-import { getAllAlbums, getAlbumMedia } from "@/services/albums";
+import { getAllAlbums, getAlbumMediaCounts } from "@/services/albums";
 import type { Event } from "@/services/events";
 import type { Album } from "@/services/albums";
 import { getPageHeroContent } from "@/services/pageHeroContent";
 import { getEventIcon } from "@/lib/eventIcons";
 import { GalleryFolderGrid } from "@/components/ui/gallery-folder-card";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface AlbumWithCount extends Album {
   mediaCount?: number;
@@ -73,26 +74,16 @@ const Gallery = () => {
 
       setEvents(eventsData);
 
-      const albumsWithCounts = await Promise.all(
-        (albumsData as any[]).map(async (album: any) => {
-          try {
-            const media = await getAlbumMedia(album.id);
-            const event = eventsData.find((e) => e.id === album.event_id);
-            return {
-              ...album,
-              mediaCount: media.length,
-              eventTitle: event?.title ?? "Unknown Event",
-            };
-          } catch {
-            const event = eventsData.find((e) => e.id === album.event_id);
-            return {
-              ...album,
-              mediaCount: 0,
-              eventTitle: event?.title ?? "Unknown Event",
-            };
-          }
-        })
-      );
+      const albumIds = (albumsData as Album[]).map((a) => a.id);
+      const mediaCounts = await getAlbumMediaCounts(albumIds).catch(() => ({} as Record<string, number>));
+      const albumsWithCounts = (albumsData as Album[]).map((album) => {
+        const event = eventsData.find((e) => e.id === album.event_id);
+        return {
+          ...album,
+          mediaCount: mediaCounts[album.id] ?? 0,
+          eventTitle: event?.title ?? "Unknown Event",
+        };
+      });
 
       setAlbums(albumsWithCounts);
     } catch {
@@ -368,15 +359,15 @@ const Gallery = () => {
                         >
                           {eventImage ? (
                             <>
-                              <img
+                              <OptimizedImage
                                 src={eventImage}
                                 alt={option.title}
+                                preset="thumb"
+                                responsive={false}
                                 className={`w-full h-full object-contain bg-muted/25 p-1 transition-all duration-500 ${isSelected || isHovered
                                   ? "scale-[1.02]"
                                   : "scale-100"
                                   }`}
-                                loading="lazy"
-                                decoding="async"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = "none";
                                   const fallback = (e.target as HTMLElement).parentElement?.querySelector(".icon-fallback");

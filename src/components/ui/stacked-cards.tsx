@@ -4,6 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { getYouTubeEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
+import { optimizeMediaUrl } from "@/lib/mediaDelivery";
+
+const protectedImgProps = {
+  draggable: false as const,
+  "data-protected-media": "",
+  onContextMenu: (e: React.MouseEvent<HTMLImageElement>) => e.preventDefault(),
+};
 
 interface StackedCardsProps {
   /** First item = video URL, rest = image URLs. In hero mode only one video is used and it loops. */
@@ -255,6 +262,7 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                       className="w-full h-full object-cover"
                       loading="lazy"
                       decoding="async"
+                      {...protectedImgProps}
                     />
                     {!playbackLockedByOtherVideo && (
                       <iframe
@@ -270,15 +278,23 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                   </div>
                 ) : (
                   <img
-                    src={activeSrc}
+                    src={optimizeMediaUrl(activeSrc, { preset: "card" })}
                     alt="Gallery"
                     className="w-full h-full object-cover"
                     loading={index === 0 ? "eager" : "lazy"}
                     decoding="async"
+                    {...protectedImgProps}
                   />
                 )
               ) : renderAsImage ? (
-                <img src={src} alt="Gallery image" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                <img
+                  src={optimizeMediaUrl(src, { preset: "card" })}
+                  alt="Gallery image"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  {...protectedImgProps}
+                />
               ) : (
                 isYouTubeValue(src) ? (
                   <iframe

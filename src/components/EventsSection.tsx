@@ -8,6 +8,7 @@ import { EventCategoryCard } from "@/components/ui/event-category-card";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { EVENT_CATEGORY_DESCRIPTIONS } from "@/data/eventCategoryCopy";
+import { optimizeMediaUrl } from "@/lib/mediaDelivery";
 
 /* Event Categories: Three-column layout - left (StackedCards), center (categories), right (StackedCards).
  */
@@ -34,9 +35,10 @@ function buildEventCategories(eventsData: HomepageEventRow[]): EventCategory[] {
   return (eventsData || []).map((e) => {
     const imgs = (e.event_images || [])
       .sort((a, b) => a.display_order - b.display_order)
-      .map((i) => i.url);
+      .map((i) => optimizeMediaUrl(i.url, { preset: "card" }));
     while (imgs.length < 6) {
-      imgs.push(e.cover_image || FALLBACK_IMAGES[imgs.length % FALLBACK_IMAGES.length]);
+      const fallback = e.cover_image || FALLBACK_IMAGES[imgs.length % FALLBACK_IMAGES.length];
+      imgs.push(optimizeMediaUrl(fallback, { preset: "card" }));
     }
     return {
       title: e.title,
@@ -45,16 +47,6 @@ function buildEventCategories(eventsData: HomepageEventRow[]): EventCategory[] {
       images: imgs.slice(0, 6),
       powered_by: e.powered_by?.trim() || null,
     };
-  });
-}
-
-function preloadCategoryImages(cats: EventCategory[]) {
-  if (!cats.length) return;
-  cats.forEach((cat) => {
-    cat.images.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
   });
 }
 
@@ -76,7 +68,6 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
       const cats = buildEventCategories(prefetchedEvents);
       setCategories(cats);
       setSelectedSlug((prev) => (cats.find((c) => c.slug === prev) ? prev : cats[0]?.slug || ""));
-      preloadCategoryImages(cats);
       setIsLoading(false);
       return;
     }
@@ -87,7 +78,6 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
         const cats = buildEventCategories(eventsData || []);
         setCategories(cats);
         setSelectedSlug((prev) => (cats.find((c) => c.slug === prev) ? prev : cats[0]?.slug || ""));
-        preloadCategoryImages(cats);
       })
       .catch(() => {
         setCategories([]);

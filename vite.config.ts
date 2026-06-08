@@ -31,11 +31,19 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
-          manualChunks: {
-            "react-vendor": ["react", "react-dom", "react-router-dom"],
-            "supabase-vendor": ["@supabase/supabase-js"],
-            "motion-vendor": ["framer-motion"],
-            "query-vendor": ["@tanstack/react-query"],
+          manualChunks(id) {
+            if (id.includes("node_modules")) {
+              if (id.includes("react-router") || id.includes("react-dom") || /node_modules[\\/]react[\\/]/.test(id)) {
+                return "react-vendor";
+              }
+              if (id.includes("@supabase")) return "supabase-vendor";
+              if (id.includes("framer-motion")) return "motion-vendor";
+              if (id.includes("@tanstack/react-query")) return "query-vendor";
+              if (id.includes("recharts") || id.includes("@radix-ui")) return "ui-vendor";
+            }
+            if (id.includes("/src/pages/admin/") || id.includes("/src/components/admin/")) {
+              return "admin";
+            }
           },
         },
       },

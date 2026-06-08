@@ -3,6 +3,8 @@ import { motion, useInView } from "framer-motion";
 import { Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { OptimizedImage } from "@/components/ui/optimized-image";
+import { SRCSET_SIZES } from "@/lib/mediaDelivery";
 
 export type GalleryPhotoTileItem = {
   id?: string;
@@ -57,15 +59,16 @@ export function GalleryPhotoTile({
         aria-label={label}
       >
         <AspectRatio ratio={resolvedRatio} className="bg-muted">
-          <img
+          <OptimizedImage
             src={item.posterSrc}
             alt={label}
+            preset="card"
+            sizes={SRCSET_SIZES.gallery}
             className={cn(
               "h-full w-full object-cover transition-all duration-700 ease-out group-hover:scale-105",
               isInView && loaded ? "opacity-100" : "opacity-0",
             )}
             loading="lazy"
-            decoding="async"
             onLoad={() => setLoaded(true)}
           />
 

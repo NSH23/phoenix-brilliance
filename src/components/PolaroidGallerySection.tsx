@@ -4,6 +4,7 @@ import { getGalleryImagesByRows, categoryToGallerySlug, GalleryImage } from "@/s
 import { getSiteSettingOptional } from "@/services/siteContent";
 import { GALLERY_FRAME_TEMPLATES, type GalleryFrameTemplateId } from "@/lib/galleryFrames";
 import { cn } from "@/lib/utils";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 /* Gallery: rows of images with infinite horizontal scroll.
  * Frame style is configurable. 5 images visible per row.
@@ -109,12 +110,11 @@ function FrameImage({ src, alt, category, frameId }: FrameImageProps) {
           )}
         >
           {!imgError ? (
-            <img
+            <OptimizedImage
               src={src}
               alt={alt}
+              preset="card"
               className="w-full h-full object-contain p-1.5"
-              loading="lazy"
-              decoding="async"
               onError={() => setImgError(true)}
             />
           ) : (

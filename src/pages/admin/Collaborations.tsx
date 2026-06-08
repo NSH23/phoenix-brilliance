@@ -22,6 +22,7 @@ import {
   type Collaboration,
 } from '@/services/collaborations';
 import { resolvePublicStorageUrl } from '@/services/storage';
+import { optimizeMediaUrl } from '@/lib/mediaDelivery';
 import { toast } from 'sonner';
 import { adminCardMenuTriggerClass } from '@/components/admin/adminStyles';
 
@@ -158,7 +159,7 @@ export default function AdminCollaborations() {
           <div className="flex min-w-0 items-center gap-3">
             <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-muted md:h-12 md:w-12">
               {c.logo_url ? (
-                <img src={resolveLogoUrl(c.logo_url)!} alt={c.name} className="h-full w-full object-contain p-1" loading="lazy" />
+                <img src={optimizeMediaUrl(resolveLogoUrl(c.logo_url), { preset: 'thumb' })} alt={c.name} className="h-full w-full object-contain p-1" loading="lazy" decoding="async" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-muted-foreground">
                   {c.name.charAt(0)}

@@ -64,7 +64,7 @@ const CollaborationsCarousel = () => {
             className="flex-shrink-0"
           >
             <Link
-              to="/collaborations"
+              to="/venues"
               className="block w-44 sm:w-48 h-24 sm:h-28 
                          flex items-center justify-center rounded-xl
                          bg-background/60 dark:bg-ivory/5 backdrop-blur-sm border border-border dark:border-ivory/20
