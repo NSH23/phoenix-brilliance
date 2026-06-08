@@ -32,17 +32,25 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes("node_modules")) {
-              if (id.includes("react-router") || id.includes("react-dom") || /node_modules[\\/]react[\\/]/.test(id)) {
-                return "react-vendor";
-              }
-              if (id.includes("@supabase")) return "supabase-vendor";
-              if (id.includes("framer-motion")) return "motion-vendor";
-              if (id.includes("@tanstack/react-query")) return "query-vendor";
-              if (id.includes("recharts") || id.includes("@radix-ui")) return "ui-vendor";
-            }
             if (id.includes("/src/pages/admin/") || id.includes("/src/components/admin/")) {
               return "admin";
+            }
+            if (!id.includes("node_modules")) return;
+
+            // React-dependent libs must share the react-vendor chunk (framer-motion
+            // in a separate chunk caused React.createContext to be undefined at runtime).
+            if (id.includes("@tanstack/react-query")) return "query-vendor";
+            if (id.includes("@supabase")) return "supabase-vendor";
+            if (id.includes("recharts") || id.includes("@radix-ui")) return "ui-vendor";
+            if (
+              id.includes("framer-motion") ||
+              /node_modules[\\/]motion[\\/]/.test(id) ||
+              id.includes("react-router") ||
+              id.includes("react-dom") ||
+              /node_modules[\\/]react[\\/]/.test(id) ||
+              id.includes("scheduler")
+            ) {
+              return "react-vendor";
             }
           },
         },
