@@ -168,8 +168,9 @@ export default function AlbumEditPage() {
   }, [id, isNew, loadAlbum]);
 
   const persistGallery = useCallback(
-    async (opts?: { silent?: boolean; snapshot?: MediaAutosaveSnapshot }) => {
-      if (!editingAlbum || galleryAutosavingRef.current) return;
+    async (opts?: { silent?: boolean; snapshot?: MediaAutosaveSnapshot; force?: boolean }) => {
+      if (!editingAlbum) return;
+      if (galleryAutosavingRef.current && !opts?.force) return;
       galleryAutosavingRef.current = true;
 
       const mediaToSave = opts?.snapshot?.media ?? galleryMedia;
@@ -268,6 +269,11 @@ export default function AlbumEditPage() {
       }
     },
     [editingAlbum, galleryFolders, galleryMedia]
+  );
+
+  const handleGalleryPersist = useCallback(
+    (snapshot: MediaAutosaveSnapshot) => persistGallery({ silent: true, snapshot, force: true }),
+    [persistGallery]
   );
 
   const handleGalleryAutosave = useCallback(
@@ -541,6 +547,7 @@ export default function AlbumEditPage() {
               creatingFolder={creatingFolder}
               autosaveEnabled={autosaveGallery}
               onAutosave={handleGalleryAutosave}
+              onPersistSnapshot={handleGalleryPersist}
             />
             <p className="text-xs text-muted-foreground">
               {autosaveGallery

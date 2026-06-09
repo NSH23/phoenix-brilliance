@@ -337,12 +337,30 @@ export async function updateCollaborationImage(
 
 export async function deleteCollaborationImage(id: string) {
   await requireSession();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('collaboration_images')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
 
   if (error) throw error;
+  if (!data?.length) {
+    throw new Error('Image could not be deleted. Sign in again as an admin and retry.');
+  }
+}
+
+/** Remove all venue gallery images not assigned to any folder (folder_id IS NULL). */
+export async function deleteUnassignedCollaborationImages(collaborationId: string) {
+  await requireSession();
+  const { data, error } = await supabase
+    .from('collaboration_images')
+    .delete()
+    .eq('collaboration_id', collaborationId)
+    .is('folder_id', null)
+    .select('id');
+
+  if (error) throw error;
+  return data?.length ?? 0;
 }
 
 // Collaboration Steps

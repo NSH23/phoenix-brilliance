@@ -166,8 +166,9 @@ export default function VenueEditPage() {
   }, [id, isNew, loadVenue]);
 
   const persistGallery = useCallback(
-    async (opts?: { silent?: boolean; snapshot?: MediaAutosaveSnapshot }) => {
-      if (!editingCollab || galleryAutosavingRef.current) return;
+    async (opts?: { silent?: boolean; snapshot?: MediaAutosaveSnapshot; force?: boolean }) => {
+      if (!editingCollab) return;
+      if (galleryAutosavingRef.current && !opts?.force) return;
       galleryAutosavingRef.current = true;
 
       const imagesToSave = opts?.snapshot?.media ?? galleryImages;
@@ -261,6 +262,11 @@ export default function VenueEditPage() {
       }
     },
     [editingCollab, galleryFolders, galleryImages]
+  );
+
+  const handleGalleryPersist = useCallback(
+    (snapshot: MediaAutosaveSnapshot) => persistGallery({ silent: true, snapshot, force: true }),
+    [persistGallery]
   );
 
   const handleGalleryAutosave = useCallback(
@@ -667,11 +673,12 @@ export default function VenueEditPage() {
               creatingFolder={creatingFolder}
               autosaveEnabled={autosaveGallery}
               onAutosave={handleGalleryAutosave}
+              onPersistSnapshot={handleGalleryPersist}
             />
             <p className="text-xs text-muted-foreground">
               {autosaveGallery
-                ? 'Venue name, logo, and other details still use Save changes.'
-                : 'Turn on autosave or use Save changes to store gallery uploads.'}
+                ? 'Venue name, logo, and other details still use Save changes. Deletes save immediately.'
+                : 'Turn on autosave or use Save changes for uploads. Deletes save immediately.'}
             </p>
           </div>
         ) : undefined

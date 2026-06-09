@@ -88,6 +88,8 @@ export type AdminMediaExplorerProps = {
   autosaveEnabled?: boolean;
   /** Persist gallery; receives current media/folders snapshot (avoids stale React state). */
   onAutosave?: (snapshot: { media: ExplorerMediaItem[]; folders: ExplorerFolder[] }) => void | Promise<void>;
+  /** Always persist deletes to the database (independent of autosave toggle). */
+  onPersistSnapshot?: (snapshot: { media: ExplorerMediaItem[]; folders: ExplorerFolder[] }) => void | Promise<void>;
 };
 
 export type MediaAutosaveSnapshot = { media: ExplorerMediaItem[]; folders: ExplorerFolder[] };
@@ -349,6 +351,7 @@ export default function AdminMediaExplorer({
   creatingFolder = false,
   autosaveEnabled = true,
   onAutosave,
+  onPersistSnapshot,
 }: AdminMediaExplorerProps) {
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAutosaveRef = useRef<MediaAutosaveSnapshot | null>(null);
@@ -379,9 +382,20 @@ export default function AdminMediaExplorer({
     }, 700);
   };
 
-  /** Deletes must hit the database immediately — not only on debounced autosave. */
+  /** Deletes must hit the database immediately — independent of the autosave toggle. */
   const persistAfterDelete = (snapshot: MediaAutosaveSnapshot) => {
-    runAutosaveNow(snapshot);
+    const persist = onPersistSnapshot ?? onAutosave;
+    if (!persist) {
+      toast.error('Could not save delete', {
+        description: 'Save changes manually or turn on gallery autosave.',
+      });
+      return;
+    }
+    void Promise.resolve(persist(snapshot)).catch((err: unknown) => {
+      toast.error('Could not delete from database', {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    });
   };
 
   useEffect(
