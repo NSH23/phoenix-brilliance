@@ -131,8 +131,18 @@ export default function VenueEditPage() {
         });
         const imgs = full.collaboration_images || [];
         const folders = full.collaboration_folders || [];
-        setGalleryImages(mapImages(imgs));
+        const mappedImages = mapImages(imgs);
+        setGalleryImages(mappedImages);
         setGalleryFolders(mapFolders(folders));
+        galleryDbSnapshotRef.current = mappedImages
+          .filter((row): row is GalleryImageRow & { id: string } => !!row.id)
+          .map((row) => ({
+            id: row.id,
+            folder_id: row.folder_id,
+            image_url: row.url,
+            media_type: row.media_type ?? 'image',
+            caption: row.caption ?? null,
+          }));
         setSelectedFolderId(
           options?.preserveFolderSelection ? selectedFolderIdRef.current ?? GALLERY_ROOT_ID : GALLERY_ROOT_ID
         );

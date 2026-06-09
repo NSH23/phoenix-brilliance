@@ -336,6 +336,7 @@ export async function updateCollaborationImage(
 }
 
 export async function deleteCollaborationImage(id: string) {
+  await requireSession();
   const { error } = await supabase
     .from('collaboration_images')
     .delete()

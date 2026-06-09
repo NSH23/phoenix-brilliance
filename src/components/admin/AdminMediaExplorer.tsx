@@ -353,16 +353,35 @@ export default function AdminMediaExplorer({
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAutosaveRef = useRef<MediaAutosaveSnapshot | null>(null);
 
-  const triggerAutosave = (snapshot: MediaAutosaveSnapshot) => {
+  const runAutosaveNow = (snapshot: MediaAutosaveSnapshot) => {
+    if (!onAutosave) return;
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    pendingAutosaveRef.current = null;
+    void Promise.resolve(onAutosave(snapshot));
+  };
+
+  const triggerAutosave = (snapshot: MediaAutosaveSnapshot, options?: { immediate?: boolean }) => {
     if (!autosaveEnabled || !onAutosave) return;
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     pendingAutosaveRef.current = snapshot;
+    if (options?.immediate) {
+      runAutosaveNow(snapshot);
+      return;
+    }
     autosaveTimerRef.current = setTimeout(() => {
       autosaveTimerRef.current = null;
       const snap = pendingAutosaveRef.current;
       pendingAutosaveRef.current = null;
       if (snap) void Promise.resolve(onAutosave(snap));
     }, 700);
+  };
+
+  /** Deletes must hit the database immediately — not only on debounced autosave. */
+  const persistAfterDelete = (snapshot: MediaAutosaveSnapshot) => {
+    runAutosaveNow(snapshot);
   };
 
   useEffect(
@@ -598,7 +617,7 @@ export default function AdminMediaExplorer({
     const keys = new Set(unassignedMedia.map(mediaKey));
     const nextMedia = media.filter((m) => !keys.has(mediaKey(m)));
     onMediaChange(nextMedia);
-    triggerAutosave({ media: nextMedia, folders });
+    persistAfterDelete({ media: nextMedia, folders });
     exitMobileSelectMode();
     toast.success(`Removed ${count} file${count === 1 ? '' : 's'}`);
   };
@@ -611,7 +630,7 @@ export default function AdminMediaExplorer({
       const keys = selectedKeys;
       const nextMedia = media.filter((m) => !keys.has(mediaKey(m)));
       onMediaChange(nextMedia);
-      triggerAutosave({ media: nextMedia, folders });
+      persistAfterDelete({ media: nextMedia, folders });
       exitMobileSelectMode();
       toast.success(`Removed ${items.length} file${items.length === 1 ? '' : 's'}`);
       return;
@@ -621,7 +640,22 @@ export default function AdminMediaExplorer({
       if (item.media_type === 'video') removeVideo(item.url, item.folder_id ?? null);
     }
     if (urlsToRemove.size > 0) {
-      setImagesForFolder(imageUrls.filter((u) => !urlsToRemove.has(u)));
+      const folderId = selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId;
+      const others = media.filter((m) => (m.folder_id ?? null) !== folderId);
+      const existingInFolder = media.filter((m) => (m.folder_id ?? null) === folderId);
+      const videosInFolder = existingInFolder.filter((m) => m.media_type === 'video');
+      const keptUrls = imageUrls.filter((u) => !urlsToRemove.has(u));
+      const merged = keptUrls.map((url, i) => {
+        const found = existingInFolder.find((e) => e.url === url && e.media_type === 'image');
+        return found
+          ? { ...found, display_order: i }
+          : { url, folder_id: folderId, display_order: i, media_type: 'image' as const, caption: null };
+      });
+      const base = merged.length;
+      const videosAdjusted = videosInFolder.map((v, i) => ({ ...v, folder_id: folderId, display_order: base + i }));
+      const nextMedia = [...others, ...merged, ...videosAdjusted];
+      onMediaChange(nextMedia);
+      persistAfterDelete({ media: nextMedia, folders });
     }
     exitMobileSelectMode();
     toast.success(`Removed ${items.length} file${items.length === 1 ? '' : 's'}`);
@@ -923,8 +957,13 @@ export default function AdminMediaExplorer({
     const base = merged.length;
     const videosAdjusted = videosInFolder.map((v, i) => ({ ...v, folder_id: folderId, display_order: base + i }));
     const nextMedia = [...others, ...merged, ...videosAdjusted];
+    const prevImageCount = existingInFolder.filter((m) => m.media_type === 'image').length;
     onMediaChange(nextMedia);
-    triggerAutosave({ media: nextMedia, folders });
+    if (urls.length < prevImageCount) {
+      persistAfterDelete({ media: nextMedia, folders });
+    } else {
+      triggerAutosave({ media: nextMedia, folders });
+    }
   };
 
   const addYoutubeVideo = () => {
@@ -1025,8 +1064,9 @@ export default function AdminMediaExplorer({
                 onClick={() => {
                   if (item.media_type === 'video') removeVideo(item.url, item.folder_id ?? null);
                   else if ((item.folder_id ?? null) === null) {
-                    onMediaChange(media.filter((m) => mediaKey(m) !== key));
-                    triggerAutosave({ media: media.filter((m) => mediaKey(m) !== key), folders });
+                    const nextMedia = media.filter((m) => mediaKey(m) !== key);
+                    onMediaChange(nextMedia);
+                    persistAfterDelete({ media: nextMedia, folders });
                   } else setImagesForFolder(imageUrls.filter((u) => u !== item.url));
                   setSelectedKeys((prev) => { const n = new Set(prev); n.delete(key); return n; });
                 }}
