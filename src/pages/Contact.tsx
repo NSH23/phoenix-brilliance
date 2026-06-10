@@ -8,6 +8,13 @@ import { SEO } from "@/components/SEO";
 import { createInquiry, isValidPhone10, getNormalizedPhone10 } from "@/services/inquiries";
 import { getVenueOptions, getEventTypeOptions, DEFAULT_EVENT_TYPES, DEFAULT_VENUES } from "@/services/formOptions";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import {
+  DEFAULT_PHONE_PRIMARY,
+  DEFAULT_PHONE_SECONDARY,
+  DEFAULT_WHATSAPP,
+  toTelHref,
+  toWhatsAppHref,
+} from "@/lib/contactNumbers";
 import { toast } from "sonner";
 
 const OTHER_LABEL = "Other";
@@ -82,9 +89,7 @@ Event Date: ${formData.eventDate}
 Venue: ${resolvedVenue || "—"}
 ${formData.message ? `Message: ${formData.message}` : ""}`;
 
-    const encodedMessage = encodeURIComponent(whatsappMessage);
-    const whatsappNumber = contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276";
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    const whatsappUrl = toWhatsAppHref(contact?.whatsapp || DEFAULT_WHATSAPP, whatsappMessage);
     window.open(whatsappUrl, "_blank");
 
     setIsSubmitted(true);
@@ -120,7 +125,7 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
             <div className="sm:hidden mb-6">
               <div className="grid grid-cols-2 gap-3">
                 <a
-                  href={`https://wa.me/${contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276"}?text=Hi! I'm interested in your event services.`}
+                  href={toWhatsAppHref(contact?.whatsapp || DEFAULT_WHATSAPP, "Hi! I'm interested in your event services.")}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 p-4 rounded-2xl 
@@ -133,7 +138,7 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                   <span>WhatsApp</span>
                 </a>
                 <a
-                  href={`tel:${contact.phone.replace(/\s/g, '')}`}
+                  href={toTelHref(contact?.phone || DEFAULT_PHONE_PRIMARY)}
                   className="flex items-center justify-center gap-2 p-4 rounded-2xl 
                          bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                          font-semibold text-sm shadow-lg active:scale-95 transition-transform"
@@ -182,8 +187,8 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
 
                     <div>
                       <h4 className="text-primary font-medium text-sm mb-1 uppercase tracking-wide">Call Us</h4>
-                      <p className="text-foreground text-sm">+91 70667 63276</p>
-                      <p className="text-foreground text-sm">+91 97667 97234</p>
+                      <p className="text-foreground text-sm">{contact?.phone || DEFAULT_PHONE_PRIMARY}</p>
+                      <p className="text-foreground text-sm">{contact?.phone2 || DEFAULT_PHONE_SECONDARY}</p>
                     </div>
 
                     <div>
@@ -228,8 +233,8 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                       </div>
                       <div>
                         <p className="font-medium text-foreground text-sm lg:text-base">Call Us</p>
-                        <p className="text-muted-foreground text-xs lg:text-sm">+91 70667 63276</p>
-                        <p className="text-muted-foreground text-xs lg:text-sm">+91 97667 97234</p>
+                        <p className="text-muted-foreground text-xs lg:text-sm">{contact?.phone || DEFAULT_PHONE_PRIMARY}</p>
+                        <p className="text-muted-foreground text-xs lg:text-sm">{contact?.phone2 || DEFAULT_PHONE_SECONDARY}</p>
                       </div>
                     </div>
 
@@ -277,7 +282,8 @@ ${formData.message ? `Message: ${formData.message}` : ""}`;
                     Request a Quote
                   </h3>
                   <p className="text-muted-foreground text-sm mb-4">
-                    <span className="font-medium text-foreground">Call:</span> +91 70667 63276, +91 97667 97234
+                    <span className="font-medium text-foreground">Call:</span>{' '}
+                    {contact?.phone || DEFAULT_PHONE_PRIMARY}, {contact?.phone2 || DEFAULT_PHONE_SECONDARY}
                     <br />
                     <span className="font-medium text-foreground">Email:</span>{' '}
                     <a href="mailto:Phoenixeventsandproduction@gmail.com" className="text-primary hover:underline">

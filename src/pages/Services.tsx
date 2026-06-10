@@ -539,7 +539,7 @@ export default function Services() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
-                  href={`tel:${(contact?.phone || "+917066763276").replace(/\s/g, "")}`}
+                  href={`tel:${(contact?.phone || "+91 88880 82509").replace(/\s/g, "")}`}
                   className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 py-3.5 rounded-full border-2 border-primary text-primary font-semibold text-sm hover:bg-primary/10 transition-all w-full sm:w-auto"
                 >
                   <Phone className="w-4 h-4" />

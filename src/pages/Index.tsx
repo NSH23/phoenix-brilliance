@@ -47,7 +47,7 @@ const Index = () => {
       <EventPlanningBusinessSchema />
       <OrganizationSchema
         contactPoint={{
-          telephone: contact?.phone || "+91 70667 63276",
+          telephone: contact?.phone || "+91 88880 82509",
           contactType: "Customer Service",
           email: contact?.email || "hello@phoenixevents.com",
         }}

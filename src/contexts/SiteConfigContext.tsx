@@ -2,12 +2,14 @@ import { createContext, useContext, useEffect, useMemo, useState, ReactNode } fr
 import { getAllSiteSettings, getContactInfoOptional, getSiteSettingOptional } from '@/services/siteContent';
 import { getActiveSocialLinks } from '@/services/siteContent';
 import { resolvePublicStorageUrl } from '@/services/storage';
+import { DEFAULT_PHONE_PRIMARY, DEFAULT_PHONE_SECONDARY, DEFAULT_WHATSAPP } from '@/lib/contactNumbers';
 
 export interface SiteContact {
   phone: string;
+  phone2: string;
   email: string;
   address: string;
-  whatsapp: string; // phone without + for wa.me links
+  whatsapp: string; // digits only for wa.me links
 }
 
 export interface SiteSocialLinks {
@@ -49,10 +51,11 @@ function isPlaceholderAddress(addr: string | null | undefined): boolean {
 }
 
 const DEFAULT_CONTACT: SiteContact = {
-  phone: '+91 70667 63276',
+  phone: DEFAULT_PHONE_PRIMARY,
+  phone2: DEFAULT_PHONE_SECONDARY,
   email: 'Phoenixeventsandproduction@gmail.com',
   address: MAP_ADDRESS,
-  whatsapp: '917066763276',
+  whatsapp: DEFAULT_WHATSAPP,
 };
 
 const DEFAULT_SOCIAL: SiteSocialLinks = {};
@@ -127,12 +130,13 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
           siteConfigCache = null;
         }
 
-        const [contactData, socialData, logoValue, bgValues, allSettings] = await Promise.all([
+        const [contactData, socialData, logoValue, bgValues, allSettings, phone2Setting] = await Promise.all([
           getContactInfoOptional().catch(() => null),
           getActiveSocialLinks().catch(() => []),
           getSiteSettingOptional('site_logo_url').catch(() => null),
           Promise.all(BG_SETTING_TO_VAR.map(({ settingKey }) => getSiteSettingOptional(settingKey).catch(() => null))),
           getAllSiteSettings().catch(() => []),
+          getSiteSettingOptional('contact_phone_2').catch(() => null),
         ]);
         const socialMap: SiteSocialLinks & { whatsapp?: string } = {};
         socialData.forEach((l) => {
@@ -141,7 +145,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
           }
         });
         const whatsappUrl = socialMap.whatsapp || '';
-        const whatsappNum = whatsappUrl.replace(/\D/g, '') || '917066763276';
+        const whatsappNum = whatsappUrl.replace(/\D/g, '') || DEFAULT_WHATSAPP;
 
         const nextContact: SiteContact = contactData
           ? (() => {
@@ -151,6 +155,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
                   : DEFAULT_CONTACT.address;
               return {
                 phone: contactData.phone || DEFAULT_CONTACT.phone,
+                phone2: phone2Setting?.trim() || DEFAULT_CONTACT.phone2,
                 email: contactData.email || DEFAULT_CONTACT.email,
                 address,
                 whatsapp: whatsappNum,
@@ -158,6 +163,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
             })()
           : {
               ...DEFAULT_CONTACT,
+              phone2: phone2Setting?.trim() || DEFAULT_CONTACT.phone2,
               whatsapp: whatsappNum,
             };
 

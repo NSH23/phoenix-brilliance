@@ -58,6 +58,7 @@ import { cn } from '@/lib/utils';
 import { getYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { adminDialogMobileClass } from '@/components/admin/adminStyles';
+import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
 import { toast } from 'sonner';
 import {
   buildFolderTree,
@@ -382,20 +383,24 @@ export default function AdminMediaExplorer({
     }, 700);
   };
 
-  /** Deletes must hit the database immediately — independent of the autosave toggle. */
-  const persistAfterDelete = (snapshot: MediaAutosaveSnapshot) => {
+  const persistSnapshot = (snapshot: MediaAutosaveSnapshot, errorTitle = 'Could not save gallery') => {
     const persist = onPersistSnapshot ?? onAutosave;
     if (!persist) {
-      toast.error('Could not save delete', {
+      toast.error(errorTitle, {
         description: 'Save changes manually or turn on gallery autosave.',
       });
       return;
     }
     void Promise.resolve(persist(snapshot)).catch((err: unknown) => {
-      toast.error('Could not delete from database', {
+      toast.error(errorTitle, {
         description: err instanceof Error ? err.message : String(err),
       });
     });
+  };
+
+  /** Deletes must hit the database immediately — independent of the autosave toggle. */
+  const persistAfterDelete = (snapshot: MediaAutosaveSnapshot) => {
+    persistSnapshot(snapshot, 'Could not delete from database');
   };
 
   useEffect(
@@ -477,6 +482,20 @@ export default function AdminMediaExplorer({
     if (selectedFolder) return folders.filter((f) => f.parent_id === selectedFolder.id).sort((a, b) => a.display_order - b.display_order);
     return [];
   }, [isAtRoot, selectedFolder, folders]);
+
+  const reorderChildFolders = (orderedIds: string[]) => {
+    const parentId = isAtRoot ? null : selectedFolderId;
+    const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
+    const nextFolders = folders.map((folder) => {
+      const isSibling =
+        parentId === null ? !folder.parent_id : folder.parent_id === parentId;
+      if (!isSibling) return folder;
+      const nextOrder = orderMap.get(folder.id);
+      return nextOrder !== undefined ? { ...folder, display_order: nextOrder } : folder;
+    });
+    onFoldersChange(nextFolders);
+    persistSnapshot({ media, folders: nextFolders }, 'Could not save folder order');
+  };
 
   const folderMedia = useMemo(() => {
     if (isAtRoot) return [] as ExplorerMediaItem[];
@@ -1491,43 +1510,93 @@ export default function AdminMediaExplorer({
                   {folderGridLabel}
                   {selectedFolderTileIds.size > 0 ? ` · ${selectedFolderTileIds.size} selected` : ''}
                 </p>
-                <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
-                  {childFolders.map((f) => {
-                    const count = folderDescendantCounts.get(f.id) ?? mediaCounts.get(f.id) ?? 0;
-                    const isTarget = dragOverFolderId === f.id || externalDragOver === f.id;
-                    return (
-                      <FolderTile
-                        key={f.id}
-                        folderId={f.id}
-                        name={f.name}
-                        count={count}
-                        selected={selectedFolderTileIds.has(f.id)}
-                        hidden={!f.is_enabled}
-                        isDropTarget={isTarget}
-                        hasClipboard={!!clipboard?.items.length}
-                        canDelete
-                        onSelect={(e) => selectFolderTile(f.id, e)}
-                        onOpen={() => navigateToFolder(f.id)}
-                        onPaste={() => handlePaste(f.id)}
-                        onRename={() => openRenameFolderDialog(f.id)}
-                        onDelete={() => void onDeleteFolder(f.id)}
-                        onDragOverFolder={(id, external) => {
-                          if (external) setExternalDragOver(id);
-                          else setDragOverFolderId(id);
-                        }}
-                        onDragLeaveFolder={() => {
-                          setDragOverFolderId(null);
-                          setExternalDragOver(null);
-                        }}
-                        onDropOnFolder={handleFolderDrop}
-                        isMobile={isMobile}
-                        folderSelectionMode={mobileFolderSelectMode}
-                        suppressClickRef={suppressNextClickRef}
-                        onFolderLongPress={() => enterFolderSelectMode(f.id)}
-                      />
-                    );
-                  })}
-                </div>
+                {childFolders.length >= 2 && !mobileFolderSelectMode ? (
+                  <p className="mb-2 hidden text-[11px] text-muted-foreground md:block">
+                    Drag the grip on a folder to reorder how it appears on the website.
+                  </p>
+                ) : null}
+                {childFolders.length >= 2 && !mobileFolderSelectMode ? (
+                  <AdminSortableGrid
+                    itemIds={visibleFolderTileIds}
+                    onReorder={reorderChildFolders}
+                    className="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8"
+                  >
+                    {childFolders.map((f) => {
+                      const count = folderDescendantCounts.get(f.id) ?? mediaCounts.get(f.id) ?? 0;
+                      const isTarget = dragOverFolderId === f.id || externalDragOver === f.id;
+                      return (
+                        <AdminSortableItem key={f.id} id={f.id}>
+                          <FolderTile
+                            folderId={f.id}
+                            name={f.name}
+                            count={count}
+                            selected={selectedFolderTileIds.has(f.id)}
+                            hidden={!f.is_enabled}
+                            isDropTarget={isTarget}
+                            hasClipboard={!!clipboard?.items.length}
+                            canDelete
+                            onSelect={(e) => selectFolderTile(f.id, e)}
+                            onOpen={() => navigateToFolder(f.id)}
+                            onPaste={() => handlePaste(f.id)}
+                            onRename={() => openRenameFolderDialog(f.id)}
+                            onDelete={() => void onDeleteFolder(f.id)}
+                            onDragOverFolder={(id, external) => {
+                              if (external) setExternalDragOver(id);
+                              else setDragOverFolderId(id);
+                            }}
+                            onDragLeaveFolder={() => {
+                              setDragOverFolderId(null);
+                              setExternalDragOver(null);
+                            }}
+                            onDropOnFolder={handleFolderDrop}
+                            isMobile={isMobile}
+                            folderSelectionMode={mobileFolderSelectMode}
+                            suppressClickRef={suppressNextClickRef}
+                            onFolderLongPress={() => enterFolderSelectMode(f.id)}
+                          />
+                        </AdminSortableItem>
+                      );
+                    })}
+                  </AdminSortableGrid>
+                ) : (
+                  <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
+                    {childFolders.map((f) => {
+                      const count = folderDescendantCounts.get(f.id) ?? mediaCounts.get(f.id) ?? 0;
+                      const isTarget = dragOverFolderId === f.id || externalDragOver === f.id;
+                      return (
+                        <FolderTile
+                          key={f.id}
+                          folderId={f.id}
+                          name={f.name}
+                          count={count}
+                          selected={selectedFolderTileIds.has(f.id)}
+                          hidden={!f.is_enabled}
+                          isDropTarget={isTarget}
+                          hasClipboard={!!clipboard?.items.length}
+                          canDelete
+                          onSelect={(e) => selectFolderTile(f.id, e)}
+                          onOpen={() => navigateToFolder(f.id)}
+                          onPaste={() => handlePaste(f.id)}
+                          onRename={() => openRenameFolderDialog(f.id)}
+                          onDelete={() => void onDeleteFolder(f.id)}
+                          onDragOverFolder={(id, external) => {
+                            if (external) setExternalDragOver(id);
+                            else setDragOverFolderId(id);
+                          }}
+                          onDragLeaveFolder={() => {
+                            setDragOverFolderId(null);
+                            setExternalDragOver(null);
+                          }}
+                          onDropOnFolder={handleFolderDrop}
+                          isMobile={isMobile}
+                          folderSelectionMode={mobileFolderSelectMode}
+                          suppressClickRef={suppressNextClickRef}
+                          onFolderLongPress={() => enterFolderSelectMode(f.id)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
                 <p className="mt-2 hidden text-[11px] text-muted-foreground md:block">
                   Click to select · Ctrl+click multi-select · Shift+click range · Double-click to open · Right-click for menu
                 </p>

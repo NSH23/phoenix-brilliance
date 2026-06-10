@@ -1,11 +1,14 @@
 import { MessageCircle, Phone, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { DEFAULT_WHATSAPP, toTelHref, toWhatsAppHref } from "@/lib/contactNumbers";
 
 const MobileCTA = () => {
   const { contact } = useSiteConfig();
-  const whatsappNumber = contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276";
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Hi! I'm interested in your event services.`;
+  const whatsappUrl = toWhatsAppHref(
+    contact?.whatsapp || DEFAULT_WHATSAPP,
+    "Hi! I'm interested in your event services."
+  );
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden opacity-0 animate-mobile-cta-in">
       {/* Instagram-style bottom action bar */}
@@ -28,7 +31,7 @@ const MobileCTA = () => {
 
           {/* Call Button */}
           <a
-            href={`tel:${(contact.phone || "").replace(/\s/g, "")}`}
+            href={toTelHref(contact?.phone || "")}
             className="flex items-center justify-center w-14 h-14 
                      bg-muted rounded-2xl border border-border
                      active:scale-95 transition-transform duration-200"

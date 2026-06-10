@@ -2,18 +2,26 @@ import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import ContactForm from "./ContactForm";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import {
+  DEFAULT_PHONE_PRIMARY,
+  DEFAULT_PHONE_SECONDARY,
+  DEFAULT_WHATSAPP,
+  toTelHref,
+  toWhatsAppHref,
+} from "@/lib/contactNumbers";
 
 const MAP_ADDRESS = "Shop no 1, Phoenix Events and Production, Kailas kondiba Dange Plot, Unit 4, Dange Chowk Rd, nr. CBI Crime Branch, nr. Maruti Suzuki Showroom, Pune, Maharashtra 411033";
 const CONTACT_EMAIL = "Phoenixeventsandproduction@gmail.com";
-const CONTACT_PHONE = "+91 70667 63276";
-const CONTACT_PHONE_2 = "+91 97667 97234";
-const WHATSAPP_NUM = "917066763276";
 const INSTAGRAM_URL = "https://www.instagram.com/phoenix_events_and_production?igsh=MW1nMDh4dmg2ZWNvNA==";
 
 const ContactSection = () => {
   const { contact } = useSiteConfig();
-  const phone = contact?.phone || CONTACT_PHONE;
-  const whatsappNum = (contact?.phone?.replace(/\D/g, '') || WHATSAPP_NUM);
+  const phone = contact?.phone || DEFAULT_PHONE_PRIMARY;
+  const phone2 = contact?.phone2 || DEFAULT_PHONE_SECONDARY;
+  const whatsappUrl = toWhatsAppHref(
+    contact?.whatsapp || DEFAULT_WHATSAPP,
+    "Hi! I'm interested in your event services."
+  );
 
   return (
     <section id="contact" className="py-12 sm:py-16 lg:py-24 pb-24 sm:pb-24 bg-background relative overflow-hidden">
@@ -47,7 +55,7 @@ const ContactSection = () => {
         <div className="sm:hidden mb-6">
           <div className="grid grid-cols-2 gap-3">
             <a
-              href={`https://wa.me/${whatsappNum}?text=Hi! I'm interested in your event services.`}
+              href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 p-4 rounded-2xl 
@@ -60,7 +68,7 @@ const ContactSection = () => {
               <span>WhatsApp</span>
             </a>
             <a
-              href={`tel:${phone.replace(/\s/g, '')}`}
+              href={toTelHref(phone)}
               className="flex items-center justify-center gap-2 p-4 rounded-2xl 
                        bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
                        font-semibold text-sm shadow-lg active:scale-95 transition-transform"
@@ -85,7 +93,7 @@ const ContactSection = () => {
               <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory">
                 {[
                   { icon: MapPin, title: "Visit Us", info: "Pune, Maharashtra" },
-                  { icon: Phone, title: "Call Us", info: CONTACT_PHONE },
+                  { icon: Phone, title: "Call Us", info: phone },
                   { icon: Mail, title: "Email Us", info: CONTACT_EMAIL },
                   { icon: Clock, title: "Working Hours", info: "Mon-Sat: 10AM-8PM" },
                 ].map((item, idx) => (
@@ -140,9 +148,9 @@ const ContactSection = () => {
                   <div>
                     <p className="font-medium text-foreground text-sm lg:text-base font-sans">Call Us</p>
                     <p className="text-muted-foreground text-xs lg:text-sm font-sans">
-                      <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-primary">{phone}</a>
+                      <a href={toTelHref(phone)} className="hover:text-primary">{phone}</a>
                       <br />
-                      <a href="tel:+919766797234" className="hover:text-primary">{CONTACT_PHONE_2}</a>
+                      <a href={toTelHref(phone2)} className="hover:text-primary">{phone2}</a>
                     </p>
                   </div>
                 </div>

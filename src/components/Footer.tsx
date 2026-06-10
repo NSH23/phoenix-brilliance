@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Instagram, ArrowUp, MapPin, Phone, Mail } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { DEFAULT_PHONE_PRIMARY, DEFAULT_PHONE_SECONDARY, DEFAULT_WHATSAPP, toTelHref } from "@/lib/contactNumbers";
 
 const INSTAGRAM_URL = "https://www.instagram.com/phoenix_events_and_production?igsh=MW1nMDh4dmg2ZWNvNA==";
 const CONTACT_EMAIL = "Phoenixeventsandproduction@gmail.com";
@@ -16,9 +17,10 @@ const Footer = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const contactInfo = contact || {
-    phone: "+91 70667 63276",
+    phone: DEFAULT_PHONE_PRIMARY,
+    phone2: DEFAULT_PHONE_SECONDARY,
     address: MAP_ADDRESS,
-    whatsapp: "917066763276",
+    whatsapp: DEFAULT_WHATSAPP,
   };
 
   return (
@@ -60,7 +62,7 @@ const Footer = () => {
                 <Instagram className="w-5 h-5" />
               </a>
               <a
-                href={`https://wa.me/${contactInfo.whatsapp || "917066763276"}`}
+                href={`https://wa.me/${contactInfo.whatsapp || DEFAULT_WHATSAPP}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300
@@ -162,14 +164,24 @@ const Footer = () => {
                 </li>
               )}
               {contactInfo.phone && (
-                <li className="flex items-center gap-1.5 md:gap-3">
-                  <Phone className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 text-primary" />
-                  <a
-                    href={`tel:${contactInfo.phone.replace(/\s/g, "")}`}
-                    className="text-[10px] md:text-small text-footer hover:text-primary transition-colors font-sans"
-                  >
-                    {contactInfo.phone}
-                  </a>
+                <li className="flex items-start gap-1.5 md:gap-3">
+                  <Phone className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 mt-0.5 text-primary" />
+                  <div className="flex flex-col gap-0.5">
+                    <a
+                      href={toTelHref(contactInfo.phone)}
+                      className="text-[10px] md:text-small text-footer hover:text-primary transition-colors font-sans"
+                    >
+                      {contactInfo.phone}
+                    </a>
+                    {contactInfo.phone2 ? (
+                      <a
+                        href={toTelHref(contactInfo.phone2)}
+                        className="text-[10px] md:text-small text-footer hover:text-primary transition-colors font-sans"
+                      >
+                        {contactInfo.phone2}
+                      </a>
+                    ) : null}
+                  </div>
                 </li>
               )}
               <li className="flex items-center gap-1.5 md:gap-3">

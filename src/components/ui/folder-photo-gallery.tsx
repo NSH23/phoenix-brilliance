@@ -1,6 +1,4 @@
 import { cn } from "@/lib/utils";
-import InteractiveImageBentoGallery, { type BentoGalleryItem } from "@/components/ui/bento-gallery";
-import CarouselCard, { type CarouselCardData } from "@/components/ui/carousel-card-1";
 import { GalleryPhotoTile, type GalleryPhotoTileItem } from "@/components/ui/gallery-photo-tile";
 
 export type FolderGalleryItem = GalleryPhotoTileItem;
@@ -19,33 +17,6 @@ function splitIntoColumns<T>(items: T[], columnCount: number): Array<Array<{ ite
     columns[index % columnCount].push({ item, index });
   });
   return columns;
-}
-
-function toBentoItems(items: FolderGalleryItem[]): BentoGalleryItem[] {
-  return items.map((item, i) => ({
-    id: item.id ?? `${item.posterSrc}-${i}`,
-    title: (item.caption ?? "").trim() || `Photo ${i + 1}`,
-    desc: item.isVideo ? "Video" : "",
-    url: item.posterSrc,
-    isVideo: item.isVideo,
-  }));
-}
-
-function toCarouselData(items: FolderGalleryItem[]): CarouselCardData[] {
-  return items.map((item, i) => ({
-    id: item.id ?? `${item.posterSrc}-${i}`,
-    imgUrl: item.posterSrc,
-    title: (item.caption ?? "").trim() || `Photo ${i + 1}`,
-    content: item.isVideo ? "Tap to play video" : "Tap to view full size",
-  }));
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mb-3 font-sans text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-      {children}
-    </p>
-  );
 }
 
 function BentoPhotoGrid({
@@ -164,65 +135,14 @@ export function FolderPhotoGallery({ items, onItemClick, className }: FolderPhot
     );
   }
 
-  if (count <= 12) {
-    return (
-      <div className={cn("space-y-8", className)}>
-        <section>
-          <SectionLabel>Browse · {count} photos</SectionLabel>
-          <CarouselCard
-            data={toCarouselData(items)}
-            showCarousel={count > 3}
-            cardsPerView={Math.min(3, count)}
-            onCardClick={onItemClick}
-          />
-        </section>
-
-        <section>
-          <SectionLabel>Gallery</SectionLabel>
-          <div className="hidden sm:block">
-            <MasonryPhotoGrid items={items} onItemClick={onItemClick} columns={3} />
-          </div>
-          <div className="sm:hidden">
-            <MasonryPhotoGrid items={items} onItemClick={onItemClick} columns={2} />
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  const featured = items.slice(0, 4);
-
   return (
-    <div className={cn("space-y-10", className)}>
-      <section>
-        <SectionLabel>Highlights</SectionLabel>
-        <InteractiveImageBentoGallery
-          imageItems={toBentoItems(featured)}
-          useBuiltInModal={false}
-          onItemClick={(_, index) => onItemClick(index)}
-          className="py-0"
-        />
-      </section>
-
-      <section>
-        <SectionLabel>Swipe to explore</SectionLabel>
-        <CarouselCard
-          data={toCarouselData(items)}
-          showCarousel
-          cardsPerView={3}
-          onCardClick={onItemClick}
-        />
-      </section>
-
-      <section>
-        <SectionLabel>Full gallery · {count} items</SectionLabel>
-        <div className="hidden sm:block">
-          <MasonryPhotoGrid items={items} onItemClick={onItemClick} columns={3} />
-        </div>
-        <div className="sm:hidden">
-          <MasonryPhotoGrid items={items} onItemClick={onItemClick} columns={2} />
-        </div>
-      </section>
+    <div className={className}>
+      <div className="hidden sm:block">
+        <MasonryPhotoGrid items={items} onItemClick={onItemClick} columns={3} />
+      </div>
+      <div className="sm:hidden">
+        <MasonryPhotoGrid items={items} onItemClick={onItemClick} columns={2} />
+      </div>
     </div>
   );
 }

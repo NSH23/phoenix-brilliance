@@ -1,14 +1,14 @@
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { DEFAULT_WHATSAPP, toWhatsAppHref } from "@/lib/contactNumbers";
 
 const WhatsAppButton = () => {
   const { contact } = useSiteConfig();
   const [isHovered, setIsHovered] = useState(false);
   const message = "Hello! I'm interested in planning an event with Phoenix Events.";
 
-  const whatsappNumber = contact.phone ? contact.phone.replace(/\D/g, '') : "917066763276";
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+  const whatsappUrl = toWhatsAppHref(contact?.whatsapp || DEFAULT_WHATSAPP, message);
 
   return (
     <div className="fixed bottom-6 right-6 z-40 hidden md:block opacity-0 scale-0 animate-wa-pop-in">
