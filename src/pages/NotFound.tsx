@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { logger } from "@/utils/logger";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 const NotFound = () => {
   const location = useLocation();
@@ -31,7 +30,6 @@ const NotFound = () => {
           </Link>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

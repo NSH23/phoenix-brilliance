@@ -77,7 +77,7 @@ const MobileServiceCarousel = ({ services }: { services: CardItem[] }) => {
                   }
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              <div className="absolute inset-0 bg-black/40" />
               <div className="absolute bottom-4 left-4 text-white">
                 <div className="p-2 bg-white/10 backdrop-blur-md rounded-full w-fit mb-2">
                   {currentService.icon}
@@ -174,15 +174,14 @@ const ServicesSection = ({ prefetchedServices, homepageDataPending }: ServicesSe
       ariaLabelledBy="services-heading"
       badge="What We Offer"
       title={<HomeSectionSplitTitle line1="Our" accent="Services" />}
-      fullBleed
-      contentPanel
-      contentPanelClassName="p-5 sm:p-6 md:p-8"
-      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
+      subtitle="Design, décor, and production tailored to every occasion."
+      variant="linen"
+      contentClassName="pt-1"
     >
         {/* Desktop View: Expanding Cards */}
         <div className="hidden md:block w-full">
           {row1.length > 0 && (
-            <div className="w-full mb-4">
+            <div className="w-full mb-3">
               <ExpandingCards items={row1} defaultActiveIndex={0} fallbackImgSrc={DEFAULT_SERVICE_IMAGE} />
             </div>
           )}

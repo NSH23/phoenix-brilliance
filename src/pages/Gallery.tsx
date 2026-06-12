@@ -9,7 +9,6 @@ import {
   Check,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { SEO } from "@/components/SEO";
 import { getActiveEvents } from "@/services/events";
@@ -150,10 +149,10 @@ const Gallery = () => {
           {/* Abstract gradient mesh background */}
           <div className="absolute inset-0 gallery-page-mesh-bg" aria-hidden />
           {/* Subtle animated radial dot pattern - theme aware */}
-          <HeroBackgroundPattern />
-          {!prefersReducedMotion && (
+          {isDark ? <HeroBackgroundPattern /> : null}
+          {isDark && !prefersReducedMotion && (
             <>
-              {/* Purple gradient mesh for light theme - smooth elegant movement */}
+              {/* Dark theme: animated mesh layers */}
               <motion.div
                 className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-40" : "opacity-70"}`}
                 aria-hidden
@@ -485,6 +484,7 @@ const Gallery = () => {
                   </motion.div>
                 ) : (
                   <GalleryFolderGrid
+                    compact={false}
                     folders={displayAlbums.map((album) => {
                       const event = events.find((e) => e.id === album.event_id);
                       const slug = event?.slug ?? "all";
@@ -542,7 +542,6 @@ const Gallery = () => {
           </div>
         </section>
 
-        <Footer />
         <WhatsAppButton />
       </div>
     </>

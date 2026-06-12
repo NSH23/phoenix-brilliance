@@ -125,9 +125,8 @@ const TestimonialsSectionWrapper = ({
         ariaLabelledBy="testimonials-heading"
         badge="Client Love"
         title={<HomeSectionSplitTitle line1="Kind Words" accent="From Our Clients" />}
-        fullBleed
-        contentPanel
-        contentPanelClassName="p-6 md:p-8"
+        subtitle="Stories from the couples and clients who trusted us with their celebrations."
+        variant="linen"
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -150,10 +149,9 @@ const TestimonialsSectionWrapper = ({
       ariaLabelledBy="testimonials-heading"
       badge="Client Love"
       title={<HomeSectionSplitTitle line1="Kind Words" accent="From Our Clients" />}
-      fullBleed
-      contentPanel
-      contentPanelClassName="p-4 sm:p-5 md:p-6 lg:p-8"
-      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
+      subtitle="Stories from the couples and clients who trusted us with their celebrations."
+      variant="linen"
+      contentClassName="pt-0"
     >
       <TestimonialsSection
         testimonials={formattedTestimonials}

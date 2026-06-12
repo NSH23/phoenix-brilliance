@@ -6,12 +6,21 @@ const DESKTOP_SPARKLE_COUNT = 12;
 const GlobalBackground = () => {
     const [visible, setVisible] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
+    const [isDark, setIsDark] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const syncTheme = () => setIsDark(document.documentElement.classList.contains('dark'));
+        syncTheme();
+        const observer = new MutationObserver(syncTheme);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
     }, []);
 
     useEffect(() => {
@@ -38,15 +47,10 @@ const GlobalBackground = () => {
         [sparkleCount],
     );
 
-    if (!visible) return null;
+    if (!visible || !isDark) return null;
 
     return (
         <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-transparent">
-            {/* 1. Gradient Mesh Background - REMOVED per user request (whitish blur) */}
-
-            {/* 2. Sakura Particles - REMOVED per user request */}
-
-            {/* 3. Gold Sparkle Particles */}
             <div className="absolute inset-0">
                 {sparkles.map((sparkle) => (
                     <div

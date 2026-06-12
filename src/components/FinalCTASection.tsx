@@ -1,72 +1,42 @@
-import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { publicGalleryHubPath } from "@/lib/publicGallery";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import HomeSectionShell from "@/components/ui/home-section-shell";
+import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
+import { SectionSoftBackground } from "@/components/ui/section-soft-background";
 
 const FinalCTASection = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setInView(true);
-      },
-      { once: true, rootMargin: "-80px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
   return (
-    <section
+    <HomeSectionShell
       id="final-cta"
-      className="relative py-20 md:py-28 bg-primary/[0.05] dark:bg-surface overflow-hidden"
-      aria-labelledby="final-cta-heading"
+      ariaLabelledBy="final-cta-heading"
+      badge="Get Started"
+      title={<HomeSectionSplitTitle line1="Ready to Plan" accent="Your Celebration?" />}
+      subtitle="Tell us your vision — we'll handle design, production, and flawless execution from concept to completion."
+      variant="white"
+      backgroundOverlay={<SectionSoftBackground variant="dots" />}
     >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div
-          ref={ref}
-          className={`flex flex-col items-center justify-center text-center max-w-3xl mx-auto transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] ${
-            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
-          }`}
-        >
-          <h2
-            id="final-cta-heading"
-            className="font-serif text-3xl md:text-4xl lg:text-5xl font-medium leading-tight text-foreground mb-4"
-          >
-            Ready to Create Your <span className="italic text-primary">Perfect Day</span>?
-          </h2>
-          <p className="text-muted-foreground text-base md:text-lg leading-relaxed font-sans mb-8">
-            Let's turn your vision into an unforgettable celebration.
+      <div className="flex flex-col items-start gap-5 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between md:gap-6 md:pt-7">
+        <div className="max-w-xl">
+          <p className="text-sm leading-relaxed text-muted-foreground md:text-base">
+            Weddings, birthdays, corporate events, and bespoke celebrations — crafted with care
+            across Pune and beyond.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <Button
-              size="lg"
-              className="font-sans font-medium h-14 px-8 text-lg rounded-full shadow-warm-lg hover:shadow-warm-xl transition-all duration-300"
-              asChild
-            >
-              <Link to="/contact">
-                Plan Your Event
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="font-sans font-medium h-14 px-8 text-lg rounded-full border-2 border-primary/50 text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 group"
-              asChild
-            >
-              <Link to={publicGalleryHubPath()}>
-                View Our Work <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
-          </div>
+        </div>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <Button size="lg" className="h-11 px-8" asChild>
+            <Link to="/contact">Plan Your Event</Link>
+          </Button>
+          <Button variant="outline" size="lg" className="h-11 px-8" asChild>
+            <Link to={publicGalleryHubPath()}>
+              View Our Work
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </div>
-    </section>
+    </HomeSectionShell>
   );
 };
 

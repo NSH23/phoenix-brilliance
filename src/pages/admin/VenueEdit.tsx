@@ -105,6 +105,7 @@ export default function VenueEditPage() {
       image_url: string;
       media_type: string;
       caption: string | null;
+      display_order: number;
     }>
   >([]);
 
@@ -144,6 +145,7 @@ export default function VenueEditPage() {
             image_url: row.url,
             media_type: row.media_type ?? 'image',
             caption: row.caption ?? null,
+            display_order: row.display_order ?? 0,
           }));
         setSelectedFolderId(
           options?.preserveFolderSelection ? selectedFolderIdRef.current ?? GALLERY_ROOT_ID : GALLERY_ROOT_ID
@@ -216,6 +218,9 @@ export default function VenueEditPage() {
             if (existing && (existing.caption ?? '') !== (img.caption ?? '')) {
               updates.caption = img.caption ?? null;
             }
+            if (existing && existing.display_order !== (img.display_order ?? 0)) {
+              updates.display_order = img.display_order ?? 0;
+            }
             if (Object.keys(updates).length > 0) {
               await updateCollaborationImage(img.id, updates);
             }
@@ -262,6 +267,7 @@ export default function VenueEditPage() {
             image_url: row.url,
             media_type: row.media_type ?? 'image',
             caption: row.caption ?? null,
+            display_order: row.display_order ?? 0,
           }));
 
         if (!opts?.silent) {

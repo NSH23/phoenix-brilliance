@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Link, useParams, Navigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
+import { useParams, Navigate } from "react-router-dom";
 import { 
-  Camera, Play, ArrowLeft, ArrowRight, Calendar, X, Heart,
-  ChevronLeft, ChevronRight, Images, ExternalLink, Loader2 
+  Play, Heart,
+  Images, ExternalLink, Loader2 
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import GalleryMediaLightbox, { type GalleryLightboxSlide } from "@/components/GalleryMediaLightbox";
+import AlbumDetailHero from "@/components/AlbumDetailHero";
 import { getEventBySlug, Event } from "@/services/events";
 import { getAlbumById, getAlbumWithMedia, AlbumMedia, AlbumFolder } from "@/services/albums";
 import { Album } from "@/services/albums";
@@ -17,7 +18,7 @@ import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
 import { getYouTubeId, getYouTubeNocookieEmbedUrl, getYouTubeThumbnail } from "@/lib/youtube";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-import { optimizeMediaUrl } from "@/lib/mediaDelivery";
+import { publicEventGalleryListingPath } from "@/lib/publicGallery";
 
 function AlbumYoutubeLazyCard({ video, animationDelay }: { video: AlbumMedia; animationDelay: number }) {
   const [played, setPlayed] = useState(false);
@@ -178,27 +179,17 @@ const GalleryAlbum = () => {
 
   const hasFolderGallery = explorerFolders.length > 0 || explorerPhotos.some((p) => p.folder_id);
 
-  // Lightbox navigation
-  const navigateLightbox = useCallback((direction: "prev" | "next") => {
-    if (lightboxIndex === null) return;
-    if (direction === "prev") {
-      setLightboxIndex(lightboxIndex === 0 ? photos.length - 1 : lightboxIndex - 1);
-    } else {
-      setLightboxIndex(lightboxIndex === photos.length - 1 ? 0 : lightboxIndex + 1);
-    }
-  }, [lightboxIndex, photos.length]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (lightboxIndex === null) return;
-      if (e.key === "ArrowLeft") navigateLightbox("prev");
-      if (e.key === "ArrowRight") navigateLightbox("next");
-      if (e.key === "Escape") setLightboxIndex(null);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightboxIndex, navigateLightbox]);
+  const lightboxSlides = useMemo<GalleryLightboxSlide[]>(
+    () =>
+      photos.map((photo) => ({
+        id: photo.id,
+        caption: photo.caption,
+        kind: 'image' as const,
+        src: photo.url || '',
+        thumbSrc: photo.url || '',
+      })),
+    [photos]
+  );
 
   // Loading state
   if (isLoading) {
@@ -208,7 +199,6 @@ const GalleryAlbum = () => {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-        <Footer />
         <WhatsAppButton />
       </div>
     );
@@ -216,7 +206,8 @@ const GalleryAlbum = () => {
 
   // If not found or hidden, redirect
   if (!album || album.is_active === false) {
-    return <Navigate to="/gallery" replace />;
+    const fallback = event?.slug ? publicEventGalleryListingPath(event.slug) : "/events";
+    return <Navigate to={fallback} replace />;
   }
 
   const toggleLike = (id: string, e?: React.MouseEvent) => {
@@ -246,139 +237,48 @@ const GalleryAlbum = () => {
         url={canonicalPath}
       />
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative pt-24 pb-8 sm:pt-32 sm:pb-12 overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0">
-          <OptimizedImage
-            src={album.cover_image || '/placeholder.svg'}
-            alt={album.title}
-            preset="banner"
-            className="w-full h-full object-cover opacity-15"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder.svg';
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
-        </div>
 
-        <div className="container mx-auto px-4 relative z-10">
-          {/* Breadcrumb */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap"
-          >
-            <Link to="/gallery" className="hover:text-primary transition-colors">
-              Gallery
-            </Link>
-            <ChevronRight className="w-4 h-4" />
-            {event && (
-              <>
-                <Link to={`/gallery/${event.slug}`} className="hover:text-primary transition-colors">
-                  {event.title}
-                </Link>
-                <ChevronRight className="w-4 h-4" />
-              </>
-            )}
-            <span className="text-foreground">{album.title}</span>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-              <div className="max-w-3xl">
-                {event && (
-                  <motion.span 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full 
-                             bg-primary/20 text-primary text-sm font-medium mb-4"
-                  >
-                    {event.title}
-                  </motion.span>
-                )}
-
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-4">
-                  {album.title}
-                </h1>
-                <p className="text-lg text-muted-foreground mb-4">
-                  {album.description || 'No description'}
-                </p>
-
-                {/* Meta info */}
-                <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
-                  {album.event_date && (
-                    <span className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      {new Date(album.event_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  )}
-                  <span className="flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-primary" />
-                    {photos.length} Photos
-                  </span>
-                  {videos.length > 0 && (
-                    <span className="flex items-center gap-2">
-                      <Play className="w-4 h-4 text-primary" />
-                      {videos.length} Videos
-                    </span>
-                  )}
-                </div>
-              </div>
-
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      <AlbumDetailHero
+        albumTitle={album.title}
+        albumDescription={album.description}
+        coverSrc={album.cover_image || "/placeholder.svg"}
+        eventTitle={event?.title}
+        eventSlug={event?.slug || (eventType !== "all" ? eventType : undefined)}
+        eventDate={album.event_date}
+        photoCount={photos.length}
+        videoCount={videos.length}
+      />
 
       {/* Tab Navigation */}
-      <section className="border-b border-border sticky top-[72px] bg-background/95 backdrop-blur-sm z-30">
+      <section className="sticky top-[72px] z-30 border-b border-border/60 bg-background/95 backdrop-blur-md">
         <div className="container mx-auto px-4">
-          <div className="flex gap-1">
+          <div className="flex gap-2 py-3">
             <button
-              onClick={() => setActiveTab('photos')}
-              className={`px-6 py-4 text-sm font-medium transition-colors relative
-                        ${activeTab === 'photos' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              type="button"
+              onClick={() => setActiveTab("photos")}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "photos"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
             >
-              <span className="flex items-center gap-2">
-                <Images className="w-4 h-4" />
-                Photos ({photos.length})
-              </span>
-              {activeTab === 'photos' && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                />
-              )}
+              <Images className="h-4 w-4" aria-hidden />
+              Photos ({photos.length})
             </button>
-            {videos.length > 0 && (
+            {videos.length > 0 ? (
               <button
-                onClick={() => setActiveTab('videos')}
-                className={`px-6 py-4 text-sm font-medium transition-colors relative
-                          ${activeTab === 'videos' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                type="button"
+                onClick={() => setActiveTab("videos")}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === "videos"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
               >
-                <span className="flex items-center gap-2">
-                  <Play className="w-4 h-4" />
-                  Videos ({videos.length})
-                </span>
-                {activeTab === 'videos' && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                  />
-                )}
+                <Play className="h-4 w-4" aria-hidden />
+                Videos ({videos.length})
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </section>
@@ -486,146 +386,13 @@ const GalleryAlbum = () => {
         </div>
       </section>
 
-      {/* Back Navigation */}
-      <section className="py-8 border-t border-border">
-        <div className="container mx-auto px-4">
-          <Link
-            to={event ? `/gallery/${event.slug}` : '/gallery'}
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {event ? `Back to ${event.title} Albums` : 'Back to Gallery'}
-          </Link>
-        </div>
-      </section>
-
-      <Footer />
       <WhatsAppButton />
 
-      {/* Lightbox */}
-      <AnimatePresence>
-        {lightboxIndex !== null && photos.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-charcoal/98 backdrop-blur-xl"
-            onClick={() => setLightboxIndex(null)}
-          >
-            {/* Top Bar */}
-            <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20">
-              <div className="text-ivory">
-                <span className="text-ivory/60">{lightboxIndex + 1}</span>
-                <span className="mx-2 text-ivory/40">/</span>
-                <span className="text-ivory/60">{photos.length}</span>
-              </div>
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleLike(photos[lightboxIndex].id); }}
-                  className={`w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center 
-                            transition-all duration-300 ${
-                    likedImages.has(photos[lightboxIndex].id) 
-                      ? 'bg-red-500 text-white' 
-                      : 'bg-ivory/10 text-ivory hover:bg-red-500/80'
-                  }`}
-                >
-                  <Heart className={`w-5 h-5 ${likedImages.has(photos[lightboxIndex].id) ? 'fill-current' : ''}`} />
-                </button>
-                <button
-                  onClick={() => setLightboxIndex(null)}
-                  className="w-10 h-10 rounded-full bg-ivory/10 backdrop-blur-md
-                           flex items-center justify-center text-ivory hover:bg-primary transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Navigation Buttons */}
-            <button
-              onClick={(e) => { e.stopPropagation(); navigateLightbox("prev"); }}
-              className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 
-                       rounded-full bg-ivory/10 backdrop-blur-md flex items-center justify-center 
-                       text-ivory hover:bg-primary transition-all duration-300 z-20"
-            >
-              <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); navigateLightbox("next"); }}
-              className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 
-                       rounded-full bg-ivory/10 backdrop-blur-md flex items-center justify-center 
-                       text-ivory hover:bg-primary transition-all duration-300 z-20"
-            >
-              <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7" />
-            </button>
-
-            {/* Main Image */}
-            <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-16 pt-20 pb-32">
-              <motion.img
-                key={lightboxIndex}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                src={optimizeMediaUrl(photos[lightboxIndex].url, { preset: 'lightbox' }) || '/placeholder.svg'}
-                alt={photos[lightboxIndex].caption || 'Photo'}
-                draggable={false}
-                className="max-w-full max-h-full object-contain rounded-lg"
-                loading="eager"
-                decoding="async"
-                onClick={(e) => e.stopPropagation()}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                }}
-              />
-            </div>
-
-            {/* Caption */}
-            {photos[lightboxIndex].caption && (
-              <div className="absolute bottom-20 left-0 right-0 text-center">
-                <p className="text-ivory text-lg">{photos[lightboxIndex].caption}</p>
-              </div>
-            )}
-
-            {/* Thumbnail Strip */}
-            {photos.length > 1 && (
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-charcoal to-transparent">
-                <div className="flex justify-center gap-2 overflow-x-auto pb-2 max-w-4xl mx-auto">
-                  {photos.slice(0, 10).map((photo, idx) => (
-                    <button
-                      key={photo.id}
-                      onClick={(e) => { e.stopPropagation(); setLightboxIndex(idx); }}
-                      className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden
-                                transition-all duration-200 ${
-                        idx === lightboxIndex 
-                          ? 'ring-2 ring-primary scale-110' 
-                          : 'opacity-50 hover:opacity-100'
-                      }`}
-                    >
-                      <OptimizedImage
-                        src={photo.url || '/placeholder.svg'}
-                        alt={photo.caption || `Photo in ${album.title}`}
-                        preset="thumb"
-                        responsive={false}
-                        className="h-full w-full object-contain bg-muted/30 p-0.5"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                    </button>
-                  ))}
-                  {photos.length > 10 && (
-                    <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-ivory/10
-                                  flex items-center justify-center text-ivory text-sm">
-                      +{photos.length - 10}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <GalleryMediaLightbox
+        slides={lightboxSlides}
+        activeIndex={lightboxIndex}
+        onActiveIndexChange={setLightboxIndex}
+      />
     </div>
   );
 };

@@ -11,7 +11,6 @@ import {
   Loader2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { SEO } from "@/components/SEO";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
@@ -271,9 +270,9 @@ export default function Services() {
         >
           {/* Abstract gradient mesh background */}
           <div className="absolute inset-0 services-page-mesh-bg" aria-hidden />
-          {!shouldReduceMotion && (
+          {isDark && !shouldReduceMotion && (
             <>
-              {/* Purple gradient mesh for light theme - smooth elegant movement */}
+              {/* Dark theme: animated mesh layers */}
               <motion.div
                 className={`absolute inset-0 pointer-events-none ${isDark ? "opacity-60" : "opacity-70"}`}
                 aria-hidden
@@ -553,7 +552,6 @@ export default function Services() {
           </div>
         </section>
 
-        <Footer />
         <WhatsAppButton />
       </div>
     </>

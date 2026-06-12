@@ -1,30 +1,14 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import {
   getWhyChooseUsReasons,
   getWhyChooseUsStats,
   type WhyChooseUsReason,
   type WhyChooseUsStat,
-  type WhyChooseUsIconKey,
 } from "@/services/whyChooseUs";
 import { getSiteContentByKey } from "@/services/siteContent";
 import type { SiteContent } from "@/services/siteContent";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
-import {
-  Trophy,
-  Heart,
-  Users,
-  Shield,
-  CheckCircle2,
-} from "lucide-react";
-
-const ICON_MAP: Record<WhyChooseUsIconKey, React.ComponentType<{ className?: string; size?: number }>> = {
-  trophy: Trophy,
-  heart: Heart,
-  users: Users,
-  shield: Shield,
-};
 
 const DEFAULT_STATS: WhyChooseUsStat[] = [
   { id: 'fb-1', stat_value: '2200+', stat_label: 'Successful Events', stat_description: 'Flawlessly executed celebrations', icon_key: 'trophy', display_order: 1, created_at: '', updated_at: '' },
@@ -37,7 +21,7 @@ const DEFAULT_WHY_HEADER = {
   title: "Why Phoenix Events?",
   subtitle: "Why Choose Us",
   description:
-    "We craft experiences that transcend moments and become cherished memories. With over a decade of expertise, we transform visions into beautifully executed realities — defined by creativity, precision, and uncompromising attention to detail.",
+    "We craft experiences that transcend moments and become cherished memories. With over a decade of expertise, we transform visions into beautifully executed realities.",
 };
 
 const DEFAULT_REASONS: WhyChooseUsReason[] = [
@@ -48,19 +32,6 @@ const DEFAULT_REASONS: WhyChooseUsReason[] = [
   { id: 'fb-r5', text: '24/7 Event Support', display_order: 5, created_at: '', updated_at: '' },
   { id: 'fb-r6', text: 'Post-Event Services', display_order: 6, created_at: '', updated_at: '' },
 ];
-
-const container = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0 },
-};
 
 type WhyChooseUsSectionProps = {
   prefetchedWhyStats?: WhyChooseUsStat[];
@@ -129,92 +100,71 @@ export default function WhyChooseUsSection({
 
   if (loading) return null;
 
+  const tagline = header.description || DEFAULT_WHY_HEADER.description;
+
   return (
     <HomeSectionShell
       ariaLabelledBy="why-choose-us-heading"
       badge={header.subtitle}
       title={<HomeSectionSplitTitle line1="Why Phoenix" accent="Events?" />}
-      fullBleed
-      contentPanel
-      contentPanelClassName="p-5 sm:p-6 md:p-8"
-      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
+      subtitle={tagline}
+      variant="white"
+      contentClassName="pt-0"
     >
-        {/* Stats – compact row */}
-        {stats.length > 0 && (
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-20px" }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10"
-          >
-            {stats.map((stat, idx) => {
-              const Icon = ICON_MAP[stat.icon_key] ?? Trophy;
-              return (
-                <motion.div
-                  key={stat.id}
-                  variants={item}
-                  className="flex items-center gap-3 rounded-xl border border-primary/40 dark:border-primary/35 bg-white/50 dark:bg-card/80 backdrop-blur-sm p-4 transition-all duration-200 hover:border-primary/60 hover:shadow-md dark:hover:shadow-card-hover-dark"
-                >
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-primary" size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xl md:text-2xl font-serif font-semibold text-primary tabular-nums leading-tight">
-                      {stat.stat_value}
-                    </p>
-                    <p className="text-xs font-semibold text-foreground font-sans truncate">{stat.stat_label}</p>
-                    {stat.stat_description && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1 font-sans">
-                        {stat.stat_description}
-                      </p>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        )}
+      <div className="mx-auto max-w-7xl space-y-5 px-5 sm:px-6 md:space-y-6 lg:px-10">
+        {stats.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            {stats.map((stat) => (
+              <div
+                key={stat.id}
+                className="home-card px-4 py-4 sm:px-5 sm:py-5"
+              >
+                <p className="font-serif text-2xl font-semibold tabular-nums text-foreground md:text-[1.75rem]">
+                  {stat.stat_value}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{stat.stat_label}</p>
+                {stat.stat_description ? (
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground md:text-sm">
+                    {stat.stat_description}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
 
-        {/* What Sets Us Apart – distinct panel: title + two-column checklist */}
-        {reasons.length > 0 && (
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-20px" }}
-            className="w-full rounded-2xl border-2 border-primary/30 dark:border-primary/25 bg-white/60 dark:bg-card/80 backdrop-blur-md overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-elevation-1-dark"
-          >
-            {/* Panel header */}
-            <div className="px-5 md:px-8 pt-6 md:pt-8 pb-4 border-b border-primary/20 dark:border-white/10">
-              <h3 className="font-serif font-medium text-foreground text-lg md:text-xl">
+        {reasons.length > 0 ? (
+          <div className="border-t border-border pt-6 md:pt-7">
+            <div className="border-l-[3px] border-primary/70 pl-4 md:pl-5">
+              <h3 className="font-serif text-xl font-medium text-foreground md:text-2xl">
                 What Sets Us Apart
               </h3>
-              <p className="mt-1 text-sm text-muted-foreground font-sans">
+              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground md:text-base">
                 The details that make every event exceptional
               </p>
             </div>
-            {/* Two-column checklist – checkmarks, no per-item cards */}
-            <div className="px-5 md:px-8 py-5 md:py-6">
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 list-none m-0 p-0">
-                {reasons.map((r) => (
-                  <motion.li
-                    key={r.id}
-                    variants={item}
-                    className="flex items-center gap-3"
+
+            <ul className="mt-5 grid list-none gap-2.5 p-0 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-3 md:mt-6">
+              {reasons.map((reason, index) => (
+                <li
+                  key={reason.id}
+                  className="flex items-start gap-3 rounded-xl border border-border bg-background px-3.5 py-3"
+                >
+                  <span
+                    aria-hidden
+                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold tabular-nums text-primary"
                   >
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-primary" aria-hidden>
-                      <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    </span>
-                    <span className="font-sans text-sm md:text-base font-medium text-foreground">
-                      {r.text}
-                    </span>
-                  </motion.li>
-                ))}
-              </ul>
-            </div>
-          </motion.div>
-        )}
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-sm font-medium leading-snug text-foreground md:text-[15px] md:leading-relaxed">
+                    {reason.text}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
     </HomeSectionShell>
   );
 }

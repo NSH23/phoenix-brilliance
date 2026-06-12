@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
-import { MapPin } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Card, CardContent } from "@/components/ui/card-2";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { venueDetailPath } from "@/lib/venueRoutes";
+import { cn } from "@/lib/utils";
 
 export type PartnerVenueCardData = {
   id: string;
@@ -16,60 +15,63 @@ export type PartnerVenueCardData = {
 
 type PartnerVenueCardProps = {
   venue: PartnerVenueCardData;
+  index?: number;
   className?: string;
 };
 
-export function PartnerVenueCard({ venue, className }: PartnerVenueCardProps) {
+export function PartnerVenueCard({ venue, index = 0, className }: PartnerVenueCardProps) {
   const cover = venue.bannerUrl || null;
 
   return (
-    <Link
-      to={venueDetailPath(venue.id)}
-      className={cn("group block h-full touch-manipulation", className)}
+    <motion.article
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-16px" }}
+      transition={{ duration: 0.35, delay: index * 0.03, ease: "easeOut" }}
+      className={cn("group h-full", className)}
     >
-      <Card className="flex h-full flex-col border-border/60 bg-card/95 backdrop-blur-sm">
-        <CardContent className="relative p-0">
-          <AspectRatio ratio={4 / 3} className="bg-muted">
+      <Link
+        to={venueDetailPath(venue.id)}
+        className={cn(
+          "flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-all duration-300",
+          "hover:border-primary/25 hover:shadow-md",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        )}
+        aria-label={`View ${venue.name}`}
+      >
+        <AspectRatio ratio={4 / 3} className="w-full bg-muted">
+          <div className="absolute inset-0">
             {cover ? (
-              <>
-                <OptimizedImage
-                  src={cover}
-                  alt=""
-                  aria-hidden
-                  preset="banner"
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
-              </>
+              <OptimizedImage
+                src={cover}
+                alt=""
+                aria-hidden
+                preset="banner"
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              />
             ) : (
-              <div className="h-full w-full bg-gradient-to-br from-primary/15 via-muted to-primary/5" />
+              <div className="h-full w-full bg-gradient-to-br from-muted via-muted/80 to-primary/5" />
             )}
-
-            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-3 sm:p-4">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/90 p-1.5 shadow-sm dark:bg-card/90">
-                  <OptimizedImage
-                    src={venue.logoUrl}
-                    alt=""
-                    preset="thumb"
-                    responsive={false}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="line-clamp-1 text-sm font-semibold text-white drop-shadow-sm sm:text-base">
-                    {venue.name}
-                  </p>
-                  <p className="mt-0.5 flex items-center gap-1 line-clamp-1 text-[11px] text-white/80">
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    {venue.location}
-                  </p>
-                </div>
-              </div>
+            <div className="absolute bottom-3.5 left-3.5 flex h-11 w-11 items-center justify-center rounded-lg border border-white/25 bg-white/95 p-1 shadow-sm dark:bg-card/95">
+              <OptimizedImage
+                src={venue.logoUrl}
+                alt=""
+                preset="thumb"
+                responsive={false}
+                className="max-h-full max-w-full object-contain"
+              />
             </div>
-          </AspectRatio>
-        </CardContent>
-      </Card>
-    </Link>
+          </div>
+        </AspectRatio>
+
+        <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
+          <h3 className="font-serif text-lg font-semibold leading-snug text-foreground sm:text-xl">
+            {venue.name}
+          </h3>
+          <p className="line-clamp-2 text-sm text-muted-foreground">{venue.location}</p>
+          <span className="mt-auto pt-1 text-sm font-medium text-primary">View venue</span>
+        </div>
+      </Link>
+    </motion.article>
   );
 }

@@ -38,8 +38,9 @@ public/*.mov
 phoenix-foundation-2/
 phoenix-foundation-main/
 
-# Cursor / Supabase CLI local state
-.cursor/
+# Cursor / Supabase CLI local state (keep shared MCP config)
+.cursor/*
+!.cursor/mcp.json
 supabase/.temp/
 
 Capture.PNG

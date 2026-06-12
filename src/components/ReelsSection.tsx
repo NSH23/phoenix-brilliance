@@ -18,14 +18,8 @@ const ReelsSection = () => {
             src: item.url,
             alt: item.title || `Phoenix Moment ${index + 1}`,
           }));
-
-          if (mapped.length < 6) {
-            setReels([...mapped, ...mapped, ...mapped]);
-          } else if (mapped.length < 12) {
-            setReels([...mapped, ...mapped]);
-          } else {
-            setReels(mapped);
-          }
+          // Duplicate once when few reels so Embla loop scrolls smoothly (no extra pagination).
+          setReels(mapped.length < 4 ? [...mapped, ...mapped] : mapped);
         } else {
           setReels([]);
         }
@@ -45,19 +39,21 @@ const ReelsSection = () => {
     <HomeSectionShell
       id="reels-section"
       ariaLabelledBy="reels-heading"
-      badge="Phoenix Reels"
-      title={<HomeSectionSplitTitle line1="Moments We've" accent="Crafted" />}
+      badge="Moments We Captured"
+      title={<HomeSectionSplitTitle line1="Celebrations" accent="On Reel" />}
+      subtitle="Short films from weddings, sangeets, and events we've designed and produced."
+      variant="white"
       fullBleed
-      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
+      contentClassName="pb-0"
     >
       <CardCarousel
         images={reels}
-        autoplayDelay={2500}
-        showPagination={true}
+        autoplayDelay={4500}
+        showPagination={false}
         showNavigation={true}
         showHeader={false}
         fullWidth={true}
-        paginationSpaced={true}
+        paginationSpaced={false}
       />
     </HomeSectionShell>
   );

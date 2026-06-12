@@ -13,13 +13,10 @@ export function setStoredAdminTheme(theme: AdminTheme): void {
 }
 
 export function applyAdminTheme(theme: AdminTheme): void {
-  document.documentElement.classList.toggle('dark', theme === 'dark');
+  const root = document.documentElement;
+  root.classList.remove('blush');
+  root.classList.toggle('dark', theme === 'dark');
 }
 
 /** Restore public-site theme from `theme` key (used when leaving admin shell). */
-export function applyPublicTheme(): void {
-  const saved = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const useDark = saved === 'dark' || (!saved && prefersDark);
-  document.documentElement.classList.toggle('dark', useDark);
-}
+export { applyPublicTheme, getStoredPublicTheme } from "@/lib/publicTheme";

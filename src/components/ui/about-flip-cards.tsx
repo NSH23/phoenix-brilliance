@@ -170,16 +170,10 @@ export function AboutFlipCards({
 
   if (pairs.length === 0) {
     return (
-      <div className="relative w-[29.5rem] md:w-[31rem] max-w-[96vw] mx-auto rounded-2xl md:rounded-3xl overflow-hidden border-2 border-primary/40 shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/20 dark:shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]">
-        <div
-          className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-cover bg-center bg-no-repeat dark:opacity-0 dark:pointer-events-none"
-          style={{ backgroundImage: "var(--bg-image-3, url('/3.jpg'))" }}
-          aria-hidden
-        />
-        <div className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-white/5 dark:bg-white/[0.06] dark:backdrop-blur-xl" aria-hidden />
-        <div className="relative z-10 grid grid-cols-2 grid-rows-2 gap-2 p-2">
+      <div className="relative mx-auto w-full max-w-[22rem] overflow-hidden rounded-2xl border border-border/60 bg-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.05)] dark:border-white/10 dark:bg-card/60 dark:shadow-[0_8px_32px_rgba(0,0,0,0.25)] sm:max-w-[24rem] md:max-w-[26rem] md:rounded-3xl">
+        <div className="relative z-10 grid grid-cols-2 grid-rows-2 gap-2 p-2.5">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="aspect-square rounded-2xl bg-white/40 dark:bg-white/10 dark:backdrop-blur-sm animate-pulse" />
+            <div key={i} className="aspect-square animate-pulse rounded-xl bg-muted/60" />
           ))}
         </div>
       </div>
@@ -187,14 +181,8 @@ export function AboutFlipCards({
   }
 
   return (
-    <div className="relative w-[29.5rem] md:w-[31rem] max-w-[96vw] mx-auto rounded-2xl md:rounded-3xl overflow-hidden border-2 border-primary/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/20 dark:shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]">
-      <div
-        className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-cover bg-center bg-no-repeat dark:opacity-0 dark:pointer-events-none"
-        style={{ backgroundImage: "var(--bg-image-3, url('/3.jpg'))" }}
-        aria-hidden
-      />
-      <div className="absolute inset-0 z-0 rounded-2xl md:rounded-3xl bg-white/5 dark:bg-white/[0.06] dark:backdrop-blur-xl" aria-hidden />
-      <div className="relative z-10 grid grid-cols-2 grid-rows-2 gap-2 p-2 overflow-visible">
+    <div className="relative mx-auto w-full max-w-[22rem] overflow-hidden rounded-2xl border border-border/60 bg-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.05)] backdrop-blur-md dark:border-white/10 dark:bg-card/60 dark:shadow-[0_8px_32px_rgba(0,0,0,0.25)] sm:max-w-[24rem] md:max-w-[26rem] md:rounded-3xl">
+      <div className="relative z-10 grid grid-cols-2 grid-rows-2 gap-2 p-2.5 overflow-visible">
         {pairs.map(([frontUrl, backUrl], index) => (
           <FlipCard
             key={index}
@@ -252,7 +240,7 @@ function FlipCard({
         }}
       >
         <div
-          className="absolute inset-0 rounded-xl overflow-hidden bg-muted border-2 border-charcoal/50 dark:border-white/25 shadow-lg ring-1 ring-charcoal/20 dark:ring-white/10 [transform-style:preserve-3d]"
+          className="absolute inset-0 overflow-hidden rounded-xl border border-border/60 bg-muted shadow-md [transform-style:preserve-3d] dark:border-white/15"
           style={{
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
@@ -269,7 +257,7 @@ function FlipCard({
           />
         </div>
         <div
-          className="absolute inset-0 rounded-xl overflow-hidden bg-muted border-2 border-charcoal/50 dark:border-white/25 shadow-lg ring-1 ring-charcoal/20 dark:ring-white/10 [transform-style:preserve-3d]"
+          className="absolute inset-0 overflow-hidden rounded-xl border border-border/60 bg-muted shadow-md [transform-style:preserve-3d] dark:border-white/15"
           style={{
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",

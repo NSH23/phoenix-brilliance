@@ -16,6 +16,7 @@ function normalizeAlbumMedia(m: AlbumMedia): AlbumMedia {
 function normalizeAlbum<T extends Album & { album_media?: AlbumMedia[] }>(row: T): T {
   return {
     ...row,
+    display_order: row.display_order ?? 0,
     cover_image: normAlbumCover(row.cover_image),
     album_media: row.album_media?.map(normalizeAlbumMedia),
   };
@@ -30,6 +31,7 @@ export interface Album {
   event_date: string | null;
   is_featured: boolean;
   is_active: boolean;
+  display_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -60,7 +62,7 @@ export interface AlbumFolder {
   updated_at: string;
 }
 
-const ALBUM_COLUMNS = 'id, event_id, title, description, cover_image, event_date, is_featured, is_active, created_at, updated_at';
+const ALBUM_COLUMNS = 'id, event_id, title, description, cover_image, event_date, is_featured, is_active, display_order, created_at, updated_at';
 const ALBUM_MEDIA_COLUMNS = 'id, album_id, type, url, youtube_url, caption, is_featured, display_order, folder_id, created_at, updated_at';
 const ALBUM_FOLDER_COLUMNS = 'id, album_id, parent_id, name, display_order, is_enabled, cover_image_url, created_at, updated_at';
 
@@ -82,6 +84,22 @@ export async function getAllAlbums() {
   return (data || []).map((row) => normalizeAlbum(row as Album & { album_media?: AlbumMedia[] }));
 }
 
+/** All albums for admin list (grouped by event, drag reorder). */
+export async function getAllAdminAlbums(searchQuery?: string) {
+  let query = supabase
+    .from('event_albums')
+    .select(`${ALBUM_COLUMNS}, events!inner (id, title, slug, is_active, display_order)`)
+    .order('display_order', { ascending: true })
+    .order('event_date', { ascending: false });
+
+  const term = (searchQuery ?? '').trim();
+  if (term) query = query.ilike('title', `%${term}%`);
+
+  const { data, error } = await query.range(0, 499);
+  if (error) throw error;
+  return (data || []).map((row) => normalizeAlbum(row as Album & { album_media?: AlbumMedia[] }));
+}
+
 export async function getAdminAlbumsPage(params: {
   page: number;
   pageSize: number;
@@ -94,6 +112,7 @@ export async function getAdminAlbumsPage(params: {
   let query = supabase
     .from('event_albums')
     .select(`${ALBUM_COLUMNS}, events!inner (id, title, slug, is_active)`, { count: 'exact' })
+    .order('display_order', { ascending: true })
     .order('is_featured', { ascending: false })
     .order('event_date', { ascending: false });
 
@@ -116,6 +135,7 @@ export async function getAlbumsByEventId(eventId: string) {
     .select(ALBUM_COLUMNS)
     .eq('event_id', eventId)
     .eq('is_active', true)
+    .order('display_order', { ascending: true })
     .order('event_date', { ascending: false });
 
   if (error) throw error;
@@ -402,4 +422,23 @@ export async function updateAlbumFolder(
 export async function deleteAlbumFolder(id: string) {
   const { error } = await supabase.from('album_folders').delete().eq('id', id);
   if (error) throw error;
+}
+
+export async function seedAlbumFolders(albumId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    throw new Error('You must be logged in to manage album folders. Please sign in again.');
+  }
+  const { error } = await supabase.rpc('seed_album_folders', { p_album_id: albumId });
+  if (error) throw error;
+}
+
+export async function updateAlbumDisplayOrder(updates: { id: string; display_order: number }[]) {
+  const results = await Promise.all(
+    updates.map(({ id, display_order }) =>
+      supabase.from('event_albums').update({ display_order }).eq('id', id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
 }

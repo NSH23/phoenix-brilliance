@@ -71,6 +71,7 @@ const AdminEvents = lazy(() => import("./pages/admin/Events"));
 const AdminEventEdit = lazy(() => import("./pages/admin/EventEdit"));
 const AdminAlbums = lazy(() => import("./pages/admin/Albums"));
 const AdminAlbumEdit = lazy(() => import("./pages/admin/AlbumEdit"));
+const AdminAlbumPhotos = lazy(() => import("./pages/admin/AlbumPhotos"));
 const AdminGallery = lazy(() => import("./pages/admin/Gallery"));
 const AdminServices = lazy(() => import("./pages/admin/Services"));
 const AdminServiceEdit = lazy(() => import("./pages/admin/ServiceEdit"));
@@ -185,6 +186,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <AdminEvents />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/albums/:id/photos"
+            element={
+              <ProtectedRoute>
+                <AdminAlbumPhotos />
               </ProtectedRoute>
             }
           />

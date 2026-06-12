@@ -54,9 +54,8 @@ export interface AboutSectionContent {
 const DEFAULT_ABOUT_BODY: AboutSectionContent = {
   tagline: 'Where vision meets emotion, and every detail becomes a memory.',
   paragraphs: [
-    "Kevin, the visionary behind Phoenix Events & Production, started the company in 2017 with a single-minded commitment to excellence in event décor and production. From day one, his philosophy has been clear: every celebration deserves to be crafted with the same care and creativity that he would want for his own.",
-    "In 2024, he took a decisive step by launching PnP Production, bringing design and production under one roof. This move was driven by a simple goal: to offer clients superior quality and hassle-free execution from concept to completion. By unifying creative design with hands-on production, Phoenix can now deliver more cohesive, timely, and refined outcomes without the friction of coordinating multiple vendors.",
-    "Today, Kevin's leadership and passion have positioned Phoenix Events & Production as a trusted name in the event industry. The company is known not only for beautiful setups and seamless execution but also for the integrity, reliability, and personal touch that he and his team bring to every project.",
+    "Kevin founded Phoenix Events & Production in 2017 with a commitment to delivering exceptional event décor and production. Guided by a belief that every celebration deserves personal care and creativity, he built the company on quality, reliability, and attention to detail.",
+    "In 2024, he launched PnP Production to bring design and execution under one roof, ensuring a seamless experience and greater control over quality. Today, Phoenix is a trusted name in the event industry, known for its elegant setups, flawless execution, and personalized approach to every project.",
   ],
   quote: 'We do not just plan events. We design how they are remembered.',
   stats: [

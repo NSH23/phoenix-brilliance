@@ -67,19 +67,23 @@ const CollaborationsSection = ({ prefetchedCollaborations, homepageDataPending }
       ariaLabelledBy="partners-heading"
       badge="Our Partners"
       title={<HomeSectionSplitTitle line1="Trusted By" accent="Elegant Venues" />}
-      action={
-        <Link
-          to={VENUES_LIST_PATH}
-          className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10"
-        >
-          View all venues
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      }
+      subtitle="Premium venues we partner with for seamless, elevated celebrations."
+      variant="linen"
       fullBleed
-      contentClassName="py-6 md:py-8"
+      contentClassName="pt-0"
+      action={
+        <div className="flex justify-end">
+          <Link
+            to={VENUES_LIST_PATH}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            View all venues
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      }
     >
-      <PartnersVenueShowcase venues={venueCards} />
+      <PartnersVenueShowcase venues={venueCards} edgeToEdge />
     </HomeSectionShell>
   );
 };

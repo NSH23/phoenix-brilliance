@@ -43,7 +43,7 @@ const MobileCTA = () => {
           <Link
             to="/contact"
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 
-                     bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
+                     bg-primary text-primary-foreground 
                      rounded-2xl font-semibold text-sm shadow-lg shadow-primary/30
                      active:scale-95 transition-transform duration-200"
           >

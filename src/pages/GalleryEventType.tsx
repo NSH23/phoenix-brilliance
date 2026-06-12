@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { Camera, ArrowLeft, ArrowRight, Images, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getActiveEvents, getEventBySlug, Event } from "@/services/events";
 import { getAllAlbums, getAlbumMedia, Album } from "@/services/albums";
@@ -125,7 +124,6 @@ const GalleryEventType = () => {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-        <Footer />
         <WhatsAppButton />
       </div>
     );
@@ -263,6 +261,8 @@ const GalleryEventType = () => {
             </motion.div>
           ) : (
             <GalleryFolderGrid
+              variant="featured"
+              compact={false}
               folders={albums.map((album) => {
                 const albumEvent = allEvents.find((e) => e.id === album.event_id);
                 return {
@@ -270,7 +270,12 @@ const GalleryEventType = () => {
                   name: album.title,
                   count: album.mediaCount ?? 0,
                   coverUrl: album.cover_image,
-                  description: isAllAlbums ? album.eventTitle : album.description || "View gallery",
+                  description: isAllAlbums
+                    ? album.eventTitle
+                    : album.mediaCount
+                      ? `${album.mediaCount} photo${album.mediaCount !== 1 ? "s" : ""}`
+                      : undefined,
+                  featured: album.is_featured,
                   href: `/gallery/${albumEvent?.slug || "all"}/${album.id}`,
                 };
               })}
@@ -307,7 +312,6 @@ const GalleryEventType = () => {
         </section>
       )}
 
-      <Footer />
       <WhatsAppButton />
     </div>
   );

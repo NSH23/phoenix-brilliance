@@ -59,13 +59,13 @@ export function TestimonialsSection({
                 </header>
                 ) : null}
 
-                <div className="hidden md:grid mx-auto max-w-7xl gap-4 py-4 grid-cols-2 lg:grid-cols-3">
+                <div className={cn("hidden md:grid mx-auto max-w-7xl grid-cols-2 lg:grid-cols-3", embedded ? "gap-3.5 py-0" : "gap-4 py-4")}>
                     {testimonials.map((t, i) => (
                         <TestimonialCard key={i} testimonial={t} />
                     ))}
                 </div>
 
-                <div className="block md:hidden mx-auto max-w-sm py-4 h-[300px] relative">
+                <div className={cn("relative mx-auto max-w-sm md:hidden", embedded ? "h-[280px] py-0" : "h-[300px] py-4")}>
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentIndex}

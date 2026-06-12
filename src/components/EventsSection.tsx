@@ -128,24 +128,12 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
       ariaLabelledBy="events-heading"
       badge="What We Create"
       title={<HomeSectionSplitTitle line1="Event" accent="Categories" />}
-      fullBleed
-      contentClassName="pb-2 pt-2 md:pb-4 md:pt-4"
+      subtitle="From intimate gatherings to grand celebrations — explore what we create."
+      variant="white"
+      contentClassName="pt-0"
     >
-        <div className="relative w-full overflow-hidden border-y border-border/40 py-6 md:py-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:border-white/10 dark:shadow-none">
-          {/* Light theme only: 9.jpg as section background – slightly above center, soft blur */}
-          <div
-            className="absolute inset-0 bg-cover bg-no-repeat opacity-100 dark:opacity-0 pointer-events-none z-0"
-            style={{
-              backgroundImage: "var(--bg-image-9, url('/9.jpg'))",
-              backgroundPosition: "center calc(50% - 2cm)",
-              filter: "blur(5px)",
-              transform: "scale(1.08)",
-            }}
-            aria-hidden
-          />
-          <div className="absolute inset-0 bg-cover bg-no-repeat opacity-0 dark:opacity-100 pointer-events-none z-0" style={{ backgroundImage: "var(--bg-image-bg2, url('/bg2.jpg'))", backgroundPosition: "center calc(50% - 1cm)" }} aria-hidden />
-          <div className="absolute inset-0 bg-white/45 dark:bg-gradient-to-b dark:from-black/40 dark:via-black/25 dark:to-black/50 pointer-events-none z-[1]" aria-hidden />
-          <div className="relative z-10 px-4 sm:px-6 lg:px-8">
+        <div className="w-full overflow-visible">
+          <div className="relative">
           <div className="block lg:hidden w-full mb-6">
             <div className="overflow-x-auto overflow-y-hidden pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x">
               <div className="flex gap-4 w-max snap-x snap-mandatory px-1">
@@ -163,28 +151,13 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
 
         {/* Desktop Three-column layout – Hidden on Mobile, constrained to previous width so stacked cards stay same size */}
         <div className="hidden lg:block max-w-7xl mx-auto">
-        <div className="lg:grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 xl:gap-10 items-center mt-4">
+        <div className="lg:grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-5 xl:gap-8 items-center mt-1">
 
           {/* Left column - StackedCards (larger by using more of column) */}
-          <div className="lg:col-span-4 order-2 lg:order-1 flex flex-col items-center justify-center py-6 h-[450px] md:h-[550px] relative">
+          <div className="lg:col-span-4 order-2 lg:order-1 flex flex-col items-center justify-center py-4 h-[380px] md:h-[460px] relative">
             <div className="w-full h-full flex items-center justify-center p-1 sm:p-2">
               <StackedCards items={leftImages} autoplay={false} />
             </div>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={selectedSlug}
-                className="text-center lg:text-right max-w-md lg:max-w-none relative z-20 mt-3 min-h-[4rem]"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.2 }}
-              >
-                <p className="text-muted-foreground dark:text-ivory/90 text-base md:text-lg leading-relaxed hidden lg:block">
-                  {selectedCategory?.description || ""}
-                </p>
-              </motion.div>
-            </AnimatePresence>
           </div>
 
           {/* Center: Categories */}
@@ -214,16 +187,22 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
               })}
             </div>
 
-            {/* Description shown on mobile in center (below categories) */}
-            <div className="mt-6 lg:hidden max-w-md text-center">
-              <p className="text-muted-foreground dark:text-ivory/90 text-sm leading-relaxed">
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={selectedSlug}
+                className="mt-5 max-w-[17rem] text-center text-[11px] leading-relaxed text-muted-foreground/75 sm:max-w-xs sm:text-xs lg:mt-6 lg:max-w-[15rem]"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+              >
                 {selectedCategory?.description || ""}
-              </p>
-            </div>
+              </motion.p>
+            </AnimatePresence>
           </div>
 
           {/* Right column - StackedCards (same larger size as left) */}
-          <div className="hidden lg:flex lg:col-span-4 order-3 flex-col items-center justify-center py-6 h-[450px] md:h-[550px] relative">
+          <div className="hidden lg:flex lg:col-span-4 order-3 flex-col items-center justify-center py-4 h-[380px] md:h-[460px] relative">
             <div className="w-full h-full flex items-center justify-center p-1 sm:p-2">
               <StackedCards items={rightImages} autoplay={false} />
             </div>
@@ -232,7 +211,7 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
         </div>
 
         {/* View All Events – inside container */}
-        <div className="text-center mt-6 md:mt-8 pb-6 md:pb-8">
+        <div className="text-center mt-4 md:mt-5">
           <Link to="/events" className="btn-section-cta">
             <span>View All Events</span>
             <span aria-hidden>→</span>

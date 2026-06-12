@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
+import { Film } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getYouTubeEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
+import { getYouTubeHeroEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 import { optimizeMediaUrl } from "@/lib/mediaDelivery";
+
+export const HERO_STACK_PLACEHOLDER = "__hero_empty_slot__";
+
+export const isHeroStackPlaceholder = (src: string) =>
+  !src?.trim() || src === HERO_STACK_PLACEHOLDER;
 
 const protectedImgProps = {
   draggable: false as const,
@@ -17,8 +23,12 @@ interface StackedCardsProps {
   items: string[];
   className?: string;
   autoplay?: boolean;
-  /** When true: items = [video, image1, image2]. Front = single video (loops), back = images only. No cycling. */
+  /** When true: stacked hero layout with up to 3 items. */
   heroMode?: boolean;
+  /** With heroMode: advance to next item when front video ends (no loop). Tap back cards to switch. */
+  cycleOnEnd?: boolean;
+  /** Heritage editorial styling — softer stack, no glow, refined borders */
+  editorial?: boolean;
 }
 
 const isVideoFile = (src: string) => {
@@ -27,8 +37,73 @@ const isVideoFile = (src: string) => {
   return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".mov");
 };
 
+function HeroPlaceholderSlot() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-muted/40">
+      <Film className="h-9 w-9 text-muted-foreground/45" strokeWidth={1.25} aria-hidden />
+    </div>
+  );
+}
+
+/** Paused first-frame preview for hero side stack slots (no blank white video box). */
+function HeroSidePreview({ src }: { src: string }) {
+  if (isHeroStackPlaceholder(src)) {
+    return <HeroPlaceholderSlot />;
+  }
+  if (isYouTubeValue(src)) {
+    return (
+      <img
+        src={getYouTubeThumbnail(src)}
+        alt=""
+        className="h-full w-full object-cover"
+        loading="lazy"
+        decoding="async"
+        {...protectedImgProps}
+      />
+    );
+  }
+
+  if (isVideoFile(src)) {
+    return (
+      <video
+        src={src}
+        className="h-full w-full object-cover bg-black"
+        muted
+        playsInline
+        preload="auto"
+        tabIndex={-1}
+        aria-hidden
+        onLoadedMetadata={(e) => {
+          const video = e.currentTarget;
+          if (video.currentTime < 0.05) {
+            video.currentTime = Math.min(0.35, video.duration > 0 ? video.duration * 0.04 : 0.35);
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={optimizeMediaUrl(src, { preset: "card" })}
+      alt=""
+      className="h-full w-full object-cover"
+      loading="lazy"
+      decoding="async"
+      {...protectedImgProps}
+    />
+  );
+}
+
 /** Hero mode: 1 video (front, loops) + 2 images (back). No cycling. Optimized for smooth playback. */
-export const StackedCards = ({ items, className, autoplay = true, heroMode = false }: StackedCardsProps) => {
+export const StackedCards = ({
+  items,
+  className,
+  autoplay = true,
+  heroMode = false,
+  cycleOnEnd = false,
+  editorial = false,
+}: StackedCardsProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   // Start with sound by default. If the browser blocks autoplay with sound,
   // we fall back to muted automatically.
@@ -40,6 +115,19 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
   const [playbackLockedByOtherVideo, setPlaybackLockedByOtherVideo] = useState(false);
   const frontVideoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stackItems = useMemo(
+    () => items.filter((src) => typeof src === "string"),
+    [items],
+  );
+  const playableIndexes = useMemo(
+    () => stackItems.map((src, i) => (isHeroStackPlaceholder(src) ? -1 : i)).filter((i) => i >= 0),
+    [stackItems],
+  );
+
+  useEffect(() => {
+    if (playableIndexes.length === 0) return;
+    setActiveIndex((prev) => (playableIndexes.includes(prev) ? prev : playableIndexes[0]));
+  }, [playableIndexes]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -57,13 +145,14 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
   }, []);
 
   const effectiveAutoplay = autoplay && !prefersReducedMotion;
-  const activeSrc = items[activeIndex];
+  const activeSrc = stackItems[activeIndex];
   const activeIsYouTube = !!activeSrc && isYouTubeValue(activeSrc);
   const activeIsVideoFile = !!activeSrc && isVideoFile(activeSrc);
   const activeIsVideo = activeIsYouTube || activeIsVideoFile;
 
-  // Hero mode: only one video (index 0), back cards are always images
-  const isBackImage = (src: string, index: number) => heroMode ? index > 0 : !(isVideoFile(src) || isYouTubeValue(src));
+  const isMediaVideo = (src: string) => isVideoFile(src) || isYouTubeValue(src);
+  const isBackImage = (src: string, index: number) =>
+    heroMode && !cycleOnEnd ? index > 0 : !isMediaVideo(src);
 
   // Reliable autoplay: try playing with the current mute state.
   const tryPlay = useRef(() => {
@@ -109,13 +198,29 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
 
   // Initial play attempt after mount (video may already be in view)
   useEffect(() => {
-    if (!items?.length || !activeIsVideoFile || !effectiveAutoplay) return;
+    if (!playableIndexes.length || !activeIsVideoFile || !effectiveAutoplay) return;
     if (playbackLockedByOtherVideo) return;
     const video = frontVideoRef.current;
     if (!video) return;
     const t = setTimeout(() => tryPlay.current(), 100);
     return () => clearTimeout(t);
   }, [activeIndex, effectiveAutoplay, activeSrc, activeIsVideoFile, playbackLockedByOtherVideo]);
+
+  // Hero: when user brings another clip to the front, start playback automatically
+  useEffect(() => {
+    if (!heroMode || !cycleOnEnd || playbackLockedByOtherVideo || !effectiveAutoplay) return;
+    if (!activeIsVideoFile) return;
+    const t = window.setTimeout(() => tryPlay.current(), 200);
+    return () => window.clearTimeout(t);
+  }, [
+    activeIndex,
+    heroMode,
+    cycleOnEnd,
+    activeIsVideoFile,
+    activeSrc,
+    playbackLockedByOtherVideo,
+    effectiveAutoplay,
+  ]);
 
   // Pause when out of view, play when in view
   useEffect(() => {
@@ -170,35 +275,89 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
   }, [heroMode, effectiveAutoplay, activeIsVideoFile, isInView]);
 
   const handleItemClick = (index: number) => {
-    if (index === activeIndex) return;
+    if (index === activeIndex || isHeroStackPlaceholder(stackItems[index])) return;
     setActiveIndex(index);
   };
 
-  const handleFrontVideoEnded = () => {
-    if (heroMode) return; // Hero: video loops, no cycling
-    if (!activeIsVideoFile) return;
-    setActiveIndex((prev) => (prev + 1) % items.length);
+  const advanceToNext = () => {
+    if (playableIndexes.length === 0) return;
+    setActiveIndex((prev) => {
+      const currentPos = playableIndexes.indexOf(prev);
+      const nextPos = currentPos >= 0 ? (currentPos + 1) % playableIndexes.length : 0;
+      return playableIndexes[nextPos];
+    });
   };
 
-  if (!items?.length) return null;
+  const handleFrontVideoEnded = () => {
+    if (heroMode && !cycleOnEnd) return;
+    if (!activeIsVideoFile) return;
+    advanceToNext();
+  };
+
+  // When front is a still image, auto-advance after a short beat
+  useEffect(() => {
+    if (!cycleOnEnd || activeIsVideoFile || activeIsYouTube) return;
+    const t = window.setTimeout(() => {
+      advanceToNext();
+    }, 4500);
+    return () => window.clearTimeout(t);
+  }, [activeIndex, cycleOnEnd, activeIsVideoFile, activeIsYouTube, playableIndexes.length]);
+
+  if (!stackItems.length) return null;
 
   return (
     <div
       ref={containerRef}
-      className={cn("relative w-full h-full perspective-1000 flex items-center justify-center group", className)}
+      className={cn(
+        "group relative flex h-full w-full items-center justify-center perspective-1000",
+        heroMode && "overflow-visible",
+        className,
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-primary/20 blur-[100px] rounded-full opacity-60 pointer-events-none -z-10" />
-      <div className="relative w-full h-full">
-        {items.map((src, index) => {
+      {!editorial ? (
+        <div className="absolute top-1/2 left-1/2 -z-10 h-[120%] w-[120%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 opacity-60 blur-[100px] pointer-events-none" />
+      ) : null}
+      <div className={cn("relative h-full w-full", heroMode && "overflow-visible")}>
+        {stackItems.map((src, index) => {
+          const isPlaceholder = isHeroStackPlaceholder(src);
           // In hero mode too, use activeIndex so clicked card comes to front and others go to sides
-          const relativeIndex = (index - activeIndex + items.length) % items.length;
+          const relativeIndex = (index - activeIndex + stackItems.length) % stackItems.length;
           const isFirst = relativeIndex === 0;
-          const spreadDistance = isMobile ? 30 : isHovered ? 80 : 50;
-          const rotationAngle = isMobile ? 3 : isHovered ? 12 : 6;
+          const spreadDistance = editorial
+            ? heroMode
+              ? isMobile
+                ? 28
+                : isHovered
+                  ? 62
+                  : 50
+              : isMobile
+                ? 24
+                : isHovered
+                  ? 52
+                  : 36
+            : isMobile
+              ? 30
+              : isHovered
+                ? 80
+                : 50;
+          const rotationAngle = editorial
+            ? isMobile
+              ? 2
+              : isHovered
+                ? 7
+                : 4
+            : isMobile
+              ? 3
+              : isHovered
+                ? 12
+                : 6;
 
-          let xOffset = 0, rotation = 0, scale = 1, zIndex = 0;
+          let xOffset = 0;
+          let rotation = 0;
+          let scale = 1;
+          let zIndex = 0;
           if (isFirst) {
             zIndex = 10;
             scale = 1;
@@ -206,15 +365,15 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
             xOffset = -spreadDistance;
             rotation = -rotationAngle;
             zIndex = 5;
-            scale = 0.95;
+            scale = editorial ? 0.93 : 0.95;
           } else if (relativeIndex === 2) {
             xOffset = spreadDistance;
             rotation = rotationAngle;
             zIndex = 5;
-            scale = 0.95;
+            scale = editorial ? 0.93 : 0.95;
           } else {
             zIndex = 0;
-            scale = 0.9;
+            scale = editorial ? 0.88 : 0.9;
           }
 
           const renderAsImage = isBackImage(src, index);
@@ -223,8 +382,13 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
             <motion.div
               key={heroMode ? `hero-${index}-${src}` : `${src}-${index}`}
               className={cn(
-                "absolute inset-0 rounded-[2rem] overflow-hidden shadow-2xl transition-all duration-500 ease-out border-4 border-white/20 bg-black",
-                isFirst ? "cursor-default" : "cursor-pointer hover:brightness-110"
+                "absolute inset-0 overflow-hidden transition-all duration-500 ease-out bg-black",
+                editorial
+                  ? "rounded-[1.35rem] border border-border/60 shadow-[0_10px_28px_-10px_rgba(26,24,22,0.2)]"
+                  : "rounded-[2rem] border-4 border-white/20 shadow-2xl",
+                isFirst || isPlaceholder
+                  ? "cursor-default"
+                  : "cursor-pointer hover:brightness-110",
               )}
               style={{ zIndex, transformOrigin: "center bottom", willChange: "transform" }}
               animate={{
@@ -235,19 +399,30 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
               }}
               transition={{ duration: 0.4, ease: "backOut" }}
               onClick={() => handleItemClick(index)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleItemClick(index);
+                }
+              }}
+              role={isFirst || isPlaceholder ? undefined : "button"}
+              tabIndex={isFirst || isPlaceholder ? undefined : 0}
+              aria-label={isFirst || isPlaceholder ? undefined : `Show clip ${index + 1}`}
             >
               {isFirst ? (
-                activeIsVideoFile ? (
+                isPlaceholder ? (
+                  <HeroPlaceholderSlot />
+                ) : activeIsVideoFile ? (
                   <video
                     ref={frontVideoRef}
                     key={activeSrc}
                     src={activeSrc}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full bg-black object-cover"
                     muted={isMuted}
                     playsInline
-                    loop={heroMode}
+                    loop={heroMode && !cycleOnEnd}
                     preload="metadata"
-                    autoPlay={heroMode}
+                    autoPlay={heroMode || cycleOnEnd}
                     onCanPlay={handleCanPlay}
                     onLoadedData={handleLoadedData}
                     onEnded={handleFrontVideoEnded}
@@ -255,24 +430,24 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                     disableRemotePlayback
                   />
                 ) : activeIsYouTube ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      src={getYouTubeThumbnail(activeSrc)}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                      {...protectedImgProps}
-                    />
-                    {!playbackLockedByOtherVideo && (
+                  <div className="relative h-full w-full bg-black">
+                    {playbackLockedByOtherVideo ? (
+                      <img
+                        src={getYouTubeThumbnail(activeSrc)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        loading="eager"
+                        decoding="async"
+                        {...protectedImgProps}
+                      />
+                    ) : (
                       <iframe
-                        key={activeSrc}
-                        src={getYouTubeEmbedUrl(activeSrc)}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        style={{ border: "none" }}
+                        key={`${activeIndex}-${activeSrc}`}
+                        src={getYouTubeHeroEmbedUrl(activeSrc, true)}
+                        className="pointer-events-none absolute inset-0 h-full w-full border-0 object-cover"
                         allow="autoplay; encrypted-media"
-                        allowFullScreen
                         title="YouTube video"
+                        tabIndex={-1}
                       />
                     )}
                   </div>
@@ -286,44 +461,51 @@ export const StackedCards = ({ items, className, autoplay = true, heroMode = fal
                     {...protectedImgProps}
                   />
                 )
+              ) : heroMode ? (
+                <HeroSidePreview src={src} />
               ) : renderAsImage ? (
                 <img
                   src={optimizeMediaUrl(src, { preset: "card" })}
                   alt="Gallery image"
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  {...protectedImgProps}
+                />
+              ) : isYouTubeValue(src) ? (
+                <img
+                  src={getYouTubeThumbnail(src)}
+                  alt=""
+                  className="h-full w-full object-cover"
                   loading="lazy"
                   decoding="async"
                   {...protectedImgProps}
                 />
               ) : (
-                isYouTubeValue(src) ? (
-                  <iframe
-                    src={getYouTubeEmbedUrl(src).replace("autoplay=1", "autoplay=0")}
-                    className="w-full h-full object-cover"
-                    style={{ border: "none" }}
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                    title="YouTube video"
-                  />
-                ) : (
-                  <video
-                    ref={heroMode && index === 0 ? frontVideoRef : undefined}
-                    src={src}
-                    className="w-full h-full object-cover"
-                    muted
-                    playsInline
-                    preload="none"
-                    aria-hidden
-                  />
-                )
+                <video
+                  ref={heroMode && index === 0 ? frontVideoRef : undefined}
+                  src={src}
+                  className="h-full w-full bg-black object-cover"
+                  muted
+                  playsInline
+                  preload={heroMode ? "metadata" : "none"}
+                  aria-hidden
+                />
               )}
-              {!isFirst && <div className="absolute inset-0 bg-black/20 pointer-events-none" />}
+              {!isFirst ? (
+                <div
+                  className={cn(
+                    "pointer-events-none absolute inset-0",
+                    editorial ? "bg-black/10" : "bg-black/20",
+                  )}
+                />
+              ) : null}
 
-              {isFirst && activeIsVideo && (
-                <div className="absolute inset-0 pointer-events-none">
+              {isFirst && activeIsVideo && !editorial ? (
+                <div className="pointer-events-none absolute inset-0">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
                 </div>
-              )}
+              ) : null}
             </motion.div>
           );
         })}

@@ -28,6 +28,8 @@ export interface ContentMedia {
 }
 
 export interface HeroMedia {
+    /** Up to 3 hero clips/stills in display order (for stacked hero carousel). */
+    items: string[];
     videoUrl: string | null;
     imageUrls: string[];
 }
@@ -61,7 +63,12 @@ export async function getHeroMedia(): Promise<HeroMedia> {
     // Some legacy rows may not have media_type set; detect YouTube IDs/URLs via url.
     const firstVideo = list.find((m) => m.media_type === 'video' || isVideoUrl(m.url) || isYouTubeValue(m.url));
     const imageList = list.filter((m) => m.media_type === 'image' || isImageUrl(m.url));
+    const items = list
+        .slice(0, 3)
+        .map((m) => resolveContentMediaUrl(m.url))
+        .filter((url) => url.length > 0);
     return {
+        items,
         videoUrl: firstVideo?.url ? resolveContentMediaUrl(firstVideo.url) : null,
         imageUrls: imageList.slice(0, 2).map((m) => resolveContentMediaUrl(m.url)),
     };

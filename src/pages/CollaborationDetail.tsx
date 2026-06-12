@@ -1,17 +1,14 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ArrowLeft, ArrowRight, X, ChevronLeft, ChevronRight,
-  Loader2, Play
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { Loader2, Play } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import GalleryMediaLightbox, { type GalleryLightboxSlide } from "@/components/GalleryMediaLightbox";
 import VenueDetailHero, { VenueBannerNativeVideo, VenueBannerVideoPoster } from "@/components/VenueDetailHero";
 import { getCollaborationById } from "@/services/collaborations";
 import { resolvePublicStorageUrl } from "@/services/storage";
-import { getYouTubeNocookieEmbedUrl, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
+import { getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 import { SEO } from "@/components/SEO";
 import { VENUES_LIST_PATH, venueDetailPath } from "@/lib/venueRoutes";
 import PhoneGalleryExplorer from "@/components/PhoneGalleryExplorer";
@@ -40,9 +37,7 @@ type CollabStep = { id: string; step_number: number; title: string; description:
 
 export default function CollaborationDetail() {
   const { partnerId } = useParams();
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const touchStartX = useRef(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [collaboration, setCollaboration] = useState<CollaborationDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -110,6 +105,38 @@ export default function CollaborationDetail() {
     return ordered.length > 0 ? ordered : [...rawImages].sort(sortByOrder);
   }, [rawImages, rawFolders, explorerMedia]);
 
+  const lightboxSlides = useMemo<GalleryLightboxSlide[]>(
+    () =>
+      images.map((image) => {
+        if (isCollabYouTubeVideo(image)) {
+          return {
+            id: image.id,
+            caption: image.caption,
+            kind: 'youtube' as const,
+            src: image.image_url,
+            thumbSrc: collabGalleryPosterSrc(image),
+          };
+        }
+        if (image.media_type === 'video') {
+          return {
+            id: image.id,
+            caption: image.caption,
+            kind: 'native-video' as const,
+            src: resolveCollaborationMediaUrl(image.image_url),
+            thumbSrc: resolveCollaborationMediaUrl(image.image_url),
+          };
+        }
+        return {
+          id: image.id,
+          caption: image.caption,
+          kind: 'image' as const,
+          src: resolveCollaborationMediaUrl(image.image_url),
+          thumbSrc: resolveCollaborationMediaUrl(image.image_url),
+        };
+      }),
+    [images]
+  );
+
   useEffect(() => {
     if (!partnerId) { setLoading(false); return; }
     getCollaborationById(partnerId)
@@ -143,7 +170,6 @@ export default function CollaborationDetail() {
             </Link>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -153,7 +179,6 @@ export default function CollaborationDetail() {
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
-    setLightboxOpen(true);
   };
 
   const bannerSrc = (() => {
@@ -184,58 +209,14 @@ export default function CollaborationDetail() {
     return undefined;
   })();
 
-  const closeLightbox = () => setLightboxOpen(false);
-
-  const navigateLightbox = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      setLightboxIndex(prev => (prev === 0 ? images.length - 1 : prev - 1));
-    } else {
-      setLightboxIndex(prev => (prev === images.length - 1 ? 0 : prev + 1));
-    }
-  };
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') closeLightbox();
-    if (e.key === 'ArrowLeft') navigateLightbox('prev');
-    if (e.key === 'ArrowRight') navigateLightbox('next');
-  };
-
-  // Touch swipe for lightbox (mobile)
-  const handleLightboxTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const handleLightboxTouchEnd = (e: React.TouchEvent) => {
-    const endX = e.changedTouches[0].clientX;
-    const delta = endX - touchStartX.current;
-    if (delta > 50) navigateLightbox('prev');
-    else if (delta < -50) navigateLightbox('next');
-  };
-
   return (
-    <div className="min-h-screen bg-background" onKeyDown={handleKeyDown} tabIndex={0}>
+    <div className="min-h-screen bg-background">
       <SEO
         title={collaborationName}
         description={collaborationDescription ? `${collaborationDescription.slice(0, 155)}${collaborationDescription.length > 155 ? "…" : ""}` : `${collaborationName} – partner venue in Pune. Premium event collaborations.`}
         url={partnerId ? venueDetailPath(partnerId) : VENUES_LIST_PATH}
       />
       <Navbar />
-
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-2 pt-24"
-        >
-          <Link
-            to={VENUES_LIST_PATH}
-            className="inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Venues</span>
-          </Link>
-        </motion.div>
-      </div>
 
       <VenueDetailHero
         name={collaborationName}
@@ -251,18 +232,12 @@ export default function CollaborationDetail() {
 
       {/* Venue Gallery – folders and images */}
       {images.length > 0 && (
-        <section className="py-10 md:py-14">
+        <section className="border-t border-border/40 bg-muted/15 py-10 md:py-14">
           <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="mb-6 md:mb-8"
-            >
-              <h2 className="text-xl md:text-2xl font-serif font-semibold text-foreground">
-                Venue gallery <span className="text-primary">— take a virtual tour</span>
-              </h2>
-            </motion.div>
+            <div className="mb-6 md:mb-8">
+              <h2 className="font-serif text-xl font-semibold text-foreground md:text-2xl">Venue gallery</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Explore the space through photos and videos.</p>
+            </div>
 
             {explorerFolders.length > 0 || explorerMedia.some((m) => !m.folder_id) ? (
               <PhoneGalleryExplorer
@@ -314,131 +289,13 @@ export default function CollaborationDetail() {
         </section>
       )}
 
-      {/* CTA Section – card-style so it doesn’t look like an unfinished strip */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
-          >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold mb-4 sm:mb-6">
-              Ready to Book <span className="text-gradient-gold">{collaboration.name}</span>?
-            </h2>
-            <p className="text-muted-foreground mb-6 sm:mb-8 text-sm sm:text-base">
-              Contact us to get exclusive partner rates and a personalized experience
-            </p>
-            <Link
-              to="/contact"
-              className="inline-flex items-center justify-center gap-2 min-h-[48px] px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-primary text-primary-foreground 
-                       font-semibold hover:bg-primary/90 transition-colors text-base"
-            >
-              Get Started
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      <Footer />
       <WhatsAppButton />
 
-      {/* Lightbox — fullscreen on mobile, swipe to navigate */}
-      <AnimatePresence>
-        {lightboxOpen && images.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center"
-            onClick={closeLightbox}
-          >
-            {/* Top bar: close + counter */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 pt-6 z-10 bg-gradient-to-b from-black/70 to-transparent">
-              <button
-                type="button"
-                className="p-2 rounded-full text-white/90 hover:bg-white/20 transition-colors"
-                onClick={closeLightbox}
-                aria-label="Close"
-              >
-                <X className="w-6 h-6" />
-              </button>
-              <span className="text-sm text-white/80">
-                {lightboxIndex + 1} / {images.length}
-              </span>
-              <div className="w-10" />
-            </div>
-
-            {/* Nav arrows — visible on desktop, larger tap targets on mobile */}
-            <button
-              type="button"
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-10 transition-colors"
-              onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
-              aria-label="Previous"
-            >
-              <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
-            </button>
-            <button
-              type="button"
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-10 transition-colors"
-              onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
-              aria-label="Next"
-            >
-              <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
-            </button>
-
-            {/* Content: swipeable area, fullscreen on mobile */}
-            <motion.div
-              key={lightboxIndex}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-full h-full flex flex-col items-center justify-center p-4 pt-16 pb-20 md:max-w-5xl md:max-h-[85vh] md:py-4"
-              onClick={(e) => e.stopPropagation()}
-              onTouchStart={handleLightboxTouchStart}
-              onTouchEnd={handleLightboxTouchEnd}
-            >
-              {isCollabYouTubeVideo(images[lightboxIndex]) ? (
-                <iframe
-                  key={images[lightboxIndex].id}
-                  src={getYouTubeNocookieEmbedUrl(images[lightboxIndex].image_url, { autoplay: true })}
-                  title={images[lightboxIndex].caption || "YouTube video"}
-                  className="w-full max-w-4xl aspect-video max-h-[70vh] md:max-h-[80vh] rounded-lg border-0 bg-black"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  loading="lazy"
-                />
-              ) : images[lightboxIndex].media_type === 'video' ? (
-                <video
-                  key={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
-                  src={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
-                  className="w-full h-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-lg"
-                  controls
-                  playsInline
-                  preload="metadata"
-                />
-              ) : (
-                <img
-                  src={resolveCollaborationMediaUrl(images[lightboxIndex].image_url)}
-                  alt={images[lightboxIndex].caption || "Collaboration media"}
-                  className="w-full h-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-lg select-none"
-                  draggable={false}
-                  style={{ touchAction: 'none' }}
-                  loading="lazy"
-                  decoding="async"
-                />
-              )}
-              {(images[lightboxIndex].caption || "").trim() && (
-                <p className="text-center mt-3 text-white/90 text-sm md:text-base max-w-lg">
-                  {images[lightboxIndex].caption}
-                </p>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <GalleryMediaLightbox
+        slides={lightboxSlides}
+        activeIndex={lightboxIndex}
+        onActiveIndexChange={setLightboxIndex}
+      />
     </div>
   );
 }

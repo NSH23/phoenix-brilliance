@@ -6,6 +6,7 @@ import ThemeToggle from "./ThemeToggle";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { getPublicNavLinks } from "@/lib/publicGallery";
+import { getActivePublicTheme, subscribePublicTheme, type PublicTheme } from "@/lib/publicTheme";
 
 export default function Navbar() {
   const navLinks = getPublicNavLinks();
@@ -14,20 +15,15 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [isDark, setIsDark] = useState(false);
+  const [publicTheme, setPublicTheme] = useState<PublicTheme>("light");
+  const isDark = publicTheme === "dark";
+  const isBlush = publicTheme === "blush";
   const [showDesktopNumber, setShowDesktopNumber] = useState(false);
   const lastScrollY = useRef(0);
 
-  // Detect dark theme
   useEffect(() => {
-    const checkTheme = () => {
-      const darkMode = document.documentElement.classList.contains('dark');
-      setIsDark(darkMode);
-    };
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
+    setPublicTheme(getActivePublicTheme());
+    return subscribePublicTheme(setPublicTheme);
   }, []);
 
   // Track scroll position for styling and hide/show behavior
@@ -84,10 +80,10 @@ export default function Navbar() {
         className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-500 ease-out ${scrolled
           ? isDark
             ? "bg-background/75 backdrop-blur-[16px] backdrop-saturate-[180%] border-b border-primary/20 shadow-[0_4px_24px_rgba(0,0,0,0.3)]"
-            : "bg-background/80 backdrop-blur-[16px] backdrop-saturate-[180%] border-b border-primary/15 shadow-[0_4px_20px_rgba(232,175,193,0.12),0_1px_3px_rgba(232,175,193,0.08)]"
+            : "bg-background/95 backdrop-blur-[12px] border-b border-border shadow-[0_4px_20px_rgba(62,39,35,0.08)]"
           : isDark
             ? "bg-background/60 backdrop-blur-[12px] backdrop-saturate-[180%] border-b border-primary/15 shadow-sm"
-            : "bg-background/60 backdrop-blur-[12px] backdrop-saturate-[180%] border-b border-primary/10 shadow-sm"
+            : "bg-background/90 backdrop-blur-[8px] border-b border-border/80"
           }`}
       >
         <div className="container mx-auto px-4">
@@ -161,13 +157,11 @@ export default function Navbar() {
                 onClick={() => setShowDesktopNumber(true)}
                 className={`hidden md:flex items-center gap-2 px-7 py-3 rounded-[30px] 
                           font-medium text-sm font-sans tracking-[0.02em] transition-all duration-300 
-                          ${scrolled
-                    ? isDark
-                      ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/30'
-                      : 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/25'
-                    : isDark
-                      ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/30'
-                      : 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/25'}`}
+                          ${isDark
+                    ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/30'
+                    : isBlush
+                      ? 'border-2 border-primary bg-card text-primary shadow-md shadow-primary/10 hover:bg-primary/10'
+                      : 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90'}`}
               >
                 <Phone className="w-4 h-4" />
                 <span>{showDesktopNumber ? contact.phone : "Contact"}</span>
@@ -233,9 +227,12 @@ export default function Navbar() {
               transition={{ duration: 0.3, delay: 0.1 }}
               className="relative h-full flex flex-col px-6 py-8 overflow-y-auto bg-background"
             >
-              {/* Decorative Element */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
-              <div className="absolute bottom-20 left-0 w-32 h-32 bg-rose-gold/10 rounded-full blur-3xl" />
+              {isDark ? (
+                <>
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
+                  <div className="absolute bottom-20 left-0 w-32 h-32 bg-rose-gold/10 rounded-full blur-3xl" />
+                </>
+              ) : null}
 
               {/* Navigation Links */}
               <nav className="flex flex-col gap-2 relative">
@@ -273,10 +270,12 @@ export default function Navbar() {
                 <a
                   href={`tel:${contact.phone.replace(/\s/g, '')}`}
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-center gap-3 w-full px-6 py-4 
-                           bg-gradient-to-r from-primary to-rose-gold text-primary-foreground 
-                           rounded-2xl font-medium font-sans text-lg tracking-[0.02em] shadow-xl shadow-primary/30
-                           hover:shadow-2xl hover:scale-[1.02] transition-all duration-300"
+                  className={`flex items-center justify-center gap-3 w-full px-6 py-4 rounded-2xl font-medium font-sans text-lg tracking-[0.02em] transition-all duration-300 hover:scale-[1.02]
+                           ${isDark
+                      ? "bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-xl shadow-primary/30 hover:shadow-2xl"
+                      : isBlush
+                        ? "border-2 border-primary bg-card text-primary shadow-md shadow-primary/10 hover:bg-primary/10"
+                        : "bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90"}`}
                 >
                   <Phone className="w-5 h-5" />
                   <span>Contact</span>

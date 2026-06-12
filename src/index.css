@@ -8,33 +8,33 @@
 @layer base {
   :root {
     /* ═══════════════════════════════════════════════════════════ */
-    /*     LIGHT THEME - Pink Luxury System (no white overlays)     */
+    /*     LIGHT THEME - Heritage Editorial (events management)    */
     /* ═══════════════════════════════════════════════════════════ */
 
-    /* Luxury Rose palette */
-    --color-rose-blush: #E8AFC1;
-    --color-rose-hover: #D998AE;
-    --color-soft-petal: #F5DCE3;
-    --color-ivory-rose: #FFF8FA;
-    --color-champagne-tint: #FFF3F6;
-    --color-rich-charcoal: #2E2E2E;
-    --color-subtle-line: #F0D4DC;
+    /* Heritage palette – warm linen, wine accent, solid surfaces only */
+    --color-rose-blush: #C4A4A8;
+    --color-rose-hover: #6B3845;
+    --color-soft-petal: #EDE6DC;
+    --color-ivory-rose: #F5F0E8;
+    --color-champagne-tint: #FAF6F0;
+    --color-rich-charcoal: #1A1816;
+    --color-subtle-line: #D9CFC4;
     --color-navy: #0B1220;
-    --color-white: #FFFFFF;
-    --color-ivory: #FFF8FA;
-    --color-silk: #F5DCE3;
-    --color-pearl: #F0D4DC;
-    --color-warm-gray: #6B6B6B;
-    --color-charcoal: #2E2E2E;
-    --gradient-champagne: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
-    --gradient-rose-gold: linear-gradient(135deg, #E8AFC1 0%, #D998AE 100%);
-    --gradient-parchment: linear-gradient(135deg, #FFF3F6 0%, #F5DCE3 100%);
-    /* Warm shadows – softer layered (ultra-premium) */
-    --shadow-warm: 0 4px 24px rgba(232, 175, 193, 0.15);
-    --shadow-warm-sm: 0 2px 12px rgba(232, 175, 193, 0.10);
-    --shadow-warm-md: 0 4px 24px rgba(232, 175, 193, 0.15);
-    --shadow-warm-lg: 0 8px 32px rgba(232, 175, 193, 0.16);
-    --shadow-warm-xl: 0 12px 48px rgba(232, 175, 193, 0.18);
+    --color-white: #FAF6F0;
+    --color-ivory: #F5F0E8;
+    --color-silk: #E8DDD0;
+    --color-pearl: #D9CFC4;
+    --color-warm-gray: #5C534A;
+    --color-charcoal: #1A1816;
+    --gradient-champagne: #F5F0E8;
+    --gradient-rose-gold: #7A4452;
+    --gradient-parchment: #EDE6DC;
+    /* Warm shadows – linen / espresso (no pink cast) */
+    --shadow-warm: 0 4px 24px rgba(62, 39, 35, 0.08);
+    --shadow-warm-sm: 0 2px 12px rgba(62, 39, 35, 0.06);
+    --shadow-warm-md: 0 4px 24px rgba(62, 39, 35, 0.08);
+    --shadow-warm-lg: 0 8px 32px rgba(62, 39, 35, 0.10);
+    --shadow-warm-xl: 0 12px 48px rgba(62, 39, 35, 0.12);
     --shadow-sm: var(--shadow-warm-sm);
     --shadow-md: var(--shadow-warm-md);
     --shadow-lg: var(--shadow-warm-lg);
@@ -42,199 +42,187 @@
     --shadow-gold: 0 8px 24px rgba(232, 175, 193, 0.22);
     /* Glass card inner highlight */
     --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    /* Soft radial rose glow – no white/blur overlay */
-    --section-rose-glow: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(232, 175, 193, 0.14) 0%, transparent 55%);
-    --section-rose-glow-bottom: radial-gradient(ellipse 100% 60% at 50% 100%, rgba(232, 175, 193, 0.10) 0%, transparent 55%);
+    /* Section glow — solid band (no radial wash in light) */
+    --section-rose-glow: none;
+    --section-rose-glow-bottom: none;
 
-    /* PRIMARY - Light: Rose Gold Blush */
-    --background: 340 100% 98.6%;
-    --foreground: 0 0% 18%;
+    /* PRIMARY - Light: Heritage linen + wine */
+    --background: 36 28% 89%;
+    --foreground: 24 8% 10%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 18%;
+    --card: 40 33% 96%;
+    --card-foreground: 24 8% 10%;
 
-    /* Light: surface not used for layering; alias to card for compatibility */
-    --surface: 0 0% 100%;
+    --surface: 38 30% 94%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 18%;
+    --popover: 40 33% 96%;
+    --popover-foreground: 24 8% 10%;
 
-    /* Primary: Dark pink for all pink text (light theme) */
-    --primary: 340 55% 52%;
-    --primary-foreground: 0 0% 18%;
+    /* Wine accent #7A4452 */
+    --primary: 350 29% 37%;
+    --primary-foreground: 40 33% 96%;
 
-    /* Secondary: Soft Petal #F5DCE3 */
-    --secondary: 340 45% 91%;
-    --secondary-foreground: 0 0% 18%;
+    --secondary: 35 22% 86%;
+    --secondary-foreground: 24 8% 10%;
 
-    --muted: 340 40% 92%;
-    --muted-foreground: 0 0% 38%;
+    --muted: 35 18% 84%;
+    --muted-foreground: 25 10% 40%;
 
-    --accent: 340 45% 90%;
-    --accent-foreground: 343 50% 35%;
+    --accent: 350 18% 92%;
+    --accent-foreground: 350 29% 32%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 40 33% 96%;
 
-    /* Subtle lines #F0D4DC */
-    --border: 340 40% 89%;
-    --input: 340 35% 88%;
-    --ring: 343 58% 80%;
+    --border: 35 20% 80%;
+    --input: 35 18% 78%;
+    --ring: 350 29% 37%;
 
     --radius: 0.75rem;
 
-    /* Custom palette – Pink Luxury */
+    /* Custom palette – Heritage editorial */
     --gold: var(--primary);
-    --gold-light: 343 58% 85%;
-    --gold-dark: 340 47% 72%;
-    --champagne: 340 100% 97.6%;
-    --rose-gold: 343 58% 80%;
-    --blush: 340 45% 91%;
-    --ivory: 340 100% 98.6%;
-    --charcoal: 0 0% 18%;
+    --gold-light: 350 22% 88%;
+    --gold-dark: 350 29% 28%;
+    --champagne: 40 33% 96%;
+    --rose-gold: 350 25% 45%;
+    --blush: 35 25% 90%;
+    --ivory: 40 33% 96%;
+    --charcoal: 24 8% 10%;
     --navy: 218 49% 8%;
-    --off-white: 0 0% 100%;
-    --medium-gray: 0 0% 38%;
+    --off-white: 40 33% 96%;
+    --medium-gray: 25 10% 40%;
     --emerald: 152 40% 35%;
 
-    /* Section: Ivory Rose / Champagne Tint */
-    --heading: 0 0% 18%;
-    --section-bg: 340 100% 98.6%;
-    --section-alt-bg: 340 100% 97.6%;
-    /* Section differentiation – alternating bands (light: Ivory → Champagne → Ivory) */
-    --section-band-1: #FFF8FA;
-    --section-band-2: #FFF3F6;
-    --section-band-3: #FFF8FA;
-    --section-about: 340 100% 98%;
-    --section-reels: 340 100% 97.5%;
-    --section-contact: 340 45% 96%;
-    --rose-light: 340 45% 91%;
-    --rose-medium: 343 58% 80%;
-    --divider: 340 40% 89%;
-    --primary-hover: 340 55% 45%;
+    /* Section bands – warm linen only (no pure white) */
+    --heading: 24 8% 10%;
+    --section-bg: 36 28% 89%;
+    --section-alt-bg: 38 30% 92%;
+    --section-band-1: #EDE6DC;
+    --section-band-2: #F5F0E8;
+    --section-band-3: #EDE6DC;
+    --section-about: 36 28% 89%;
+    --section-reels: 38 30% 92%;
+    --section-contact: 35 22% 86%;
+    --rose-light: 350 18% 92%;
+    --rose-medium: 350 25% 45%;
+    --divider: 35 20% 80%;
+    --primary-hover: 350 29% 32%;
 
-    /* Light theme extended – Pink Luxury */
-    --light-primary-bg: #FFFFFF;
-    --light-secondary-bg: #FFF8FA;
-    --light-tertiary-bg: #F5DCE3;
-    --light-gold: #E8AFC1;
-    --light-gold-hover: #D998AE;
-    --light-rose-gold: #E8AFC1;
-    --light-champagne: #FFF8FA;
-    --light-text-primary: #2E2E2E;
-    --light-text-secondary: #2E2E2E;
-    --light-text-body: #4A4A4A;
-    --light-text-muted: #6B6B6B;
-    --light-border-subtle: #F0D4DC;
-    --light-border-medium: #F0D4DC;
-    --light-divider: #F0D4DC;
-    --light-accent-soft-blue: #FFF3F6;
-    --light-accent-soft-gold: rgba(232, 175, 193, 0.15);
-    --light-accent-soft-rose: #F5DCE3;
-    --light-shadow-sm: 0 2px 10px rgba(232, 175, 193, 0.12);
-    --light-shadow-md: 0 4px 20px rgba(232, 175, 193, 0.18);
-    --light-shadow-lg: 0 8px 32px rgba(232, 175, 193, 0.20);
-    --light-shadow-xl: 0 12px 48px rgba(232, 175, 193, 0.22);
-    --light-shadow-hover: 0 12px 40px rgba(232, 175, 193, 0.24);
-    --light-shadow-gold: 0 8px 24px rgba(232, 175, 193, 0.25);
-    --light-shadow-rose: 0 8px 24px rgba(232, 175, 193, 0.25);
-    --light-hover-bg: #F5DCE3;
-    --light-active-bg: #F5DCE3;
-    --light-focus-ring: rgba(232, 175, 193, 0.35);
-    --light-btn-primary-bg: #E8AFC1;
-    --light-btn-primary-hover: #D998AE;
-    --light-btn-primary-text: #2E2E2E;
+    /* Light theme extended – Heritage linen */
+    --light-primary-bg: #EDE6DC;
+    --light-secondary-bg: #F5F0E8;
+    --light-tertiary-bg: #E3D9CC;
+    --light-gold: #7A4452;
+    --light-gold-hover: #6B3845;
+    --light-rose-gold: #9E6B78;
+    --light-champagne: #FAF6F0;
+    --light-text-primary: #1A1816;
+    --light-text-secondary: #2E2924;
+    --light-text-body: #4A433C;
+    --light-text-muted: #5C534A;
+    --light-border-subtle: #D9CFC4;
+    --light-border-medium: #C9BDB0;
+    --light-divider: #D9CFC4;
+    --light-accent-soft-blue: #EDE6DC;
+    --light-accent-soft-gold: rgba(122, 68, 82, 0.10);
+    --light-accent-soft-rose: #E8DDD0;
+    --light-shadow-sm: 0 2px 10px rgba(62, 39, 35, 0.06);
+    --light-shadow-md: 0 4px 20px rgba(62, 39, 35, 0.08);
+    --light-shadow-lg: 0 8px 32px rgba(62, 39, 35, 0.10);
+    --light-shadow-xl: 0 12px 48px rgba(62, 39, 35, 0.12);
+    --light-shadow-hover: 0 12px 40px rgba(62, 39, 35, 0.14);
+    --light-shadow-gold: 0 8px 24px rgba(122, 68, 82, 0.12);
+    --light-shadow-rose: 0 8px 24px rgba(122, 68, 82, 0.12);
+    --light-hover-bg: #E8DDD0;
+    --light-active-bg: #E3D9CC;
+    --light-focus-ring: rgba(122, 68, 82, 0.28);
+    --light-btn-primary-bg: #7A4452;
+    --light-btn-primary-hover: #6B3845;
+    --light-btn-primary-text: #FAF6F0;
     --light-btn-secondary-bg: transparent;
-    --light-btn-secondary-border: #E8AFC1;
-    --light-btn-secondary-text: #E8AFC1;
-    --light-btn-secondary-hover-bg: rgba(232, 175, 193, 0.1);
+    --light-btn-secondary-border: #7A4452;
+    --light-btn-secondary-text: #7A4452;
+    --light-btn-secondary-hover-bg: rgba(122, 68, 82, 0.08);
 
-    /* Light Hero – Ivory Rose / Champagne Tint (no white overlay) */
-    --light-hero-gradient: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
-    --light-hero-gradient-warm: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
-    --light-hero-gradient-cool: linear-gradient(135deg, #FFF3F6 0%, #F5DCE3 100%);
+    /* Light Hero – solid linen bands */
+    --light-hero-gradient: #EDE6DC;
+    --light-hero-gradient-warm: #F5F0E8;
+    --light-hero-gradient-cool: #EDE6DC;
+    --light-hero-mesh: #EDE6DC;
 
-    /* Light Hero Mesh – subtle gradient, no over-white */
-    --light-hero-mesh: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
+    /* Page hero surfaces – solid (no mesh blobs in light) */
+    --events-hero-mesh-light-base: #EDE6DC;
+    --events-hero-mesh-light-blob-1: none;
+    --events-hero-mesh-light-blob-2: none;
+    --events-hero-mesh-light-blob-3: none;
+    --services-hero-mesh-light-base: #EDE6DC;
+    --services-hero-mesh-light-blob-1: none;
+    --services-hero-mesh-light-blob-2: none;
+    --services-hero-mesh-light-blob-3: none;
+    --gallery-hero-mesh-light-base: #EDE6DC;
+    --gallery-hero-mesh-light-blob-1: none;
+    --gallery-hero-mesh-light-blob-2: none;
+    --gallery-hero-mesh-light-blob-3: none;
+    --collaborations-hero-mesh-light-base: #EDE6DC;
+    --collaborations-hero-mesh-light-blob-1: none;
+    --collaborations-hero-mesh-light-blob-2: none;
+    --collaborations-hero-mesh-light-blob-3: none;
 
-    /* Events page mesh - Light: Ivory Rose */
-    --events-hero-mesh-light-base: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
-    --events-hero-mesh-light-blob-1: radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 50%);
-    --events-hero-mesh-light-blob-2: radial-gradient(ellipse at 80% 70%, rgba(255, 248, 240, 0.6) 0%, transparent 50%);
-    --events-hero-mesh-light-blob-3: radial-gradient(ellipse at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
-
-    /* Services page mesh - Light */
-    --services-hero-mesh-light-base: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
-    --services-hero-mesh-light-blob-1: radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 50%);
-    --services-hero-mesh-light-blob-2: radial-gradient(ellipse at 80% 70%, rgba(255, 248, 240, 0.6) 0%, transparent 50%);
-    --services-hero-mesh-light-blob-3: radial-gradient(ellipse at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
-
-    /* Gallery page mesh - Light */
-    --gallery-hero-mesh-light-base: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
-    --gallery-hero-mesh-light-blob-1: radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 50%);
-    --gallery-hero-mesh-light-blob-2: radial-gradient(ellipse at 80% 70%, rgba(255, 248, 240, 0.6) 0%, transparent 50%);
-    --gallery-hero-mesh-light-blob-3: radial-gradient(ellipse at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
-
-    /* Collaborations page mesh - Light */
-    --collaborations-hero-mesh-light-base: linear-gradient(135deg, #FFF8FA 0%, #FFF3F6 50%, #F5DCE3 100%);
-    --collaborations-hero-mesh-light-blob-1: radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 50%);
-    --collaborations-hero-mesh-light-blob-2: radial-gradient(ellipse at 80% 70%, rgba(255, 248, 240, 0.6) 0%, transparent 50%);
-    --collaborations-hero-mesh-light-blob-3: radial-gradient(ellipse at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
-
-    /* Light Service Card - gold accent gradients */
-    --light-gradient-planning: linear-gradient(135deg, #FFF8F0, #FFF4E6);
-    --light-gradient-planning-icon: linear-gradient(135deg, #D4AF37, #E5C048);
-    --light-gradient-decoration: linear-gradient(135deg, #FFF0F5, #FFE4E8);
-    --light-gradient-decoration-icon: linear-gradient(135deg, #D4AF37, #E5C048);
-    --light-gradient-photography: linear-gradient(135deg, #FFF8F0, #FFF4E6);
-    --light-gradient-photography-icon: linear-gradient(135deg, #D4AF37, #E5C048);
-    --light-gradient-lighting: linear-gradient(135deg, #FFF8DC, #FFEAA7);
-    --light-gradient-lighting-icon: linear-gradient(135deg, #D4AF37, #E5C048);
-    --light-gradient-catering: linear-gradient(135deg, #FFF8F0, #FFF4E6);
-    --light-gradient-catering-icon: linear-gradient(135deg, #D4AF37, #E5C048);
-    --light-gradient-entertainment: linear-gradient(135deg, #FFF0F5, #FFE4E8);
-    --light-gradient-entertainment-icon: linear-gradient(135deg, #D4AF37, #E5C048);
-    --light-gradient-sound: linear-gradient(135deg, #FFF0F5, #FFE4E8);
-    --light-gradient-sound-icon: linear-gradient(135deg, #D4AF37, #E5C048);
-    --light-gradient-corporate: linear-gradient(135deg, #F0F4F8, #E6EDF3);
-    --light-gradient-corporate-icon: linear-gradient(135deg, #D4AF37, #E5C048);
-    --light-gradient-custom: linear-gradient(135deg, #FFF8F0, #FFF4E6);
-    --light-gradient-custom-icon: linear-gradient(135deg, #D4AF37, #E5C048);
+    /* Light service cards – solid linen tints */
+    --light-gradient-planning: #F5F0E8;
+    --light-gradient-planning-icon: #7A4452;
+    --light-gradient-decoration: #FAF6F0;
+    --light-gradient-decoration-icon: #7A4452;
+    --light-gradient-photography: #F5F0E8;
+    --light-gradient-photography-icon: #7A4452;
+    --light-gradient-lighting: #EDE6DC;
+    --light-gradient-lighting-icon: #7A4452;
+    --light-gradient-catering: #F5F0E8;
+    --light-gradient-catering-icon: #7A4452;
+    --light-gradient-entertainment: #FAF6F0;
+    --light-gradient-entertainment-icon: #7A4452;
+    --light-gradient-sound: #FAF6F0;
+    --light-gradient-sound-icon: #7A4452;
+    --light-gradient-corporate: #EDE6DC;
+    --light-gradient-corporate-icon: #7A4452;
+    --light-gradient-custom: #F5F0E8;
+    --light-gradient-custom-icon: #7A4452;
 
     /* Light Footer - Espresso (Heritage) */
     --light-footer-bg: #3E2723;
     --light-footer-border: rgba(255, 255, 255, 0.1);
 
-    /* Testimonials - Light theme: solid card, warm shadows, no white overlay */
-    --testimonial-card-bg: #FFFFFF;
-    --testimonial-card-border: rgba(232, 175, 193, 0.35);
-    --testimonial-card-shadow: 0 4px 20px rgba(232, 175, 193, 0.18);
-    --testimonial-card-hover-shadow: 0 12px 40px rgba(232, 175, 193, 0.24);
-    --testimonial-quote-color: #D4AF37;
-    --testimonial-star-filled: #D4AF37;
-    --testimonial-star-empty: #E8E6E3;
-    --testimonial-text: #3E2723;
-    --testimonial-name: #3E2723;
-    --testimonial-event: #6B6B6B;
-    --testimonial-subtitle: #4A4A4A;
-    --testimonial-desc: #6B6B6B;
-    --testimonial-section-bg: linear-gradient(180deg, #FFFBF8 0%, #FFF5F2 50%, #FAFAF8 100%);
-    --testimonial-floating-bg: linear-gradient(135deg, #FFFBF5 0%, #FFF0F5 40%, #FFF4E6 100%);
-    --testimonial-float-hover-shadow: 0 20px 56px rgba(232, 175, 193, 0.28);
+    /* Testimonials - Light theme: solid linen cards */
+    --testimonial-card-bg: #FAF6F0;
+    --testimonial-card-border: rgba(122, 68, 82, 0.22);
+    --testimonial-card-shadow: 0 4px 20px rgba(62, 39, 35, 0.08);
+    --testimonial-card-hover-shadow: 0 12px 40px rgba(62, 39, 35, 0.12);
+    --testimonial-quote-color: #7A4452;
+    --testimonial-star-filled: #7A4452;
+    --testimonial-star-empty: #D9CFC4;
+    --testimonial-text: #1A1816;
+    --testimonial-name: #1A1816;
+    --testimonial-event: #5C534A;
+    --testimonial-subtitle: #4A433C;
+    --testimonial-desc: #5C534A;
+    --testimonial-section-bg: #EDE6DC;
+    --testimonial-floating-bg: #FAF6F0;
+    --testimonial-float-hover-shadow: 0 20px 56px rgba(62, 39, 35, 0.14);
 
-    /* Glass - Light: subtle tint, warm shadow, minimal blur use */
-    --glass-bg: 30 33% 98% / 0.92;
-    --glass-border: 352 45% 88% / 0.5;
-    --glass-shadow: 0 8px 32px rgba(232, 175, 193, 0.18), 0 2px 8px rgba(212, 175, 55, 0.08);
+    /* Glass - Light: warm linen card */
+    --glass-bg: 40 33% 96% / 0.95;
+    --glass-border: 35 20% 80% / 0.65;
+    --glass-shadow: 0 8px 32px rgba(62, 39, 35, 0.08);
 
-    /* Gradients - Light theme (foundation-2) */
-    --gradient-gold: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.85));
-    --gradient-rose: linear-gradient(135deg, hsl(var(--blush)) 0%, hsl(var(--rose-gold) / 0.25) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 50%, hsl(var(--muted)) 100%);
-    --gradient-hero-overlay: linear-gradient(180deg, transparent 0%, hsl(var(--charcoal) / 0.75) 100%);
+    /* Solid accent tokens (gradients reserved for dark / image overlays) */
+    --gradient-gold: hsl(var(--primary));
+    --gradient-rose: hsl(var(--blush));
+    --gradient-hero: hsl(var(--background));
+    --gradient-hero-overlay: hsl(var(--charcoal) / 0.75);
 
     /* Hero/Footer - semantic (light) */
-    --hero-bg: var(--gradient-hero);
+    --hero-bg: hsl(var(--background));
     --hero-text: hsl(var(--foreground));
     --hero-text-muted: hsl(var(--foreground) / 0.75);
     --hero-overlay: transparent;
@@ -245,26 +233,246 @@
     /* Footer - Solid Dark Navy for contrast with light text */
     --footer-bg: #0B1220;
     --footer-text: #F3EDEB;
-    --footer-heading: #E8AFC1;
+    --footer-heading: #C4A4A8;
     --footer-border: hsl(var(--off-white) / 0.10);
     --footer-link: hsl(var(--off-white) / 0.8);
     --footer-link-hover: hsl(var(--primary));
     --footer-icon-bg: hsl(var(--off-white) / 0.10);
     --footer-icon-hover-bg: hsl(var(--primary));
 
-    /* Sidebar - Light (foundation-2) */
-    --sidebar-background: 30 33% 97%;
-    --sidebar-foreground: 0 0% 18%;
+    /* Sidebar - Light */
+    --sidebar-background: 36 28% 89%;
+    --sidebar-foreground: 24 8% 10%;
     --sidebar-primary: var(--primary);
     --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: 43 35% 92%;
-    --sidebar-accent-foreground: 43 50% 30%;
+    --sidebar-accent: 35 22% 86%;
+    --sidebar-accent-foreground: 350 29% 32%;
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+  }
+
+  /* ═══════════════════════════════════════════════════════════ */
+  /*     BLUSH THEME - Premium rose & cream (demo-inspired)      */
+  /* ═══════════════════════════════════════════════════════════ */
+  .blush {
+    --color-rose-blush: #E8B4C8;
+    --color-rose-hover: #9D1F63;
+    --color-soft-petal: #FDF2F0;
+    --color-ivory-rose: #F5EFF8;
+    --color-champagne-tint: #FFFCFB;
+    --color-rich-charcoal: #1F1A24;
+    --color-subtle-line: #E8D4E0;
+    --color-white: #FFFCFB;
+    --color-ivory: #FDF2F0;
+    --color-silk: #F5E6EE;
+    --color-pearl: #E8D4E0;
+    --color-warm-gray: #6E6478;
+    --color-charcoal: #1F1A24;
+    --gradient-champagne: #FDF2F0;
+    --gradient-rose-gold: #C0267A;
+    --gradient-parchment: #F5EFF8;
+    --shadow-warm: 0 4px 24px rgba(192, 38, 122, 0.08);
+    --shadow-warm-sm: 0 2px 12px rgba(192, 38, 122, 0.06);
+    --shadow-warm-md: 0 4px 24px rgba(192, 38, 122, 0.08);
+    --shadow-warm-lg: 0 8px 32px rgba(192, 38, 122, 0.10);
+    --shadow-warm-xl: 0 12px 48px rgba(192, 38, 122, 0.12);
+    --shadow-sm: var(--shadow-warm-sm);
+    --shadow-md: var(--shadow-warm-md);
+    --shadow-lg: var(--shadow-warm-lg);
+    --shadow-xl: var(--shadow-warm-xl);
+    --shadow-gold: 0 8px 24px rgba(192, 38, 122, 0.14);
+    --glass-inner-highlight: inset 0 1px 0 rgba(255, 252, 251, 0.65);
+    --section-rose-glow: none;
+    --section-rose-glow-bottom: none;
+
+    /* Warm blush cream + rose-lavender bands (like demo peach + periwinkle) */
+    --background: 15 55% 97%;
+    --foreground: 260 18% 12%;
+    --card: 20 45% 99%;
+    --card-foreground: 260 18% 12%;
+    --surface: 300 30% 96%;
+    --popover: 20 45% 99%;
+    --popover-foreground: 260 18% 12%;
+
+    /* Vibrant premium rose accent #C0267A */
+    --primary: 330 68% 45%;
+    --primary-foreground: 20 45% 99%;
+    --secondary: 300 35% 95%;
+    --secondary-foreground: 260 18% 12%;
+    --muted: 300 28% 93%;
+    --muted-foreground: 260 10% 42%;
+    --accent: 330 45% 94%;
+    --accent-foreground: 330 68% 38%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 20 45% 99%;
+    --border: 330 22% 88%;
+    --input: 330 20% 86%;
+    --ring: 330 68% 45%;
+
+    --gold: var(--primary);
+    --gold-light: 330 45% 92%;
+    --gold-dark: 330 68% 35%;
+    --champagne: 20 45% 99%;
+    --rose-gold: 330 55% 52%;
+    --blush: 330 40% 94%;
+    --ivory: 20 45% 99%;
+    --charcoal: 260 18% 12%;
+    --navy: 260 25% 14%;
+    --off-white: 20 45% 99%;
+    --medium-gray: 260 10% 42%;
+    --emerald: 152 40% 35%;
+
+    --heading: 260 18% 12%;
+    --section-bg: 15 55% 97%;
+    --section-alt-bg: 300 35% 96%;
+    --section-band-1: #FDF2F0;
+    --section-band-2: #F5EFF8;
+    --section-band-3: #FDF2F0;
+    --section-about: 15 55% 97%;
+    --section-reels: 300 35% 96%;
+    --section-contact: 300 28% 93%;
+    --rose-light: 330 45% 94%;
+    --rose-medium: 330 55% 52%;
+    --divider: 330 22% 88%;
+    --primary-hover: 330 68% 38%;
+
+    --light-primary-bg: #FDF2F0;
+    --light-secondary-bg: #F5EFF8;
+    --light-tertiary-bg: #F0E0EA;
+    --light-gold: #C0267A;
+    --light-gold-hover: #9D1F63;
+    --light-rose-gold: #D946A0;
+    --light-champagne: #FFFCFB;
+    --light-text-primary: #1F1A24;
+    --light-text-secondary: #2E2836;
+    --light-text-body: #524A5C;
+    --light-text-muted: #6E6478;
+    --light-border-subtle: #E8D4E0;
+    --light-border-medium: #D9BFD0;
+    --light-divider: #E8D4E0;
+    --light-accent-soft-blue: #F5EFF8;
+    --light-accent-soft-gold: rgba(192, 38, 122, 0.10);
+    --light-accent-soft-rose: #F5E6EE;
+    --light-shadow-sm: 0 2px 10px rgba(192, 38, 122, 0.06);
+    --light-shadow-md: 0 4px 20px rgba(192, 38, 122, 0.08);
+    --light-shadow-lg: 0 8px 32px rgba(192, 38, 122, 0.10);
+    --light-shadow-xl: 0 12px 48px rgba(192, 38, 122, 0.12);
+    --light-shadow-hover: 0 12px 40px rgba(192, 38, 122, 0.14);
+    --light-shadow-gold: 0 8px 24px rgba(192, 38, 122, 0.14);
+    --light-shadow-rose: 0 8px 24px rgba(192, 38, 122, 0.14);
+    --light-hover-bg: #F5E6EE;
+    --light-active-bg: #F0E0EA;
+    --light-focus-ring: rgba(192, 38, 122, 0.28);
+    --light-btn-primary-bg: #C0267A;
+    --light-btn-primary-hover: #9D1F63;
+    --light-btn-primary-text: #FFFCFB;
+    --light-btn-secondary-bg: #FFFCFB;
+    --light-btn-secondary-border: #C0267A;
+    --light-btn-secondary-text: #C0267A;
+    --light-btn-secondary-hover-bg: rgba(192, 38, 122, 0.06);
+
+    --light-hero-gradient: #FDF2F0;
+    --light-hero-gradient-warm: #F5EFF8;
+    --light-hero-gradient-cool: #FDF2F0;
+    --light-hero-mesh: #FDF2F0;
+
+    --events-hero-mesh-light-base: #FDF2F0;
+    --events-hero-mesh-light-blob-1: none;
+    --events-hero-mesh-light-blob-2: none;
+    --events-hero-mesh-light-blob-3: none;
+    --services-hero-mesh-light-base: #FDF2F0;
+    --services-hero-mesh-light-blob-1: none;
+    --services-hero-mesh-light-blob-2: none;
+    --services-hero-mesh-light-blob-3: none;
+    --gallery-hero-mesh-light-base: #FDF2F0;
+    --gallery-hero-mesh-light-blob-1: none;
+    --gallery-hero-mesh-light-blob-2: none;
+    --gallery-hero-mesh-light-blob-3: none;
+    --collaborations-hero-mesh-light-base: #FDF2F0;
+    --collaborations-hero-mesh-light-blob-1: none;
+    --collaborations-hero-mesh-light-blob-2: none;
+    --collaborations-hero-mesh-light-blob-3: none;
+
+    --light-gradient-planning: #F5EFF8;
+    --light-gradient-planning-icon: #C0267A;
+    --light-gradient-decoration: #FFFCFB;
+    --light-gradient-decoration-icon: #C0267A;
+    --light-gradient-photography: #F5EFF8;
+    --light-gradient-photography-icon: #C0267A;
+    --light-gradient-lighting: #FDF2F0;
+    --light-gradient-lighting-icon: #C0267A;
+    --light-gradient-catering: #F5EFF8;
+    --light-gradient-catering-icon: #C0267A;
+    --light-gradient-entertainment: #FFFCFB;
+    --light-gradient-entertainment-icon: #C0267A;
+    --light-gradient-sound: #FFFCFB;
+    --light-gradient-sound-icon: #C0267A;
+    --light-gradient-corporate: #FDF2F0;
+    --light-gradient-corporate-icon: #C0267A;
+    --light-gradient-custom: #F5EFF8;
+    --light-gradient-custom-icon: #C0267A;
+
+    --light-footer-bg: #2A1F28;
+    --light-footer-border: rgba(255, 255, 255, 0.1);
+
+    --testimonial-card-bg: #FFFCFB;
+    --testimonial-card-border: rgba(192, 38, 122, 0.22);
+    --testimonial-card-shadow: 0 4px 20px rgba(192, 38, 122, 0.08);
+    --testimonial-card-hover-shadow: 0 12px 40px rgba(192, 38, 122, 0.12);
+    --testimonial-quote-color: #C0267A;
+    --testimonial-star-filled: #C0267A;
+    --testimonial-star-empty: #E8D4E0;
+    --testimonial-text: #1F1A24;
+    --testimonial-name: #1F1A24;
+    --testimonial-event: #6E6478;
+    --testimonial-subtitle: #524A5C;
+    --testimonial-desc: #6E6478;
+    --testimonial-section-bg: #FDF2F0;
+    --testimonial-floating-bg: #FFFCFB;
+    --testimonial-float-hover-shadow: 0 20px 56px rgba(192, 38, 122, 0.14);
+
+    --glass-bg: 20 45% 99% / 0.95;
+    --glass-border: 330 22% 88% / 0.65;
+    --glass-shadow: 0 8px 32px rgba(192, 38, 122, 0.08);
+
+    --gradient-gold: hsl(var(--primary));
+    --gradient-rose: hsl(var(--blush));
+    --gradient-hero: hsl(var(--background));
+    --gradient-hero-overlay: hsl(var(--charcoal) / 0.75);
+
+    --hero-bg: hsl(var(--background));
+    --hero-text: hsl(var(--foreground));
+    --hero-text-muted: hsl(var(--muted-foreground));
+    --hero-overlay: transparent;
+    --hero-border: hsl(var(--primary) / 0.28);
+    --hero-outline-hover-bg: hsl(var(--primary));
+    --hero-outline-hover-text: hsl(var(--primary-foreground));
+    --hero-text-shadow: 0 2px 20px rgba(31, 26, 36, 0.08);
+
+    --footer-bg: #2A1F28;
+    --footer-text: #F8F4F6;
+    --footer-heading: #F0A8C8;
+    --footer-border: rgba(255, 252, 251, 0.12);
+    --footer-link: rgba(248, 244, 246, 0.85);
+    --footer-link-hover: #F0A8C8;
+    --footer-icon-bg: rgba(255, 252, 251, 0.1);
+    --footer-icon-hover-bg: hsl(var(--primary));
+
+    --sidebar-background: 15 55% 97%;
+    --sidebar-foreground: 260 18% 12%;
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: 300 35% 95%;
+    --sidebar-accent-foreground: 330 68% 38%;
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
   }
 
   .dark {
     /* Dark theme – Navy Luxury (Approved) */
+    --section-rose-glow: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(232, 175, 193, 0.14) 0%, transparent 55%);
+    --section-rose-glow-bottom: radial-gradient(ellipse 100% 60% at 50% 100%, rgba(232, 175, 193, 0.10) 0%, transparent 55%);
+
     /* Background: Deep Navy #0B1220 */
     --background: 219 47% 8%;
     /* Cool Navy White Text #F8FAFC (was Warm Ivory) */
@@ -446,7 +654,7 @@
   }
 
   body {
-    @apply text-foreground antialiased;
+    @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
     font-size: var(--text-body);
     line-height: var(--leading-body);
@@ -480,19 +688,22 @@
     -webkit-backdrop-filter: blur(6px);
   }
 
-  /* Hero heading – subtle gradient text (light theme) */
+  /* Hero heading – solid editorial (no gradient) */
   .hero-heading-gradient {
-    background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--foreground) / 0.92) 50%, hsl(var(--primary) / 0.95) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: hsl(var(--foreground));
   }
 
   .dark .hero-heading-gradient {
-    background: linear-gradient(135deg, #F8FAFC 0%, hsl(var(--foreground)) 50%, hsl(var(--primary)) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: hsl(var(--foreground));
+  }
+
+  /* Homepage shared card surface */
+  .home-card {
+    @apply rounded-2xl border border-border bg-card shadow-[0_4px_20px_rgba(26,24,22,0.04)];
+  }
+
+  .home-card-padded {
+    @apply home-card p-5 sm:p-6 md:p-7;
   }
 
   /* Section depth – layered background (base + gradient + noise + radials + soft blur) */
@@ -507,10 +718,8 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    /* Base from band is set by .section-band-*; gradient overlay */
-    background-image:
-      linear-gradient(180deg, rgba(255, 248, 250, 0.4) 0%, transparent 30%, transparent 70%, rgba(255, 243, 246, 0.35) 100%);
-    opacity: 1;
+    background-image: none;
+    opacity: 0;
   }
 
   .dark .section-depth-bg::before {
@@ -524,11 +733,8 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    /* Radial highlights – top-left and bottom-right (light) */
-    background-image:
-      radial-gradient(ellipse 80% 50% at 10% 5%, rgba(255, 248, 250, 0.7) 0%, transparent 45%),
-      radial-gradient(ellipse 70% 40% at 90% 95%, rgba(255, 243, 246, 0.5) 0%, transparent 45%);
-    opacity: 1;
+    background-image: none;
+    opacity: 0;
   }
 
   .dark .section-depth-bg::after {
@@ -551,25 +757,14 @@
     opacity: 0.03;
   }
 
-  /* Hero section – solid white background (no image) */
+  /* Hero section – linen editorial band */
   .hero-bg-wrapper {
     position: relative;
     isolation: isolate;
-    background-color: #ffffff;
+    background-color: var(--section-band-1);
   }
 
-  .hero-bg-image {
-    position: absolute;
-    inset: 0;
-    display: block;
-    pointer-events: none;
-    background-image: var(--bg-image-home-hero, none);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0.25;
-  }
-
+  .hero-bg-image,
   .hero-bg-overlay {
     display: none;
   }
@@ -587,6 +782,189 @@
 
   .dark .hero-bg-wrapper {
     background-color: hsl(var(--background));
+  }
+
+  /* ─── Homepage hero live background (21st.dev grid-hero-animated + dotted radial) ─── */
+  .hero-live-grid-canvas {
+    mask-image: radial-gradient(ellipse 88% 78% at 50% 42%, black 18%, transparent 74%);
+    -webkit-mask-image: radial-gradient(ellipse 88% 78% at 50% 42%, black 18%, transparent 74%);
+  }
+
+  .hero-dotted-radial {
+    mask-image: radial-gradient(ellipse 92% 80% at 48% 38%, black 12%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 92% 80% at 48% 38%, black 12%, transparent 70%);
+  }
+
+  .hero-editorial-vignette {
+    background: radial-gradient(ellipse 100% 85% at 50% 40%, transparent 42%, hsl(var(--background) / 0.35) 100%);
+  }
+
+  .dark .hero-editorial-vignette {
+    background: radial-gradient(ellipse 100% 85% at 50% 40%, transparent 38%, rgba(11, 18, 32, 0.45) 100%);
+  }
+
+  .blush .hero-editorial-vignette {
+    background: radial-gradient(ellipse 100% 85% at 50% 40%, transparent 42%, rgba(253, 242, 240, 0.4) 100%);
+  }
+
+  /* Ambient orbs — slow drift, theme-tinted */
+  .hero-ambient-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(56px);
+    opacity: 0.45;
+    animation: hero-ambient-drift 22s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .hero-ambient-orb--a {
+    width: min(42vw, 320px);
+    height: min(42vw, 320px);
+    top: -8%;
+    left: -6%;
+    background: rgba(122, 68, 82, 0.14);
+    animation-duration: 24s;
+  }
+
+  .hero-ambient-orb--b {
+    width: min(36vw, 280px);
+    height: min(36vw, 280px);
+    right: -4%;
+    top: 18%;
+    background: rgba(160, 120, 100, 0.1);
+    animation-duration: 28s;
+    animation-delay: -6s;
+  }
+
+  .hero-ambient-orb--c {
+    width: min(30vw, 240px);
+    height: min(30vw, 240px);
+    bottom: 4%;
+    left: 28%;
+    background: rgba(122, 68, 82, 0.08);
+    animation-duration: 26s;
+    animation-delay: -12s;
+  }
+
+  .blush .hero-ambient-orb--a {
+    background: rgba(192, 38, 122, 0.12);
+  }
+
+  .blush .hero-ambient-orb--b {
+    background: rgba(217, 70, 160, 0.1);
+  }
+
+  .blush .hero-ambient-orb--c {
+    background: rgba(240, 168, 200, 0.12);
+  }
+
+  .dark .hero-ambient-orb--a {
+    background: rgba(232, 175, 193, 0.14);
+    opacity: 0.35;
+  }
+
+  .dark .hero-ambient-orb--b {
+    background: rgba(120, 140, 200, 0.1);
+    opacity: 0.3;
+  }
+
+  .dark .hero-ambient-orb--c {
+    background: rgba(232, 175, 193, 0.08);
+    opacity: 0.28;
+  }
+
+  @keyframes hero-ambient-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(12px, -18px, 0) scale(1.06);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-ambient-orb {
+      animation: none;
+      opacity: 0.25;
+    }
+  }
+
+  /* Paused hero backdrop — same look, no drift or grid pulses */
+  .hero-editorial-bg--static .hero-ambient-orb {
+    animation: none;
+  }
+
+  /* Section soft backgrounds (CTA bands) */
+  .section-soft-bg-dots {
+    opacity: 0.55;
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--primary) / 0.14) 1px, transparent 0);
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, black 20%, transparent 72%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, black 20%, transparent 72%);
+  }
+
+  .section-soft-bg-grid {
+    opacity: 0.35;
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.55) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.55) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 85% 65% at 50% 50%, black 15%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 50%, black 15%, transparent 70%);
+  }
+
+  .dark .section-soft-bg-dots {
+    opacity: 0.4;
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--primary) / 0.12) 1px, transparent 0);
+  }
+
+  /* Home hero — film grain overlay (21st.dev / editorial) */
+  .hero-editorial-bg__grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+  }
+
+  .dark .hero-editorial-bg__grain {
+    mix-blend-mode: soft-light;
+  }
+
+  .hero-editorial-bg__particles {
+    position: absolute;
+    inset: 0;
+  }
+
+  .hero-editorial-bg__particle {
+    position: absolute;
+    border-radius: 9999px;
+    background: rgba(195, 178, 162, 0.75);
+    box-shadow: 0 0 10px rgba(255, 250, 245, 0.55);
+    animation: hero-editorial-particle-drift ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+  .dark .hero-editorial-bg__particle {
+    background: rgba(232, 210, 200, 0.35);
+    box-shadow: 0 0 12px rgba(232, 175, 193, 0.2);
+  }
+
+  @keyframes hero-editorial-particle-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+      opacity: 0.28;
+    }
+    50% {
+      transform: translate3d(6px, -11px, 0);
+      opacity: 0.55;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-editorial-bg__particle {
+      animation: none;
+      opacity: 0.35;
+    }
   }
 
   /* Section band backgrounds – single colour for all (no gradient, no mismatch) */
@@ -874,19 +1252,34 @@
     box-shadow: var(--testimonial-card-hover-shadow);
   }
 
-  /* Global grain overlay – cinematic feel (on top of everything) */
+  /* Global grain overlay – dark theme only */
   .global-grain-overlay {
     position: fixed;
     inset: 0;
     z-index: 9999;
     pointer-events: none;
+    display: none;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     opacity: 0.03;
     mix-blend-mode: overlay;
   }
+
+  .dark .global-grain-overlay {
+    display: block;
+  }
+
   .text-gradient-gold {
+    color: hsl(var(--primary));
+    background-image: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .dark .text-gradient-gold {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-gold);
+    -webkit-text-fill-color: transparent;
   }
 
   /* Elegant Button Styles – ultra-premium */
@@ -911,26 +1304,57 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
-  /* Light theme only: solid primary buttons/badges → white bg, dark pink text + soft dark border (e.g. Plan Your Event, Client Love) */
-  html:not(.dark) .bg-primary.text-primary-foreground:not([role="checkbox"]) {
-    background-color: #ffffff !important;
-    color: hsl(var(--primary)) !important;
-    border: 2px solid #4A4A4A;
+  /* Heritage light: wine primary buttons on linen */
+  html:not(.dark):not(.blush) .bg-primary.text-primary-foreground:not([role="checkbox"]) {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    border: 2px solid hsl(var(--primary));
   }
-  html:not(.dark) .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
-    background-color: hsl(var(--primary) / 0.12) !important;
+  html:not(.dark):not(.blush) .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
+    background-color: hsl(var(--primary-hover)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  /* Blush: ghost pill buttons (demo-inspired — cream fill, rose outline) */
+  .blush .bg-primary.text-primary-foreground:not([role="checkbox"]) {
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--primary)) !important;
+    border: 2px solid hsl(var(--primary)) !important;
+    box-shadow: 0 2px 12px rgba(192, 38, 122, 0.08);
+  }
+  .blush .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
+    background-color: hsl(var(--primary) / 0.08) !important;
     color: hsl(var(--primary)) !important;
   }
 
-  /* Photo Frame Effect – warm shadow */
+  .blush .btn-section-cta {
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--primary) / 0.45);
+    color: hsl(var(--primary));
+  }
+  .blush .btn-section-cta:hover {
+    background-color: hsl(var(--primary) / 0.08);
+    border-color: hsl(var(--primary));
+  }
+
+  /* Photo Frame Effect – warm linen border (light); gradient kept for dark */
   .photo-frame {
-    @apply relative p-2 bg-gradient-to-br from-primary/20 to-rose-gold/20 rounded-lg;
+    @apply relative overflow-hidden rounded-lg border border-border bg-card p-2;
+    box-shadow: 0 10px 40px rgba(62, 39, 35, 0.10);
+  }
+
+  .photo-frame::before {
+    content: none;
+  }
+
+  .dark .photo-frame {
+    @apply border-0 bg-gradient-to-br from-primary/20 to-rose-gold/20;
     box-shadow:
       inset 0 1px 0 hsl(var(--gold-light) / 0.3),
       0 10px 40px rgba(232, 175, 193, 0.22);
   }
 
-  .photo-frame::before {
+  .dark .photo-frame::before {
     content: '';
     @apply absolute inset-1 rounded-md;
     background: linear-gradient(135deg, hsl(var(--gold-light) / 0.1), transparent);
@@ -949,12 +1373,8 @@
 
   /* ═══ 11. SPACING & FLOW — subtle gradients, texture, decorative, breathing space ═══ */
   .main-page-flow {
-    /* Faint texture / gradient between sections; luxury whitespace preserved */
-    background-image:
-      radial-gradient(ellipse 120% 80% at 50% 0%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-      radial-gradient(ellipse 80% 60% at 80% 50%, rgba(232, 175, 193, 0.04) 0%, transparent 45%),
-      radial-gradient(ellipse 80% 60% at 20% 80%, hsl(var(--primary) / 0.02) 0%, transparent 45%);
-    background-attachment: scroll;
+    background-image: none;
+    background-color: hsl(var(--background));
   }
 
   /* Homepage: no vertical margin between section wrappers or sections – bands touch */
@@ -1017,12 +1437,15 @@
   .btn-glow-hover:focus-visible,
   button[class*="bg-primary"]:hover,
   a[class*="bg-primary"]:hover {
-    box-shadow: 0 6px 28px hsl(var(--primary) / 0.35), 0 0 24px hsl(var(--primary) / 0.12);
-    transform: scale(1.03);
+    box-shadow: 0 2px 10px hsl(var(--primary) / 0.18);
+    transform: translateY(-1px);
   }
 
-  button[class*="bg-primary"]:hover,
-  a[class*="bg-primary"]:hover {
+  .dark .btn-glow:hover,
+  .dark .btn-glow-hover:focus-visible,
+  .dark button[class*="bg-primary"]:hover,
+  .dark a[class*="bg-primary"]:hover {
+    box-shadow: 0 6px 28px hsl(var(--primary) / 0.35), 0 0 24px hsl(var(--primary) / 0.12);
     transform: translateY(-1px) scale(1.03);
   }
 
@@ -1128,8 +1551,20 @@
     animation: fadeInUp 0.8s ease-out forwards;
   }
 
-  /* Hero: Light mesh (soft) / Dark mesh (navy → rose gold → champagne) */
+  /* Hero surfaces – solid linen (light), animated mesh (dark only) */
   .hero-mesh-bg {
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
+  }
+
+  .home-hero-mesh {
+    background-color: var(--section-band-1);
+    background-image: none;
+    animation: none;
+  }
+
+  .dark .hero-mesh-bg {
     background: var(--hero-bg);
     background-size: 200% 200%;
     animation: heroMeshFloat 18s ease-in-out infinite;
@@ -1137,19 +1572,14 @@
     transform: translateZ(0);
   }
 
-  /* Home hero: gradient mesh behind content (champagne, no over-white) */
-  .home-hero-mesh {
-    background: var(--light-hero-mesh);
+  .dark .home-hero-mesh {
+    background: var(--hero-bg);
     background-size: 200% 200%;
     animation: heroMeshFloat 18s ease-in-out infinite;
   }
 
-  .dark .home-hero-mesh {
-    background: var(--hero-bg);
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .home-hero-mesh {
+    .dark .home-hero-mesh {
       animation: none;
       background-position: 50% 50%;
     }
@@ -1174,17 +1604,19 @@
     }
   }
 
-  /* Events page gradient mesh - theme-aware, smooth flowing animation */
+  /* Page hero backgrounds – solid linen in light */
   .events-page-mesh-bg {
-    background: var(--bg-image-events-page-hero, var(--events-hero-mesh-light-base));
-    background-size: 220% 220%;
-    animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-    will-change: transform, opacity, background-position;
-    transform: translateZ(0);
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
   }
 
   .dark .events-page-mesh-bg {
     background: var(--bg-image-events-page-hero-dark, var(--events-hero-mesh-dark-base));
+    background-size: 220% 220%;
+    animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    will-change: transform, opacity, background-position;
+    transform: translateZ(0);
   }
 
   @keyframes pageMeshFloat {
@@ -1216,15 +1648,16 @@
     }
   }
 
-  /* CTA section mesh - same palette as hero, smooth flow */
   .events-cta-mesh-bg {
-    background: var(--events-hero-mesh-light-base);
-    background-size: 220% 220%;
-    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
   }
 
   .dark .events-cta-mesh-bg {
     background: var(--events-hero-mesh-dark-base);
+    background-size: 220% 220%;
+    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1234,15 +1667,16 @@
     }
   }
 
-  /* Services page gradient mesh - theme-aware, smooth flowing animation */
   .services-page-mesh-bg {
-    background: var(--bg-image-services-page-hero, var(--services-hero-mesh-light-base));
-    background-size: 220% 220%;
-    animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
   }
 
   .dark .services-page-mesh-bg {
     background: var(--bg-image-services-page-hero-dark, var(--services-hero-mesh-dark-base));
+    background-size: 220% 220%;
+    animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1252,15 +1686,16 @@
     }
   }
 
-  /* Services CTA section mesh - same palette as hero, smooth flow */
   .services-cta-mesh-bg {
-    background: var(--services-hero-mesh-light-base);
-    background-size: 220% 220%;
-    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
   }
 
   .dark .services-cta-mesh-bg {
     background: var(--services-hero-mesh-dark-base);
+    background-size: 220% 220%;
+    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1270,15 +1705,16 @@
     }
   }
 
-  /* Gallery page gradient mesh - theme-aware, smooth flowing animation */
   .gallery-page-mesh-bg {
-    background: var(--bg-image-gallery-page-hero, var(--gallery-hero-mesh-light-base));
-    background-size: 220% 220%;
-    animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
   }
 
   .dark .gallery-page-mesh-bg {
     background: var(--bg-image-gallery-page-hero-dark, var(--gallery-hero-mesh-dark-base));
+    background-size: 220% 220%;
+    animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1288,15 +1724,16 @@
     }
   }
 
-  /* Gallery CTA section mesh - same palette as hero, smooth flow */
   .gallery-cta-mesh-bg {
-    background: var(--gallery-hero-mesh-light-base);
-    background-size: 220% 220%;
-    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
   }
 
   .dark .gallery-cta-mesh-bg {
     background: var(--gallery-hero-mesh-dark-base);
+    background-size: 220% 220%;
+    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1306,15 +1743,16 @@
     }
   }
 
-  /* Collaborations page gradient mesh - theme-aware, smooth flowing animation */
   .collaborations-page-mesh-bg {
-    background: var(--bg-image-collaborations-page-hero, var(--collaborations-hero-mesh-light-base));
-    background-size: 220% 220%;
-    animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
   }
 
   .dark .collaborations-page-mesh-bg {
     background: var(--bg-image-collaborations-page-hero-dark, var(--collaborations-hero-mesh-dark-base));
+    background-size: 220% 220%;
+    animation: pageMeshFloat 25s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1324,15 +1762,16 @@
     }
   }
 
-  /* Collaborations CTA section mesh - same palette as hero, smooth flow */
   .collaborations-cta-mesh-bg {
-    background: var(--collaborations-hero-mesh-light-base);
-    background-size: 220% 220%;
-    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    background-color: hsl(var(--background));
+    background-image: none;
+    animation: none;
   }
 
   .dark .collaborations-cta-mesh-bg {
     background: var(--collaborations-hero-mesh-dark-base);
+    background-size: 220% 220%;
+    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1342,17 +1781,17 @@
     }
   }
 
-  /* About section: subtle slow-moving background gradient */
   .about-section-gradient-mesh {
-    background: radial-gradient(ellipse 120% 100% at 20% 30%, hsl(var(--primary) / 0.06) 0%, transparent 55%),
-      radial-gradient(ellipse 100% 120% at 80% 70%, rgba(255, 248, 240, 0.4) 0%, transparent 55%);
-    background-size: 220% 220%;
-    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    background-color: transparent;
+    background-image: none;
+    animation: none;
   }
 
   .dark .about-section-gradient-mesh {
     background: radial-gradient(ellipse 120% 100% at 20% 30%, hsl(var(--primary) / 0.08) 0%, transparent 55%),
       radial-gradient(ellipse 100% 120% at 80% 70%, hsl(var(--primary) / 0.04) 0%, transparent 55%);
+    background-size: 220% 220%;
+    animation: pageMeshFloat 28s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1580,8 +2019,12 @@
     background-size: 100% 70%;
   }
 
-  /* Testimonials section: subtle gradient base + soft rose glow on top */
   .testimonials-section-bg {
+    background-color: var(--testimonial-section-bg);
+    background-image: none;
+  }
+
+  .dark .testimonials-section-bg {
     background-image: var(--section-rose-glow), var(--section-rose-glow-bottom), var(--testimonial-section-bg);
     background-repeat: no-repeat, no-repeat, repeat;
     background-position: top center, bottom center, 0 0;
@@ -1613,11 +2056,6 @@
     line-height: var(--leading-heading);
     letter-spacing: var(--tracking-heading);
     @apply text-foreground mb-4;
-    color: hsl(0 0% 15%);
-  }
-
-  .dark .section-heading {
-    color: hsl(var(--foreground));
   }
 
   .section-heading-on-dark {
@@ -1690,9 +2128,13 @@
     width: 4rem;
     max-width: 120px;
     height: 3px;
-    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6));
+    background: hsl(var(--primary));
     border-radius: 2px;
     animation: hero-underline-grow 1.2s ease-out 0.6s both;
+  }
+
+  .dark .hero-headline-underline {
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6));
   }
 
   @keyframes hero-underline-grow {
@@ -1829,9 +2271,9 @@
     }
   }
 
-  /* Collaborations section: champagne gradient background */
   .collaborations-section-bg {
-    background: var(--light-hero-mesh);
+    background-color: var(--section-band-1);
+    background-image: none;
   }
 
   .dark .collaborations-section-bg {

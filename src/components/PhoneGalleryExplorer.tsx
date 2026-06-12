@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Images } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FolderPhotoGallery from '@/components/ui/folder-photo-gallery';
 import { GalleryFolderGrid } from '@/components/ui/gallery-folder-card';
@@ -109,12 +109,24 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
     }
   };
 
-  const breadcrumb =
-    level === 'roots'
-      ? 'Gallery'
-      : level === 'subfolders'
-        ? currentRoot?.name ?? 'Gallery'
-        : [currentRoot?.name, enabledFolders.find((f) => f.id === displayFolderId)?.name].filter(Boolean).join(' / ');
+  const breadcrumb = useMemo(() => {
+    if (level === 'roots') return 'Albums';
+    if (level === 'subfolders') return currentRoot?.name ?? 'Albums';
+    if (displayFolderId === UNCategorized_FOLDER_ID) return uncategorizedLabel;
+    const active = displayFolderId ? enabledFolders.find((f) => f.id === displayFolderId) : null;
+    if (!active) return 'Albums';
+    if (active.parent_id && currentRoot?.name) {
+      return `${currentRoot.name} / ${active.name}`;
+    }
+    return active.name;
+  }, [level, currentRoot?.name, displayFolderId, enabledFolders, uncategorizedLabel]);
+
+  const albumTitle = useMemo(() => {
+    if (level !== 'photos') return null;
+    if (displayFolderId === UNCategorized_FOLDER_ID) return uncategorizedLabel;
+    const active = displayFolderId ? enabledFolders.find((f) => f.id === displayFolderId) : null;
+    return active?.name ?? 'Album';
+  }, [level, displayFolderId, enabledFolders, uncategorizedLabel]);
 
   const rootFolderCards = useMemo(() => {
     const cards = visibleRoots.map((node) => {
@@ -128,7 +140,6 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
         name: node.folder.name,
         count,
         coverUrl: getFolderCoverUrl(node.folder.id, enabledFolders, media, resolveUrl),
-        description: 'Virtual tour album',
         onClick: () => openRoot(node.folder.id),
       };
     });
@@ -139,7 +150,6 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
         name: uncategorizedLabel,
         count: uncategorized.length,
         coverUrl: getFolderCoverUrl(UNCategorized_FOLDER_ID, enabledFolders, media, resolveUrl),
-        description: 'Photos not in a folder',
         onClick: () => {
           setRootId(null);
           setSubfolderId(UNCategorized_FOLDER_ID);
@@ -158,54 +168,68 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
         name: sf.name,
         count: getMediaInFolder(sf.id, media).length,
         coverUrl: getFolderCoverUrl(sf.id, enabledFolders, media, resolveUrl),
-        description: currentRoot?.name ? `Inside ${currentRoot.name}` : 'Subfolder',
         onClick: () => openSubfolder(sf.id),
       })),
-    [subfolders, enabledFolders, media, resolveUrl, currentRoot?.name],
+    [subfolders, enabledFolders, media, resolveUrl],
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        {level !== 'roots' ? (
-          <Button type="button" variant="ghost" size="sm" className="gap-1 px-2" onClick={goBack}>
-            <ArrowLeft className="h-4 w-4" />
+    <div className="rounded-2xl border border-border/50 bg-card/50 p-3 sm:p-4 md:p-5">
+      {level !== 'roots' ? (
+        <div className="mb-4 flex items-center gap-2 border-b border-border/40 pb-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 shrink-0 gap-1.5 rounded-lg px-2.5 text-xs font-medium hover:scale-100"
+            onClick={goBack}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
             Back
           </Button>
-        ) : null}
-        <div className="flex min-w-0 flex-1 items-center gap-1 text-sm text-muted-foreground">
-          <Images className="h-4 w-4 shrink-0" />
-          <span className="truncate font-medium text-foreground">{breadcrumb}</span>
+          <span className="min-w-0 truncate text-sm font-medium text-foreground">{breadcrumb}</span>
         </div>
-      </div>
+      ) : (
+        <p className="mb-4 text-sm text-muted-foreground">Browse photos and videos by album.</p>
+      )}
 
       {level === 'roots' && <GalleryFolderGrid folders={rootFolderCards} />}
 
       {level === 'subfolders' && rootId && <GalleryFolderGrid folders={subfolderCards} />}
 
       {level === 'photos' && (
-        <>
+        <div className="space-y-4">
           {photos.length === 0 ? (
-            <div className="flex min-h-[200px] items-center justify-center rounded-2xl border border-dashed border-muted bg-muted/20 text-sm text-muted-foreground">
-              No photos or videos in this folder
+            <div className="flex min-h-[160px] items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 text-sm text-muted-foreground">
+              No photos or videos in this album
             </div>
           ) : (
-            <FolderPhotoGallery
-              items={photos.map((item, i) => ({
-                id: item.id ?? `${item.url}-${i}`,
-                posterSrc: getPoster ? getPoster(item) : resolveUrl(item.url),
-                alt: item.caption ?? 'Gallery',
-                caption: item.caption ?? undefined,
-                isVideo: isVideo(item),
-              }))}
-              onItemClick={(index) => onOpenLightbox(index, photos)}
-            />
+            <>
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="font-serif text-lg font-semibold text-foreground sm:text-xl">{albumTitle}</h3>
+                <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                  {photos.length === 1 ? '1 item' : `${photos.length} items`}
+                </span>
+              </div>
+              <FolderPhotoGallery
+                items={photos.map((item, i) => ({
+                  id: item.id ?? `${item.url}-${i}`,
+                  posterSrc: getPoster ? getPoster(item) : resolveUrl(item.url),
+                  alt: item.caption ?? 'Gallery',
+                  caption: item.caption ?? undefined,
+                  isVideo: isVideo(item),
+                }))}
+                onItemClick={(index) => onOpenLightbox(index, photos)}
+              />
+            </>
           )}
-        </>
+        </div>
       )}
 
       {level === 'roots' && visibleRoots.length === 0 && uncategorized.length === 0 ? (
-        <div className="rounded-2xl border border-dashed py-16 text-center text-muted-foreground">Gallery coming soon</div>
+        <div className="rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
+          Gallery coming soon
+        </div>
       ) : null}
     </div>
   );

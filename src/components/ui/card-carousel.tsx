@@ -14,7 +14,8 @@ const EMBLA_REELS_OPTIONS = {
     loop: true,
     align: "center" as const,
     containScroll: false as const,
-    duration: 45,
+    duration: 65,
+    dragFree: false,
 }
 
 let youTubeApiPromise: Promise<void> | null = null
@@ -429,11 +430,25 @@ const YouTubeSlide = ({
 }
 
 const CAROUSEL_CSS = `
-  .embla-reels { width: 100%; padding-bottom: 24px; }
-  .embla-reels.embla-reels--pagination-spaced { padding-bottom: 56px; }
+  .embla-reels { width: 100%; padding-bottom: 8px; }
+  .embla-reels.embla-reels--pagination-spaced { padding-bottom: 40px; }
   .embla-reels__viewport { overflow: hidden; width: 100%; }
   .embla-reels__container { display: flex; flex-direction: row; margin-left: -50px; }
-  .embla-reels__slide { flex: 0 0 420px; min-width: 0; padding-left: 50px; background-position: center; background-size: cover; }
+  .embla-reels__slide {
+    flex: 0 0 420px;
+    min-width: 0;
+    padding-left: 50px;
+    background-position: center;
+    background-size: cover;
+  }
+  .embla-reels__slide .embla-reels__frame {
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: scale(0.94);
+    will-change: transform;
+  }
+  .embla-reels__slide.is-active .embla-reels__frame {
+    transform: scale(1);
+  }
   @media (max-width: 768px) {
     .embla-reels__slide { flex-basis: 340px; }
   }
@@ -456,6 +471,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
     const [activeIndex, setActiveIndex] = useState(0)
     const [nextShouldPlayIndex, setNextShouldPlayIndex] = useState<number | null>(null)
     const [reelsSequenceActive, setReelsSequenceActive] = useState(false)
+    const reelsSequenceActiveRef = useRef(false)
     const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const sectionRef = useRef<HTMLElement | null>(null)
     const hoverPausedRef = useRef(false)
@@ -472,13 +488,19 @@ export const CardCarousel: React.FC<CarouselProps> = ({
         }
     }, [])
 
+    useEffect(() => {
+        reelsSequenceActiveRef.current = reelsSequenceActive
+    }, [reelsSequenceActive])
+
     const startAutoplay = useCallback(() => {
         stopAutoplay()
-        if (!emblaApi || reelsSequenceActive || !inViewRef.current) return
+        if (!emblaApi || !inViewRef.current) return
+        unlockCarouselPlayback(emblaApi)
         autoplayRef.current = setInterval(() => {
+            if (hoverPausedRef.current || reelsSequenceActiveRef.current) return
             emblaApi.scrollNext()
-        }, Math.max(1200, autoplayDelay))
-    }, [autoplayDelay, emblaApi, reelsSequenceActive, stopAutoplay])
+        }, Math.max(3500, autoplayDelay))
+    }, [autoplayDelay, emblaApi, stopAutoplay])
 
     useEffect(() => {
         if (!emblaApi) return
@@ -495,7 +517,10 @@ export const CardCarousel: React.FC<CarouselProps> = ({
     }, [emblaApi, reelsSequenceActive])
 
     useEffect(() => {
-        stopAutoplay()
+        if (reelsSequenceActive) {
+            stopAutoplay()
+            return stopAutoplay
+        }
         startAutoplay()
         return stopAutoplay
     }, [emblaApi, reelsSequenceActive, startAutoplay, stopAutoplay, images.length])
@@ -511,6 +536,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
 
     const handleVideoPaused = useCallback(() => {
         setNextShouldPlayIndex(null)
+        reelsSequenceActiveRef.current = false
         setReelsSequenceActive(false)
         unlockCarouselPlayback(carouselApiRef.current)
         startAutoplay()
@@ -518,7 +544,9 @@ export const CardCarousel: React.FC<CarouselProps> = ({
 
     const handlePlayStarted = () => {
         setNextShouldPlayIndex(null)
+        reelsSequenceActiveRef.current = true
         setReelsSequenceActive(true)
+        stopAutoplay()
     }
 
     useEffect(() => {
@@ -530,12 +558,15 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                     ;(v as HTMLVideoElement).pause()
                 })
                 unlockCarouselPlayback(carouselApiRef.current)
+                reelsSequenceActiveRef.current = false
                 setReelsSequenceActive(false)
+                setNextShouldPlayIndex(null)
+                startAutoplay()
             }
         }
         window.addEventListener("video-exclusive-play", handleExclusivePlay)
         return () => window.removeEventListener("video-exclusive-play", handleExclusivePlay)
-    }, [])
+    }, [startAutoplay])
 
     useEffect(() => {
         const el = sectionRef.current
@@ -579,7 +610,11 @@ export const CardCarousel: React.FC<CarouselProps> = ({
         <section ref={sectionRef} className="w-full space-y-2">
             <style>{css}</style>
             <div
-                className={`mx-auto w-full rounded-2xl border border-border/80 bg-card/75 dark:bg-card/20 backdrop-blur-sm p-4 md:p-6 shadow-[0_10px_28px_rgba(0,0,0,0.08)] dark:shadow-elevation-1-dark ${fullWidth ? "max-w-none" : "max-w-6xl"}`}
+                className={
+                    fullWidth
+                        ? "mx-auto w-full max-w-none py-1"
+                        : "mx-auto w-full max-w-6xl rounded-2xl border border-border/80 bg-card/75 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.08)] backdrop-blur-sm dark:bg-card/20 dark:shadow-elevation-1-dark md:p-6"
+                }
             >
                 <div className="relative mx-auto flex w-full flex-col gap-4 md:gap-6">
                     {showHeader && (title || description) && (
@@ -619,11 +654,12 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                             image.src.includes("/video") ||
                                             image.src.includes("content-media")
                                         return (
-                                            <div className="embla-reels__slide" key={`${index}-${image.src}`}>
-                                                <div className="group size-full rounded-[2rem] overflow-hidden aspect-[3/4] relative bg-black/85 border border-white/15 dark:border-white/20 shadow-[0_18px_40px_rgba(0,0,0,0.22)] ring-1 ring-white/10">
-                                                    <div className="pointer-events-none absolute inset-0 z-10 rounded-[2rem] border border-white/20 opacity-70" />
-                                                    <div className="pointer-events-none absolute inset-[2px] z-10 rounded-[calc(2rem-2px)] border border-white/10 opacity-80" />
-                                                    <div className="pointer-events-none absolute inset-0 z-10 rounded-[2rem] bg-gradient-to-b from-white/12 via-transparent to-black/30" />
+                                            <div
+                                                className={`embla-reels__slide${activeIndex === index ? " is-active" : ""}`}
+                                                key={`${index}-${image.src}`}
+                                            >
+                                                <div className="embla-reels__frame group size-full rounded-[2rem] overflow-hidden aspect-[3/4] relative border border-border/40 bg-black shadow-[0_16px_36px_rgba(0,0,0,0.18)] dark:border-white/15">
+                                                    <div className="pointer-events-none absolute inset-0 z-10 rounded-[2rem] bg-gradient-to-b from-black/10 via-transparent to-black/35" />
                                                     {isVideo ? (
                                                         isYouTube ? (
                                                             <YouTubeSlide
@@ -660,7 +696,7 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                                                             decoding="async"
                                                         />
                                                     )}
-                                                    <div className="absolute inset-0 z-10 bg-black/8 group-hover:bg-black/0 transition-all duration-300 pointer-events-none" />
+                                                    <div className="pointer-events-none absolute inset-0 z-10 bg-black/5 transition-all duration-300 group-hover:bg-black/0" />
                                                 </div>
                                             </div>
                                         )

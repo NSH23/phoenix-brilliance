@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { applyAdminTheme, applyPublicTheme, getStoredAdminTheme } from '@/lib/adminTheme';
+import { applyAdminTheme, getStoredAdminTheme } from '@/lib/adminTheme';
+import { applyPublicTheme, getStoredPublicTheme } from '@/lib/publicTheme';
 
 /** Keeps admin routes on `admin-theme` (default light) without flashing public theme between admin pages. */
 export default function AdminThemeSync() {
@@ -11,7 +12,7 @@ export default function AdminThemeSync() {
     if (isAdminShell) {
       applyAdminTheme(getStoredAdminTheme());
     } else {
-      applyPublicTheme();
+      applyPublicTheme(getStoredPublicTheme());
     }
   }, [pathname]);
 

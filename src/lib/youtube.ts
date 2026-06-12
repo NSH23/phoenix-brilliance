@@ -73,17 +73,47 @@ export function getYouTubeThumbnail(urlOrId: string): string {
   return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
 
+export type YouTubeEmbedOptions = {
+  autoplay?: boolean;
+  /** When false, hides player chrome (hero / ambient embeds). */
+  controls?: boolean;
+  mute?: boolean;
+};
+
 // Get YouTube embed URL (privacy-enhanced host; fewer tracker requests than youtube.com/embed)
 export function getYouTubeEmbedUrl(urlOrId: string): string {
-  return getYouTubeNocookieEmbedUrl(urlOrId, { autoplay: true });
+  return getYouTubeNocookieEmbedUrl(urlOrId, { autoplay: true, controls: true });
+}
+
+/** Hero stacked cards — autoplay, no visible controls. */
+export function getYouTubeHeroEmbedUrl(urlOrId: string, autoplay = true): string {
+  return getYouTubeNocookieEmbedUrl(urlOrId, {
+    autoplay,
+    controls: false,
+    mute: true,
+  });
 }
 
 /** Privacy-enhanced host; prefer for embeds until the user opts in to play. */
-export function getYouTubeNocookieEmbedUrl(urlOrId: string, opts?: { autoplay?: boolean }): string {
+export function getYouTubeNocookieEmbedUrl(urlOrId: string, opts?: YouTubeEmbedOptions): string {
   const id = getYouTubeId(urlOrId);
   if (!id) return '';
   const autoplay = opts?.autoplay ? '1' : '0';
-  return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1&controls=1&autoplay=${autoplay}`;
+  const controls = opts?.controls === false ? '0' : '1';
+  const mute = opts?.mute ? '1' : '0';
+  const params = new URLSearchParams({
+    rel: '0',
+    modestbranding: '1',
+    playsinline: '1',
+    controls,
+    autoplay,
+    mute,
+    disablekb: '1',
+    fs: '0',
+    iv_load_policy: '3',
+    cc_load_policy: '0',
+  });
+  return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`;
 }
 
 export function isYouTubeValue(urlOrId: string): boolean {

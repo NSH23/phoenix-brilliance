@@ -1,15 +1,11 @@
 import { Suspense, lazy } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import Footer from "@/components/Footer";
-import WhatsAppButton from "@/components/WhatsAppButton";
-import MobileCTA from "@/components/MobileCTA";
 import { SEO } from "@/components/SEO";
 import { EventPlanningBusinessSchema, OrganizationSchema } from "@/components/StructuredData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useHomepageData } from "@/hooks/useHomepageData";
 
-// Lazy Load Below-the-Fold Sections
 const ReelsSection = lazy(() => import("@/components/ReelsSection"));
 const EventsSection = lazy(() => import("@/components/EventsSection"));
 const ServicesSection = lazy(() => import("@/components/ServicesSection"));
@@ -17,9 +13,21 @@ const WhyChooseUsSection = lazy(() => import("@/components/WhyChooseUsSection"))
 const CollaborationsSection = lazy(() => import("@/components/CollaborationsSection"));
 const TestimonialsSection = lazy(() => import("@/components/TestimonialsSectionNew"));
 const AboutSection = lazy(() => import("@/components/AboutSection"));
+const FinalCTASection = lazy(() => import("@/components/FinalCTASection"));
+
+function SectionFallback() {
+  return (
+    <div className="py-12 md:py-16" aria-hidden>
+      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+        <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+        <div className="mt-6 h-12 w-2/3 max-w-md animate-pulse rounded bg-muted" />
+      </div>
+    </div>
+  );
+}
 
 const SectionSuspense = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={null}>{children}</Suspense>
+  <Suspense fallback={<SectionFallback />}>{children}</Suspense>
 );
 
 const Index = () => {
@@ -32,9 +40,6 @@ const Index = () => {
   if (socialLinks.instagram) sameAs.push(socialLinks.instagram);
   if (socialLinks.youtube) sameAs.push(socialLinks.youtube);
   if (socialLinks.twitter) sameAs.push(socialLinks.twitter);
-
-  if (socialLinks.twitter) sameAs.push(socialLinks.twitter);
-
 
   return (
     <>
@@ -59,123 +64,54 @@ const Index = () => {
         sameAs={sameAs.length > 0 ? sameAs : undefined}
       />
 
-
-
-      <div className="relative min-h-screen bg-transparent text-foreground antialiased main-page-flow">
-        {/* Global environmental background – subtle radial gradients, pointer-events-none */}
-        <div
-          className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_20%_10%,rgba(212,107,138,0.06),transparent_50%),radial-gradient(circle_at_80%_90%,rgba(255,200,150,0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(212,107,138,0.08),transparent_60%),radial-gradient(circle_at_80%_90%,rgba(100,120,255,0.06),transparent_60%)]"
-          aria-hidden
-        />
+      <div className="relative min-h-screen bg-background text-foreground antialiased">
         <Navbar />
-        <main className="[&>*]:my-0">
-          {/* Hero (Cinematic + Petals) - Rendered Immediately */}
-          <div id="home" className="my-0 hero-bg-wrapper relative">
-            <div className="hero-bg-image" aria-hidden />
-            <div className="hero-bg-overlay" aria-hidden />
+        <main>
+          <div id="home">
             <HeroSection />
           </div>
 
-            {/* Collaborations / Elegant Venues – light: 3.jpg + overlay; dark: bg12.jpg */}
-            <SectionSuspense>
-            <div id="venues" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-collaborations">
-              <div className="section-depth-noise" aria-hidden />
-              {/* Light theme only: 3.jpg – full section, subtle overlay for readability */}
-              <div
-                className="absolute inset-0 z-[1] pointer-events-none dark:opacity-0"
-                aria-hidden
-              >
-                <div
-                  className="absolute inset-0 bg-cover bg-center bg-no-repeat homepage-bg-3"
-                />
-                <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
-              </div>
-              <div className="section-collaborations-bg-image" aria-hidden />
+          <SectionSuspense>
+            <div id="venues">
               <CollaborationsSection
                 homepageDataPending={homepageDataPending}
                 prefetchedCollaborations={homepageDataSuccess ? homepageData?.collaborations : undefined}
               />
             </div>
-            </SectionSuspense>
+          </SectionSuspense>
 
-            {/* Reels (Moments We've Crafted) – no background image */}
-            <SectionSuspense>
-            <div id="reels" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-reels">
-              <div className="section-depth-noise" aria-hidden />
+          <SectionSuspense>
+            <div id="reels">
               <ReelsSection />
             </div>
-            </SectionSuspense>
+          </SectionSuspense>
 
-            {/* About Us */}
-            <SectionSuspense>
-            <div id="about" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-about">
-              <div className="section-depth-noise" aria-hidden />
-              <div className="section-about-bg-image" aria-hidden />
-              <div className="section-about-overlay" aria-hidden />
-              <AboutSection
-                homepageDataPending={homepageDataPending}
-                prefetchedAboutFlipImages={
-                  homepageDataSuccess ? homepageData?.aboutFlipImages ?? null : undefined
-                }
-              />
+          <SectionSuspense>
+            <div id="about">
+              <AboutSection />
             </div>
-            </SectionSuspense>
+          </SectionSuspense>
 
-            {/* Events – light: 9.jpg + overlay; dark: solid band */}
-            <SectionSuspense>
-            <div id="events" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-events relative">
-              <div className="section-depth-noise" aria-hidden />
-              {/* Light theme only: 9.jpg – full section, subtle overlay for readability */}
-              <div
-                className="absolute inset-0 z-[1] pointer-events-none dark:opacity-0"
-                aria-hidden
-              >
-                <div
-                  className="absolute inset-0 bg-cover bg-center bg-no-repeat homepage-bg-9"
-                />
-                <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
-              </div>
+          <SectionSuspense>
+            <div id="events">
               <EventsSection
                 homepageDataPending={homepageDataPending}
                 prefetchedEvents={homepageDataSuccess ? homepageData?.events : undefined}
               />
             </div>
-            </SectionSuspense>
+          </SectionSuspense>
 
-            {/* Services – light: 7.jpg + overlay; dark: solid band */}
-            <SectionSuspense>
-            <div id="services" className="my-0 section-band-1 section-depth-bg section-flat section-border-t relative">
-              <div className="section-depth-noise" aria-hidden />
-              <div
-                className="absolute inset-0 z-[1] pointer-events-none dark:opacity-0"
-                aria-hidden
-              >
-                <div className="absolute inset-0 bg-cover bg-center bg-no-repeat homepage-bg-7" />
-                <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
-              </div>
+          <SectionSuspense>
+            <div id="services">
               <ServicesSection
                 homepageDataPending={homepageDataPending}
                 prefetchedServices={homepageDataSuccess ? homepageData?.services : undefined}
               />
             </div>
-            </SectionSuspense>
+          </SectionSuspense>
 
-            {/* Why Choose Us – light: 5.jpg + overlay; dark: solid band */}
-            <SectionSuspense>
-            <div id="why-choose-us" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-why-choose-us relative">
-              <div className="section-depth-noise" aria-hidden />
-              {/* Light theme only: 5.jpg – full section, subtle overlay for readability */}
-              <div
-                className="absolute inset-0 z-[1] pointer-events-none dark:opacity-0"
-                aria-hidden
-              >
-                <div
-                  className="absolute inset-0 bg-cover bg-center bg-no-repeat homepage-bg-5"
-                />
-                <div className="absolute inset-0 bg-white/50 dark:bg-transparent" />
-              </div>
-              <div className="section-why-choose-us-bg-image" aria-hidden />
-              <div className="section-why-choose-us-overlay" aria-hidden />
+          <SectionSuspense>
+            <div id="why-choose-us">
               <WhyChooseUsSection
                 homepageDataPending={homepageDataPending}
                 prefetchedWhyStats={homepageDataSuccess ? homepageData?.whyStats : undefined}
@@ -183,25 +119,21 @@ const Index = () => {
                 prefetchedWhyContent={homepageDataSuccess ? homepageData?.whyContent : undefined}
               />
             </div>
-            </SectionSuspense>
+          </SectionSuspense>
 
-            {/* Testimonials */}
-            <SectionSuspense>
-            <div id="testimonials" className="my-0 section-band-1 section-depth-bg section-flat section-border-t section-testimonials">
-              <div className="section-depth-noise" aria-hidden />
-              <div className="section-testimonials-bg-image" aria-hidden />
-              <div className="section-testimonials-overlay" aria-hidden />
+          <SectionSuspense>
+            <div id="testimonials">
               <TestimonialsSection
                 homepageDataPending={homepageDataPending}
                 prefetchedTestimonials={homepageDataSuccess ? homepageData?.testimonials : undefined}
               />
             </div>
-            </SectionSuspense>
+          </SectionSuspense>
 
+          <SectionSuspense>
+            <FinalCTASection />
+          </SectionSuspense>
         </main>
-        <Footer />
-        <WhatsAppButton />
-        <MobileCTA />
       </div>
     </>
   );

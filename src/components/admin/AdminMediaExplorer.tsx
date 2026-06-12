@@ -842,24 +842,30 @@ export default function AdminMediaExplorer({
     }
     if (clipboard.mode === 'cut') {
       const keys = new Set(clipboard.items.map(mediaKey));
-      onMediaChange(moveMediaItems(media, keys, targetFolderId));
+      const nextMedia = moveMediaItems(media, keys, targetFolderId);
+      onMediaChange(nextMedia);
       setClipboard(null);
       setSelectedKeys(new Set());
       toast.success('Moved to folder');
+      triggerAutosave({ media: nextMedia, folders });
     } else {
-      onMediaChange(copyMediaItems(media, clipboard.items, targetFolderId));
+      const nextMedia = copyMediaItems(media, clipboard.items, targetFolderId);
+      onMediaChange(nextMedia);
       toast.success('Pasted');
+      triggerAutosave({ media: nextMedia, folders });
     }
   };
 
   const handleDropOnFolder = (folderId: string | null) => {
     const keys = draggingKeys.size > 0 ? draggingKeys : selectedKeys;
     if (!keys.size) return;
-    onMediaChange(moveMediaItems(media, keys, folderId));
+    const nextMedia = moveMediaItems(media, keys, folderId);
+    onMediaChange(nextMedia);
     setDraggingKeys(new Set());
     clearSelection();
     if (clipboard?.mode === 'cut') setClipboard(null);
     toast.success('Moved to folder');
+    triggerAutosave({ media: nextMedia, folders });
   };
 
   const uploadFilesToFolder = async (folderId: string | null, fileList: FileList | File[]) => {
@@ -942,7 +948,9 @@ export default function AdminMediaExplorer({
   };
 
   const toggleFolderVisible = (id: string) => {
-    onFoldersChange(folders.map((f) => (f.id === id ? { ...f, is_enabled: !f.is_enabled } : f)));
+    const nextFolders = folders.map((f) => (f.id === id ? { ...f, is_enabled: !f.is_enabled } : f));
+    onFoldersChange(nextFolders);
+    persistSnapshot({ media, folders: nextFolders }, 'Could not save folder visibility');
   };
 
   const goBack = () => {
@@ -1022,14 +1030,16 @@ export default function AdminMediaExplorer({
     const folderId = selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId;
     const inFolder = media.filter((m) => (m.folder_id ?? null) === folderId);
     const nextOrder = inFolder.length > 0 ? Math.max(...inFolder.map((m) => m.display_order ?? 0)) + 1 : 0;
-    onMediaChange([
+    const nextMedia = [
       ...media,
       { url: id, folder_id: folderId, display_order: nextOrder, media_type: 'video', caption: youtubeTitle.trim() || null },
-    ]);
+    ];
+    onMediaChange(nextMedia);
     setYoutubeInput('');
     setYoutubeTitle('');
     setShowVideoForm(false);
-    toast.success('Video added — save to publish.');
+    toast.success('Video added');
+    triggerAutosave({ media: nextMedia, folders });
   };
 
   const removeVideo = (url: string, folderId: string | null = selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId) => {

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Trash2, MoreHorizontal, Calendar, Loader2, Eye, EyeOff, Image, Star } from 'lucide-react';
+import { Plus, Search, Trash2, MoreHorizontal, Calendar, Eye, EyeOff, Image, Star } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { AdminSortableGrid, AdminSortableItem } from '@/components/admin/AdminSortableGrid';
 import { optimizeMediaUrl } from '@/lib/mediaDelivery';
 import { logger } from '@/utils/logger';
 import { Card } from '@/components/ui/card';
@@ -25,7 +26,9 @@ import {
 } from '@/components/ui/select';
 import {
   getAdminAlbumsPage,
+  getAllAdminAlbums,
   updateAlbum,
+  updateAlbumDisplayOrder,
   deleteAlbum,
   getAllAlbumMediaCounts,
   type Album,
@@ -39,7 +42,15 @@ const PAGE_SIZE = 12;
 interface AlbumWithMeta extends Album {
   mediaCount?: number;
   eventTitle?: string;
+  eventDisplayOrder?: number;
 }
+
+type EventAlbumGroup = {
+  eventId: string;
+  eventTitle: string;
+  eventDisplayOrder: number;
+  albums: AlbumWithMeta[];
+};
 
 export default function AdminAlbums() {
   const navigate = useNavigate();
@@ -50,25 +61,39 @@ export default function AdminAlbums() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterEvent, setFilterEvent] = useState('all');
+  const [isReordering, setIsReordering] = useState(false);
 
   const currentPage = Math.max(1, Number(searchParams.get('page') || '1'));
   const currentQuery = (searchParams.get('q') || '').trim();
   const currentEvent = searchParams.get('event') || 'all';
+  const useGroupedView = !currentQuery && currentEvent === 'all';
 
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [result, counts, eventList] = await Promise.all([
-        getAdminAlbumsPage({
-          page: currentPage - 1,
-          pageSize: PAGE_SIZE,
-          searchQuery: currentQuery,
-          eventId: currentEvent,
-        }),
-        getAllAlbumMediaCounts(),
-        getAllEvents(),
-      ]);
+      const [eventList, counts] = await Promise.all([getAllEvents(), getAllAlbumMediaCounts()]);
       setEvents(eventList);
+
+      if (useGroupedView) {
+        const allAlbums = await getAllAdminAlbums();
+        const enriched = allAlbums.map((a) => ({
+          ...a,
+          mediaCount: counts[a.id] ?? 0,
+          eventTitle: (a as Album & { events?: { title?: string; display_order?: number } }).events?.title,
+          eventDisplayOrder:
+            (a as Album & { events?: { title?: string; display_order?: number } }).events?.display_order ?? 0,
+        }));
+        setAlbums(enriched);
+        setTotalAlbums(enriched.length);
+        return;
+      }
+
+      const result = await getAdminAlbumsPage({
+        page: currentPage - 1,
+        pageSize: PAGE_SIZE,
+        searchQuery: currentQuery,
+        eventId: currentEvent,
+      });
       setAlbums(
         result.data.map((a) => ({
           ...a,
@@ -83,7 +108,7 @@ export default function AdminAlbums() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, currentQuery, currentEvent]);
+  }, [currentPage, currentQuery, currentEvent, useGroupedView]);
 
   useEffect(() => {
     void load();
@@ -119,6 +144,59 @@ export default function AdminAlbums() {
   };
 
   const totalPages = Math.max(1, Math.ceil(totalAlbums / PAGE_SIZE));
+
+  const eventGroups = useMemo<EventAlbumGroup[]>(() => {
+    if (!useGroupedView) return [];
+    const byEvent = new Map<string, EventAlbumGroup>();
+    for (const album of albums) {
+      const eventId = album.event_id;
+      const existing = byEvent.get(eventId);
+      if (existing) {
+        existing.albums.push(album);
+      } else {
+        byEvent.set(eventId, {
+          eventId,
+          eventTitle: album.eventTitle || 'Unknown event',
+          eventDisplayOrder: album.eventDisplayOrder ?? 0,
+          albums: [album],
+        });
+      }
+    }
+    return [...byEvent.values()]
+      .map((group) => ({
+        ...group,
+        albums: [...group.albums].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
+      }))
+      .sort((a, b) => a.eventDisplayOrder - b.eventDisplayOrder || a.eventTitle.localeCompare(b.eventTitle));
+  }, [albums, useGroupedView]);
+
+  const showReorderForEvent = !currentQuery && currentEvent !== 'all';
+  const listForCards = showReorderForEvent
+    ? [...albums].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    : albums;
+
+  const persistAlbumOrder = async (eventId: string, orderedIds: string[]) => {
+    setIsReordering(true);
+    try {
+      await updateAlbumDisplayOrder(orderedIds.map((id, i) => ({ id, display_order: i })));
+      setAlbums((prev) =>
+        prev.map((a) => {
+          if (a.event_id !== eventId) return a;
+          const index = orderedIds.indexOf(a.id);
+          return index >= 0 ? { ...a, display_order: index } : a;
+        }).sort((a, b) => {
+          if (a.event_id !== b.event_id) return 0;
+          return (a.display_order ?? 0) - (b.display_order ?? 0);
+        })
+      );
+      toast.success('Display order saved');
+    } catch (err: unknown) {
+      toast.error('Failed to save order', { description: (err as Error)?.message });
+      void load();
+    } finally {
+      setIsReordering(false);
+    }
+  };
 
   const handleToggleActive = async (album: AlbumWithMeta, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -178,7 +256,9 @@ export default function AdminAlbums() {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="truncate font-serif text-base font-bold">{album.title}</h3>
-            <p className="truncate text-xs text-muted-foreground">{album.eventTitle || '—'}</p>
+            {!useGroupedView ? (
+              <p className="truncate text-xs text-muted-foreground">{album.eventTitle || '—'}</p>
+            ) : null}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -221,8 +301,35 @@ export default function AdminAlbums() {
     </Card>
   );
 
+  const renderSortableGrid = (items: AlbumWithMeta[], eventId: string) => (
+    <AdminSortableGrid
+      itemIds={items.map((a) => a.id)}
+      disabled={isReordering}
+      onReorder={(orderedIds) => void persistAlbumOrder(eventId, orderedIds)}
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+    >
+      {items.map((album, i) => (
+        <AdminSortableItem key={album.id} id={album.id} disabled={isReordering}>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+            {renderAlbumCard(album)}
+          </motion.div>
+        </AdminSortableItem>
+      ))}
+    </AdminSortableGrid>
+  );
+
+  const renderFlatGrid = (items: AlbumWithMeta[]) => (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((album, i) => (
+        <motion.div key={album.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+          {renderAlbumCard(album)}
+        </motion.div>
+      ))}
+    </div>
+  );
+
   return (
-    <AdminLayout title="Albums" subtitle="Manage event albums and gallery folders">
+    <AdminLayout title="Albums" subtitle="Manage event albums — create, upload photos, and organize by event">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -272,17 +379,37 @@ export default function AdminAlbums() {
         </div>
       ) : albums.length === 0 ? (
         <div className="py-16 text-center text-muted-foreground">No albums found.</div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {albums.map((album, i) => (
-            <motion.div key={album.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-              {renderAlbumCard(album)}
-            </motion.div>
+      ) : useGroupedView ? (
+        <div className="space-y-10">
+          {eventGroups.map((group) => (
+            <section key={group.eventId}>
+              <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <h2 className="font-serif text-lg font-semibold">{group.eventTitle}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {group.albums.length} album{group.albums.length === 1 ? '' : 's'}
+                  </p>
+                </div>
+                {group.albums.length >= 2 ? (
+                  <p className="text-xs text-muted-foreground">Drag the grip to reorder albums in this event.</p>
+                ) : null}
+              </div>
+              {group.albums.length >= 2 ? renderSortableGrid(group.albums, group.eventId) : renderFlatGrid(group.albums)}
+            </section>
           ))}
         </div>
+      ) : (
+        <>
+          {showReorderForEvent && listForCards.length >= 2 ? (
+            <p className="mb-2 text-xs text-muted-foreground">Drag the grip to reorder albums for this event.</p>
+          ) : null}
+          {showReorderForEvent && listForCards.length >= 2
+            ? renderSortableGrid(listForCards, currentEvent)
+            : renderFlatGrid(listForCards)}
+        </>
       )}
 
-      {!isLoading && totalPages > 1 && (
+      {!isLoading && !useGroupedView && totalPages > 1 && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
           <Button variant="outline" disabled={currentPage <= 1} onClick={() => updateQueryParams({ page: currentPage - 1 })}>
             Previous

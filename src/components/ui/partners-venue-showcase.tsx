@@ -6,15 +6,24 @@ import { PartnerVenueCard, type PartnerVenueCardData } from "@/components/ui/par
 type PartnersVenueShowcaseProps = {
   venues: PartnerVenueCardData[];
   className?: string;
+  /** Full viewport width — first card flush to the left edge */
+  edgeToEdge?: boolean;
 };
 
-export function PartnersVenueShowcase({ venues, className }: PartnersVenueShowcaseProps) {
+export function PartnersVenueShowcase({ venues, className, edgeToEdge = false }: PartnersVenueShowcaseProps) {
   if (venues.length === 0) return null;
 
   if (venues.length === 1) {
     return (
-      <div className={cn("mx-auto max-w-sm px-5 sm:px-6 md:px-8", className)}>
-        <PartnerVenueCard venue={venues[0]} />
+      <div
+        className={cn(
+          edgeToEdge ? "px-5 sm:px-6 lg:px-8" : "mx-auto max-w-sm px-5 sm:px-6 md:px-8",
+          className,
+        )}
+      >
+        <div className={edgeToEdge ? "mx-auto max-w-sm" : undefined}>
+          <PartnerVenueCard venue={venues[0]} />
+        </div>
       </div>
     );
   }
@@ -22,38 +31,39 @@ export function PartnersVenueShowcase({ venues, className }: PartnersVenueShowca
   const loopVenues = [...venues, ...venues];
 
   return (
-    <div className={cn("relative w-full", className)}>
-      <div
-        className="overflow-hidden"
-        style={{
-          maskImage: "linear-gradient(to right, transparent, black 6%, black 94%, transparent)",
-          WebkitMaskImage: "linear-gradient(to right, transparent, black 6%, black 94%, transparent)",
-        }}
+    <div className={cn("relative w-full overflow-hidden", className)}>
+      <Carousel
+        opts={{ loop: true, align: "start", dragFree: true }}
+        plugins={[
+          AutoScroll({
+            speed: 0.85,
+            stopOnInteraction: false,
+            stopOnMouseEnter: true,
+            startDelay: 0,
+          }),
+        ]}
+        className="w-full"
       >
-        <Carousel
-          opts={{ loop: true, align: "start", dragFree: true }}
-          plugins={[
-            AutoScroll({
-              speed: 0.85,
-              stopOnInteraction: false,
-              stopOnMouseEnter: true,
-              startDelay: 0,
-            }),
-          ]}
-          className="w-full"
+        <CarouselContent
+          className={cn(
+            edgeToEdge ? "-ml-0 gap-4 md:gap-5" : "-ml-4 gap-4 md:-ml-5 md:gap-5",
+          )}
         >
-          <CarouselContent className="-ml-3 md:-ml-4">
-            {loopVenues.map((venue, index) => (
-              <CarouselItem
-                key={`${venue.id}-${index}`}
-                className="basis-[78%] pl-3 sm:basis-[52%] md:basis-[38%] lg:basis-[28%] xl:basis-[24%] md:pl-4"
-              >
-                <PartnerVenueCard venue={venue} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-      </div>
+          {loopVenues.map((venue, index) => (
+            <CarouselItem
+              key={`${venue.id}-${index}`}
+              className={cn(
+                "pl-0",
+                edgeToEdge
+                  ? "basis-[86%] sm:basis-[56%] md:basis-[42%] lg:basis-[32%] xl:basis-[28%]"
+                  : "basis-[88%] sm:basis-[58%] md:basis-[44%] lg:basis-[34%] xl:basis-[30%]",
+              )}
+            >
+              <PartnerVenueCard venue={venue} />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
     </div>
   );
 }

@@ -15,10 +15,12 @@ export function HomeSectionSplitTitle({
 }: HomeSectionSplitTitleProps) {
   return (
     <span className={cn("block", className)}>
-      <span className="block font-light tracking-tight text-foreground/95">{line1}</span>
+      <span className="block text-[1.75rem] font-normal leading-[1.12] tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-[2.75rem]">
+        {line1}
+      </span>
       <span
         className={cn(
-          "mt-0.5 block bg-gradient-to-r from-primary via-primary/90 to-primary/60 bg-clip-text font-medium italic tracking-tight text-transparent md:mt-1",
+          "mt-1 block font-serif text-[1.5rem] font-medium italic leading-[1.12] tracking-tight text-primary sm:text-2xl md:mt-1.5 md:text-3xl lg:text-[2.35rem]",
           accentClassName,
         )}
       >

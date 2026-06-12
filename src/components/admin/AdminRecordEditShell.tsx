@@ -19,6 +19,8 @@ type AdminRecordEditShellProps = {
   onDelete?: () => void;
   tabs: TabDef[];
   defaultTab?: string;
+  /** When true, renders `details` only — no tab bar (e.g. album edit). */
+  singlePage?: boolean;
   details: ReactNode;
   gallery?: ReactNode;
   extraTabs?: Array<{ value: string; label: string; content: ReactNode }>;
@@ -35,6 +37,7 @@ export default function AdminRecordEditShell({
   onDelete,
   tabs,
   defaultTab = 'details',
+  singlePage = false,
   details,
   gallery,
   extraTabs = [],
@@ -82,6 +85,9 @@ export default function AdminRecordEditShell({
         </div>
       }
     >
+      {singlePage ? (
+        <div className="w-full">{details}</div>
+      ) : (
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList
           className={cn(
@@ -116,6 +122,7 @@ export default function AdminRecordEditShell({
           </TabsContent>
         ))}
       </Tabs>
+      )}
     </AdminLayout>
   );
 }
