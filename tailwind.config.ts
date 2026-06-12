@@ -146,7 +146,7 @@ export default {
         "footer-bg": "var(--footer-bg)",
         "footer-text": "var(--footer-text)",
         "footer-heading": "var(--footer-heading)",
-        "footer-border": "hsl(var(--footer-border))",
+        "footer-border": "var(--footer-border)",
       },
       borderRadius: {
         lg: "var(--radius)",

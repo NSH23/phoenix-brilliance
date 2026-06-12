@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Images, Mail, Menu, MessageCircleMore, ChartColumn, Clapperboard } from 'lucide-react';
+import { LayoutDashboard, Calendar, FolderOpen, Mail, Menu, MessageCircleMore, ChartColumn, Clapperboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAdminWorkspace } from '@/lib/adminMenu';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -8,7 +8,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 const websiteTabs = [
   { name: 'Home', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Events', href: '/admin/events', icon: Calendar },
-  { name: 'Gallery', href: '/admin/gallery', icon: Images },
+  { name: 'Albums', href: '/admin/albums', icon: FolderOpen },
   { name: 'Alerts', href: '/admin/notifications', icon: Mail },
 ] as const;
 

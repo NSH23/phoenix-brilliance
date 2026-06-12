@@ -236,7 +236,8 @@
     --footer-heading: #C4A4A8;
     --footer-border: hsl(var(--off-white) / 0.10);
     --footer-link: hsl(var(--off-white) / 0.8);
-    --footer-link-hover: hsl(var(--primary));
+    --footer-link-hover: var(--footer-heading);
+    --footer-text-muted: rgba(243, 237, 235, 0.72);
     --footer-icon-bg: hsl(var(--off-white) / 0.10);
     --footer-icon-hover-bg: hsl(var(--primary));
 
@@ -455,6 +456,7 @@
     --footer-border: rgba(255, 252, 251, 0.12);
     --footer-link: rgba(248, 244, 246, 0.85);
     --footer-link-hover: #F0A8C8;
+    --footer-text-muted: rgba(248, 244, 246, 0.72);
     --footer-icon-bg: rgba(255, 252, 251, 0.1);
     --footer-icon-hover-bg: hsl(var(--primary));
 
@@ -670,6 +672,7 @@
     --footer-border: rgba(253, 252, 255, 0.12);
     --footer-link: rgba(245, 242, 250, 0.85);
     --footer-link-hover: #C4B5E8;
+    --footer-text-muted: rgba(245, 242, 250, 0.72);
     --footer-icon-bg: rgba(253, 252, 255, 0.1);
     --footer-icon-hover-bg: hsl(var(--primary));
 
@@ -820,6 +823,7 @@
     --footer-border: hsl(var(--foreground) / 0.12);
     --footer-link: hsl(var(--foreground) / 0.9);
     --footer-link-hover: hsl(var(--primary));
+    --footer-text-muted: hsl(var(--foreground) / 0.72);
     --footer-icon-bg: hsl(var(--foreground) / 0.10);
     --footer-icon-hover-bg: hsl(var(--primary));
 
@@ -1535,13 +1539,13 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
-  /* Heritage light: wine primary buttons on linen */
-  html:not(.dark):not(.blush):not(.lavender) .bg-primary.text-primary-foreground:not([role="checkbox"]) {
+  /* Heritage light: wine primary buttons on linen (public site only — not admin shell) */
+  html:not(.dark):not(.blush):not(.lavender):not(.admin-shell):not(:has(.admin-dashboard)) .bg-primary.text-primary-foreground:not([role="checkbox"]) {
     background-color: hsl(var(--primary)) !important;
     color: hsl(var(--primary-foreground)) !important;
     border: 2px solid hsl(var(--primary));
   }
-  html:not(.dark):not(.blush):not(.lavender) .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
+  html:not(.dark):not(.blush):not(.lavender):not(.admin-shell):not(:has(.admin-dashboard)) .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
     background-color: hsl(var(--primary-hover)) !important;
     color: hsl(var(--primary-foreground)) !important;
   }
@@ -2983,8 +2987,32 @@
     color: var(--footer-heading);
   }
 
+  .text-footer-muted {
+    color: var(--footer-text-muted);
+  }
+
   .border-footer {
     border-color: var(--footer-border);
+  }
+
+  .footer-link {
+    color: var(--footer-link);
+    transition: color 0.2s ease;
+  }
+
+  .footer-link:hover {
+    color: var(--footer-link-hover);
+  }
+
+  .footer-icon-btn {
+    border: 1px solid var(--footer-border);
+    color: var(--footer-link);
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .footer-icon-btn:hover {
+    color: var(--footer-link-hover);
+    border-color: color-mix(in srgb, var(--footer-link-hover) 50%, var(--footer-border));
   }
 
   .text-emerald {
@@ -3211,6 +3239,11 @@
 
 /* ─── Admin dashboard only (scoped; public site unchanged) ─── */
 /* Neutral surfaces; blue reserved for CTAs, focus, and small active markers. */
+html.admin-shell,
+html.admin-shell.blush,
+html.admin-shell.lavender,
+html.blush:has(.admin-dashboard),
+html.lavender:has(.admin-dashboard),
 html:has(.admin-dashboard) {
   color-scheme: light;
 
@@ -3228,6 +3261,7 @@ html:has(.admin-dashboard) {
 
   --primary: 221 55% 46%;
   --primary-foreground: 0 0% 100%;
+  --primary-hover: 221 55% 40%;
 
   --secondary: 220 13% 93%;
   --secondary-foreground: 224 18% 14%;
@@ -3267,6 +3301,12 @@ html:has(.admin-dashboard) {
   --admin-glass-blur: blur(16px) saturate(110%);
 }
 
+html.admin-shell.dark,
+html.dark.admin-shell,
+html.dark.admin-shell.blush,
+html.dark.admin-shell.lavender,
+html.dark.blush:has(.admin-dashboard),
+html.dark.lavender:has(.admin-dashboard),
 html.dark:has(.admin-dashboard) {
   color-scheme: dark;
 
@@ -3284,6 +3324,7 @@ html.dark:has(.admin-dashboard) {
 
   --primary: 214 65% 58%;
   --primary-foreground: 224 22% 10%;
+  --primary-hover: 214 65% 52%;
 
   --secondary: 224 14% 16%;
   --secondary-foreground: 210 18% 96%;
@@ -3697,4 +3738,23 @@ html.dark:has(.admin-dashboard) .admin-dashboard .admin-panel-card {
   .admin-dashboard .admin-animate-in {
     animation: none;
   }
+}
+
+/* Admin button hovers — always use admin tokens, never public heritage/blush accents */
+.admin-dashboard .hover\:bg-accent:hover {
+  background-color: hsl(var(--accent)) !important;
+}
+
+.admin-dashboard .hover\:text-accent-foreground:hover {
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+.admin-dashboard .hover\:bg-primary\/90:hover,
+.admin-dashboard .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
+  background-color: hsl(var(--primary) / 0.9) !important;
+  border-color: transparent;
+}
+
+.admin-dashboard .hover\:bg-secondary\/80:hover {
+  background-color: hsl(var(--secondary) / 0.8) !important;
 }

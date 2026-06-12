@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
-  Sparkles,
   CheckCircle2,
   Users,
   Award,
   Phone,
   Loader2,
+  LayoutGrid,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -103,7 +103,7 @@ function ServiceCard({ service, index }: ServiceCardProps) {
   const isInView = useInView(cardRef, { once: true, margin: "-50px" });
   const shouldReduceMotion = useReducedMotion();
   const gradientConfig = getServiceGradient(service.title, index);
-  const IconComponent = getServiceIcon(service.icon || "Sparkles");
+  const IconComponent = getServiceIcon(service.icon);
 
   return (
     <motion.article
@@ -482,7 +482,7 @@ export default function Services() {
                 className="text-center py-20 max-w-md mx-auto"
               >
                 <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
-                  <Sparkles className="w-10 h-10 text-muted-foreground" />
+                  <LayoutGrid className="w-10 h-10 text-muted-foreground" />
                 </div>
                 <h3 className="typography-subsection text-foreground mb-3">
                   Services Coming Soon
@@ -521,7 +521,7 @@ export default function Services() {
               className="max-w-3xl mx-auto text-center rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(232,175,193,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] py-10 sm:py-12 px-6 sm:px-8"
             >
               <div className="flex justify-center mb-4 sm:mb-5">
-                <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-primary" aria-hidden />
+                <Award className="w-10 h-10 sm:w-12 sm:h-12 text-primary" aria-hidden />
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold mb-3 sm:mb-4 text-foreground">
                 Ready to create your <span className="text-primary">dream event</span>?

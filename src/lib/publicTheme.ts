@@ -35,7 +35,7 @@ export function getStoredPublicTheme(): PublicTheme {
 
 export function applyPublicTheme(theme: PublicTheme): void {
   const root = document.documentElement;
-  root.classList.remove("dark", "blush", "lavender");
+  root.classList.remove("dark", "blush", "lavender", "admin-shell");
   if (theme === "dark") root.classList.add("dark");
   else if (theme === "blush") root.classList.add("blush");
   else if (theme === "lavender") root.classList.add("lavender");

@@ -120,3 +120,6 @@ export function isYouTubeValue(urlOrId: string): boolean {
   return !!getYouTubeId(urlOrId);
 }
 
+/** Use with `new YT.Player(..., { host: YOUTUBE_NOCOOKIE_HOST })` for privacy-enhanced embeds. */
+export const YOUTUBE_NOCOOKIE_HOST = "https://www.youtube-nocookie.com";
+

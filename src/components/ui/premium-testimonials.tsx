@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
-import { Quote, Star, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { Quote, Star, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const testimonials = [
     {
@@ -212,12 +212,7 @@ export function PremiumTestimonials() {
                         className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-foreground/[0.08] border border-foreground/[0.15] backdrop-blur-sm mb-6"
                         whileHover={{ scale: 1.05, borderColor: "rgba(255, 255, 255, 0.3)" }}
                     >
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                        >
-                            <Sparkles className="h-4 w-4 text-primary" />
-                        </motion.div>
+                        <Quote className="h-4 w-4 text-primary" />
                         <span className="text-sm font-medium text-foreground/80">
                             Client Love Stories
                         </span>

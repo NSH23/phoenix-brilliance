@@ -7,30 +7,8 @@ import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { HomeSectionBackground } from "@/components/ui/home-section-background";
 import { getActiveServices, type Service } from "@/services/services";
 import { resolvePublicStorageUrl } from "@/services/storage";
-import {
-  Crown,
-  Palette,
-  Building2,
-  Gift,
-  Speaker,
-  Camera,
-  Mic2,
-  MapPin,
-  Sparkles,
-  ArrowRight
-} from "lucide-react";
-
-// Helper to map icon names (if we stored them) or just use default icons
-const ICON_MAP: Record<string, any> = {
-  'Crown': Crown,
-  'Palette': Palette,
-  'Building2': Building2,
-  'Gift': Gift,
-  'Speaker': Speaker,
-  'Camera': Camera,
-  'Mic2': Mic2,
-  'MapPin': MapPin
-};
+import { getServiceIcon } from "@/lib/serviceIcons";
+import { ArrowRight } from "lucide-react";
 
 const DEFAULT_SERVICE_IMAGE = "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80";
 
@@ -115,7 +93,7 @@ const MobileServiceCarousel = ({ services }: { services: CardItem[] }) => {
 function mapServicesToCards(data: Service[]): CardItem[] {
   if (!data.length) return [];
   return data.map((s) => {
-    const IconComponent = s.icon && ICON_MAP[s.icon as string] ? ICON_MAP[s.icon as string] : Sparkles;
+    const IconComponent = getServiceIcon(s.icon);
     const imgSrc = s.image_url
       ? resolvePublicStorageUrl(s.image_url, "service-images")
       : "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80";

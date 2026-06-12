@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import {
   Calendar,
   FolderOpen,
-  Images,
   Handshake,
   Mail,
   TrendingUp,
@@ -14,6 +13,7 @@ import {
   Wrench,
   MessageSquareQuote,
   Activity,
+  Film,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,7 +94,7 @@ function OverviewCard({
                   compact ? 'text-[9px]' : 'text-[10px] sm:text-xs'
                 )}
               >
-                {compact && card.label === 'Gallery Images' ? 'Gallery' : card.label}
+                {compact && card.label === 'Media' ? 'Media' : card.label}
               </span>
             </div>
             <p
@@ -131,8 +131,6 @@ function buildOverviewCards(
     st.events.thisMonth > 0 ? `+${st.events.thisMonth} this month` : undefined;
   const albumHint =
     st.albums.thisMonth > 0 ? `+${st.albums.thisMonth} this month` : undefined;
-  const galleryHint =
-    st.galleryImages.thisMonth > 0 ? `+${st.galleryImages.thisMonth} this month` : undefined;
 
   return [
     {
@@ -152,11 +150,11 @@ function buildOverviewCards(
       tone: 'violet',
     },
     {
-      label: 'Gallery Images',
+      label: 'Media',
       value: st.galleryImages.total,
-      hint: galleryHint,
-      href: '/admin/gallery',
-      icon: Images,
+      hint: 'Hero & reels',
+      href: '/admin/media',
+      icon: Film,
       tone: 'cyan',
     },
     {

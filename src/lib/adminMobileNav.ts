@@ -4,7 +4,7 @@ import type { AdminMenuItem } from '@/lib/adminMenu';
 export const WEBSITE_MOBILE_TAB_HREFS = [
   '/admin/dashboard',
   '/admin/events',
-  '/admin/gallery',
+  '/admin/albums',
   '/admin/notifications',
 ] as const;
 

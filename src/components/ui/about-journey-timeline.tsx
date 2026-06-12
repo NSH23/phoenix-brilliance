@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Layers, Award } from "lucide-react";
+import { Flame, Layers, Award } from "lucide-react";
 import { Timeline, type TimelineItem } from "@/components/ui/timeline";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +11,7 @@ const JOURNEY_ITEMS: TimelineItem[] = [
     description:
       "Kevin launched Phoenix Events with a commitment to excellence in event décor and production.",
     status: "completed",
-    icon: <Sparkles className="h-3 w-3" />,
+    icon: <Flame className="h-3 w-3" />,
   },
   {
     id: "2024",

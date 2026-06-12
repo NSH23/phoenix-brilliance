@@ -15,6 +15,7 @@ export function setStoredAdminTheme(theme: AdminTheme): void {
 export function applyAdminTheme(theme: AdminTheme): void {
   const root = document.documentElement;
   root.classList.remove('blush', 'lavender');
+  root.classList.add('admin-shell');
   root.classList.toggle('dark', theme === 'dark');
 }
 

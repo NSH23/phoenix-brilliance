@@ -8,7 +8,6 @@ import {
   UtensilsCrossed,
   Lightbulb,
   Building2,
-  Sparkles,
   Video,
   Image,
   Wrench,
@@ -19,8 +18,14 @@ import {
   Wand2,
   ClipboardList,
   PartyPopper,
+  LayoutGrid,
+  Crown,
+  Gift,
+  MapPin,
   type LucideIcon,
 } from 'lucide-react';
+
+const DEFAULT_SERVICE_ICON = LayoutGrid;
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Calendar,
@@ -33,7 +38,6 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Utensils: UtensilsCrossed,
   Lightbulb,
   Building2,
-  Sparkles,
   Video,
   Image,
   Wrench,
@@ -44,10 +48,15 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Wand2,
   ClipboardList,
   PartyPopper,
+  LayoutGrid,
+  Crown,
+  Gift,
+  MapPin,
 };
 
 export function getServiceIcon(icon: string | null): LucideIcon {
-  if (!icon || !icon.trim()) return Sparkles;
+  if (!icon || !icon.trim()) return DEFAULT_SERVICE_ICON;
   const key = icon.trim().replace(/\s+/g, '');
-  return ICON_MAP[key] ?? ICON_MAP[icon] ?? Sparkles;
+  if (key === 'Sparkles') return DEFAULT_SERVICE_ICON;
+  return ICON_MAP[key] ?? ICON_MAP[icon] ?? DEFAULT_SERVICE_ICON;
 }

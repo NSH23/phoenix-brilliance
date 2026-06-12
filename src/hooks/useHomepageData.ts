@@ -4,8 +4,8 @@ import { getActiveServices } from "@/services/services";
 import { getFeaturedTestimonials } from "@/services/testimonials";
 import { getWhyChooseUsStats, getWhyChooseUsReasons } from "@/services/whyChooseUs";
 import { getActiveCollaborations } from "@/services/collaborations";
-import { getAboutSectionFlipImagesOptional, getSiteContentByKey } from "@/services/siteContent";
-import type { AboutSectionFlipImages, SiteContent } from "@/services/siteContent";
+import { getSiteContentByKey } from "@/services/siteContent";
+import type { SiteContent } from "@/services/siteContent";
 
 const STALE_MS = 5 * 60 * 1000;
 
@@ -17,15 +17,13 @@ export type HomepageDataBundle = {
   whyReasons: Awaited<ReturnType<typeof getWhyChooseUsReasons>>;
   collaborations: Awaited<ReturnType<typeof getActiveCollaborations>>;
   whyContent: SiteContent | null;
-  /** null = loaded, no saved flip config; undefined = not part of bundle (unused) */
-  aboutFlipImages: AboutSectionFlipImages | null;
 };
 
 export function useHomepageData() {
   return useQuery({
     queryKey: ["homepage-data"],
     queryFn: async (): Promise<HomepageDataBundle> => {
-      const [events, services, testimonials, whyStats, whyReasons, collaborations, whyContent, aboutFlipImages] =
+      const [events, services, testimonials, whyStats, whyReasons, collaborations, whyContent] =
         await Promise.all([
           getEventsForHomepage(7).catch(() => [] as HomepageDataBundle["events"]),
           getActiveServices().catch(() => [] as HomepageDataBundle["services"]),
@@ -34,7 +32,6 @@ export function useHomepageData() {
           getWhyChooseUsReasons().catch(() => [] as HomepageDataBundle["whyReasons"]),
           getActiveCollaborations().catch(() => [] as HomepageDataBundle["collaborations"]),
           getSiteContentByKey("why-us").catch(() => null),
-          getAboutSectionFlipImagesOptional().catch(() => null as HomepageDataBundle["aboutFlipImages"]),
         ]);
       return {
         events,
@@ -44,7 +41,6 @@ export function useHomepageData() {
         whyReasons,
         collaborations,
         whyContent,
-        aboutFlipImages,
       };
     },
     staleTime: STALE_MS,

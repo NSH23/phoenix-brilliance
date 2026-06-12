@@ -135,7 +135,7 @@ export const mockEvents: Event[] = [
     isActive: true,
     displayOrder: 2,
     steps: [
-      { id: '2-1', eventId: '2', stepNumber: 1, title: 'Theme Selection', description: 'Choose from our curated themes or create a custom one.', icon: 'Sparkles' },
+      { id: '2-1', eventId: '2', stepNumber: 1, title: 'Theme Selection', description: 'Choose from our curated themes or create a custom one.', icon: 'Palette' },
       { id: '2-2', eventId: '2', stepNumber: 2, title: 'Planning Session', description: 'Finalize guest list, activities, and special requirements.', icon: 'ClipboardList' },
       { id: '2-3', eventId: '2', stepNumber: 3, title: 'Decoration Setup', description: 'Transform your venue into a party paradise.', icon: 'PartyPopper' },
       { id: '2-4', eventId: '2', stepNumber: 4, title: 'Party Execution', description: 'Manage games, activities, and entertainment throughout.', icon: 'Cake' },

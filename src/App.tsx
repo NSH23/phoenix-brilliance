@@ -72,7 +72,6 @@ const AdminEventEdit = lazy(() => import("./pages/admin/EventEdit"));
 const AdminAlbums = lazy(() => import("./pages/admin/Albums"));
 const AdminAlbumEdit = lazy(() => import("./pages/admin/AlbumEdit"));
 const AdminAlbumPhotos = lazy(() => import("./pages/admin/AlbumPhotos"));
-const AdminGallery = lazy(() => import("./pages/admin/Gallery"));
 const AdminServices = lazy(() => import("./pages/admin/Services"));
 const AdminServiceEdit = lazy(() => import("./pages/admin/ServiceEdit"));
 const AdminCollaborations = lazy(() => import("./pages/admin/Collaborations"));
@@ -88,7 +87,6 @@ const AdminContent = lazy(() => import("./pages/admin/Content"));
 const AdminContentMedia = lazy(() => import("./pages/admin/ContentMedia"));
 const AdminMomentVideoEdit = lazy(() => import("./pages/admin/MomentVideoEdit"));
 const AdminHeroSlotEdit = lazy(() => import("./pages/admin/HeroSlotEdit"));
-const AdminBackgroundImages = lazy(() => import("./pages/admin/BackgroundImages"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminTeam = lazy(() => import("./pages/admin/Team"));
 const AdminSetPassword = lazy(() => import("./pages/admin/SetPassword"));
@@ -215,11 +213,7 @@ function AppRoutes() {
           />
           <Route
             path="/admin/gallery"
-            element={
-              <ProtectedRoute>
-                <AdminGallery />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/admin/albums" replace />}
           />
           <Route
             path="/admin/services/:id/edit"
@@ -339,11 +333,7 @@ function AppRoutes() {
           />
           <Route
             path="/admin/background-images"
-            element={
-              <ProtectedRoute>
-                <AdminBackgroundImages />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/admin/dashboard" replace />}
           />
           <Route
             path="/admin/team"

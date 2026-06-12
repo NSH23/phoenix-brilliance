@@ -2,13 +2,20 @@ import React, { useCallback, useEffect, useRef, useState } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import type { EmblaCarouselType } from "embla-carousel"
 import { ChevronLeft, ChevronRight, Play } from "lucide-react"
-import { getYouTubeId, getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube"
+import { getYouTubeId, getYouTubeThumbnail, isYouTubeValue, YOUTUBE_NOCOOKIE_HOST } from "@/lib/youtube"
+import {
+    REELS_EXCLUSIVE_EVENT,
+    VIDEO_EXCLUSIVE_PLAY,
+    claimVideoPlayback,
+    closeAllReelsPlayers,
+    ensureYouTubeIframeApiLoaded,
+    normalizeYouTubeIframe,
+    notifyReelsSlidePlay,
+    pauseAllSiteVideosExcept,
+    releaseVideoPlayback,
+} from "@/lib/videoPlaybackCoordinator"
 
-const EXCLUSIVE_VIDEO_EVENT = "reels-exclusive-play"
-/** Fired when a page-level reel/hero handoff is done so another player may resume (e.g. hero after a reel ends). */
-const VIDEO_EXCLUSIVE_RELEASE = "video-exclusive-release"
-
-const REELS_VIDEO_SELECTOR = ".embla-reels__slide video"
+const EXCLUSIVE_VIDEO_EVENT = REELS_EXCLUSIVE_EVENT
 
 const EMBLA_REELS_OPTIONS = {
     loop: true,
@@ -16,42 +23,6 @@ const EMBLA_REELS_OPTIONS = {
     containScroll: false as const,
     duration: 65,
     dragFree: false,
-}
-
-let youTubeApiPromise: Promise<void> | null = null
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalizeYouTubeIframe(player: any) {
-    const iframe = player?.getIframe?.() as HTMLIFrameElement | undefined
-    if (!iframe) return
-    iframe.style.width = "100%"
-    iframe.style.height = "100%"
-    iframe.style.display = "block"
-    iframe.style.border = "none"
-    iframe.style.borderRadius = "0.75rem"
-}
-
-function ensureYouTubeIframeApiLoaded(): Promise<void> {
-    if (youTubeApiPromise) return youTubeApiPromise
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any
-    if (w.YT?.Player) {
-        youTubeApiPromise = Promise.resolve()
-        return youTubeApiPromise
-    }
-
-    youTubeApiPromise = new Promise((resolve) => {
-        const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]') as HTMLScriptElement | null
-        if (!existing) {
-            const script = document.createElement("script")
-            script.src = "https://www.youtube.com/iframe_api"
-            script.async = true
-            document.body.appendChild(script)
-        }
-        w.onYouTubeIframeAPIReady = () => resolve()
-    })
-
-    return youTubeApiPromise
 }
 
 function lockCarouselPlayback(embla: EmblaCarouselType | null) {
@@ -65,7 +36,7 @@ function unlockCarouselPlayback(embla: EmblaCarouselType | null) {
 }
 
 function emitVideoExclusiveRelease() {
-    window.dispatchEvent(new CustomEvent(VIDEO_EXCLUSIVE_RELEASE))
+    releaseVideoPlayback()
 }
 
 interface CarouselProps {
@@ -98,15 +69,13 @@ const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayS
     const slideId = `${index}-${src}`
     const suppressPauseCallbackRef = useRef(false)
 
-    useEffect(() => {
-        if (!requestPlay || !isCenter) return
+    const beginPlayback = useCallback(() => {
         const video = videoRef.current
         if (!video) return
-        window.dispatchEvent(new CustomEvent("video-exclusive-play", { detail: { origin: "reels-carousel" } }))
-        window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
-        document.querySelectorAll(REELS_VIDEO_SELECTOR).forEach((v) => {
-            if (v !== video) (v as HTMLVideoElement).pause()
-        })
+        claimVideoPlayback("reels-carousel", { slideId })
+        notifyReelsSlidePlay(slideId)
+        pauseAllSiteVideosExcept(video)
+        closeAllReelsPlayers(slideId)
         lockCarouselPlayback(carouselApiRef.current)
         video.muted = false
         video.currentTime = 0
@@ -117,10 +86,53 @@ const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayS
                 onPlayStarted()
             })
             .catch(() => {
-                unlockCarouselPlayback(carouselApiRef.current)
-                emitVideoExclusiveRelease()
+                video.muted = true
+                video
+                    .play()
+                    .then(() => {
+                        setIsPlaying(true)
+                        onPlayStarted()
+                    })
+                    .catch(() => {
+                        unlockCarouselPlayback(carouselApiRef.current)
+                        emitVideoExclusiveRelease()
+                    })
             })
-    }, [requestPlay, isCenter, onPlayStarted, carouselApiRef, slideId])
+    }, [carouselApiRef, onPlayStarted, slideId])
+
+    useEffect(() => {
+        const onExclusive = (e: Event) => {
+            const origin = (e as CustomEvent).detail?.origin as string | undefined
+            if (origin === "reels-carousel") return
+            videoRef.current?.pause()
+            setIsPlaying(false)
+        }
+        const onReelsEvent = (e: Event) => {
+            const detail = (e as CustomEvent).detail as { closeAll?: boolean; exceptSlideId?: string; slideId?: string }
+            if (detail?.exceptSlideId === slideId) return
+            if (detail?.slideId === slideId) return
+            videoRef.current?.pause()
+            setIsPlaying(false)
+        }
+        window.addEventListener(VIDEO_EXCLUSIVE_PLAY, onExclusive)
+        window.addEventListener(EXCLUSIVE_VIDEO_EVENT, onReelsEvent)
+        return () => {
+            window.removeEventListener(VIDEO_EXCLUSIVE_PLAY, onExclusive)
+            window.removeEventListener(EXCLUSIVE_VIDEO_EVENT, onReelsEvent)
+        }
+    }, [slideId])
+
+    useEffect(() => {
+        if (!isCenter) {
+            videoRef.current?.pause()
+            setIsPlaying(false)
+        }
+    }, [isCenter])
+
+    useEffect(() => {
+        if (!requestPlay || !isCenter) return
+        beginPlayback()
+    }, [requestPlay, isCenter, beginPlayback])
 
     const handleClick = () => {
         if (!isCenter) {
@@ -131,24 +143,7 @@ const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayS
         if (!video) return
 
         if (video.paused) {
-            window.dispatchEvent(new CustomEvent("video-exclusive-play", { detail: { origin: "reels-carousel" } }))
-            window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
-            document.querySelectorAll(REELS_VIDEO_SELECTOR).forEach((v) => {
-                if (v !== video) (v as HTMLVideoElement).pause()
-            })
-            lockCarouselPlayback(carouselApiRef.current)
-            video.muted = false
-            video.currentTime = 0
-            video
-                .play()
-                .then(() => {
-                    setIsPlaying(true)
-                    onPlayStarted()
-                })
-                .catch(() => {
-                    unlockCarouselPlayback(carouselApiRef.current)
-                    emitVideoExclusiveRelease()
-                })
+            beginPlayback()
         } else {
             suppressPauseCallbackRef.current = true
             video.pause()
@@ -166,6 +161,7 @@ const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayS
         suppressPauseCallbackRef.current = true
         video.pause()
         unlockCarouselPlayback(carouselApiRef.current)
+        releaseVideoPlayback()
         onEnded()
     }
 
@@ -197,6 +193,7 @@ const VideoSlide = ({ src, index, isCenter, sequenceActive, requestPlay, onPlayS
         <div className="relative w-full h-full group" onClick={handleClick}>
             <video
                 ref={videoRef}
+                data-site-video
                 src={src}
                 className="size-full object-cover rounded-xl pointer-events-none"
                 loop={false}
@@ -248,7 +245,25 @@ const YouTubeSlide = ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const playerRef = useRef<any>(null)
     const endedHandledRef = useRef(false)
+    const startSideEffectsDoneRef = useRef(false)
+    const wantsAudioRef = useRef(false)
+    const suppressPauseRef = useRef(true)
+    const onPlayStartedRef = useRef(onPlayStarted)
+    const onPausedRef = useRef(onPaused)
+    const onEndedRef = useRef(onEnded)
     const videoId = getYouTubeId(src)
+
+    useEffect(() => {
+        onPlayStartedRef.current = onPlayStarted
+    }, [onPlayStarted])
+
+    useEffect(() => {
+        onPausedRef.current = onPaused
+    }, [onPaused])
+
+    useEffect(() => {
+        onEndedRef.current = onEnded
+    }, [onEnded])
 
     useEffect(() => {
         endedHandledRef.current = false
@@ -257,38 +272,87 @@ const YouTubeSlide = ({
     useEffect(() => {
         const handler = (e: Event) => {
             const customEvent = e as CustomEvent
-            if (customEvent.detail?.closeAll) {
+            const detail = customEvent.detail as {
+                closeAll?: boolean
+                exceptSlideId?: string
+                slideId?: string
+            }
+            if (detail?.exceptSlideId === slideId) return
+            if (detail?.closeAll) {
                 try {
                     playerRef.current?.stopVideo?.()
                 } catch {
                     /* ignore */
                 }
                 setIsPlaying(false)
+                startSideEffectsDoneRef.current = false
                 return
             }
-            const incomingSlideId = customEvent.detail?.slideId as string | undefined
-            if (!incomingSlideId) return
-            if (incomingSlideId !== slideId) setIsPlaying(false)
+            const incomingSlideId = detail?.slideId
+            if (!incomingSlideId || incomingSlideId === slideId) return
+            try {
+                playerRef.current?.pauseVideo?.()
+            } catch {
+                /* ignore */
+            }
+            setIsPlaying(false)
+            startSideEffectsDoneRef.current = false
         }
         window.addEventListener(EXCLUSIVE_VIDEO_EVENT, handler)
         return () => window.removeEventListener(EXCLUSIVE_VIDEO_EVENT, handler)
     }, [slideId])
 
     useEffect(() => {
-        if (!isCenter) {
-            setIsPlaying((wasPlaying) => {
-                if (wasPlaying) {
-                    try {
-                        playerRef.current?.pauseVideo?.()
-                    } catch {
-                        /* ignore */
-                    }
-                    unlockCarouselPlayback(carouselApiRef.current)
-                }
-                return false
-            })
+        const onExclusive = (e: Event) => {
+            const origin = (e as CustomEvent).detail?.origin as string | undefined
+            if (origin === "youtube-slide" || origin === "reels-carousel") return
+            try {
+                playerRef.current?.pauseVideo?.()
+            } catch {
+                /* ignore */
+            }
+            setIsPlaying(false)
+            startSideEffectsDoneRef.current = false
         }
+        window.addEventListener(VIDEO_EXCLUSIVE_PLAY, onExclusive)
+        return () => window.removeEventListener(VIDEO_EXCLUSIVE_PLAY, onExclusive)
+    }, [])
+
+    useEffect(() => {
+        if (isCenter) return
+        startSideEffectsDoneRef.current = false
+        setIsPlaying(false)
+        try {
+            playerRef.current?.pauseVideo?.()
+        } catch {
+            /* ignore */
+        }
+        unlockCarouselPlayback(carouselApiRef.current)
     }, [isCenter, carouselApiRef])
+
+    useEffect(() => {
+        if (!requestPlay || !isCenter) return
+        wantsAudioRef.current = true
+        suppressPauseRef.current = true
+        setIsPlaying(true)
+    }, [requestPlay, isCenter, slideId])
+
+    // Side effects when playback starts — never inside setState updaters.
+    useEffect(() => {
+        if (!isPlaying || !isCenter) {
+            startSideEffectsDoneRef.current = false
+            return
+        }
+        if (startSideEffectsDoneRef.current) return
+        startSideEffectsDoneRef.current = true
+
+        claimVideoPlayback("youtube-slide", { slideId })
+        notifyReelsSlidePlay(slideId)
+        pauseAllSiteVideosExcept()
+        closeAllReelsPlayers(slideId)
+        lockCarouselPlayback(carouselApiRef.current)
+        onPlayStartedRef.current()
+    }, [isPlaying, isCenter, slideId, carouselApiRef])
 
     useEffect(() => {
         if (!isPlaying || !videoId) return
@@ -306,30 +370,49 @@ const YouTubeSlide = ({
 
                 if (!playerRef.current) {
                     playerRef.current = new w.YT.Player(mountRef.current, {
+                        host: YOUTUBE_NOCOOKIE_HOST,
                         videoId,
                         playerVars: {
                             autoplay: 1,
+                            mute: 1,
                             playsinline: 1,
                             rel: 0,
                             modestbranding: 1,
                             controls: 1,
+                            enablejsapi: 1,
                         },
                         events: {
                             onReady: () => {
                                 normalizeYouTubeIframe(playerRef.current)
+                                if (wantsAudioRef.current) {
+                                    try {
+                                        playerRef.current?.unMute?.()
+                                    } catch {
+                                        /* ignore */
+                                    }
+                                }
                             },
                             onStateChange: (ev: any) => {
                                 const isEnded = ev?.data === w.YT.PlayerState.ENDED
                                 const isPaused = ev?.data === w.YT.PlayerState.PAUSED
                                 const isPlayingNow = ev?.data === w.YT.PlayerState.PLAYING
                                 if (isPlayingNow) {
+                                    suppressPauseRef.current = false
                                     setIsPlaying(true)
+                                    if (wantsAudioRef.current) {
+                                        try {
+                                            playerRef.current?.unMute?.()
+                                        } catch {
+                                            /* ignore */
+                                        }
+                                    }
                                     return
                                 }
                                 if (isPaused) {
+                                    if (suppressPauseRef.current) return
                                     setIsPlaying(false)
                                     unlockCarouselPlayback(carouselApiRef.current)
-                                    onPaused()
+                                    onPausedRef.current()
                                     return
                                 }
                                 if (!isEnded) return
@@ -338,15 +421,20 @@ const YouTubeSlide = ({
 
                                 setIsPlaying(false)
                                 unlockCarouselPlayback(carouselApiRef.current)
-                                onEnded()
+                                releaseVideoPlayback()
+                                onEndedRef.current()
                             },
                         },
                     })
                 } else {
                     try {
                         normalizeYouTubeIframe(playerRef.current)
+                        suppressPauseRef.current = true
                         playerRef.current.loadVideoById(videoId)
                         playerRef.current.playVideo()
+                        if (wantsAudioRef.current) {
+                            playerRef.current.unMute?.()
+                        }
                     } catch {
                         /* ignore */
                     }
@@ -362,40 +450,28 @@ const YouTubeSlide = ({
                 /* ignore */
             }
         }
-    }, [isPlaying, videoId, slideId, onEnded, onPaused, carouselApiRef])
-
-    useEffect(() => {
-        if (!requestPlay || !isCenter) return
-        setIsPlaying((prev) => {
-            if (prev) return prev
-            window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
-            window.dispatchEvent(new CustomEvent("video-exclusive-play", { detail: { origin: "youtube-slide" } }))
-            document.querySelectorAll(REELS_VIDEO_SELECTOR).forEach((v) => (v as HTMLVideoElement).pause())
-            lockCarouselPlayback(carouselApiRef.current)
-            onPlayStarted()
-            return true
-        })
-    }, [requestPlay, isCenter, slideId, onPlayStarted, carouselApiRef])
+    }, [isPlaying, videoId, slideId, carouselApiRef])
 
     const handleClick = () => {
         if (!isCenter) {
             if (sequenceActive) carouselApiRef.current?.scrollTo(index)
             return
         }
-        setIsPlaying((prev) => {
-            const next = !prev
-            if (next) {
-                window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { slideId } }))
-                window.dispatchEvent(new CustomEvent("video-exclusive-play", { detail: { origin: "youtube-slide" } }))
-                document.querySelectorAll(REELS_VIDEO_SELECTOR).forEach((v) => (v as HTMLVideoElement).pause())
-                lockCarouselPlayback(carouselApiRef.current)
-                onPlayStarted()
-            } else {
-                unlockCarouselPlayback(carouselApiRef.current)
-                onPaused()
+        if (isPlaying) {
+            suppressPauseRef.current = true
+            setIsPlaying(false)
+            try {
+                playerRef.current?.pauseVideo?.()
+            } catch {
+                /* ignore */
             }
-            return next
-        })
+            unlockCarouselPlayback(carouselApiRef.current)
+            onPausedRef.current()
+            return
+        }
+        wantsAudioRef.current = true
+        suppressPauseRef.current = true
+        setIsPlaying(true)
     }
 
     return (
@@ -525,20 +601,26 @@ export const CardCarousel: React.FC<CarouselProps> = ({
         return stopAutoplay
     }, [emblaApi, reelsSequenceActive, startAutoplay, stopAutoplay, images.length])
 
-    const handleVideoEnded = () => {
+    const handleVideoEnded = useCallback(() => {
         const n = images.length
         if (n === 0) return
         const current = carouselApiRef.current?.selectedScrollSnap() ?? activeIndex
         const nextIndex = (current + 1) % n
-        setNextShouldPlayIndex(nextIndex)
+        reelsSequenceActiveRef.current = true
+        setReelsSequenceActive(true)
+        stopAutoplay()
         carouselApiRef.current?.scrollNext()
-    }
+        window.setTimeout(() => {
+            setNextShouldPlayIndex(nextIndex)
+        }, 280)
+    }, [activeIndex, images.length, stopAutoplay])
 
     const handleVideoPaused = useCallback(() => {
         setNextShouldPlayIndex(null)
         reelsSequenceActiveRef.current = false
         setReelsSequenceActive(false)
         unlockCarouselPlayback(carouselApiRef.current)
+        releaseVideoPlayback()
         startAutoplay()
     }, [startAutoplay])
 
@@ -552,11 +634,10 @@ export const CardCarousel: React.FC<CarouselProps> = ({
     useEffect(() => {
         const handleExclusivePlay = (e: Event) => {
             const customEvent = e as CustomEvent
-            if (customEvent.detail?.origin !== "reels-carousel" && customEvent.detail?.origin !== "youtube-slide") {
-                window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { closeAll: true } }))
-                document.querySelectorAll(REELS_VIDEO_SELECTOR).forEach((v) => {
-                    ;(v as HTMLVideoElement).pause()
-                })
+            const origin = customEvent.detail?.origin as string | undefined
+            if (origin !== "reels-carousel" && origin !== "youtube-slide") {
+                closeAllReelsPlayers()
+                pauseAllSiteVideosExcept()
                 unlockCarouselPlayback(carouselApiRef.current)
                 reelsSequenceActiveRef.current = false
                 setReelsSequenceActive(false)
@@ -564,8 +645,8 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                 startAutoplay()
             }
         }
-        window.addEventListener("video-exclusive-play", handleExclusivePlay)
-        return () => window.removeEventListener("video-exclusive-play", handleExclusivePlay)
+        window.addEventListener(VIDEO_EXCLUSIVE_PLAY, handleExclusivePlay)
+        return () => window.removeEventListener(VIDEO_EXCLUSIVE_PLAY, handleExclusivePlay)
     }, [startAutoplay])
 
     useEffect(() => {
@@ -577,8 +658,8 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                     if (!entry.isIntersecting) {
                         inViewRef.current = false
                         stopAutoplay()
-                        document.querySelectorAll(REELS_VIDEO_SELECTOR).forEach((v) => (v as HTMLVideoElement).pause())
-                        window.dispatchEvent(new CustomEvent(EXCLUSIVE_VIDEO_EVENT, { detail: { closeAll: true } }))
+                        pauseAllSiteVideosExcept()
+                        closeAllReelsPlayers()
                         unlockCarouselPlayback(carouselApiRef.current)
                         setReelsSequenceActive(false)
                         emitVideoExclusiveRelease()

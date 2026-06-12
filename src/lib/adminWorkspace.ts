@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   Calendar,
-  Images,
   FolderOpen,
   Handshake,
   MessageSquareQuote,
@@ -12,7 +11,6 @@ import {
   Wrench,
   Award,
   Users,
-  ImagePlus,
   Film,
   MessageCircleMore,
   ChartColumn,
@@ -33,10 +31,8 @@ export interface AdminMenuItem {
 export const ADMIN_WEBSITE_MENU_ITEMS: AdminMenuItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, keywords: 'home overview website' },
   { name: 'Events', href: '/admin/events', icon: Calendar, keywords: 'calendar' },
-  { name: 'Gallery', href: '/admin/gallery', icon: Images, keywords: 'images pictures portfolio' },
   { name: 'Venues', href: '/admin/collaborations', icon: Handshake, keywords: 'partners venues collaborations' },
   { name: 'Manage Videos', href: '/admin/media', icon: Film, keywords: 'videos hero reels' },
-  { name: 'Background Images', href: '/admin/background-images', icon: ImagePlus, keywords: 'background cloudinary images' },
   { name: 'Albums', href: '/admin/albums', icon: FolderOpen, keywords: 'photos folders' },
   { name: 'Services', href: '/admin/services', icon: Wrench, keywords: 'offerings' },
   { name: 'Why Choose Us', href: '/admin/why-us', icon: Award, keywords: 'why us stats reasons' },

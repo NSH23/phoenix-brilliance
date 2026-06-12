@@ -25,8 +25,8 @@ const Footer = () => {
   };
 
   return (
-    <footer className="relative border-t border-border bg-[#1A1816] pb-24 text-[#F5F2EE] md:pb-0">
-      <div className="absolute inset-x-0 top-0 h-px bg-primary/80" aria-hidden />
+    <footer className="relative border-t border-footer-border bg-footer-bg pb-24 text-footer-text md:pb-0">
+      <div className="absolute inset-x-0 top-0 h-px bg-footer-heading/80" aria-hidden />
 
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-6 lg:px-8 lg:py-16">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-12">
@@ -40,11 +40,11 @@ const Footer = () => {
                 loading="lazy"
                 decoding="async"
               />
-              <span className="font-serif text-xl font-medium leading-tight">
+              <span className="font-serif text-xl font-medium leading-tight text-footer-text">
                 Phoenix Events & Production
               </span>
             </div>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-[#F5F2EE]/75">
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-footer-muted">
               Premium event planning and production for weddings, celebrations, and corporate
               gatherings across Pune.
             </p>
@@ -53,7 +53,7 @@ const Footer = () => {
                 href={INSTAGRAM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#F5F2EE]/15 text-[#F5F2EE]/85 transition-colors hover:border-primary hover:text-primary"
+                className="footer-icon-btn flex h-10 w-10 items-center justify-center rounded-lg"
                 aria-label="Instagram"
               >
                 <Instagram className="h-4 w-4" />
@@ -62,7 +62,7 @@ const Footer = () => {
                 href={`https://wa.me/${contactInfo.whatsapp || DEFAULT_WHATSAPP}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#F5F2EE]/15 text-[#F5F2EE]/85 transition-colors hover:border-primary hover:text-primary"
+                className="footer-icon-btn flex h-10 w-10 items-center justify-center rounded-lg"
                 aria-label="WhatsApp"
               >
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -71,7 +71,7 @@ const Footer = () => {
               </a>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#F5F2EE]/15 text-[#F5F2EE]/85 transition-colors hover:border-primary hover:text-primary"
+                className="footer-icon-btn flex h-10 w-10 items-center justify-center rounded-lg"
                 aria-label="Email"
               >
                 <Mail className="h-4 w-4" />
@@ -81,16 +81,13 @@ const Footer = () => {
 
           {/* Quick links */}
           <div className="lg:col-span-2">
-            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-footer-heading">
               Quick Links
             </h4>
             <ul className="mt-4 space-y-2.5">
               {getPublicFooterQuickLinks().map(({ name: label, href: to }) => (
                 <li key={label}>
-                  <Link
-                    to={to}
-                    className="text-sm text-[#F5F2EE]/75 transition-colors hover:text-primary"
-                  >
+                  <Link to={to} className="footer-link text-sm">
                     {label}
                   </Link>
                 </li>
@@ -100,17 +97,14 @@ const Footer = () => {
 
           {/* Events */}
           <div className="lg:col-span-2">
-            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-footer-heading">
               Our Events
             </h4>
             <ul className="mt-4 space-y-2.5">
               {["Weddings", "Birthdays", "Engagements", "Corporate", "Sangeet", "Traditional"].map(
                 (event) => (
                   <li key={event}>
-                    <Link
-                      to="/events"
-                      className="text-sm text-[#F5F2EE]/75 transition-colors hover:text-primary"
-                    >
+                    <Link to="/events" className="footer-link text-sm">
                       {event}
                     </Link>
                   </li>
@@ -121,33 +115,27 @@ const Footer = () => {
 
           {/* Contact */}
           <div className="lg:col-span-4">
-            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-footer-heading">
               Get In Touch
             </h4>
             <ul className="mt-4 space-y-4">
               {(contact?.address || contactInfo.address) && (
                 <li className="flex gap-3">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <p className="text-sm leading-relaxed text-[#F5F2EE]/75">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-footer-heading" />
+                  <p className="text-sm leading-relaxed text-footer-muted">
                     {contact?.address || contactInfo.address || MAP_ADDRESS}
                   </p>
                 </li>
               )}
               {contactInfo.phone && (
                 <li className="flex gap-3">
-                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-footer-heading" />
                   <div className="flex flex-col gap-1">
-                    <a
-                      href={toTelHref(contactInfo.phone)}
-                      className="text-sm text-[#F5F2EE]/75 hover:text-primary"
-                    >
+                    <a href={toTelHref(contactInfo.phone)} className="footer-link text-sm">
                       {contactInfo.phone}
                     </a>
                     {contactInfo.phone2 ? (
-                      <a
-                        href={toTelHref(contactInfo.phone2)}
-                        className="text-sm text-[#F5F2EE]/75 hover:text-primary"
-                      >
+                      <a href={toTelHref(contactInfo.phone2)} className="footer-link text-sm">
                         {contactInfo.phone2}
                       </a>
                     ) : null}
@@ -155,11 +143,8 @@ const Footer = () => {
                 </li>
               )}
               <li className="flex gap-3">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <a
-                  href={`mailto:${CONTACT_EMAIL}`}
-                  className="text-sm break-all text-[#F5F2EE]/75 hover:text-primary"
-                >
+                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-footer-heading" />
+                <a href={`mailto:${CONTACT_EMAIL}`} className="footer-link text-sm break-all">
                   {CONTACT_EMAIL}
                 </a>
               </li>
@@ -167,14 +152,14 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-12 flex items-center justify-between border-t border-[#F5F2EE]/10 pt-6">
-          <p className="text-sm text-[#F5F2EE]/60">
+        <div className="mt-12 flex items-center justify-between border-t border-footer pt-6">
+          <p className="text-sm text-footer-muted">
             © {new Date().getFullYear()} Phoenix Events & Production
           </p>
           <button
             type="button"
             onClick={scrollToTop}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#F5F2EE]/15 text-[#F5F2EE]/85 transition-colors hover:border-primary hover:text-primary"
+            className="footer-icon-btn flex h-10 w-10 items-center justify-center rounded-lg"
             aria-label="Scroll to top"
           >
             <ArrowUp className="h-4 w-4" />
