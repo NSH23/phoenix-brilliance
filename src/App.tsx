@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { VENUES_LIST_PATH, venueDetailPath } from "@/lib/venueRoutes";
+import { isPublicGalleryHubEnabled } from "@/lib/publicGallery";
 import { Loader2 } from "lucide-react";
 import ScrollToTop from "./components/ScrollToTop";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -31,6 +32,15 @@ function RedirectLegacyVenueDetail() {
   if (!partnerId) return <Navigate to={VENUES_LIST_PATH} replace />;
   return <Navigate to={venueDetailPath(partnerId)} replace />;
 }
+
+/** When the gallery hub is off, /gallery/:eventType → /events/:eventType */
+function RedirectGalleryEventListingToEvents() {
+  const { eventType } = useParams();
+  if (!eventType || eventType === "all") return <Navigate to="/events" replace />;
+  return <Navigate to={`/events/${eventType}`} replace />;
+}
+
+const publicGalleryHubEnabled = isPublicGalleryHubEnabled();
 
 const Index = lazy(() => import("./pages/Index"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -104,8 +114,18 @@ function AppRoutes() {
           <Route element={<PublicSiteLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/gallery/:eventType" element={<GalleryEventType />} />
+            {publicGalleryHubEnabled ? (
+              <>
+                <Route path="/gallery" element={<Gallery />} />
+                <Route path="/gallery/:eventType" element={<GalleryEventType />} />
+              </>
+            ) : (
+              <>
+                <Route path="/gallery" element={<Navigate to="/events" replace />} />
+                <Route path="/gallery/all" element={<Navigate to="/events" replace />} />
+                <Route path="/gallery/:eventType" element={<RedirectGalleryEventListingToEvents />} />
+              </>
+            )}
             <Route path="/gallery/:eventType/:albumId" element={<GalleryAlbum />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:eventType" element={<EventDetail />} />

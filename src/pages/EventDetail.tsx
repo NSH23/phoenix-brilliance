@@ -16,6 +16,7 @@ import { GalleryFolderGrid } from "@/components/ui/gallery-folder-card";
 import { getAllTestimonials, Testimonial } from "@/services/testimonials";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
+import { publicAlbumPath, publicEventGalleryListingPath } from "@/lib/publicGallery";
 
 // Icon mapping for steps
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -418,7 +419,7 @@ const EventDetail = () => {
                 <p className="text-muted-foreground">Browse our {event.title.toLowerCase()} event galleries</p>
               </div>
               <Link
-                to={`/gallery/${event.slug}`}
+                to={publicEventGalleryListingPath(event.slug)}
                 className="hidden sm:flex items-center gap-2 text-primary hover:underline"
               >
                 View All <ArrowRight className="w-4 h-4" />
@@ -432,14 +433,14 @@ const EventDetail = () => {
                 count: album.mediaCount ?? 0,
                 coverUrl: album.cover_image,
                 description: album.description || "View gallery",
-                href: `/gallery/${event.slug}/${album.id}`,
+                href: publicAlbumPath(event.slug, album.id),
               }))}
               className="gap-4 sm:gap-6"
             />
 
             <div className="mt-8 text-center sm:hidden">
               <Link
-                to={`/gallery/${event.slug}`}
+                to={publicEventGalleryListingPath(event.slug)}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full
                          bg-primary text-primary-foreground font-medium"
               >
@@ -617,7 +618,7 @@ const EventDetail = () => {
                 Start Planning <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
-                to={`/gallery/${event.slug}`}
+                to={publicEventGalleryListingPath(event.slug)}
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-full
                          bg-card border border-border text-foreground font-semibold
                          hover:border-primary transition-all duration-300"

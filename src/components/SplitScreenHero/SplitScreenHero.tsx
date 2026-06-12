@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { publicGalleryHubPath } from "@/lib/publicGallery";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import CountUp from "@/components/CountUp";
 import type { SplitScreenHeroProps, Scene } from "./types";
@@ -836,7 +837,7 @@ function ContentPanel({ scene }: { scene: Scene }) {
 
         {/* Secondary Button - VIEW PORTFOLIO */}
         <Link
-          to="/gallery"
+          to={publicGalleryHubPath()}
           className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border-2 border-divider dark:border-white/30 text-heading dark:text-foreground text-base font-semibold bg-transparent transition-all duration-300 hover:border-primary dark:hover:border-primary hover:bg-primary/5 dark:hover:bg-primary/10 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         >
           VIEW PORTFOLIO

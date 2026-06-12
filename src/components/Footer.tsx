@@ -3,6 +3,7 @@ import { Instagram, ArrowUp, MapPin, Phone, Mail } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { DEFAULT_PHONE_PRIMARY, DEFAULT_PHONE_SECONDARY, DEFAULT_WHATSAPP, toTelHref } from "@/lib/contactNumbers";
+import { getPublicFooterQuickLinks } from "@/lib/publicGallery";
 
 const INSTAGRAM_URL = "https://www.instagram.com/phoenix_events_and_production?igsh=MW1nMDh4dmg2ZWNvNA==";
 const CONTACT_EMAIL = "Phoenixeventsandproduction@gmail.com";
@@ -100,14 +101,7 @@ const Footer = () => {
               Quick Links
             </h4>
             <ul className="space-y-0" style={{ lineHeight: 1.6 }}>
-              {[
-                { to: "/", label: "Home" },
-                { to: "/events", label: "Events" },
-                { to: "/services", label: "Services" },
-                { to: "/gallery", label: "Gallery" },
-                { to: "/#testimonials", label: "Testimonials" },
-                { to: "/contact", label: "Contact" },
-              ].map(({ to, label }) => (
+              {getPublicFooterQuickLinks().map(({ name: label, href: to }) => (
                 <li key={label}>
                   <Link
                     to={to}

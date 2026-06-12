@@ -33,6 +33,7 @@ import {
   type CollaborationFolder,
 } from '@/services/collaborations';
 import { GALLERY_ROOT_ID, type ExplorerFolder, type ExplorerMediaItem } from '@/lib/mediaFolderTree';
+import { mediaKey } from '@/lib/explorerMediaOps';
 import { resolvePublicStorageUrl } from '@/services/storage';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
@@ -95,6 +96,7 @@ export default function VenueEditPage() {
     () => typeof window !== 'undefined' && localStorage.getItem(GALLERY_AUTOSAVE_KEY) !== 'false'
   );
   const galleryAutosavingRef = useRef(false);
+  const pendingGalleryAutosaveRef = useRef<MediaAutosaveSnapshot | null>(null);
   /** Last persisted gallery rows — avoids re-fetching all images on every autosave. */
   const galleryDbSnapshotRef = useRef<
     Array<{
@@ -168,7 +170,10 @@ export default function VenueEditPage() {
   const persistGallery = useCallback(
     async (opts?: { silent?: boolean; snapshot?: MediaAutosaveSnapshot; force?: boolean }) => {
       if (!editingCollab) return;
-      if (galleryAutosavingRef.current && !opts?.force) return;
+      if (galleryAutosavingRef.current && !opts?.force) {
+        pendingGalleryAutosaveRef.current = opts?.snapshot ?? { media: galleryImages, folders: galleryFolders };
+        return;
+      }
       galleryAutosavingRef.current = true;
 
       const imagesToSave = opts?.snapshot?.media ?? galleryImages;
@@ -237,7 +242,17 @@ export default function VenueEditPage() {
           }
         }
 
-        setGalleryImages(resultImages);
+        setGalleryImages((prev) => {
+          const savedByKey = new Map(resultImages.map((row) => [mediaKey(row), row]));
+          const snapshotKeys = new Set(imagesToSave.map((row) => mediaKey(row)));
+          const localMovedAhead =
+            prev.length !== imagesToSave.length || prev.some((row) => !snapshotKeys.has(mediaKey(row)));
+          if (!localMovedAhead) return resultImages;
+          return prev.map((row) => {
+            const saved = savedByKey.get(mediaKey(row));
+            return saved?.id && !row.id ? { ...row, id: saved.id } : row;
+          });
+        });
         setGalleryFolders(foldersToSave);
         galleryDbSnapshotRef.current = resultImages
           .filter((row): row is GalleryImageRow & { id: string } => !!row.id)
@@ -259,6 +274,11 @@ export default function VenueEditPage() {
         throw err;
       } finally {
         galleryAutosavingRef.current = false;
+        const queued = pendingGalleryAutosaveRef.current;
+        if (queued) {
+          pendingGalleryAutosaveRef.current = null;
+          void persistGallery({ silent: true, snapshot: queued, force: true });
+        }
       }
     },
     [editingCollab, galleryFolders, galleryImages]

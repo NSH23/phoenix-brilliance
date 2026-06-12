@@ -4,6 +4,7 @@ import { getGalleryImagesByRows, categoryToGallerySlug, GalleryImage } from "@/s
 import { getSiteSettingOptional } from "@/services/siteContent";
 import { GALLERY_FRAME_TEMPLATES, type GalleryFrameTemplateId } from "@/lib/galleryFrames";
 import { cn } from "@/lib/utils";
+import { publicEventGalleryListingPath, publicGalleryHubPath } from "@/lib/publicGallery";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 
 /* Gallery: rows of images with infinite horizontal scroll.
@@ -51,7 +52,7 @@ function FrameImage({ src, alt, category, frameId }: FrameImageProps) {
   const [imgError, setImgError] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const slug = category ? categoryToGallerySlug(category) : null;
-  const href = slug ? `/gallery/${slug}` : undefined;
+  const href = slug ? publicEventGalleryListingPath(slug) : undefined;
 
   // Detect dark theme
   useEffect(() => {
@@ -315,7 +316,7 @@ export default function PolaroidGallerySection() {
       </div>
 
       <div className="relative z-10 home-section-inner pt-8 text-center">
-        <Link to="/gallery" className="btn-section-cta">
+        <Link to={publicGalleryHubPath()} className="btn-section-cta">
           <span>View Full Gallery</span>
           <span aria-hidden>→</span>
         </Link>

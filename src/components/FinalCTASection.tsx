@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { publicGalleryHubPath } from "@/lib/publicGallery";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
@@ -58,7 +59,7 @@ const FinalCTASection = () => {
               className="font-sans font-medium h-14 px-8 text-lg rounded-full border-2 border-primary/50 text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 group"
               asChild
             >
-              <Link to="/gallery">
+              <Link to={publicGalleryHubPath()}>
                 View Our Work <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>

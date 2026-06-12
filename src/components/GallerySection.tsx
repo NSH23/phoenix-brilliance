@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { publicGalleryHubPath } from "@/lib/publicGallery";
 import { X, ChevronLeft, ChevronRight, Heart, ZoomIn, Loader2 } from "lucide-react";
 import { getGalleryImagesForHomepage, getGalleryCategories, GalleryImage } from "@/services/gallery";
 import { getSiteSettingOptional } from "@/services/siteContent";
@@ -302,7 +303,7 @@ const GallerySection = () => {
                 className="text-center mt-14"
               >
                 <Link
-                  to="/gallery"
+                  to={publicGalleryHubPath()}
                   className="inline-flex items-center gap-3 px-8 py-4 rounded-full
                            bg-gradient-to-r from-primary/10 to-rose-gold/10 
                            border-2 border-primary/30 text-foreground font-semibold

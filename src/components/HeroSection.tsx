@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { publicGalleryHubPath } from "@/lib/publicGallery";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -171,7 +172,7 @@ const HeroSection = () => {
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="font-sans font-medium tracking-[0.02em] h-12 md:h-14 px-6 md:px-8 text-base md:text-lg rounded-full border-2 border-primary/50 text-foreground bg-background/50 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 group" asChild>
-              <Link to="/gallery">
+              <Link to={publicGalleryHubPath()}>
                 View Our Work <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>

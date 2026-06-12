@@ -356,6 +356,9 @@ export default function AdminMediaExplorer({
 }: AdminMediaExplorerProps) {
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAutosaveRef = useRef<MediaAutosaveSnapshot | null>(null);
+  /** Latest media array — async uploads must not read a stale `media` closure. */
+  const mediaRef = useRef(media);
+  mediaRef.current = media;
 
   const runAutosaveNow = (snapshot: MediaAutosaveSnapshot) => {
     if (!onAutosave) return;
@@ -868,12 +871,14 @@ export default function AdminMediaExplorer({
       return;
     }
 
+    const target = resolveDropFolderId(folderId);
     setExternalUploading(true);
     setUploadProgress(0);
     try {
-      const target = resolveDropFolderId(folderId);
-      const inFolder = media.filter((m) => (m.folder_id ?? null) === target);
-      let nextOrder = inFolder.length > 0 ? Math.max(...inFolder.map((m) => m.display_order ?? 0)) + 1 : 0;
+      let nextOrder = (() => {
+        const inFolder = mediaRef.current.filter((m) => (m.folder_id ?? null) === target);
+        return inFolder.length > 0 ? Math.max(...inFolder.map((m) => m.display_order ?? 0)) + 1 : 0;
+      })();
       const added: ExplorerMediaItem[] = [];
 
       for (let i = 0; i < files.length; i++) {
@@ -895,7 +900,7 @@ export default function AdminMediaExplorer({
         setUploadProgress(Math.round(((i + 1) / files.length) * 100));
       }
 
-      const nextMedia = [...media, ...added];
+      const nextMedia = [...mediaRef.current, ...added];
       onMediaChange(nextMedia);
       toast.success(`Uploaded ${added.length} file${added.length === 1 ? '' : 's'}`);
       triggerAutosave({ media: nextMedia, folders });
@@ -976,16 +981,20 @@ export default function AdminMediaExplorer({
     setNewFolderName('');
   };
 
-  const setImagesForFolder = (urls: string[]) => {
-    const folderId = selectedFolderId === GALLERY_ROOT_ID ? null : selectedFolderId;
-    const others = media.filter((m) => (m.folder_id ?? null) !== folderId);
-    const existingInFolder = media.filter((m) => (m.folder_id ?? null) === folderId);
+  const setImagesForFolder = (urls: string[], scopeFolderId: string | null = selectedFolderId) => {
+    const folderId = resolveDropFolderId(scopeFolderId);
+    const currentMedia = mediaRef.current;
+    const others = currentMedia.filter((m) => (m.folder_id ?? null) !== folderId);
+    const existingInFolder = currentMedia.filter((m) => (m.folder_id ?? null) === folderId);
     const videosInFolder = existingInFolder.filter((m) => m.media_type === 'video');
-    const merged = urls.map((url, i) => {
+    const merged = urls.flatMap((url, i) => {
       const found = existingInFolder.find((e) => e.url === url && e.media_type === 'image');
-      return found
-        ? { ...found, display_order: i }
-        : { url, folder_id: folderId, display_order: i, media_type: 'image' as const, caption: null };
+      if (found) return [{ ...found, display_order: i }];
+      const ownedElsewhere = currentMedia.some(
+        (m) => m.media_type === 'image' && m.url === url && (m.folder_id ?? null) !== folderId
+      );
+      if (ownedElsewhere) return [];
+      return [{ url, folder_id: folderId, display_order: i, media_type: 'image' as const, caption: null }];
     });
     const base = merged.length;
     const videosAdjusted = videosInFolder.map((v, i) => ({ ...v, folder_id: folderId, display_order: base + i }));
@@ -1100,7 +1109,7 @@ export default function AdminMediaExplorer({
                     const nextMedia = media.filter((m) => mediaKey(m) !== key);
                     onMediaChange(nextMedia);
                     persistAfterDelete({ media: nextMedia, folders });
-                  } else setImagesForFolder(imageUrls.filter((u) => u !== item.url));
+                  } else setImagesForFolder(imageUrls.filter((u) => u !== item.url), item.folder_id ?? selectedFolderId);
                   setSelectedKeys((prev) => { const n = new Set(prev); n.delete(key); return n; });
                 }}
               >
@@ -1680,15 +1689,22 @@ export default function AdminMediaExplorer({
 
             {canUpload && showUpload && (
               <div className="mb-6 rounded-lg border border-border/60 bg-muted/10 p-4">
-                <Label className="mb-2 block text-sm font-medium">Upload photos</Label>
+                <Label className="mb-2 block text-sm font-medium">
+                  {imageUrls.length > 0 ? 'Add more photos' : 'Upload photos'}
+                </Label>
                 <ImageUpload
-                  value={imageUrls}
-                  onChange={(v) => setImagesForFolder((v as string[]) || [])}
+                  key={contentTargetId}
+                  value={[]}
+                  onChange={(v) => {
+                    const added = ((v as string[]) || []).filter((url) => !imageUrls.includes(url));
+                    if (!added.length) return;
+                    setImagesForFolder([...imageUrls, ...added], selectedFolderId);
+                  }}
                   multiple
-                  maxFiles={40}
+                  maxFiles={Math.max(0, 40 - imageUrls.length)}
                   previewFit="contain"
                   bucket={uploadBucket as BucketName}
-                  enableBulkDelete
+                  enableBulkDelete={false}
                   uploadOnSelect
                 />
               </div>

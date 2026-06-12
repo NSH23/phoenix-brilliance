@@ -5,16 +5,10 @@ import { Link } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-
-const navLinks = [
-  { name: "Home", href: "/" },
-  { name: "Events", href: "/events" },
-  { name: "Venues", href: "/venues" },
-  { name: "Gallery", href: "/gallery" },
-  { name: "Contact", href: "/contact" },
-];
+import { getPublicNavLinks } from "@/lib/publicGallery";
 
 export default function Navbar() {
+  const navLinks = getPublicNavLinks();
   const { contact, logoUrl } = useSiteConfig();
   const logoSrc = logoUrl || '/logo.png';
   const [isOpen, setIsOpen] = useState(false);

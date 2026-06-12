@@ -40,6 +40,7 @@ import {
 } from '@/services/albums';
 import { getAllEvents, Event } from '@/services/events';
 import { GALLERY_ROOT_ID, type ExplorerFolder, type ExplorerMediaItem } from '@/lib/mediaFolderTree';
+import { mediaKey } from '@/lib/explorerMediaOps';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { cn } from '@/lib/utils';
@@ -98,6 +99,7 @@ export default function AlbumEditPage() {
     () => typeof window !== 'undefined' && localStorage.getItem(GALLERY_AUTOSAVE_KEY) !== 'false'
   );
   const galleryAutosavingRef = useRef(false);
+  const pendingGalleryAutosaveRef = useRef<MediaAutosaveSnapshot | null>(null);
   const galleryDbSnapshotRef = useRef<
     Array<{
       id: string;
@@ -170,7 +172,10 @@ export default function AlbumEditPage() {
   const persistGallery = useCallback(
     async (opts?: { silent?: boolean; snapshot?: MediaAutosaveSnapshot; force?: boolean }) => {
       if (!editingAlbum) return;
-      if (galleryAutosavingRef.current && !opts?.force) return;
+      if (galleryAutosavingRef.current && !opts?.force) {
+        pendingGalleryAutosaveRef.current = opts?.snapshot ?? { media: galleryMedia, folders: galleryFolders };
+        return;
+      }
       galleryAutosavingRef.current = true;
 
       const mediaToSave = opts?.snapshot?.media ?? galleryMedia;
@@ -243,7 +248,17 @@ export default function AlbumEditPage() {
           }
         }
 
-        setGalleryMedia(resultMedia);
+        setGalleryMedia((prev) => {
+          const savedByKey = new Map(resultMedia.map((row) => [mediaKey(row), row]));
+          const snapshotKeys = new Set(mediaToSave.map((row) => mediaKey(row)));
+          const localMovedAhead =
+            prev.length !== mediaToSave.length || prev.some((row) => !snapshotKeys.has(mediaKey(row)));
+          if (!localMovedAhead) return resultMedia;
+          return prev.map((row) => {
+            const saved = savedByKey.get(mediaKey(row));
+            return saved?.id && !row.id ? { ...row, id: saved.id } : row;
+          });
+        });
         setGalleryFolders(foldersToSave);
         galleryDbSnapshotRef.current = resultMedia
           .filter((row): row is GalleryMediaRow & { id: string } => !!row.id)
@@ -266,6 +281,11 @@ export default function AlbumEditPage() {
         throw err;
       } finally {
         galleryAutosavingRef.current = false;
+        const queued = pendingGalleryAutosaveRef.current;
+        if (queued) {
+          pendingGalleryAutosaveRef.current = null;
+          void persistGallery({ silent: true, snapshot: queued, force: true });
+        }
       }
     },
     [editingAlbum, galleryFolders, galleryMedia]
