@@ -8,6 +8,7 @@ import { SEO } from "@/components/SEO";
 import { getActiveEvents, Event } from "@/services/events";
 import { getAllAlbums, getAlbumMediaCounts } from "@/services/albums";
 import { getPageHeroContent } from "@/services/pageHeroContent";
+import { PageContentSection } from "@/components/ui/page-content-section";
 
 type EventStats = {
   albumCount: number;
@@ -85,8 +86,7 @@ const Events = () => {
           photoCount={totals.photoCount}
         />
 
-        <section className="pb-16 md:pb-20">
-          <div className="container mx-auto px-4">
+        <PageContentSection className="pb-16 md:pb-20" background="vignette-grid" band="linen">
             {isLoading ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -110,8 +110,7 @@ const Events = () => {
                 ))}
               </div>
             )}
-          </div>
-        </section>
+        </PageContentSection>
 
         <WhatsAppButton />
       </div>

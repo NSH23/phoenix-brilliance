@@ -19,6 +19,7 @@ import { SEO } from "@/components/SEO";
 import { getYouTubeId, getYouTubeNocookieEmbedUrl, getYouTubeThumbnail } from "@/lib/youtube";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { publicEventGalleryListingPath } from "@/lib/publicGallery";
+import { PageContentSection } from "@/components/ui/page-content-section";
 
 function AlbumYoutubeLazyCard({ video, animationDelay }: { video: AlbumMedia; animationDelay: number }) {
   const [played, setPlayed] = useState(false);
@@ -284,8 +285,11 @@ const GalleryAlbum = () => {
       </section>
 
       {/* Media Grid */}
-      <section className="py-8 sm:py-12">
-        <div className="container mx-auto px-4">
+      <PageContentSection
+        className="py-8 sm:py-12"
+        background="grid-glow"
+        band="linen"
+      >
           {activeTab === 'photos' ? (
             photos.length === 0 ? (
               <div className="text-center py-16">
@@ -383,8 +387,7 @@ const GalleryAlbum = () => {
               </div>
             )
           )}
-        </div>
-      </section>
+      </PageContentSection>
 
       <WhatsAppButton />
 

@@ -1,6 +1,7 @@
 import { TestimonialsSection } from "@/components/ui/testimonials-1";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
+import { HomeSectionBackground } from "@/components/ui/home-section-background";
 import { getFeaturedTestimonials } from "@/services/testimonials";
 import type { Testimonial } from "@/services/testimonials";
 import { useEffect, useState } from "react";
@@ -127,6 +128,7 @@ const TestimonialsSectionWrapper = ({
         title={<HomeSectionSplitTitle line1="Kind Words" accent="From Our Clients" />}
         subtitle="Stories from the couples and clients who trusted us with their celebrations."
         variant="linen"
+        backgroundOverlay={<HomeSectionBackground variant="vignette-grid" />}
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -152,6 +154,7 @@ const TestimonialsSectionWrapper = ({
       subtitle="Stories from the couples and clients who trusted us with their celebrations."
       variant="linen"
       contentClassName="pt-0"
+      backgroundOverlay={<HomeSectionBackground variant="vignette-grid" />}
     >
       <TestimonialsSection
         testimonials={formattedTestimonials}

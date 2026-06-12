@@ -9,6 +9,7 @@ import { getAllAlbums, getAlbumMedia, Album } from "@/services/albums";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
 import { GalleryFolderGrid } from "@/components/ui/gallery-folder-card";
+import { PageContentSection } from "@/components/ui/page-content-section";
 
 interface AlbumWithCount extends Album {
   mediaCount?: number;
@@ -237,8 +238,7 @@ const GalleryEventType = () => {
       </section>
 
       {/* Albums Grid */}
-      <section className="py-12 sm:py-16">
-        <div className="container mx-auto px-4">
+      <PageContentSection className="py-12 sm:py-16" background="vignette-grid" band="linen">
           {albums.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
@@ -282,13 +282,11 @@ const GalleryEventType = () => {
               className="gap-4 sm:gap-6 lg:gap-8"
             />
           )}
-        </div>
-      </section>
+      </PageContentSection>
 
       {/* Other Event Types */}
       {!isAllAlbums && allEvents.length > 1 && (
-        <section className="py-12 sm:py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
+        <PageContentSection className="py-12 sm:py-16" background="soft-mesh" band="white">
             <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-8 text-center">
               Explore Other <span className="text-gradient-gold">Categories</span>
             </h2>
@@ -308,8 +306,7 @@ const GalleryEventType = () => {
                   </Link>
                 ))}
             </div>
-          </div>
-        </section>
+        </PageContentSection>
       )}
 
       <WhatsAppButton />

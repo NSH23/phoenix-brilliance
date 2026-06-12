@@ -54,7 +54,7 @@ export function HomeSectionShell({
     <section
       id={id}
       aria-labelledby={ariaLabelledBy}
-      className={cn("relative w-full overflow-x-hidden py-12 md:py-16 lg:py-[4.25rem]", bandClass, className)}
+      className={cn("relative isolate w-full overflow-x-hidden py-12 md:py-16 lg:py-[4.25rem]", bandClass, className)}
     >
       {backgroundOverlay}
       <div className={cn("relative z-[1] mx-auto max-w-7xl", containerPad)}>
@@ -72,7 +72,7 @@ export function HomeSectionShell({
       </div>
 
       {fullBleed ? (
-        <div className={cn("relative w-full", contentClassName)}>{contentInner}</div>
+        <div className={cn("relative z-[1] w-full", contentClassName)}>{contentInner}</div>
       ) : null}
     </section>
   );

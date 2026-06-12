@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ExpandingCards, CardItem } from "@/components/ui/expanding-cards";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
+import { HomeSectionBackground } from "@/components/ui/home-section-background";
 import { getActiveServices, type Service } from "@/services/services";
 import { resolvePublicStorageUrl } from "@/services/storage";
 import {
@@ -177,6 +178,7 @@ const ServicesSection = ({ prefetchedServices, homepageDataPending }: ServicesSe
       subtitle="Design, décor, and production tailored to every occasion."
       variant="linen"
       contentClassName="pt-1"
+      backgroundOverlay={<HomeSectionBackground variant="soft-mesh" />}
     >
         {/* Desktop View: Expanding Cards */}
         <div className="hidden md:block w-full">

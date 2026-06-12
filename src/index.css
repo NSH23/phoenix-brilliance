@@ -468,6 +468,221 @@
     --sidebar-ring: var(--ring);
   }
 
+  /* ═══════════════════════════════════════════════════════════ */
+  /*   LAVENDER THEME - Soft violet, mist & lilac (public only)  */
+  /* ═══════════════════════════════════════════════════════════ */
+  .lavender {
+    --color-rose-blush: #C4B5E8;
+    --color-rose-hover: #5E5294;
+    --color-soft-petal: #F7F4FC;
+    --color-ivory-rose: #EDE8F7;
+    --color-champagne-tint: #FDFCFF;
+    --color-rich-charcoal: #2A2438;
+    --color-subtle-line: #D8CFE8;
+    --color-white: #FDFCFF;
+    --color-ivory: #F7F4FC;
+    --color-silk: #EDE8F7;
+    --color-pearl: #D8CFE8;
+    --color-warm-gray: #6B6380;
+    --color-charcoal: #2A2438;
+    --gradient-champagne: #F7F4FC;
+    --gradient-rose-gold: #7B68A6;
+    --gradient-parchment: #EDE8F7;
+    --shadow-warm: 0 4px 24px rgba(123, 104, 166, 0.08);
+    --shadow-warm-sm: 0 2px 12px rgba(123, 104, 166, 0.06);
+    --shadow-warm-md: 0 4px 24px rgba(123, 104, 166, 0.08);
+    --shadow-warm-lg: 0 8px 32px rgba(123, 104, 166, 0.10);
+    --shadow-warm-xl: 0 12px 48px rgba(123, 104, 166, 0.12);
+    --shadow-sm: var(--shadow-warm-sm);
+    --shadow-md: var(--shadow-warm-md);
+    --shadow-lg: var(--shadow-warm-lg);
+    --shadow-xl: var(--shadow-warm-xl);
+    --shadow-gold: 0 8px 24px rgba(123, 104, 166, 0.14);
+    --glass-inner-highlight: inset 0 1px 0 rgba(255, 252, 255, 0.72);
+    --section-rose-glow: none;
+    --section-rose-glow-bottom: none;
+
+    --background: 270 40% 98%;
+    --foreground: 260 22% 16%;
+    --card: 270 45% 99%;
+    --card-foreground: 260 22% 16%;
+    --surface: 265 35% 96%;
+    --popover: 270 45% 99%;
+    --popover-foreground: 260 22% 16%;
+
+    --primary: 258 35% 54%;
+    --primary-foreground: 270 45% 99%;
+    --secondary: 265 32% 95%;
+    --secondary-foreground: 260 22% 16%;
+    --muted: 265 28% 94%;
+    --muted-foreground: 260 12% 42%;
+    --accent: 265 38% 93%;
+    --accent-foreground: 258 35% 46%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 270 45% 99%;
+    --border: 265 24% 88%;
+    --input: 265 22% 86%;
+    --ring: 258 35% 54%;
+
+    --gold: var(--primary);
+    --gold-light: 265 38% 92%;
+    --gold-dark: 258 35% 42%;
+    --champagne: 270 45% 99%;
+    --rose-gold: 265 40% 58%;
+    --blush: 265 35% 93%;
+    --ivory: 270 45% 99%;
+    --charcoal: 260 22% 16%;
+    --navy: 260 28% 14%;
+    --off-white: 270 45% 99%;
+    --medium-gray: 260 12% 42%;
+    --emerald: 152 40% 35%;
+
+    --heading: 260 22% 16%;
+    --section-bg: 270 40% 98%;
+    --section-alt-bg: 265 35% 96%;
+    --section-band-1: #F7F4FC;
+    --section-band-2: #EDE8F7;
+    --section-band-3: #F3EEF9;
+    --section-about: 270 40% 98%;
+    --section-reels: 265 35% 96%;
+    --section-contact: 265 28% 94%;
+    --rose-light: 265 38% 93%;
+    --rose-medium: 265 40% 58%;
+    --divider: 265 24% 88%;
+    --primary-hover: 258 35% 46%;
+
+    --light-primary-bg: #F7F4FC;
+    --light-secondary-bg: #EDE8F7;
+    --light-tertiary-bg: #E5DFF2;
+    --light-gold: #7B68A6;
+    --light-gold-hover: #5E5294;
+    --light-rose-gold: #9382C4;
+    --light-champagne: #FDFCFF;
+    --light-text-primary: #2A2438;
+    --light-text-secondary: #3A3348;
+    --light-text-body: #524A62;
+    --light-text-muted: #6B6380;
+    --light-border-subtle: #D8CFE8;
+    --light-border-medium: #C9BEDC;
+    --light-divider: #D8CFE8;
+    --light-accent-soft-blue: #EDE8F7;
+    --light-accent-soft-gold: rgba(123, 104, 166, 0.10);
+    --light-accent-soft-rose: #EDE8F7;
+    --light-shadow-sm: 0 2px 10px rgba(123, 104, 166, 0.06);
+    --light-shadow-md: 0 4px 20px rgba(123, 104, 166, 0.08);
+    --light-shadow-lg: 0 8px 32px rgba(123, 104, 166, 0.10);
+    --light-shadow-xl: 0 12px 48px rgba(123, 104, 166, 0.12);
+    --light-shadow-hover: 0 12px 40px rgba(123, 104, 166, 0.14);
+    --light-shadow-gold: 0 8px 24px rgba(123, 104, 166, 0.14);
+    --light-shadow-rose: 0 8px 24px rgba(123, 104, 166, 0.14);
+    --light-hover-bg: #EDE8F7;
+    --light-active-bg: #E5DFF2;
+    --light-focus-ring: rgba(123, 104, 166, 0.28);
+    --light-btn-primary-bg: #7B68A6;
+    --light-btn-primary-hover: #5E5294;
+    --light-btn-primary-text: #FDFCFF;
+    --light-btn-secondary-bg: #FDFCFF;
+    --light-btn-secondary-border: #7B68A6;
+    --light-btn-secondary-text: #7B68A6;
+    --light-btn-secondary-hover-bg: rgba(123, 104, 166, 0.06);
+
+    --light-hero-gradient: #F7F4FC;
+    --light-hero-gradient-warm: #EDE8F7;
+    --light-hero-gradient-cool: #F3EEF9;
+    --light-hero-mesh: #F7F4FC;
+
+    --events-hero-mesh-light-base: #F7F4FC;
+    --events-hero-mesh-light-blob-1: none;
+    --events-hero-mesh-light-blob-2: none;
+    --events-hero-mesh-light-blob-3: none;
+    --services-hero-mesh-light-base: #F7F4FC;
+    --services-hero-mesh-light-blob-1: none;
+    --services-hero-mesh-light-blob-2: none;
+    --services-hero-mesh-light-blob-3: none;
+    --gallery-hero-mesh-light-base: #F7F4FC;
+    --gallery-hero-mesh-light-blob-1: none;
+    --gallery-hero-mesh-light-blob-2: none;
+    --gallery-hero-mesh-light-blob-3: none;
+    --collaborations-hero-mesh-light-base: #F7F4FC;
+    --collaborations-hero-mesh-light-blob-1: none;
+    --collaborations-hero-mesh-light-blob-2: none;
+    --collaborations-hero-mesh-light-blob-3: none;
+
+    --light-gradient-planning: #EDE8F7;
+    --light-gradient-planning-icon: #7B68A6;
+    --light-gradient-decoration: #FDFCFF;
+    --light-gradient-decoration-icon: #7B68A6;
+    --light-gradient-photography: #EDE8F7;
+    --light-gradient-photography-icon: #7B68A6;
+    --light-gradient-lighting: #F7F4FC;
+    --light-gradient-lighting-icon: #7B68A6;
+    --light-gradient-catering: #EDE8F7;
+    --light-gradient-catering-icon: #7B68A6;
+    --light-gradient-entertainment: #FDFCFF;
+    --light-gradient-entertainment-icon: #7B68A6;
+    --light-gradient-sound: #FDFCFF;
+    --light-gradient-sound-icon: #7B68A6;
+    --light-gradient-corporate: #F7F4FC;
+    --light-gradient-corporate-icon: #7B68A6;
+    --light-gradient-custom: #EDE8F7;
+    --light-gradient-custom-icon: #7B68A6;
+
+    --light-footer-bg: #2D2640;
+    --light-footer-border: rgba(255, 255, 255, 0.1);
+
+    --testimonial-card-bg: #FDFCFF;
+    --testimonial-card-border: rgba(123, 104, 166, 0.22);
+    --testimonial-card-shadow: 0 4px 20px rgba(123, 104, 166, 0.08);
+    --testimonial-card-hover-shadow: 0 12px 40px rgba(123, 104, 166, 0.12);
+    --testimonial-quote-color: #7B68A6;
+    --testimonial-star-filled: #7B68A6;
+    --testimonial-star-empty: #D8CFE8;
+    --testimonial-text: #2A2438;
+    --testimonial-name: #2A2438;
+    --testimonial-event: #6B6380;
+    --testimonial-subtitle: #524A62;
+    --testimonial-desc: #6B6380;
+    --testimonial-section-bg: #F7F4FC;
+    --testimonial-floating-bg: #FDFCFF;
+    --testimonial-float-hover-shadow: 0 20px 56px rgba(123, 104, 166, 0.14);
+
+    --glass-bg: 270 45% 99% / 0.95;
+    --glass-border: 265 24% 88% / 0.65;
+    --glass-shadow: 0 8px 32px rgba(123, 104, 166, 0.08);
+
+    --gradient-gold: hsl(var(--primary));
+    --gradient-rose: hsl(var(--blush));
+    --gradient-hero: hsl(var(--background));
+    --gradient-hero-overlay: hsl(var(--charcoal) / 0.75);
+
+    --hero-bg: hsl(var(--background));
+    --hero-text: hsl(var(--foreground));
+    --hero-text-muted: hsl(var(--muted-foreground));
+    --hero-overlay: transparent;
+    --hero-border: hsl(var(--primary) / 0.28);
+    --hero-outline-hover-bg: hsl(var(--primary));
+    --hero-outline-hover-text: hsl(var(--primary-foreground));
+    --hero-text-shadow: 0 2px 20px rgba(42, 36, 56, 0.08);
+
+    --footer-bg: #2D2640;
+    --footer-text: #F5F2FA;
+    --footer-heading: #C4B5E8;
+    --footer-border: rgba(253, 252, 255, 0.12);
+    --footer-link: rgba(245, 242, 250, 0.85);
+    --footer-link-hover: #C4B5E8;
+    --footer-icon-bg: rgba(253, 252, 255, 0.1);
+    --footer-icon-hover-bg: hsl(var(--primary));
+
+    --sidebar-background: 270 40% 98%;
+    --sidebar-foreground: 260 22% 16%;
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: 265 32% 95%;
+    --sidebar-accent-foreground: 258 35% 46%;
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+  }
+
   .dark {
     /* Dark theme – Navy Luxury (Approved) */
     --section-rose-glow: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(232, 175, 193, 0.14) 0%, transparent 55%);
@@ -807,6 +1022,10 @@
     background: radial-gradient(ellipse 100% 85% at 50% 40%, transparent 42%, rgba(253, 242, 240, 0.4) 100%);
   }
 
+  .lavender .hero-editorial-vignette {
+    background: radial-gradient(ellipse 100% 85% at 50% 40%, transparent 42%, rgba(247, 244, 252, 0.42) 100%);
+  }
+
   /* Ambient orbs — slow drift, theme-tinted */
   .hero-ambient-orb {
     position: absolute;
@@ -856,6 +1075,18 @@
 
   .blush .hero-ambient-orb--c {
     background: rgba(240, 168, 200, 0.12);
+  }
+
+  .lavender .hero-ambient-orb--a {
+    background: rgba(123, 104, 166, 0.14);
+  }
+
+  .lavender .hero-ambient-orb--b {
+    background: rgba(147, 130, 196, 0.11);
+  }
+
+  .lavender .hero-ambient-orb--c {
+    background: rgba(196, 181, 232, 0.14);
   }
 
   .dark .hero-ambient-orb--a {
@@ -1305,12 +1536,12 @@
   }
 
   /* Heritage light: wine primary buttons on linen */
-  html:not(.dark):not(.blush) .bg-primary.text-primary-foreground:not([role="checkbox"]) {
+  html:not(.dark):not(.blush):not(.lavender) .bg-primary.text-primary-foreground:not([role="checkbox"]) {
     background-color: hsl(var(--primary)) !important;
     color: hsl(var(--primary-foreground)) !important;
     border: 2px solid hsl(var(--primary));
   }
-  html:not(.dark):not(.blush) .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
+  html:not(.dark):not(.blush):not(.lavender) .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
     background-color: hsl(var(--primary-hover)) !important;
     color: hsl(var(--primary-foreground)) !important;
   }
@@ -1333,6 +1564,28 @@
     color: hsl(var(--primary));
   }
   .blush .btn-section-cta:hover {
+    background-color: hsl(var(--primary) / 0.08);
+    border-color: hsl(var(--primary));
+  }
+
+  /* Lavender: soft violet ghost pills (same pattern as blush) */
+  .lavender .bg-primary.text-primary-foreground:not([role="checkbox"]) {
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--primary)) !important;
+    border: 2px solid hsl(var(--primary)) !important;
+    box-shadow: 0 2px 12px rgba(123, 104, 166, 0.08);
+  }
+  .lavender .bg-primary.text-primary-foreground:not([role="checkbox"]):hover {
+    background-color: hsl(var(--primary) / 0.08) !important;
+    color: hsl(var(--primary)) !important;
+  }
+
+  .lavender .btn-section-cta {
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--primary) / 0.45);
+    color: hsl(var(--primary));
+  }
+  .lavender .btn-section-cta:hover {
     background-color: hsl(var(--primary) / 0.08);
     border-color: hsl(var(--primary));
   }

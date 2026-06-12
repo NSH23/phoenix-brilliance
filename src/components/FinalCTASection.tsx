@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
-import { SectionSoftBackground } from "@/components/ui/section-soft-background";
+import { HomeSectionBackground } from "@/components/ui/home-section-background";
 
 const FinalCTASection = () => {
   return (
@@ -15,7 +15,7 @@ const FinalCTASection = () => {
       title={<HomeSectionSplitTitle line1="Ready to Plan" accent="Your Celebration?" />}
       subtitle="Tell us your vision — we'll handle design, production, and flawless execution from concept to completion."
       variant="white"
-      backgroundOverlay={<SectionSoftBackground variant="dots" />}
+      backgroundOverlay={<HomeSectionBackground variant="grid-glow" />}
     >
       <div className="flex flex-col items-start gap-5 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between md:gap-6 md:pt-7">
         <div className="max-w-xl">

@@ -42,14 +42,10 @@ export default function EventsPageHero({
   ].filter((s) => s.show);
 
   return (
-    <section className={cn("relative overflow-hidden bg-background pb-10 pt-24 md:pb-12 md:pt-28", className)}>
+    <section className={cn("relative isolate overflow-hidden bg-background pb-10 pt-24 md:pb-12 md:pt-28", className)}>
       <PageHeroBackground intensity="live" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_80%_60%_at_10%_0%,hsl(var(--primary)/0.12),transparent_55%),radial-gradient(ellipse_60%_50%_at_90%_20%,hsl(var(--primary)/0.08),transparent_50%)] dark:block"
-      />
 
-      <div className="container relative mx-auto px-4">
+      <div className="container relative z-10 mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

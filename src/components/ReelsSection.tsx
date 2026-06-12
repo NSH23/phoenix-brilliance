@@ -1,6 +1,7 @@
 import { CardCarousel } from "@/components/ui/card-carousel";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
+import { HomeSectionBackground } from "@/components/ui/home-section-background";
 import { useEffect, useState } from "react";
 import { getMomentsReels } from "@/services/contentMedia";
 
@@ -45,6 +46,7 @@ const ReelsSection = () => {
       variant="white"
       fullBleed
       contentClassName="pb-0"
+      backgroundOverlay={<HomeSectionBackground variant="soft-mesh" />}
     >
       <CardCarousel
         images={reels}

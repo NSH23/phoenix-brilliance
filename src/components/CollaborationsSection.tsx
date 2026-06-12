@@ -7,6 +7,7 @@ import { getActiveCollaborations, type Collaboration } from "@/services/collabor
 import { useLeadCaptureOptional } from "@/contexts/LeadCaptureContext";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
+import { HomeSectionBackground } from "@/components/ui/home-section-background";
 import PartnersVenueShowcase from "@/components/ui/partners-venue-showcase";
 import type { PartnerVenueCardData } from "@/components/ui/partner-venue-card";
 import { VENUES_LIST_PATH } from "@/lib/venueRoutes";
@@ -71,6 +72,7 @@ const CollaborationsSection = ({ prefetchedCollaborations, homepageDataPending }
       variant="linen"
       fullBleed
       contentClassName="pt-0"
+      backgroundOverlay={<HomeSectionBackground variant="vignette-grid" />}
       action={
         <div className="flex justify-end">
           <Link

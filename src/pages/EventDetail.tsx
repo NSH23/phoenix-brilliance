@@ -7,6 +7,7 @@ import EventDetailHero from "@/components/EventDetailHero";
 import { getEventBySlug, Event } from "@/services/events";
 import { getAlbumsByEventId, getAlbumMediaCounts, Album } from "@/services/albums";
 import { GalleryFolderGrid } from "@/components/ui/gallery-folder-card";
+import { PageContentSection } from "@/components/ui/page-content-section";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
 import { publicAlbumPath } from "@/lib/publicGallery";
@@ -115,7 +116,7 @@ const EventDetail = () => {
       />
 
       {albums.length === 0 ? (
-        <section className="container mx-auto px-4 pb-16 md:pb-20">
+        <PageContentSection className="pb-16 md:pb-20" background="soft-mesh" band="white">
           <div className="mx-auto max-w-md rounded-2xl border border-border/60 bg-card px-6 py-14 text-center shadow-sm">
             <h2 className="font-serif text-xl font-semibold text-foreground">No albums yet</h2>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -129,29 +130,27 @@ const EventDetail = () => {
               Browse all events
             </Link>
           </div>
-        </section>
+        </PageContentSection>
       ) : (
-        <section className="pb-16 md:pb-20">
-          <div className="container mx-auto px-4">
-            <GalleryFolderGrid
-              variant="featured"
-              compact={false}
-              folders={albums.map((album) => ({
-                id: album.id,
-                name: album.title,
-                count: album.mediaCount,
-                coverUrl: album.cover_image,
-                description:
-                  album.mediaCount > 0
-                    ? `${album.mediaCount} photo${album.mediaCount !== 1 ? "s" : ""}`
-                    : undefined,
-                href: publicAlbumPath(event.slug, album.id),
-                featured: album.is_featured,
-              }))}
-              className="mx-auto max-w-7xl grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4"
-            />
-          </div>
-        </section>
+        <PageContentSection className="pb-16 md:pb-20" background="vignette-grid" band="linen">
+          <GalleryFolderGrid
+            variant="featured"
+            compact={false}
+            folders={albums.map((album) => ({
+              id: album.id,
+              name: album.title,
+              count: album.mediaCount,
+              coverUrl: album.cover_image,
+              description:
+                album.mediaCount > 0
+                  ? `${album.mediaCount} photo${album.mediaCount !== 1 ? "s" : ""}`
+                  : undefined,
+              href: publicAlbumPath(event.slug, album.id),
+              featured: album.is_featured,
+            }))}
+            className="mx-auto max-w-7xl grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4"
+          />
+        </PageContentSection>
       )}
 
       <WhatsAppButton />

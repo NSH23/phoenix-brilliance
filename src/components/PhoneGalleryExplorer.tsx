@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FolderPhotoGallery from '@/components/ui/folder-photo-gallery';
 import { GalleryFolderGrid } from '@/components/ui/gallery-folder-card';
+import { PageHeroBackground } from '@/components/ui/page-hero-background';
 import {
   buildFolderTree,
   folderHasVisibleContent,
@@ -174,7 +175,9 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
   );
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/50 p-3 sm:p-4 md:p-5">
+    <div className="relative isolate overflow-hidden rounded-2xl border border-border/50 bg-card/20 p-3 sm:p-4 md:p-5">
+      <PageHeroBackground intensity="live" className="rounded-2xl" />
+      <div className="relative z-[1]">
       {level !== 'roots' ? (
         <div className="mb-4 flex items-center gap-2 border-b border-border/40 pb-3">
           <Button
@@ -231,6 +234,7 @@ export default function PhoneGalleryExplorer<T extends ExplorerMediaItem>({
           Gallery coming soon
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { VENUES_LIST_PATH } from "@/lib/venueRoutes";
+import { PageHeroBackground } from "@/components/ui/page-hero-background";
 import { cn } from "@/lib/utils";
 
 export type VenueDetailHeroProps = {
@@ -44,21 +45,10 @@ export default function VenueDetailHero({
   const trimmedLocation = location.trim();
 
   return (
-    <section className={cn("relative overflow-hidden bg-background pb-8 pt-24 md:pb-10 md:pt-28", className)}>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_80%_60%_at_10%_0%,hsl(var(--primary)/0.12),transparent_55%),radial-gradient(ellipse_60%_50%_at_90%_20%,hsl(var(--primary)/0.08),transparent_50%)] dark:block"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden opacity-[0.12] dark:block"
-        style={{
-          backgroundImage: "radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)",
-          backgroundSize: "22px 22px",
-        }}
-      />
+    <section className={cn("relative isolate overflow-hidden bg-background pb-8 pt-24 md:pb-10 md:pt-28", className)}>
+      <PageHeroBackground intensity="live" />
 
-      <div className="container relative mx-auto px-4">
+      <div className="container relative z-10 mx-auto px-4">
         <Link
           to={backHref}
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"

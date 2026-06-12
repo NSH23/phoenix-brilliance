@@ -1,4 +1,4 @@
-export type PublicTheme = "light" | "blush" | "dark";
+export type PublicTheme = "light" | "blush" | "lavender" | "dark";
 
 export type PublicThemeOption = {
   id: PublicTheme;
@@ -9,11 +9,12 @@ export type PublicThemeOption = {
 export const PUBLIC_THEME_OPTIONS: PublicThemeOption[] = [
   { id: "light", label: "Heritage", description: "Warm linen & wine" },
   { id: "blush", label: "Blush", description: "Premium rose & cream" },
+  { id: "lavender", label: "Lavender", description: "Soft violet & mist" },
   { id: "dark", label: "Navy", description: "Dark luxury" },
 ];
 
 export function isPublicTheme(value: string | null): value is PublicTheme {
-  return value === "light" || value === "blush" || value === "dark";
+  return value === "light" || value === "blush" || value === "lavender" || value === "dark";
 }
 
 export function getActivePublicTheme(): PublicTheme {
@@ -21,6 +22,7 @@ export function getActivePublicTheme(): PublicTheme {
   const root = document.documentElement;
   if (root.classList.contains("dark")) return "dark";
   if (root.classList.contains("blush")) return "blush";
+  if (root.classList.contains("lavender")) return "lavender";
   return "light";
 }
 
@@ -33,9 +35,10 @@ export function getStoredPublicTheme(): PublicTheme {
 
 export function applyPublicTheme(theme: PublicTheme): void {
   const root = document.documentElement;
-  root.classList.remove("dark", "blush");
+  root.classList.remove("dark", "blush", "lavender");
   if (theme === "dark") root.classList.add("dark");
   else if (theme === "blush") root.classList.add("blush");
+  else if (theme === "lavender") root.classList.add("lavender");
   localStorage.setItem("theme", theme);
 }
 

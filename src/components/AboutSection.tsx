@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { AboutJourneyTimeline } from "@/components/ui/about-journey-timeline";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
-import { SectionSoftBackground } from "@/components/ui/section-soft-background";
+import { HomeSectionBackground } from "@/components/ui/home-section-background";
 import { getSiteContentByKey, parseAboutSectionDescription } from "@/services/siteContent";
 
 const DEFAULT_TITLE_MARKER = "The Art of Crafting Unforgettable Celebrations";
@@ -51,7 +51,7 @@ export default function AboutSection() {
       subtitle={body.tagline}
       variant="linen"
       contentClassName="pt-0"
-      backgroundOverlay={<SectionSoftBackground variant="grid" />}
+      backgroundOverlay={<HomeSectionBackground variant="grid-glow" />}
     >
       <div className="grid items-start gap-8 md:gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-12">
         <AboutJourneyTimeline className="lg:pr-4" />

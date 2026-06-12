@@ -11,6 +11,7 @@ import { shortLocationForCard } from "@/lib/addressUtils";
 import { resolvePublicStorageUrl } from "@/services/storage";
 import { PartnerVenueCard, type PartnerVenueCardData } from "@/components/ui/partner-venue-card";
 import { VENUES_LIST_PATH } from "@/lib/venueRoutes";
+import { PageContentSection } from "@/components/ui/page-content-section";
 
 export default function Venues() {
   const [venues, setVenues] = useState<Awaited<ReturnType<typeof getActiveCollaborations>>>([]);
@@ -64,8 +65,7 @@ export default function Venues() {
         venueCount={venueCards.length}
       />
 
-      <section className="pb-16 md:pb-20">
-        <div className="container mx-auto px-4">
+      <PageContentSection className="pb-16 md:pb-20" background="soft-mesh" band="white">
           {loading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -91,8 +91,7 @@ export default function Venues() {
               ))}
             </div>
           )}
-        </div>
-      </section>
+      </PageContentSection>
 
       <WhatsAppButton />
     </div>

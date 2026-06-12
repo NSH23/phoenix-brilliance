@@ -12,6 +12,7 @@ import {
 const DOT_COLORS: Record<PublicTheme, string> = {
   light: "rgba(90, 55, 65, 0.22)",
   blush: "rgba(192, 38, 122, 0.18)",
+  lavender: "rgba(123, 104, 166, 0.2)",
   dark: "rgba(232, 175, 193, 0.14)",
 };
 

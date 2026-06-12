@@ -9,6 +9,7 @@ import { getSiteContentByKey } from "@/services/siteContent";
 import type { SiteContent } from "@/services/siteContent";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
+import { HomeSectionBackground } from "@/components/ui/home-section-background";
 
 const DEFAULT_STATS: WhyChooseUsStat[] = [
   { id: 'fb-1', stat_value: '2200+', stat_label: 'Successful Events', stat_description: 'Flawlessly executed celebrations', icon_key: 'trophy', display_order: 1, created_at: '', updated_at: '' },
@@ -110,6 +111,7 @@ export default function WhyChooseUsSection({
       subtitle={tagline}
       variant="white"
       contentClassName="pt-0"
+      backgroundOverlay={<HomeSectionBackground variant="grid-glow" />}
     >
       <div className="mx-auto max-w-7xl space-y-5 px-5 sm:px-6 md:space-y-6 lg:px-10">
         {stats.length > 0 ? (

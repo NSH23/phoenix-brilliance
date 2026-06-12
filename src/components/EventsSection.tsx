@@ -7,6 +7,7 @@ import { StackedCards } from "@/components/ui/stacked-cards";
 import { EventCategoryCard } from "@/components/ui/event-category-card";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
+import { HomeSectionBackground } from "@/components/ui/home-section-background";
 import { EVENT_CATEGORY_DESCRIPTIONS } from "@/data/eventCategoryCopy";
 import { optimizeMediaUrl } from "@/lib/mediaDelivery";
 
@@ -131,6 +132,7 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
       subtitle="From intimate gatherings to grand celebrations — explore what we create."
       variant="white"
       contentClassName="pt-0"
+      backgroundOverlay={<HomeSectionBackground variant="vignette-grid" />}
     >
         <div className="w-full overflow-visible">
           <div className="relative">

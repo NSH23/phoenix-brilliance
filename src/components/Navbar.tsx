@@ -17,7 +17,7 @@ export default function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [publicTheme, setPublicTheme] = useState<PublicTheme>("light");
   const isDark = publicTheme === "dark";
-  const isBlush = publicTheme === "blush";
+  const isSoftLight = publicTheme === "blush" || publicTheme === "lavender";
   const [showDesktopNumber, setShowDesktopNumber] = useState(false);
   const lastScrollY = useRef(0);
 
@@ -88,36 +88,25 @@ export default function Navbar() {
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
-              <div className="relative">
+            {/* Brand lockup */}
+            <Link
+              to="/"
+              className="group flex shrink-0 items-center gap-2.5 sm:gap-3"
+            >
+              <div className="relative shrink-0">
                 <OptimizedImage
                   src={logoSrc}
                   alt="Phoenix Events & Production Logo"
                   preset="thumb"
                   responsive={false}
-                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain transition-all duration-300 group-hover:scale-105 opacity-100"
+                  className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-105 sm:h-11 sm:w-11"
                 />
               </div>
-              <div className="flex flex-col leading-tight">
-                <span className={`font-serif text-xl sm:text-2xl font-semibold tracking-tight transition-colors duration-300
-                               ${scrolled
-                    ? isDark
-                      ? 'text-white'
-                      : 'text-[#1A1A2E]'
-                    : isDark
-                      ? 'text-white'
-                      : 'text-[#1A1A2E]'}`}>
+              <div className="flex min-w-0 flex-col justify-center gap-0.5 border-l border-primary/15 pl-2.5 sm:gap-1 sm:pl-3">
+                <span className="font-display text-[1.28rem] font-medium leading-[0.95] tracking-[-0.03em] text-foreground transition-colors duration-300 sm:text-[1.55rem]">
                   Phoenix
                 </span>
-                <span className={`text-xs sm:text-sm tracking-[0.14em] uppercase font-sans font-medium transition-colors duration-300
-                               ${scrolled
-                    ? isDark
-                      ? 'text-primary'
-                      : 'text-primary'
-                    : isDark
-                      ? 'text-primary'
-                      : 'text-primary'}`}>
+                <span className="whitespace-nowrap font-brand text-[0.625rem] font-semibold uppercase leading-none tracking-[0.14em] text-primary sm:text-[0.6875rem] sm:tracking-[0.2em]">
                   Events & Production
                 </span>
               </div>
@@ -159,7 +148,7 @@ export default function Navbar() {
                           font-medium text-sm font-sans tracking-[0.02em] transition-all duration-300 
                           ${isDark
                     ? 'bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-lg shadow-primary/30'
-                    : isBlush
+                    : isSoftLight
                       ? 'border-2 border-primary bg-card text-primary shadow-md shadow-primary/10 hover:bg-primary/10'
                       : 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90'}`}
               >
@@ -273,7 +262,7 @@ export default function Navbar() {
                   className={`flex items-center justify-center gap-3 w-full px-6 py-4 rounded-2xl font-medium font-sans text-lg tracking-[0.02em] transition-all duration-300 hover:scale-[1.02]
                            ${isDark
                       ? "bg-gradient-to-r from-primary to-rose-gold text-primary-foreground shadow-xl shadow-primary/30 hover:shadow-2xl"
-                      : isBlush
+                      : isSoftLight
                         ? "border-2 border-primary bg-card text-primary shadow-md shadow-primary/10 hover:bg-primary/10"
                         : "bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90"}`}
                 >
@@ -287,10 +276,20 @@ export default function Navbar() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5, duration: 0.3 }}
-                className="mt-auto pt-8 flex items-center justify-center gap-2 text-muted-foreground"
+                className="mt-auto flex flex-col items-center gap-1 pt-8 text-center"
               >
-                <OptimizedImage src={logoSrc} alt="Phoenix" preset="thumb" responsive={false} className="w-6 h-6 object-contain" />
-                <span className="text-sm font-sans text-muted-foreground">Creating Magical Moments</span>
+                <div className="flex items-center gap-2.5">
+                  <OptimizedImage src={logoSrc} alt="Phoenix" preset="thumb" responsive={false} className="h-7 w-7 object-contain" />
+                  <div className="flex flex-col items-start gap-0.5 text-left">
+                    <span className="font-display text-lg font-medium leading-none tracking-[-0.03em] text-foreground">
+                      Phoenix
+                    </span>
+                    <span className="font-brand text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                      Events & Production
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground">Creating Magical Moments</span>
               </motion.div>
             </motion.div>
           </motion.div>

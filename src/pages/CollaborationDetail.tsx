@@ -12,6 +12,7 @@ import { getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 import { SEO } from "@/components/SEO";
 import { VENUES_LIST_PATH, venueDetailPath } from "@/lib/venueRoutes";
 import PhoneGalleryExplorer from "@/components/PhoneGalleryExplorer";
+import { PageContentSection } from "@/components/ui/page-content-section";
 import type { ExplorerFolder, ExplorerMediaItem } from "@/lib/mediaFolderTree";
 
 function resolveCollaborationMediaUrl(urlOrPath: string): string {
@@ -232,61 +233,63 @@ export default function CollaborationDetail() {
 
       {/* Venue Gallery – folders and images */}
       {images.length > 0 && (
-        <section className="border-t border-border/40 bg-muted/15 py-10 md:py-14">
-          <div className="container mx-auto px-4">
-            <div className="mb-6 md:mb-8">
-              <h2 className="font-serif text-xl font-semibold text-foreground md:text-2xl">Venue gallery</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Explore the space through photos and videos.</p>
-            </div>
-
-            {explorerFolders.length > 0 || explorerMedia.some((m) => !m.folder_id) ? (
-              <PhoneGalleryExplorer
-                folders={explorerFolders}
-                media={explorerMedia}
-                resolveUrl={resolveCollaborationMediaUrl}
-                isVideo={(item) => item.media_type === 'video'}
-                getPoster={(item) => {
-                  const img = rawImages.find((r) => r.id === item.id);
-                  return img ? collabGalleryPosterSrc(img) : resolveCollaborationMediaUrl(item.url);
-                }}
-                onOpenLightbox={(index, folderPhotos) => {
-                  const target = folderPhotos[index];
-                  const globalIndex = target?.id ? images.findIndex((img) => img.id === target.id) : index;
-                  openLightbox(globalIndex >= 0 ? globalIndex : index);
-                }}
-              />
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                {images.map((image, index) => {
-                  const mediaSrc = resolveCollaborationMediaUrl(image.image_url);
-                  const poster = collabGalleryPosterSrc(image);
-                  const yt = isCollabYouTubeVideo(image);
-                  return (
-                  <motion.div key={image.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: index * 0.02 }} className="aspect-square min-h-0">
-                    <div className="relative h-full w-full cursor-pointer overflow-hidden rounded-xl bg-muted/20 group" onClick={() => openLightbox(index)}>
-                      <div className="absolute inset-0 flex items-center justify-center p-2">
-                      {yt ? (
-                        <>
-                          <img src={poster} alt={image.caption || "YouTube video"} className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" decoding="async" />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
-                            <Play className="w-10 h-10 text-white drop-shadow-md" fill="currentColor" />
-                          </div>
-                        </>
-                      ) : (image as CollabImage).media_type === 'video' ? (
-                        <video src={mediaSrc} className="max-h-full max-w-full object-contain bg-black/80 transition-transform duration-300 group-hover:scale-[1.02]" playsInline preload="metadata" />
-                      ) : (
-                        <img src={mediaSrc} alt={image.caption || "Collaboration media"} className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" decoding="async" />
-                      )}
-                      </div>
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </motion.div>
-                );
-                })}
-              </div>
-            )}
+        <PageContentSection
+          className="border-t border-border/40 py-10 md:py-14"
+          background="soft-mesh"
+          band="white"
+        >
+          <div className="mb-6 md:mb-8">
+            <h2 className="font-serif text-xl font-semibold text-foreground md:text-2xl">Venue gallery</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Explore the space through photos and videos.</p>
           </div>
-        </section>
+
+          {explorerFolders.length > 0 || explorerMedia.some((m) => !m.folder_id) ? (
+            <PhoneGalleryExplorer
+              folders={explorerFolders}
+              media={explorerMedia}
+              resolveUrl={resolveCollaborationMediaUrl}
+              isVideo={(item) => item.media_type === 'video'}
+              getPoster={(item) => {
+                const img = rawImages.find((r) => r.id === item.id);
+                return img ? collabGalleryPosterSrc(img) : resolveCollaborationMediaUrl(item.url);
+              }}
+              onOpenLightbox={(index, folderPhotos) => {
+                const target = folderPhotos[index];
+                const globalIndex = target?.id ? images.findIndex((img) => img.id === target.id) : index;
+                openLightbox(globalIndex >= 0 ? globalIndex : index);
+              }}
+            />
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+              {images.map((image, index) => {
+                const mediaSrc = resolveCollaborationMediaUrl(image.image_url);
+                const poster = collabGalleryPosterSrc(image);
+                const yt = isCollabYouTubeVideo(image);
+                return (
+                <motion.div key={image.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: index * 0.02 }} className="aspect-square min-h-0">
+                  <div className="relative h-full w-full cursor-pointer overflow-hidden rounded-xl bg-muted/20 group" onClick={() => openLightbox(index)}>
+                    <div className="absolute inset-0 flex items-center justify-center p-2">
+                    {yt ? (
+                      <>
+                        <img src={poster} alt={image.caption || "YouTube video"} className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" decoding="async" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+                          <Play className="w-10 h-10 text-white drop-shadow-md" fill="currentColor" />
+                        </div>
+                      </>
+                    ) : (image as CollabImage).media_type === 'video' ? (
+                      <video src={mediaSrc} className="max-h-full max-w-full object-contain bg-black/80 transition-transform duration-300 group-hover:scale-[1.02]" playsInline preload="metadata" />
+                    ) : (
+                      <img src={mediaSrc} alt={image.caption || "Collaboration media"} className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" decoding="async" />
+                    )}
+                    </div>
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </motion.div>
+              );
+              })}
+            </div>
+          )}
+        </PageContentSection>
       )}
 
       <WhatsAppButton />

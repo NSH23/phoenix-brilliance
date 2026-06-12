@@ -18,6 +18,7 @@ import type { Album } from "@/services/albums";
 import { getPageHeroContent } from "@/services/pageHeroContent";
 import { getEventIcon } from "@/lib/eventIcons";
 import { GalleryFolderGrid } from "@/components/ui/gallery-folder-card";
+import { PageContentSection } from "@/components/ui/page-content-section";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface AlbumWithCount extends Album {
@@ -308,8 +309,13 @@ const Gallery = () => {
         ) : (
           <>
             {/* Browse by Event Type - rounded square selector */}
-            <section className="pb-16 sm:pb-20 lg:pb-24 px-4 sm:px-6 -mt-8 relative z-10">
-              <div className="max-w-[1200px] mx-auto">
+            <PageContentSection
+              className="pb-16 sm:pb-20 lg:pb-24 px-4 sm:px-6 -mt-8 relative z-10"
+              background="soft-mesh"
+              band="linen"
+              container={false}
+              innerClassName="max-w-[1200px] mx-auto"
+            >
 
                 <div className="grid grid-cols-[repeat(2,minmax(0,170px))] sm:grid-cols-[repeat(2,minmax(0,200px))] md:grid-cols-[repeat(4,minmax(0,220px))] gap-[38px] justify-center">
                   {eventTypesForCircles.map((option, index) => {
@@ -429,12 +435,16 @@ const Gallery = () => {
                     );
                   })}
                 </div>
-              </div>
-            </section>
+            </PageContentSection>
 
             {/* Featured / Filtered Albums */}
-            <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
-              <div className="mx-auto max-w-[1400px]">
+            <PageContentSection
+              className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8"
+              background="vignette-grid"
+              band="white"
+              container={false}
+              innerClassName="mx-auto max-w-[1400px]"
+            >
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -511,14 +521,16 @@ const Gallery = () => {
                     </Link>
                   </div>
                 )}
-              </div>
-            </section>
+            </PageContentSection>
           </>
         )}
 
         {/* CTA Section – card-style like collaborations */}
-        <section className="py-12 sm:py-16 lg:py-20 bg-background">
-          <div className="container mx-auto px-4">
+        <PageContentSection
+          className="py-12 sm:py-16 lg:py-20"
+          background="grid-glow"
+          band="linen"
+        >
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -539,8 +551,7 @@ const Gallery = () => {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </motion.div>
-          </div>
-        </section>
+        </PageContentSection>
 
         <WhatsAppButton />
       </div>

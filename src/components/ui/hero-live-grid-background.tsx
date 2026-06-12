@@ -26,7 +26,6 @@ type GridPalette = {
   core: (a: number) => string;
   mid: (a: number) => string;
   outer: string;
-  dot: (a: number) => string;
 };
 
 const PALETTES: Record<PublicTheme, GridPalette> = {
@@ -35,21 +34,24 @@ const PALETTES: Record<PublicTheme, GridPalette> = {
     core: (a) => `rgba(122, 68, 82, ${a})`,
     mid: (a) => `rgba(122, 68, 82, ${a * 0.45})`,
     outer: "rgba(122, 68, 82, 0)",
-    dot: (a) => `rgba(90, 55, 65, ${a})`,
   },
   blush: {
     grid: "#E8D0DC",
     core: (a) => `rgba(192, 38, 122, ${a})`,
     mid: (a) => `rgba(217, 70, 160, ${a * 0.45})`,
     outer: "rgba(192, 38, 122, 0)",
-    dot: (a) => `rgba(192, 38, 122, ${a})`,
+  },
+  lavender: {
+    grid: "#D8CCE8",
+    core: (a) => `rgba(123, 104, 166, ${a})`,
+    mid: (a) => `rgba(147, 130, 196, ${a * 0.45})`,
+    outer: "rgba(123, 104, 166, 0)",
   },
   dark: {
     grid: "#1E2A42",
     core: (a) => `rgba(232, 175, 193, ${a})`,
     mid: (a) => `rgba(180, 140, 200, ${a * 0.4})`,
     outer: "rgba(100, 80, 140, 0)",
-    dot: (a) => `rgba(248, 220, 230, ${a})`,
   },
 };
 
@@ -213,11 +215,6 @@ export function HeroLiveGridBackground({ className, animated = false }: HeroLive
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(adjustedX, adjustedY, 18, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = colors.dot(light.brightness * 0.9);
-        ctx.beginPath();
-        ctx.arc(adjustedX, adjustedY, 1.75, 0, Math.PI * 2);
         ctx.fill();
       });
     };

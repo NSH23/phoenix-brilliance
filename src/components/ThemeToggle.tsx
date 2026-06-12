@@ -1,4 +1,4 @@
-import { Check, Moon, Palette, Sun } from "lucide-react";
+import { Check, Moon, Palette, Sparkles, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,12 +15,14 @@ import { cn } from "@/lib/utils";
 const THEME_ICONS: Record<PublicTheme, typeof Sun> = {
   light: Sun,
   blush: Palette,
+  lavender: Sparkles,
   dark: Moon,
 };
 
 const THEME_SWATCHES: Record<PublicTheme, string> = {
   light: "bg-[#EDE6DC] ring-[#7A4452]/40",
   blush: "bg-[#FDF2F0] ring-[#C0267A]/50",
+  lavender: "bg-[#F3EEF9] ring-[#7B68A6]/55",
   dark: "bg-[#0B1220] ring-primary/30",
 };
 
