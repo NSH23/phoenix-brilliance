@@ -1,171 +1,137 @@
 import { Card, CardHeader, CardFooter, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export interface Testimonial {
-    name: string;
-    role: string;
-    text: string;
-    avatar: string;
-    rating?: number;
+  name: string;
+  role: string;
+  text: string;
+  avatar: string;
+  rating?: number;
 }
 
 interface TestimonialsSectionProps {
-    title?: string;
-    subtitle?: string;
-    badgeText?: string;
-    testimonials: Testimonial[];
-    className?: string;
-    showHeader?: boolean;
-    embedded?: boolean;
+  title?: string;
+  subtitle?: string;
+  badgeText?: string;
+  testimonials: Testimonial[];
+  className?: string;
+  showHeader?: boolean;
+  embedded?: boolean;
 }
 
 export function TestimonialsSection({
-    title = "Trusted by thousands of teams",
-    subtitle = "See what our customers have to say about us.",
-    badgeText = "Testimonials",
-    testimonials,
-    className,
-    showHeader = true,
-    embedded = false,
+  title = "Trusted by thousands of teams",
+  subtitle = "See what our customers have to say about us.",
+  badgeText = "Testimonials",
+  testimonials,
+  className,
+  showHeader = true,
+  embedded = false,
 }: TestimonialsSectionProps) {
-    const [currentIndex, setCurrentIndex] = useState(0);
+  const gridContent = (
+    <>
+      {showHeader ? (
+        <header className="mb-8 space-y-1 border-l-4 border-primary pl-5 md:mb-10 md:pl-6">
+          <p className="font-sans text-xs font-semibold uppercase tracking-[0.2em] text-primary md:text-sm">
+            {badgeText}
+          </p>
+          <h2 className="font-serif text-3xl font-medium leading-tight text-foreground dark:text-white md:text-4xl lg:text-5xl">
+            {title}
+          </h2>
+          {subtitle ? (
+            <p className="mt-4 max-w-xl font-sans text-base leading-relaxed text-muted-foreground dark:text-white/70 md:text-lg">
+              {subtitle}
+            </p>
+          ) : null}
+        </header>
+      ) : null}
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-        }, 5000);
+      <div
+        className={cn(
+          "mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-3",
+          embedded ? "gap-3.5 py-0" : "gap-4 py-4",
+        )}
+      >
+        {testimonials.map((t, i) => (
+          <TestimonialCard key={i} testimonial={t} />
+        ))}
+      </div>
+    </>
+  );
 
-        return () => clearInterval(timer);
-    }, [testimonials.length]);
+  if (embedded) {
+    return <div className={cn("w-full", className)}>{gridContent}</div>;
+  }
 
-    const gridContent = (
-        <>
-                {showHeader ? (
-                <header className="pl-5 md:pl-6 border-l-4 border-primary mb-8 md:mb-10 space-y-1">
-                    <p className="text-primary font-sans font-semibold text-xs md:text-sm tracking-[0.2em] uppercase">
-                        {badgeText}
-                    </p>
-                    <h2 className="font-serif font-medium leading-tight text-3xl md:text-4xl lg:text-5xl text-foreground dark:text-white">
-                        {title}
-                    </h2>
-                    {subtitle && (
-                        <p className="mt-4 max-w-xl text-muted-foreground dark:text-white/70 text-base md:text-lg leading-relaxed font-sans">
-                            {subtitle}
-                        </p>
-                    )}
-                </header>
-                ) : null}
-
-                <div className={cn("hidden md:grid mx-auto max-w-7xl grid-cols-2 lg:grid-cols-3", embedded ? "gap-3.5 py-0" : "gap-4 py-4")}>
-                    {testimonials.map((t, i) => (
-                        <TestimonialCard key={i} testimonial={t} />
-                    ))}
-                </div>
-
-                <div className={cn("relative mx-auto max-w-sm md:hidden", embedded ? "h-[280px] py-0" : "h-[300px] py-4")}>
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentIndex}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.3 }}
-                            className="absolute inset-0"
-                        >
-                            <TestimonialCard testimonial={testimonials[currentIndex]} />
-                        </motion.div>
-                    </AnimatePresence>
-
-                    <div className="absolute -bottom-8 left-0 right-0 flex justify-center gap-2">
-                        {testimonials.map((_, index) => (
-                            <button
-                                key={index}
-                                onClick={() => setCurrentIndex(index)}
-                                className={`w-2 h-2 rounded-full transition-all ${index === currentIndex
-                                    ? 'bg-primary w-4'
-                                    : 'bg-muted-foreground/30'
-                                    }`}
-                                aria-label={`Go to testimonial ${index + 1}`}
-                            />
-                        ))}
-                    </div>
-                </div>
-        </>
-    );
-
-    if (embedded) {
-        return <div className={cn("w-full", className)}>{gridContent}</div>;
-    }
-
-    return (
-        <section id="testimonials" className={`w-full py-4 md:py-10 lg:py-12 ${className || ""}`}>
-            <div className="container px-4 mx-auto max-w-7xl">
-                {gridContent}
-            </div>
-        </section>
-    );
+  return (
+    <section id="testimonials" className={cn("w-full py-4 md:py-10 lg:py-12", className)}>
+      <div className="container mx-auto max-w-7xl px-4">{gridContent}</div>
+    </section>
+  );
 }
 
 function getInitials(name: string): string {
-    return name
-        .split(/\s+/)
-        .map((part) => part[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
-    const stars = typeof testimonial.rating === "number" ? testimonial.rating : 5;
-    const hasRealAvatar = testimonial.avatar && !testimonial.avatar.includes("unsplash.com") && !testimonial.avatar.includes("ui-avatars.com");
+  const stars = typeof testimonial.rating === "number" ? testimonial.rating : 5;
+  const hasRealAvatar =
+    testimonial.avatar &&
+    !testimonial.avatar.includes("unsplash.com") &&
+    !testimonial.avatar.includes("ui-avatars.com");
 
-    return (
-        <Card className="testimonial-card-item flex h-full flex-col rounded-2xl border border-border/70 bg-white/85 shadow-[0_8px_28px_rgba(0,0,0,0.08)] backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:border-white/15 dark:bg-card/90 dark:shadow-elevation-1-dark dark:hover:border-primary/40">
-            <CardHeader className="p-4">
-                <div className="flex items-center gap-2">
-                    <div className="flex">
-                        {Array.from({ length: 5 }).map((_, idx) => (
-                            <Star
-                                key={idx}
-                                className={`h-4 w-4 ${idx < stars
-                                    ? "fill-primary text-primary"
-                                    : "text-muted fill-muted/20 text-muted-foreground/20"
-                                    }`}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 flex-grow">
-                <p className="text-muted-foreground italic line-clamp-4">"{testimonial.text}"</p>
-            </CardContent>
-            <CardFooter className="mt-auto p-4 pt-0">
-                <div className="flex items-center gap-4">
-                    {hasRealAvatar ? (
-                        <img
-                            src={testimonial.avatar}
-                            alt={testimonial.name}
-                            className="rounded-full w-10 h-10 object-cover border border-border"
-                            loading="lazy"
-                            decoding="async"
-                        />
-                    ) : (
-                        <div
-                            className="rounded-full w-10 h-10 flex items-center justify-center border border-border bg-primary/10 text-primary text-sm font-medium"
-                            aria-hidden
-                        >
-                            {getInitials(testimonial.name)}
-                        </div>
-                    )}
-                    <div className="text-left">
-                        <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
-                        <p className="text-xs text-muted-foreground">{testimonial.role}</p>
-                    </div>
-                </div>
-            </CardFooter>
-        </Card>
-    );
+  return (
+    <Card className="testimonial-card-item flex h-full flex-col rounded-2xl border border-border/70 bg-white/85 shadow-[0_8px_28px_rgba(0,0,0,0.08)] backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:border-white/15 dark:bg-card/90 dark:shadow-elevation-1-dark dark:hover:border-primary/40">
+      <CardHeader className="p-4">
+        <div className="flex items-center gap-2">
+          <div className="flex">
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <Star
+                key={idx}
+                className={`h-4 w-4 ${
+                  idx < stars
+                    ? "fill-primary text-primary"
+                    : "fill-muted/20 text-muted text-muted-foreground/20"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow p-4 pt-0">
+        <p className="line-clamp-4 italic text-muted-foreground">&ldquo;{testimonial.text}&rdquo;</p>
+      </CardContent>
+      <CardFooter className="mt-auto p-4 pt-0">
+        <div className="flex items-center gap-4">
+          {hasRealAvatar ? (
+            <img
+              src={testimonial.avatar}
+              alt={testimonial.name}
+              className="h-10 w-10 rounded-full border border-border object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-primary/10 text-sm font-medium text-primary"
+              aria-hidden
+            >
+              {getInitials(testimonial.name)}
+            </div>
+          )}
+          <div className="text-left">
+            <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
+            <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+          </div>
+        </div>
+      </CardFooter>
+    </Card>
+  );
 }

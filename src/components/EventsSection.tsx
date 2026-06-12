@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getEventsForHomepage } from "@/services/events";
 import { Loader2 } from "lucide-react";
 import { StackedCards } from "@/components/ui/stacked-cards";
-import { EventCategoryCard } from "@/components/ui/event-category-card";
+import { MobileEventsShowcase } from "@/components/ui/mobile-events-showcase";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { HomeSectionBackground } from "@/components/ui/home-section-background";
@@ -136,19 +136,15 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
     >
         <div className="w-full overflow-visible">
           <div className="relative">
-          <div className="block lg:hidden w-full mb-6">
-            <div className="overflow-x-auto overflow-y-hidden pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x">
-              <div className="flex gap-4 w-max snap-x snap-mandatory px-1">
-                {categories.map((cat) => (
-                  <EventCategoryCard
-                    key={`${cat.slug}-mobile`}
-                    title={cat.title}
-                    slug={cat.slug}
-                    coverUrl={cat.images[0] || FALLBACK_IMAGES[0]}
-                  />
-                ))}
-              </div>
-            </div>
+          <div className="lg:hidden w-full">
+            <MobileEventsShowcase
+              categories={displayCategories.map((cat) => ({
+                title: cat.title,
+                slug: cat.slug,
+                description: cat.description,
+                coverUrl: cat.images[0] || FALLBACK_IMAGES[0],
+              }))}
+            />
           </div>
 
         {/* Desktop Three-column layout – Hidden on Mobile, constrained to previous width so stacked cards stay same size */}
@@ -212,8 +208,8 @@ const EventsSection = ({ prefetchedEvents, homepageDataPending }: EventsSectionP
         </div>
         </div>
 
-        {/* View All Events – inside container */}
-        <div className="text-center mt-4 md:mt-5">
+        {/* View All Events – desktop only (mobile CTA lives in MobileEventsShowcase) */}
+        <div className="hidden text-center mt-4 md:mt-5 lg:block">
           <Link to="/events" className="btn-section-cta">
             <span>View All Events</span>
             <span aria-hidden>→</span>

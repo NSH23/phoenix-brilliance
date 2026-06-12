@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import { AboutJourneyTimeline } from "@/components/ui/about-journey-timeline";
+import { MobileAboutJourney } from "@/components/ui/mobile-about-journey";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { HomeSectionBackground } from "@/components/ui/home-section-background";
@@ -53,13 +52,20 @@ export default function AboutSection() {
       contentClassName="pt-0"
       backgroundOverlay={<HomeSectionBackground variant="grid-glow" />}
     >
-      <div className="grid items-start gap-8 md:gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-12">
+      <div className="md:hidden">
+        <MobileAboutJourney
+          body={body}
+          expanded={mobileExpanded}
+          onToggleExpanded={() => setMobileExpanded((v) => !v)}
+        />
+      </div>
+
+      <div className="hidden md:grid md:items-start md:gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-12">
         <AboutJourneyTimeline className="lg:pr-4" />
 
         <div className="flex min-w-0 flex-col border-l border-border pl-0 lg:pl-10">
           <div className="flex h-full flex-col">
-            {/* Desktop: full story */}
-            <div className="hidden space-y-4 md:block">
+            <div className="space-y-4">
               {body.paragraphs.map((para, i) => (
                 <p
                   key={i}
@@ -68,55 +74,6 @@ export default function AboutSection() {
                   {para}
                 </p>
               ))}
-            </div>
-
-            {/* Mobile: expandable preview */}
-            <div className="md:hidden">
-              <AnimatePresence initial={false} mode="wait">
-                {mobileExpanded ? (
-                  <motion.div
-                    key="full"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="space-y-4 overflow-hidden"
-                  >
-                    {body.paragraphs.map((para, i) => (
-                      <p key={i} className="text-[15px] leading-relaxed text-foreground/90">
-                        {para}
-                      </p>
-                    ))}
-                  </motion.div>
-                ) : (
-                  <motion.p
-                    key="preview"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="line-clamp-4 text-[15px] leading-relaxed text-foreground/90"
-                  >
-                    {body.paragraphs[0]}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-              <button
-                type="button"
-                onClick={() => setMobileExpanded((v) => !v)}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-primary transition-colors hover:text-primary/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-              >
-                {mobileExpanded ? (
-                  <>
-                    <ChevronUp className="h-4 w-4" aria-hidden />
-                    Read less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4" aria-hidden />
-                    Read more
-                  </>
-                )}
-              </button>
             </div>
 
             {body.quote ? (

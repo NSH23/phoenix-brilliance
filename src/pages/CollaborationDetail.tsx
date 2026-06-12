@@ -12,6 +12,7 @@ import { getYouTubeThumbnail, isYouTubeValue } from "@/lib/youtube";
 import { SEO } from "@/components/SEO";
 import { VENUES_LIST_PATH, venueDetailPath } from "@/lib/venueRoutes";
 import PhoneGalleryExplorer from "@/components/PhoneGalleryExplorer";
+import { MobileGalleryPhotoGrid } from "@/components/ui/mobile-gallery-photo-grid";
 import { PageContentSection } from "@/components/ui/page-content-section";
 import type { ExplorerFolder, ExplorerMediaItem } from "@/lib/mediaFolderTree";
 
@@ -234,15 +235,17 @@ export default function CollaborationDetail() {
       {/* Venue Gallery – folders and images */}
       {images.length > 0 && (
         <PageContentSection
-          className="border-t border-border/40 py-10 md:py-14"
+          className="border-t border-border/40 py-8 md:py-14"
           background="soft-mesh"
           band="white"
+          innerClassName="max-md:px-0"
         >
-          <div className="mb-6 md:mb-8">
+          <div className="mb-5 px-4 md:mb-8 md:px-0">
             <h2 className="font-serif text-xl font-semibold text-foreground md:text-2xl">Venue gallery</h2>
             <p className="mt-1 text-sm text-muted-foreground">Explore the space through photos and videos.</p>
           </div>
 
+          <div className="px-4 md:px-0">
           {explorerFolders.length > 0 || explorerMedia.some((m) => !m.folder_id) ? (
             <PhoneGalleryExplorer
               folders={explorerFolders}
@@ -260,7 +263,20 @@ export default function CollaborationDetail() {
               }}
             />
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            <>
+              <div className="-mx-4 md:hidden">
+                <MobileGalleryPhotoGrid
+                  items={images.map((image, index) => ({
+                    id: image.id,
+                    posterSrc: collabGalleryPosterSrc(image),
+                    alt: image.caption ?? "Collaboration media",
+                    caption: image.caption ?? undefined,
+                    isVideo: image.media_type === "video" || isCollabYouTubeVideo(image),
+                  }))}
+                  onItemClick={(index) => openLightbox(index)}
+                />
+              </div>
+              <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               {images.map((image, index) => {
                 const mediaSrc = resolveCollaborationMediaUrl(image.image_url);
                 const poster = collabGalleryPosterSrc(image);
@@ -287,8 +303,10 @@ export default function CollaborationDetail() {
                 </motion.div>
               );
               })}
-            </div>
+              </div>
+            </>
           )}
+          </div>
         </PageContentSection>
       )}
 

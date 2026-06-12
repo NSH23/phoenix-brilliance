@@ -115,18 +115,18 @@ export default function WhyChooseUsSection({
     >
       <div className="mx-auto max-w-7xl space-y-5 px-5 sm:px-6 md:space-y-6 lg:px-10">
         {stats.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
             {stats.map((stat) => (
               <div
                 key={stat.id}
-                className="home-card px-4 py-4 sm:px-5 sm:py-5"
+                className="home-card px-3.5 py-3.5 sm:px-5 sm:py-5"
               >
-                <p className="font-serif text-2xl font-semibold tabular-nums text-foreground md:text-[1.75rem]">
+                <p className="font-serif text-xl font-semibold tabular-nums text-foreground sm:text-2xl md:text-[1.75rem]">
                   {stat.stat_value}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{stat.stat_label}</p>
+                <p className="mt-1 text-xs font-semibold text-foreground sm:text-sm">{stat.stat_label}</p>
                 {stat.stat_description ? (
-                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground md:text-sm">
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground sm:mt-1.5 sm:text-xs md:text-sm">
                     {stat.stat_description}
                   </p>
                 ) : null}
@@ -136,17 +136,41 @@ export default function WhyChooseUsSection({
         ) : null}
 
         {reasons.length > 0 ? (
-          <div className="border-t border-border pt-6 md:pt-7">
+          <div className="border-t border-border pt-5 md:pt-7">
             <div className="border-l-[3px] border-primary/70 pl-4 md:pl-5">
-              <h3 className="font-serif text-xl font-medium text-foreground md:text-2xl">
+              <h3 className="font-serif text-lg font-medium text-foreground md:text-2xl">
                 What Sets Us Apart
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground md:text-base">
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground md:mt-1.5 md:text-base">
                 The details that make every event exceptional
               </p>
             </div>
 
-            <ul className="mt-5 grid list-none gap-2.5 p-0 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-3 md:mt-6">
+            {/* Mobile: vertical milestone list */}
+            <ul className="relative mt-5 space-y-0 p-0 md:hidden">
+              {reasons.map((reason, index) => (
+                <li key={reason.id} className="relative flex gap-3 pb-4 last:pb-0">
+                  {index < reasons.length - 1 ? (
+                    <span
+                      aria-hidden
+                      className="absolute left-[15px] top-8 bottom-0 w-px bg-primary/20"
+                    />
+                  ) : null}
+                  <span
+                    aria-hidden
+                    className="relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-[11px] font-bold tabular-nums text-primary"
+                  >
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0 flex-1 rounded-xl border border-border/50 bg-background/70 px-3 py-2.5">
+                    <span className="text-sm font-medium leading-snug text-foreground">{reason.text}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop: grid list */}
+            <ul className="mt-5 hidden list-none gap-2.5 p-0 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-3 md:mt-6">
               {reasons.map((reason, index) => (
                 <li
                   key={reason.id}

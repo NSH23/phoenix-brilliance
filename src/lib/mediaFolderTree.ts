@@ -91,3 +91,28 @@ export function folderHasVisibleContent(
     .filter((f) => f.parent_id === folderId && f.is_enabled !== false)
     .some((child) => folderHasVisibleContent(child.id, folders, media));
 }
+
+/** Collect up to `limit` preview URLs from a folder and its nested subfolders. */
+export function getFolderPreviewUrls(
+  folderId: string,
+  folders: ExplorerFolder[],
+  media: ExplorerMediaItem[],
+  resolveUrl: (url: string) => string,
+  limit = 4
+): string[] {
+  const collectMedia = (fid: string): ExplorerMediaItem[] => {
+    const direct = getMediaInFolder(fid, media);
+    const childFolders = folders
+      .filter((f) => f.parent_id === fid && f.is_enabled !== false)
+      .sort((a, b) => a.display_order - b.display_order);
+    const fromChildren = childFolders.flatMap((cf) => collectMedia(cf.id));
+    return [...direct, ...fromChildren];
+  };
+
+  const items =
+    folderId === UNCategorized_FOLDER_ID
+      ? getMediaInFolder(UNCategorized_FOLDER_ID, media)
+      : collectMedia(folderId);
+
+  return items.slice(0, limit).map((m) => resolveUrl(m.url));
+}

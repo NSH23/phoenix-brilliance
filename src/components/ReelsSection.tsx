@@ -1,4 +1,5 @@
 import { CardCarousel } from "@/components/ui/card-carousel";
+import { MobileReelsCarousel } from "@/components/ui/mobile-reels-carousel";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { HomeSectionBackground } from "@/components/ui/home-section-background";
@@ -19,8 +20,7 @@ const ReelsSection = () => {
             src: item.url,
             alt: item.title || `Phoenix Moment ${index + 1}`,
           }));
-          // Duplicate once when few reels so Embla loop scrolls smoothly (no extra pagination).
-          setReels(mapped.length < 4 ? [...mapped, ...mapped] : mapped);
+          setReels(mapped);
         } else {
           setReels([]);
         }
@@ -36,6 +36,8 @@ const ReelsSection = () => {
 
   if (loading || reels.length === 0) return null;
 
+  const desktopReels = reels.length < 4 ? [...reels, ...reels] : reels;
+
   return (
     <HomeSectionShell
       id="reels-section"
@@ -48,15 +50,18 @@ const ReelsSection = () => {
       contentClassName="pb-0"
       backgroundOverlay={<HomeSectionBackground variant="soft-mesh" />}
     >
-      <CardCarousel
-        images={reels}
-        autoplayDelay={4500}
-        showPagination={false}
-        showNavigation={true}
-        showHeader={false}
-        fullWidth={true}
-        paginationSpaced={false}
-      />
+      <MobileReelsCarousel reels={reels} />
+      <div className="hidden md:block">
+        <CardCarousel
+          images={desktopReels}
+          autoplayDelay={4500}
+          showPagination={false}
+          showNavigation={true}
+          showHeader={false}
+          fullWidth={true}
+          paginationSpaced={false}
+        />
+      </div>
     </HomeSectionShell>
   );
 };

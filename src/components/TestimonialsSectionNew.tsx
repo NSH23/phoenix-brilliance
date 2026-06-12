@@ -1,4 +1,5 @@
 import { TestimonialsSection } from "@/components/ui/testimonials-1";
+import { MobileTestimonialsCarousel } from "@/components/ui/mobile-testimonials-carousel";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { HomeSectionBackground } from "@/components/ui/home-section-background";
@@ -156,12 +157,17 @@ const TestimonialsSectionWrapper = ({
       contentClassName="pt-0"
       backgroundOverlay={<HomeSectionBackground variant="vignette-grid" />}
     >
-      <TestimonialsSection
-        testimonials={formattedTestimonials}
-        showHeader={false}
-        embedded
-        className="bg-transparent py-0"
-      />
+      <div className="md:hidden">
+        <MobileTestimonialsCarousel testimonials={formattedTestimonials} />
+      </div>
+      <div className="hidden md:block">
+        <TestimonialsSection
+          testimonials={formattedTestimonials}
+          showHeader={false}
+          embedded
+          className="bg-transparent py-0"
+        />
+      </div>
     </HomeSectionShell>
   );
 };

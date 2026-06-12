@@ -51,21 +51,21 @@ export default function VenueDetailHero({
       <div className="container relative z-10 mx-auto px-4">
         <Link
           to={backHref}
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+          className="mb-5 inline-flex min-h-[44px] items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary md:mb-6"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           {backLabel}
         </Link>
 
-        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[minmax(0,400px)_minmax(0,1fr)] xl:gap-12">
+        <div className="grid items-start gap-6 md:gap-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[minmax(0,400px)_minmax(0,1fr)] xl:gap-12">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="mx-auto w-full max-w-[400px] lg:mx-0"
+            className="mx-auto w-full max-md:max-w-none md:max-w-[400px] lg:mx-0"
           >
-            <div className="overflow-hidden rounded-2xl border border-border/60 bg-muted/30 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]">
-              <AspectRatio ratio={4 / 3} className="bg-muted">
+            <div className="overflow-hidden rounded-2xl border border-border/60 bg-muted/30 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] max-md:-mx-1 max-md:rounded-3xl max-md:shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
+              <AspectRatio ratio={4 / 3} className="bg-muted max-md:aspect-[16/10]">
                 {bannerMedia ?? (
                   <OptimizedImage
                     src={bannerSrc}
@@ -77,8 +77,8 @@ export default function VenueDetailHero({
                 )}
               </AspectRatio>
             </div>
-            <div className="mt-3 flex items-center gap-3 rounded-xl border border-border/50 bg-card/80 px-3 py-2.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/50 bg-background p-1">
+            <div className="mt-3 flex items-center gap-3 rounded-xl border border-border/50 bg-card/80 px-3 py-2.5 max-md:mt-4 max-md:rounded-2xl max-md:px-4 max-md:py-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/50 bg-background p-1 max-md:h-12 max-md:w-12 max-md:rounded-xl">
                 <OptimizedImage
                   src={logoSrc}
                   alt={`${name} logo`}
@@ -87,7 +87,7 @@ export default function VenueDetailHero({
                   className="max-h-full max-w-full object-contain"
                 />
               </div>
-              <p className="min-w-0 text-sm font-medium leading-snug text-foreground">{name}</p>
+              <p className="min-w-0 text-sm font-medium leading-snug text-foreground max-md:text-base">{name}</p>
             </div>
           </motion.div>
 
@@ -95,13 +95,13 @@ export default function VenueDetailHero({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.08, ease: "easeOut" }}
-            className="flex min-w-0 flex-col"
+            className="flex min-w-0 flex-col max-md:mt-1"
           >
-            <div className="border-l-[3px] border-primary/75 pl-5 md:pl-6">
+            <div className="border-l-[3px] border-primary/75 pl-4 md:pl-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
                 {badgeLabel}
               </p>
-              <h1 className="mt-2 font-serif text-3xl font-semibold leading-tight text-foreground sm:text-4xl md:text-[2.5rem]">
+              <h1 className="mt-2 font-serif text-2xl font-semibold leading-tight text-foreground max-md:tracking-tight sm:text-4xl md:text-[2.5rem]">
                 {name}
               </h1>
               <div
@@ -111,18 +111,18 @@ export default function VenueDetailHero({
             </div>
 
             {trimmedLocation ? (
-              <p className="mt-5 max-w-2xl pl-5 text-sm leading-relaxed text-foreground md:pl-6 md:text-[15px] md:leading-7">
+              <p className="mt-4 max-w-2xl pl-4 text-sm leading-relaxed text-foreground md:mt-5 md:pl-6 md:text-[15px] md:leading-7">
                 {trimmedLocation}
               </p>
             ) : null}
 
             {trimmedDescription ? (
-              <p className="mt-4 max-w-2xl pl-5 text-sm leading-relaxed text-muted-foreground md:pl-6 md:text-base md:leading-7">
+              <p className="mt-3 max-w-2xl pl-4 text-sm leading-relaxed text-muted-foreground md:mt-4 md:pl-6 md:text-base md:leading-7">
                 {trimmedDescription}
               </p>
             ) : null}
 
-            <div className="mt-6 flex flex-wrap gap-3 pl-5 md:pl-6">
+            <div className="mt-5 flex flex-wrap gap-2 pl-4 md:mt-6 md:gap-3 md:pl-6">
               {mediaCount > 0 ? (
                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-border/50 bg-card/90 px-3.5 py-2 text-sm shadow-sm backdrop-blur-sm">
                   <span className="font-semibold tabular-nums text-foreground">{mediaCount}</span>
@@ -135,11 +135,11 @@ export default function VenueDetailHero({
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-2.5 pl-5 sm:flex-row sm:flex-wrap md:pl-6">
+            <div className="mt-5 flex flex-col gap-2.5 pl-4 sm:flex-row sm:flex-wrap md:mt-6 md:pl-6">
               <Button
                 asChild
                 size="lg"
-                className="h-11 rounded-xl px-6 font-semibold shadow-sm hover:shadow-md"
+                className="h-12 w-full rounded-xl px-6 font-semibold shadow-sm hover:shadow-md sm:h-11 sm:w-auto"
               >
                 <Link to="/contact">Book through us</Link>
               </Button>
@@ -148,7 +148,7 @@ export default function VenueDetailHero({
                   asChild
                   variant="outline"
                   size="lg"
-                  className="h-11 rounded-xl border-border/60 px-6 font-medium"
+                  className="h-12 w-full rounded-xl border-border/60 px-6 font-medium sm:h-11 sm:w-auto"
                 >
                   <a href={mapUrl} target="_blank" rel="noopener noreferrer">
                     View on map

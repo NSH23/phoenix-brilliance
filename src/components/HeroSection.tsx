@@ -72,15 +72,15 @@ const HeroSection = () => {
 
   return (
     <section
-      className="relative isolate flex items-center overflow-visible bg-background pt-24 pb-10 dark:bg-[#0B1220] md:pb-12"
+      className="relative isolate flex items-center overflow-visible bg-background pt-[5.25rem] pb-8 dark:bg-[#0B1220] sm:pt-24 md:pb-12"
       aria-label="Hero"
     >
       <HeroEditorialBackground />
 
-      <div className="container relative z-10 mx-auto grid max-w-7xl items-center gap-8 overflow-visible px-5 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:px-8 xl:gap-12 [&>*]:min-w-0 [&>*]:overflow-visible">
-        <div className="flex flex-col gap-6 text-center lg:gap-7 lg:text-left">
-          <div className="space-y-3.5 lg:space-y-4">
-            <h1 className="hero-heading-gradient font-serif text-[clamp(2.5rem,4.8vw+1rem,4rem)] font-normal leading-[1.06] tracking-[-0.02em] text-foreground">
+      <div className="container relative z-10 mx-auto grid max-w-7xl items-center gap-7 overflow-visible px-4 sm:gap-8 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:px-8 xl:gap-12 [&>*]:min-w-0 [&>*]:overflow-visible">
+        <div className="flex flex-col gap-5 text-center sm:gap-6 lg:gap-7 lg:text-left">
+          <div className="space-y-3 sm:space-y-3.5 lg:space-y-4">
+            <h1 className="hero-heading-gradient mx-auto max-w-[18rem] font-serif text-[clamp(2.15rem,6.8vw+0.65rem,4rem)] font-normal leading-[1.08] tracking-[-0.02em] text-foreground sm:max-w-none sm:leading-[1.06]">
               {isDefaultTitle ? (
                 <>
                   Crafting Moments
@@ -97,31 +97,31 @@ const HeroSection = () => {
               )}
             </h1>
 
-            <p className="mx-auto max-w-md text-[1.125rem] leading-relaxed text-muted-foreground sm:text-[1.2rem] lg:mx-0 lg:max-w-[30rem]">
+            <p className="mx-auto max-w-[20rem] text-base leading-relaxed text-muted-foreground sm:max-w-md sm:text-[1.125rem] md:text-[1.2rem] lg:mx-0 lg:max-w-[30rem]">
               {description}
             </p>
           </div>
 
-          <div className="mx-auto w-full max-w-lg rounded-2xl border border-border/50 bg-card/70 px-5 py-5 text-left shadow-[0_8px_30px_-12px_rgba(26,24,22,0.12)] backdrop-blur-sm sm:px-6 sm:py-6 lg:mx-0">
-            <h2 className="font-serif text-[1.35rem] font-medium text-foreground sm:text-2xl">
+          <div className="mx-auto w-full max-w-md rounded-2xl border border-border/50 bg-card/70 px-4 py-4 text-left shadow-[0_8px_30px_-12px_rgba(26,24,22,0.12)] backdrop-blur-sm sm:max-w-lg sm:px-6 sm:py-6 lg:mx-0">
+            <h2 className="font-serif text-xl font-medium text-foreground sm:text-[1.35rem] md:text-2xl">
               Kevin David
             </h2>
-            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary sm:text-[11px] sm:tracking-[0.2em]">
               Founder & Creative Director
             </p>
-            <p className="mt-2.5 text-[15px] leading-relaxed text-muted-foreground sm:text-base">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:mt-2.5 sm:text-[15px] md:text-base">
               Since 2017, Phoenix has crafted elegant celebrations with meticulous décor, seamless
               production, and a personal touch on every project.
             </p>
           </div>
 
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
-            <Button size="lg" className="min-w-[12rem] gap-2 text-[1.05rem] shadow-sm" asChild>
+          <div className="flex w-full max-w-xs flex-col items-stretch gap-2.5 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-3 lg:justify-start">
+            <Button size="lg" className="w-full gap-2 text-base shadow-sm sm:min-w-[12rem] sm:w-auto sm:text-[1.05rem]" asChild>
               <Link to={heroContent?.cta_link || "/contact"}>
                 {heroContent?.cta_text || "Plan Your Event"}
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="min-w-[12rem] gap-2 text-[1.05rem]" asChild>
+            <Button variant="outline" size="lg" className="w-full gap-2 text-base sm:min-w-[12rem] sm:w-auto sm:text-[1.05rem]" asChild>
               <Link to={publicGalleryHubPath()}>
                 View Our Work
                 <ArrowRight className="h-4 w-4" />
@@ -129,15 +129,15 @@ const HeroSection = () => {
             </Button>
           </div>
 
-          <div className="mx-auto inline-flex w-full max-w-md items-stretch justify-between gap-1 rounded-2xl border border-border/40 bg-card/50 px-2 py-3.5 sm:max-w-lg sm:px-4 lg:mx-0">
+          <div className="mx-auto inline-flex w-full max-w-sm items-stretch justify-between gap-0.5 rounded-2xl border border-border/40 bg-card/50 px-1.5 py-3 sm:max-w-md sm:gap-1 sm:px-2 sm:py-3.5 md:max-w-lg md:px-4 lg:mx-0">
             {STATS.map((stat, i) => (
               <div key={stat.label} className="flex flex-1 items-center gap-1 sm:gap-2">
                 {i > 0 ? <div className="hidden h-9 w-px bg-border/80 sm:block" aria-hidden /> : null}
-                <div className="flex-1 px-2 text-center sm:px-3 lg:text-left">
-                  <p className="font-serif text-[1.35rem] font-semibold tabular-nums text-primary sm:text-[1.65rem]">
+                <div className="flex-1 px-1.5 text-center sm:px-3 lg:text-left">
+                  <p className="font-serif text-xl font-semibold tabular-nums text-primary sm:text-[1.35rem] md:text-[1.65rem]">
                     {stat.value}
                   </p>
-                  <p className="mt-0.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground sm:text-[11px] sm:tracking-[0.14em]">
                     {stat.label}
                   </p>
                 </div>
@@ -146,10 +146,10 @@ const HeroSection = () => {
           </div>
         </div>
 
-        <div className="relative min-w-0 overflow-visible lg:overflow-visible">
+        <div className="relative min-w-0 overflow-visible pt-1 sm:pt-0 lg:overflow-visible">
           <div
             aria-hidden
-            className="pointer-events-none absolute left-1/2 top-[52%] z-0 h-[78%] w-[92%] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[2.5rem] bg-[#1a1816]/[0.07] blur-3xl dark:bg-black/25"
+            className="pointer-events-none absolute left-1/2 top-[52%] z-0 h-[82%] w-[96%] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[2.5rem] bg-[#1a1816]/[0.07] blur-3xl dark:bg-black/25 lg:h-[78%] lg:w-[92%]"
           />
           <div className="relative z-[1]">
             <HeroMediaShowcase items={heroItems} isReady={heroMedia !== undefined} />

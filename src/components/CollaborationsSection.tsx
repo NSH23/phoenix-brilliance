@@ -9,6 +9,7 @@ import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
 import { HomeSectionBackground } from "@/components/ui/home-section-background";
 import PartnersVenueShowcase from "@/components/ui/partners-venue-showcase";
+import MobilePartnersShowcase from "@/components/ui/mobile-partners-showcase";
 import type { PartnerVenueCardData } from "@/components/ui/partner-venue-card";
 import { VENUES_LIST_PATH } from "@/lib/venueRoutes";
 
@@ -74,10 +75,10 @@ const CollaborationsSection = ({ prefetchedCollaborations, homepageDataPending }
       contentClassName="pt-0"
       backgroundOverlay={<HomeSectionBackground variant="vignette-grid" />}
       action={
-        <div className="flex justify-end">
+        <div className="flex justify-end max-md:justify-start">
           <Link
             to={VENUES_LIST_PATH}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary max-md:text-xs"
           >
             View all venues
             <ArrowRight className="h-4 w-4" />
@@ -85,7 +86,12 @@ const CollaborationsSection = ({ prefetchedCollaborations, homepageDataPending }
         </div>
       }
     >
-      <PartnersVenueShowcase venues={venueCards} edgeToEdge />
+      <div className="md:hidden">
+        <MobilePartnersShowcase venues={venueCards} />
+      </div>
+      <div className="hidden md:block">
+        <PartnersVenueShowcase venues={venueCards} edgeToEdge />
+      </div>
     </HomeSectionShell>
   );
 };

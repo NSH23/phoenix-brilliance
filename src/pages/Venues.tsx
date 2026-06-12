@@ -85,11 +85,18 @@ export default function Venues() {
               </Link>
             </div>
           ) : (
-            <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
-              {venueCards.map((venue, index) => (
-                <PartnerVenueCard key={venue.id} venue={venue} index={index} />
-              ))}
-            </div>
+            <>
+              <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 sm:gap-4 md:hidden">
+                {venueCards.map((venue, index) => (
+                  <PartnerVenueCard key={venue.id} venue={venue} index={index} variant="mobile" />
+                ))}
+              </div>
+              <div className="mx-auto hidden max-w-7xl grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4 md:grid">
+                {venueCards.map((venue, index) => (
+                  <PartnerVenueCard key={venue.id} venue={venue} index={index} />
+                ))}
+              </div>
+            </>
           )}
       </PageContentSection>
 

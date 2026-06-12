@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { ExpandingCards, CardItem } from "@/components/ui/expanding-cards";
 import HomeSectionShell from "@/components/ui/home-section-shell";
 import HomeSectionSplitTitle from "@/components/ui/home-section-split-title";
@@ -9,83 +8,101 @@ import { getActiveServices, type Service } from "@/services/services";
 import { resolvePublicStorageUrl } from "@/services/storage";
 import { getServiceIcon } from "@/lib/serviceIcons";
 import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 
 const DEFAULT_SERVICE_IMAGE = "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80";
 
 const MobileServiceCarousel = ({ services }: { services: CardItem[] }) => {
-  const [index, setIndex] = useState(0);
+  const [api, setApi] = useState<CarouselApi>();
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    if (services.length <= 1) return;
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % services.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [services.length]);
+    if (!api) return;
+    const onSelect = () => setActiveIndex(api.selectedScrollSnap());
+    onSelect();
+    api.on("select", onSelect);
+    return () => {
+      api.off("select", onSelect);
+    };
+  }, [api]);
 
   if (services.length === 0) return null;
 
-  const currentService = services[index];
-
   return (
-    <div className="relative w-full h-[460px] overflow-hidden rounded-xl bg-muted/20 dark:bg-surface">
-      <div className="relative w-full h-full"> {/* Container for absolute items */}
-        <AnimatePresence initial={false} custom={index}>
-          <motion.div
-            key={currentService.id}
-            custom={index}
-            initial={{ x: "100%", opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: "-100%", opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="absolute inset-0 flex flex-col bg-card rounded-2xl overflow-hidden border-2 border-charcoal/35 dark:border-white/30 shadow-elevation-1 dark:shadow-elevation-1-dark transition-all duration-300 hover:border-charcoal/60 dark:hover:border-white/55 hover:ring-2 hover:ring-charcoal/15 dark:hover:ring-white/15 hover:shadow-card-hover dark:hover:shadow-card-hover-dark"
-          >
-            {/* Image Area */}
-            <div className="relative h-[60%] w-full overflow-hidden">
-              <img
-                src={currentService.imgSrc}
-                alt={currentService.title}
-                className="h-full w-full object-contain bg-muted/25 p-2"
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  if (currentService.fallbackImgSrc) {
-                    e.currentTarget.src = currentService.fallbackImgSrc;
-                  } else {
-                    e.currentTarget.src = DEFAULT_SERVICE_IMAGE;
-                  }
-                }}
-              />
-              <div className="absolute inset-0 bg-black/40" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <div className="p-2 bg-white/10 backdrop-blur-md rounded-full w-fit mb-2">
-                  {currentService.icon}
+    <div className="w-full pb-1">
+      <Carousel
+        setApi={setApi}
+        opts={{ align: "center", loop: services.length > 1, containScroll: "trimSnaps" }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-3">
+          {services.map((service, index) => (
+            <CarouselItem key={service.id} className="basis-[88%] pl-3 sm:basis-[82%]">
+              <div
+                className={cn(
+                  "flex h-[380px] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_12px_32px_rgba(0,0,0,0.08)] transition-transform duration-300",
+                  activeIndex === index ? "scale-100" : "scale-[0.97] opacity-90",
+                )}
+              >
+                <div className="relative h-[52%] w-full overflow-hidden bg-muted/20">
+                  <img
+                    src={service.imgSrc}
+                    alt={service.title}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      if (service.fallbackImgSrc) {
+                        e.currentTarget.src = service.fallbackImgSrc;
+                      } else {
+                        e.currentTarget.src = DEFAULT_SERVICE_IMAGE;
+                      }
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                  <div className="absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/15 text-white backdrop-blur-md">
+                    {service.icon}
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col justify-center px-4 py-4 text-center">
+                  <h3 className="font-serif text-lg font-semibold text-foreground">{service.title}</h3>
+                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+                    {service.description}
+                  </p>
+                  {service.linkHref ? (
+                    <Link
+                      to={service.linkHref}
+                      className="mt-3 inline-flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary"
+                    >
+                      Learn more
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  ) : null}
                 </div>
               </div>
-            </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
 
-            <div className="flex-1 p-6 bg-card flex flex-col justify-center text-center">
-              <h3 className="text-xl font-serif font-semibold mb-2 text-foreground">
-                {currentService.title}
-              </h3>
-              <p className="text-sm text-muted-foreground line-clamp-3 font-sans">
-                {currentService.description}
-              </p>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Indicators */}
-        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-10">
-          {services.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === index ? "w-6 bg-primary" : "w-1.5 bg-primary/30"
-                }`}
+      {services.length > 1 ? (
+        <div className="mt-4 flex justify-center gap-1.5">
+          {services.map((service, i) => (
+            <button
+              key={service.id}
+              type="button"
+              aria-label={`Go to ${service.title}`}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                i === activeIndex ? "w-5 bg-primary" : "w-1.5 bg-primary/30",
+              )}
+              onClick={() => api?.scrollTo(i)}
             />
           ))}
         </div>
-      </div>
+      ) : null}
     </div>
   );
 };
@@ -172,8 +189,8 @@ const ServicesSection = ({ prefetchedServices, homepageDataPending }: ServicesSe
           )}
         </div>
 
-        {/* Mobile View: Auto-rotating Service Carousel */}
-        <div className="md:hidden w-full relative min-h-[460px]">
+        {/* Mobile View: swipeable service cards */}
+        <div className="md:hidden w-full">
           <MobileServiceCarousel services={services} />
         </div>
 

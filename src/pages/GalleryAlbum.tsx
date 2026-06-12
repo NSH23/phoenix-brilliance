@@ -13,6 +13,7 @@ import { getEventBySlug, Event } from "@/services/events";
 import { getAlbumById, getAlbumWithMedia, AlbumMedia, AlbumFolder } from "@/services/albums";
 import { Album } from "@/services/albums";
 import PhoneGalleryExplorer from "@/components/PhoneGalleryExplorer";
+import { MobileGalleryPhotoGrid } from "@/components/ui/mobile-gallery-photo-grid";
 import type { ExplorerFolder, ExplorerMediaItem } from "@/lib/mediaFolderTree";
 import { logger } from "@/utils/logger";
 import { SEO } from "@/components/SEO";
@@ -289,27 +290,42 @@ const GalleryAlbum = () => {
         className="py-8 sm:py-12"
         background="grid-glow"
         band="linen"
+        innerClassName="max-md:px-0"
       >
           {activeTab === 'photos' ? (
             photos.length === 0 ? (
-              <div className="text-center py-16">
+              <div className="px-4 text-center py-16">
                 <Images className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
                 <h3 className="text-xl font-serif font-semibold mb-2">No Photos Yet</h3>
                 <p className="text-muted-foreground">Photos will appear here once they're added to this album.</p>
               </div>
             ) : hasFolderGallery ? (
-              <PhoneGalleryExplorer
-                folders={explorerFolders}
-                media={explorerPhotos}
-                resolveUrl={(url) => url || '/placeholder.svg'}
-                onOpenLightbox={(index, folderPhotos) => {
-                  const target = folderPhotos[index];
-                  const globalIndex = target?.id ? photos.findIndex((p) => p.id === target.id) : index;
-                  setLightboxIndex(globalIndex >= 0 ? globalIndex : index);
-                }}
-              />
+              <div className="px-4 md:px-0">
+                <PhoneGalleryExplorer
+                  folders={explorerFolders}
+                  media={explorerPhotos}
+                  resolveUrl={(url) => url || '/placeholder.svg'}
+                  onOpenLightbox={(index, folderPhotos) => {
+                    const target = folderPhotos[index];
+                    const globalIndex = target?.id ? photos.findIndex((p) => p.id === target.id) : index;
+                    setLightboxIndex(globalIndex >= 0 ? globalIndex : index);
+                  }}
+                />
+              </div>
             ) : (
-              <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 sm:gap-4">
+              <>
+                <div className="md:hidden">
+                  <MobileGalleryPhotoGrid
+                    items={photos.map((photo) => ({
+                      id: photo.id,
+                      posterSrc: photo.url || "/placeholder.svg",
+                      alt: photo.caption ?? "Photo",
+                      caption: photo.caption ?? undefined,
+                    }))}
+                    onItemClick={(index) => setLightboxIndex(index)}
+                  />
+                </div>
+                <div className="hidden md:block columns-2 sm:columns-3 lg:columns-4 gap-3 sm:gap-4 px-0">
                 {photos.map((photo, index) => (
                   <motion.div
                     key={photo.id}
@@ -369,7 +385,8 @@ const GalleryAlbum = () => {
                     </div>
                   </motion.div>
                 ))}
-              </div>
+                </div>
+              </>
             )
           ) : (
             videos.length === 0 ? (

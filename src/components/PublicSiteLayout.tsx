@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import MobileCTA from "@/components/MobileCTA";
+import PublicBottomNav from "@/components/PublicBottomNav";
 import { shouldHidePublicFooter } from "@/lib/publicSiteLayout";
 
 /**
@@ -31,14 +31,14 @@ export default function PublicSiteLayout() {
 
   return (
     <div
-      className="public-site min-h-screen"
+      className="public-site min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
       onContextMenu={blockMediaContextMenu}
       onDragStart={blockMediaDrag}
     >
       <Outlet />
       {!hideFooter ? <Footer /> : null}
       <WhatsAppButton />
-      <MobileCTA />
+      <PublicBottomNav />
     </div>
   );
 }
