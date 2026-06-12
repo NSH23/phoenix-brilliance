@@ -18,32 +18,36 @@ type PartnerVenueCardProps = {
   index?: number;
   className?: string;
   variant?: "default" | "mobile";
+  /** Disable enter animation — required inside horizontal carousels on mobile. */
+  motionless?: boolean;
+  /** Use button instead of link so Embla swipe works on touch devices. */
+  interactive?: "link" | "button";
+  onPress?: () => void;
 };
 
-export function PartnerVenueCard({ venue, index = 0, className, variant = "default" }: PartnerVenueCardProps) {
+export function PartnerVenueCard({
+  venue,
+  index = 0,
+  className,
+  variant = "default",
+  motionless = false,
+  interactive = "link",
+  onPress,
+}: PartnerVenueCardProps) {
   const cover = venue.bannerUrl || null;
   const isMobile = variant === "mobile";
 
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-16px" }}
-      transition={{ duration: 0.35, delay: index * 0.03, ease: "easeOut" }}
-      className={cn("group h-full", className)}
-    >
-      <Link
-        to={venueDetailPath(venue.id)}
-        className={cn(
-          "flex h-full flex-col overflow-hidden border bg-card transition-all duration-300",
-          isMobile
-            ? "rounded-2xl border-border/50 shadow-[0_8px_24px_rgba(0,0,0,0.08)] active:scale-[0.99]"
-            : "rounded-2xl border-border/60 shadow-sm hover:border-primary/25 hover:shadow-md",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-        )}
-        aria-label={`View ${venue.name}`}
-      >
-        <AspectRatio ratio={isMobile ? 4 / 3 : 4 / 3} className="w-full bg-muted">
+  const cardClassName = cn(
+    "flex h-full w-full flex-col overflow-hidden border bg-card text-left transition-all duration-300",
+    isMobile
+      ? "rounded-2xl border-border/50 shadow-[0_8px_24px_rgba(0,0,0,0.08)] active:scale-[0.99]"
+      : "rounded-2xl border-border/60 shadow-sm hover:border-primary/25 hover:shadow-md",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+  );
+
+  const cardBody = (
+    <>
+        <AspectRatio ratio={4 / 3} className="w-full bg-muted">
           <div className="absolute inset-0">
             {cover ? (
               <OptimizedImage
@@ -51,8 +55,9 @@ export function PartnerVenueCard({ venue, index = 0, className, variant = "defau
                 alt=""
                 aria-hidden
                 preset="banner"
+                draggable={false}
                 className={cn(
-                  "h-full w-full object-cover transition-transform duration-500",
+                  "h-full w-full object-cover transition-transform duration-500 pointer-events-none",
                   !isMobile && "group-hover:scale-[1.03]",
                 )}
               />
@@ -73,7 +78,8 @@ export function PartnerVenueCard({ venue, index = 0, className, variant = "defau
                 alt=""
                 preset="thumb"
                 responsive={false}
-                className="max-h-full max-w-full object-contain"
+                draggable={false}
+                className="max-h-full max-w-full object-contain pointer-events-none"
               />
             </div>
           </div>
@@ -95,7 +101,42 @@ export function PartnerVenueCard({ venue, index = 0, className, variant = "defau
             View venue →
           </span>
         </div>
+    </>
+  );
+
+  const interactiveNode =
+    interactive === "button" ? (
+      <button
+        type="button"
+        onClick={onPress}
+        className={cardClassName}
+        aria-label={`View ${venue.name}`}
+      >
+        {cardBody}
+      </button>
+    ) : (
+      <Link to={venueDetailPath(venue.id)} className={cardClassName} aria-label={`View ${venue.name}`}>
+        {cardBody}
       </Link>
+    );
+
+  if (motionless) {
+    return (
+      <article className={cn("group h-full", className)}>
+        {interactiveNode}
+      </article>
+    );
+  }
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-16px" }}
+      transition={{ duration: 0.35, delay: index * 0.03, ease: "easeOut" }}
+      className={cn("group h-full", className)}
+    >
+      {interactiveNode}
     </motion.article>
   );
 }

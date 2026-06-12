@@ -80,7 +80,7 @@ const HeroSection = () => {
       <div className="container relative z-10 mx-auto grid max-w-7xl items-center gap-7 overflow-visible px-4 sm:gap-8 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:px-8 xl:gap-12 [&>*]:min-w-0 [&>*]:overflow-visible">
         <div className="flex flex-col gap-5 text-center sm:gap-6 lg:gap-7 lg:text-left">
           <div className="space-y-3 sm:space-y-3.5 lg:space-y-4">
-            <h1 className="hero-heading-gradient mx-auto max-w-[18rem] font-serif text-[clamp(2.15rem,6.8vw+0.65rem,4rem)] font-normal leading-[1.08] tracking-[-0.02em] text-foreground sm:max-w-none sm:leading-[1.06]">
+            <h1 className="hero-heading-gradient mx-auto max-w-[18rem] font-serif text-[clamp(2.15rem,6.8vw+0.65rem,4rem)] font-normal leading-[1.08] tracking-[-0.02em] text-foreground max-md:max-w-[min(100%,22rem)] max-md:text-[clamp(2.55rem,9.5vw+0.45rem,3.4rem)] max-md:leading-[1.04] sm:max-w-none sm:leading-[1.06]">
               {isDefaultTitle ? (
                 <>
                   Crafting Moments
@@ -115,7 +115,7 @@ const HeroSection = () => {
             </p>
           </div>
 
-          <div className="flex w-full max-w-xs flex-col items-stretch gap-2.5 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-3 lg:justify-start">
+          <div className="flex w-full max-w-xs flex-col items-stretch gap-2.5 max-md:mx-auto max-md:max-w-[280px] max-md:items-center sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-3 lg:justify-start">
             <Button size="lg" className="w-full gap-2 text-base shadow-sm sm:min-w-[12rem] sm:w-auto sm:text-[1.05rem]" asChild>
               <Link to={heroContent?.cta_link || "/contact"}>
                 {heroContent?.cta_text || "Plan Your Event"}

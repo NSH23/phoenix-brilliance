@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Award, ChevronDown, ChevronUp, Flame, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,17 @@ export function MobileAboutJourney({
   onToggleExpanded,
   className,
 }: MobileAboutJourneyProps) {
+  const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
+
+  const toggleStep = (stepId: string) => {
+    setExpandedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(stepId)) next.delete(stepId);
+      else next.add(stepId);
+      return next;
+    });
+  };
+
   return (
     <div className={cn("flex flex-col gap-5", className)}>
       <div className="rounded-2xl border border-border/60 bg-card/80 px-4 py-4 text-center shadow-sm backdrop-blur-sm">
@@ -56,10 +68,12 @@ export function MobileAboutJourney({
       <div className="space-y-3">
         {JOURNEY_STEPS.map((step, index) => {
           const Icon = step.icon;
+          const isStepExpanded = expandedSteps.has(step.id);
+
           return (
             <div
               key={step.id}
-              className="relative flex gap-3 rounded-2xl border border-border/50 bg-background/70 px-3.5 py-3.5 shadow-sm"
+              className="relative flex gap-3 rounded-2xl border border-border/50 bg-background/70 px-3.5 py-3 shadow-sm"
             >
               <div className="flex shrink-0 flex-col items-center gap-1">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
@@ -69,10 +83,41 @@ export function MobileAboutJourney({
                   <div className="h-full min-h-[12px] w-px bg-border/80" aria-hidden />
                 ) : null}
               </div>
+
               <div className="min-w-0 flex-1 pt-0.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">{step.year}</p>
-                <p className="mt-0.5 font-serif text-base font-medium text-foreground">{step.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.description}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">{step.year}</p>
+                    <p className="mt-0.5 font-serif text-base font-medium text-foreground">{step.title}</p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-expanded={isStepExpanded}
+                    aria-label={isStepExpanded ? `Hide details for ${step.title}` : `Show details for ${step.title}`}
+                    onClick={() => toggleStep(step.id)}
+                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                  >
+                    <ChevronDown
+                      className={cn("h-3.5 w-3.5 transition-transform duration-200", isStepExpanded && "rotate-180")}
+                      strokeWidth={2.25}
+                    />
+                  </button>
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {isStepExpanded ? (
+                    <motion.p
+                      key={`${step.id}-desc`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: "easeInOut" }}
+                      className="overflow-hidden text-sm leading-relaxed text-muted-foreground"
+                    >
+                      <span className="mt-1.5 block">{step.description}</span>
+                    </motion.p>
+                  ) : null}
+                </AnimatePresence>
               </div>
             </div>
           );

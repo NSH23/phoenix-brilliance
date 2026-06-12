@@ -72,6 +72,7 @@ const CollaborationsSection = ({ prefetchedCollaborations, homepageDataPending }
       subtitle="Premium venues we partner with for seamless, elevated celebrations."
       variant="linen"
       fullBleed
+      allowHorizontalOverflow
       contentClassName="pt-0"
       backgroundOverlay={<HomeSectionBackground variant="vignette-grid" />}
       action={

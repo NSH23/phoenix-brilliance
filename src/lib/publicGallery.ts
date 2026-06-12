@@ -39,7 +39,7 @@ export function getPublicFooterQuickLinks(): PublicNavLink[] {
   const links: PublicNavLink[] = [
     { name: 'Home', href: '/' },
     { name: 'Events', href: '/events' },
-    { name: 'Services', href: '/services' },
+    { name: 'Services', href: '/#services' },
   ];
   if (isPublicGalleryHubEnabled()) {
     links.push({ name: 'Gallery', href: '/gallery' });

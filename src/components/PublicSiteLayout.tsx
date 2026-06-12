@@ -31,7 +31,7 @@ export default function PublicSiteLayout() {
 
   return (
     <div
-      className="public-site min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
+      className="public-site min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
       onContextMenu={blockMediaContextMenu}
       onDragStart={blockMediaDrag}
     >

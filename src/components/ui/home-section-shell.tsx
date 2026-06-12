@@ -21,6 +21,8 @@ type HomeSectionShellProps = {
   variant?: "linen" | "white";
   /** Optional absolute backdrop layer (dots, grid, etc.) */
   backgroundOverlay?: React.ReactNode;
+  /** Allow horizontal carousel peek without clipping (mobile partners strip). */
+  allowHorizontalOverflow?: boolean;
 };
 
 export function HomeSectionShell({
@@ -39,6 +41,7 @@ export function HomeSectionShell({
   fullBleed = false,
   variant = "linen",
   backgroundOverlay,
+  allowHorizontalOverflow = false,
 }: HomeSectionShellProps) {
   const bandClass =
     variant === "white" ? "bg-[var(--section-band-2)]" : "bg-[var(--section-band-1)]";
@@ -54,7 +57,12 @@ export function HomeSectionShell({
     <section
       id={id}
       aria-labelledby={ariaLabelledBy}
-      className={cn("relative isolate w-full overflow-x-hidden py-12 md:py-16 lg:py-[4.25rem]", bandClass, className)}
+      className={cn(
+        "relative isolate w-full py-12 md:py-16 lg:py-[4.25rem]",
+        allowHorizontalOverflow ? "overflow-x-visible" : "overflow-x-hidden",
+        bandClass,
+        className,
+      )}
     >
       {backgroundOverlay}
       <div className={cn("relative z-[1] mx-auto max-w-7xl", containerPad)}>

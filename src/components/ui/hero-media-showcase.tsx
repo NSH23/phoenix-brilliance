@@ -25,7 +25,7 @@ function HeroMediaPlaceholder({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "mx-auto flex aspect-[9/10] w-full max-w-[min(100%,360px)] items-center justify-center overflow-hidden rounded-[1.65rem] border border-dashed border-border/80 bg-muted/25 sm:aspect-[10/11] sm:max-w-[380px]",
+        "mx-auto flex aspect-[4/5] w-full max-w-[min(100%,420px)] items-center justify-center overflow-hidden rounded-[1.65rem] border border-dashed border-border/80 bg-muted/25 md:aspect-[9/10] md:max-w-[min(100%,360px)] lg:max-w-[380px]",
         className,
       )}
     >
@@ -59,7 +59,7 @@ export function HeroMediaShowcase({ items, isReady = true, className }: HeroMedi
     return (
       <div
         className={cn(
-          "mx-auto flex aspect-[9/10] w-full max-w-[min(100%,360px)] items-center justify-center rounded-[1.65rem] border border-dashed border-border bg-muted/20 sm:aspect-[10/11] sm:max-w-[380px]",
+          "mx-auto flex aspect-[4/5] w-full max-w-[min(100%,420px)] items-center justify-center rounded-[1.65rem] border border-dashed border-border bg-muted/20 md:aspect-[9/10] md:max-w-[min(100%,360px)] lg:max-w-[380px]",
           className,
         )}
       >
@@ -80,12 +80,12 @@ export function HeroMediaShowcase({ items, isReady = true, className }: HeroMedi
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
       className={cn(
-        "mx-auto w-full max-w-[min(100%,360px)] overflow-visible px-4 sm:max-w-[460px] sm:px-10 lg:max-w-[520px] lg:px-12",
+        "mx-auto w-full max-w-[min(100%,420px)] overflow-visible px-2 md:max-w-[min(100%,360px)] md:px-4 lg:max-w-[520px] lg:px-12",
         className,
       )}
     >
       <div className="overflow-visible rounded-[2rem] border border-border/60 bg-border/20 p-2 shadow-[0_18px_44px_-16px_rgba(26,24,22,0.22)]">
-        <div className="relative aspect-[9/10] w-full overflow-visible rounded-[1.65rem] sm:aspect-[10/11]">
+        <div className="relative aspect-[4/5] w-full overflow-visible rounded-[1.65rem] md:aspect-[9/10] lg:aspect-[10/11]">
           <StackedCards items={stackItems} autoplay heroMode cycleOnEnd editorial />
         </div>
       </div>

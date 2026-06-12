@@ -60,8 +60,7 @@ const Venues = lazy(() => import("./pages/Venues"));
 const Collaborations = lazy(() => import("./pages/Collaborations"));
 const CollaborationDetail = lazy(() => import("./pages/CollaborationDetail"));
 
-// Public Services Page
-const Services = lazy(() => import("./pages/Services"));
+// Public Services Page — removed; /services redirects to homepage #services section
 
 // Admin Pages
 const AdminEntry = lazy(() => import("./pages/admin/AdminEntry"));
@@ -132,7 +131,7 @@ function AppRoutes() {
             <Route path="/venues/:partnerId" element={<CollaborationDetail />} />
             <Route path="/collaborations" element={<Collaborations />} />
             <Route path="/collaborations/:partnerId" element={<RedirectLegacyVenueDetail />} />
-            <Route path="/services" element={<Services />} />
+            <Route path="/services" element={<Navigate to="/#services" replace />} />
           </Route>
 
           {/* Admin Routes */}
