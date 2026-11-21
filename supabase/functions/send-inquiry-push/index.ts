@@ -4,10 +4,6 @@
  * Invoke via Database Webhook (INSERT on public.inquiries) with header:
  *   x-phoenix-webhook-secret: <WEBHOOK_SECRET>
  *
- * For WhatsApp auto-replies on the same INSERT, deploy and wire
- * `forward-inquiry-whatsapp` (see that function) with WA_WEBSITE_LEAD_URL — you can attach
- * multiple webhooks to the same table in the Supabase dashboard.
- *
  * Secrets (Dashboard → Edge Functions → Secrets):
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto), WEBHOOK_SECRET,
  *   VAPID_SUBJECT (e.g. mailto:you@domain.com), VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
@@ -29,6 +25,17 @@ type DbWebhookBody = {
   record?: Record<string, unknown>;
   new?: Record<string, unknown>;
 };
+
+function buildWhatsAppOtpUrl(phone: unknown, name: unknown, otp: unknown): string {
+  const digits = String(phone ?? '').replace(/\D/g, '');
+  if (!digits || !otp) return '';
+  let normalized = digits;
+  if (normalized.length === 10) normalized = `91${normalized}`;
+  if (normalized.startsWith('0') && normalized.length === 11) normalized = `91${normalized.slice(1)}`;
+  const first = String(name ?? 'there').trim().split(/\s+/)[0] || 'there';
+  const message = `Hey ${first}, your Phoenix Events website OTP is: ${otp}. Please don't share it with anyone.`;
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -82,23 +89,60 @@ Deno.serve(async (req: Request) => {
   const id = String(rec.id ?? '');
   const name = String(rec.name ?? 'Someone');
   const inquiryType = rec.event_type != null ? String(rec.event_type) : '';
-  const message = rec.message != null ? String(rec.message) : '';
+  const accessToken = rec.access_token != null ? String(rec.access_token) : '';
 
-  const title = inquiryType ? `New ${inquiryType} inquiry` : 'New inquiry';
-  const bodyText = `${name}: ${message || 'Open Phoenix Admin'}`.slice(0, 180);
-  // web-push topic must be <= 32 chars and URL/file-safe base64 charset.
+  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+  let accessRequestId = '';
+  let otpCode = '';
+  let visitorPhone = rec.phone != null ? String(rec.phone) : '';
+
+  if (accessToken) {
+    // Trigger creates site_access_requests in the same transaction; small retry for race.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { data: accessRow } = await admin
+        .from('site_access_requests')
+        .select('id, otp_code, visitor_phone, visitor_name')
+        .eq('access_token', accessToken)
+        .maybeSingle();
+      if (accessRow?.id) {
+        accessRequestId = String(accessRow.id);
+        otpCode = String(accessRow.otp_code ?? '');
+        if (accessRow.visitor_phone) visitorPhone = String(accessRow.visitor_phone);
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+    }
+  }
+
+  const isAccess = Boolean(accessToken);
+  const title = isAccess ? name : inquiryType ? `New ${inquiryType} inquiry` : 'New inquiry';
+  const bodyText = isAccess
+    ? `New access request — tap to send OTP`
+    : `${name}: Open Phoenix Admin`.slice(0, 180);
+
   const notificationTopic = id
     ? `inq-${id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 28)}`
     : 'inquiry';
 
+  const dashboardUrl = accessRequestId
+    ? `/admin/dashboard?otp=${accessRequestId}`
+    : isAccess
+      ? '/admin/dashboard'
+      : id
+        ? `/admin/notifications?tab=inquiries&open=${id}`
+        : '/admin/notifications?tab=inquiries';
+
+  const whatsappUrl = isAccess ? buildWhatsAppOtpUrl(visitorPhone, name, otpCode) : '';
+
   const payload = JSON.stringify({
     title,
     body: bodyText,
-    url: id ? `/admin/notifications?tab=inquiries&open=${id}` : '/admin/notifications?tab=inquiries',
+    url: dashboardUrl,
     tag: notificationTopic,
+    whatsappUrl,
   });
 
-  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
   const { data: rows, error } = await admin.from('admin_push_subscriptions').select('id, subscription');
 
   if (error) {
@@ -122,11 +166,10 @@ Deno.serve(async (req: Request) => {
         sub as unknown as Parameters<typeof webpush.sendNotification>[0],
         payload,
         {
-          // Keep for longer so closed/offline PWAs can still receive when device wakes.
           TTL: 60 * 60 * 24,
           urgency: 'high',
           topic: notificationTopic,
-        }
+        },
       );
       sent++;
     } catch (e: unknown) {

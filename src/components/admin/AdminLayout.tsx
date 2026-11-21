@@ -133,17 +133,18 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
   const fetchNotifications = useCallback(async () => {
     try {
       const [list, count, wpList, wpUnreadTotal] = await Promise.all([
-        getUnreadInquiriesForNotifications(10),
+        getUnreadInquiriesForNotifications(8),
         getUnreadInquiriesCount(),
-        getUnreadWpNotifications(10),
+        getUnreadWpNotifications(8),
         queryClient.ensureQueryData({
           queryKey: WP_UNREAD_QUERY_KEY,
           queryFn: getWpUnreadNotificationsCount,
           staleTime: 30_000,
         }),
       ]);
-      setNotifications(list);
-      setWpNotifications(wpList);
+      // Cap panel lists so the dropdown never grows unbounded.
+      setNotifications((list || []).slice(0, 8));
+      setWpNotifications((wpList || []).slice(0, 8));
       const totalUnread = count + wpUnreadTotal;
       prevCountRef.current = totalUnread;
       setUnreadCount(prev => (prev === totalUnread ? prev : totalUnread));
@@ -153,14 +154,17 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
   }, [queryClient]);
 
   const upsertNotification = useCallback((row: Inquiry) => {
-    setNotifications(prev => [row, ...prev.filter(i => i.id !== row.id)].slice(0, 10));
+    setNotifications((prev) => [row, ...prev.filter((i) => i.id !== row.id)].slice(0, 8));
   }, []);
 
-  const incrementUnread = useCallback(() => {
-    const newCount = prevCountRef.current + 1;
-    prevCountRef.current = newCount;
-    setUnreadCount(prev => (prev === newCount ? prev : newCount));
-  }, []);
+  /** Prefer DB count via debounced fetch — avoid local +1 drift that inflates the badge. */
+  const scheduleNotificationRefresh = useCallback(() => {
+    if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
+    debouncedFetchRef.current = setTimeout(() => {
+      void fetchNotifications();
+      void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
+    }, 600);
+  }, [fetchNotifications, queryClient]);
 
   const syncAdminPushToServer = useCallback(
     async (showErrorToast: boolean) => {
@@ -260,13 +264,8 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wp_notifications' }, (payload) => {
         const row = payload.new as WpNotification;
         if (row.is_read) return;
-        setWpNotifications((prev) => [row, ...prev.filter((n) => n.id !== row.id)].slice(0, 10));
-        incrementUnread();
-        if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
-        debouncedFetchRef.current = setTimeout(() => {
-          void fetchNotifications();
-          void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
-        }, 800);
+        setWpNotifications((prev) => [row, ...prev.filter((n) => n.id !== row.id)].slice(0, 8));
+        scheduleNotificationRefresh();
         const label = row.lead_name || row.lead_phone || 'Lead';
         toast.message('WP alert', {
           description: row.message || label,
@@ -282,20 +281,16 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
         });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wp_notifications' }, () => {
-        if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
-        debouncedFetchRef.current = setTimeout(() => {
-          void fetchNotifications();
-          void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
-        }, 800);
+        scheduleNotificationRefresh();
       })
       .subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [fetchNotifications, incrementUnread, navigate, queryClient]);
+  }, [scheduleNotificationRefresh, navigate]);
 
-  // Real-time: new inquiries
+  // Real-time: new inquiries → toast + panel (count from DB refresh only)
   useEffect(() => {
     const channel = supabase
       .channel('inquiries-inserts')
@@ -303,19 +298,18 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
         const row = payload.new as Inquiry;
         if (row.is_read) return;
         upsertNotification(row);
-        incrementUnread();
-        if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
-        debouncedFetchRef.current = setTimeout(() => {
-          void fetchNotifications();
-        }, 1000);
+        scheduleNotificationRefresh();
+        const accessToken = (row as Inquiry & { access_token?: string | null }).access_token;
+        // Access OTPs get a dedicated toast from site_access_requests insert (with deep link).
+        if (accessToken) return;
         if (!toastedInquiryIdsRef.current.has(row.id)) {
           toastedInquiryIdsRef.current.add(row.id);
-          if (toastedInquiryIdsRef.current.size > 50) {
-            const keep = [...toastedInquiryIdsRef.current].slice(-25);
+          if (toastedInquiryIdsRef.current.size > 40) {
+            const keep = [...toastedInquiryIdsRef.current].slice(-20);
             toastedInquiryIdsRef.current = new Set(keep);
           }
           toast.success('New inquiry', {
-            description: `${row.name} – ${row.event_type || 'General'}`,
+            description: `${row.name}${row.event_type ? ` – ${row.event_type}` : ''}`,
             action: {
               label: 'View',
               onClick: () => navigate(`/admin/notifications?tab=inquiries&open=${row.id}`),
@@ -323,13 +317,65 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
           });
         }
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'inquiries' }, () => {
+        scheduleNotificationRefresh();
+      })
       .subscribe();
 
     return () => {
       if (debouncedFetchRef.current) clearTimeout(debouncedFetchRef.current);
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
-  }, [navigate, fetchNotifications, incrementUnread, upsertNotification]);
+  }, [navigate, scheduleNotificationRefresh, upsertNotification]);
+
+  // Real-time: access OTP requests (dashboard Send OTP)
+  useEffect(() => {
+    const channel = supabase
+      .channel('site-access-otp-layout')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'site_access_requests' },
+        (payload) => {
+          const row = payload.new as {
+            id: string;
+            visitor_name?: string | null;
+            event_type?: string | null;
+            inquiry_id?: string | null;
+          };
+          scheduleNotificationRefresh();
+          if (toastedInquiryIdsRef.current.has(`access-${row.id}`)) return;
+          toastedInquiryIdsRef.current.add(`access-${row.id}`);
+          toast.success('New access request', {
+            description: `${row.visitor_name || 'Guest'}${row.event_type ? ` – ${row.event_type}` : ''}`,
+            action: {
+              label: 'Send OTP',
+              onClick: () => navigate(`/admin/dashboard?otp=${row.id}`),
+            },
+          });
+          if (row.inquiry_id) {
+            upsertNotification({
+              id: row.inquiry_id,
+              name: row.visitor_name || 'Guest',
+              email: '',
+              phone: null,
+              event_type: row.event_type || null,
+              message: 'Access OTP',
+              status: 'new',
+              notes: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_read: false,
+              access_token: 'pending',
+            });
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [navigate, scheduleNotificationRefresh, upsertNotification]);
 
   const handleMarkInquiryRead = useCallback(async (id: string) => {
     try {
@@ -388,19 +434,24 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
   }, [notifications, wpNotifications, fetchNotifications, queryClient]);
 
   const combinedNotifications = useMemo(() => {
-    const inquiryItems = notifications.map((n) => ({
-      id: n.id,
-      kind: 'inquiry' as const,
-      title: n.name,
-      subtitle: n.event_type || 'General Inquiry',
-      message: n.message,
-      createdAt: n.created_at,
-      isRead: n.is_read ?? false,
-      leadPhone: null as string | null,
-    }));
+    const inquiryItems = notifications.map((n) => {
+      const isAccess = Boolean((n as Inquiry & { access_token?: string | null }).access_token);
+      return {
+        id: n.id,
+        kind: 'inquiry' as const,
+        isAccess,
+        title: n.name,
+        subtitle: isAccess ? 'Access OTP · tap to send' : n.event_type || 'General Inquiry',
+        message: n.message,
+        createdAt: n.created_at,
+        isRead: n.is_read ?? false,
+        leadPhone: null as string | null,
+      };
+    });
     const wpItems = wpNotifications.map((n) => ({
       id: n.id,
       kind: 'wp' as const,
+      isAccess: false,
       title: n.lead_name || 'WP Alert',
       subtitle: `${n.type} • ${n.priority}`,
       message: n.message,
@@ -410,7 +461,7 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
     }));
     return [...inquiryItems, ...wpItems]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 20);
+      .slice(0, 12);
   }, [notifications, wpNotifications]);
 
   const toggleDarkMode = () => {
@@ -634,14 +685,18 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
                             }
                             navigate(
                               item.kind === 'inquiry'
-                                ? `/admin/notifications?tab=inquiries&open=${item.id}`
+                                ? item.isAccess
+                                  ? '/admin/dashboard'
+                                  : `/admin/notifications?tab=inquiries&open=${item.id}`
                                 : `/admin/notifications?tab=wp${item.leadPhone ? `&leadPhone=${encodeURIComponent(item.leadPhone)}` : ''}`
                             );
                           }}
                         >
                           <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--admin-accent))]" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[10px] uppercase text-muted-foreground">{item.kind === 'inquiry' ? 'Inquiry' : 'WP Alert'}</p>
+                            <p className="text-[10px] uppercase text-muted-foreground">
+                              {item.kind === 'inquiry' ? (item.isAccess ? 'Access OTP' : 'Inquiry') : 'WP Alert'}
+                            </p>
                             <p className="text-sm font-medium truncate">{item.title}</p>
                             <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
                             <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.message}</p>

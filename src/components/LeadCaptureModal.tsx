@@ -16,14 +16,18 @@ import { toast } from "sonner";
 
 type SubmitScenario = "specific_venue" | "not_booked" | "other";
 
-/** Once set (after submit or close), modal never shows again. */
-const STORAGE_KEY = "phoenix_lead_captured";
+export type LeadCaptureModalProps = {
+    /** Blocking gate: open immediately, cannot dismiss, no hero-scroll trigger. */
+    isBlocking?: boolean;
+    onSubmitSuccess?: (result: { accessToken: string | null }) => void;
+};
+
 const OTHER_LABEL = "Other";
 
-export default function LeadCaptureModal() {
+export default function LeadCaptureModal({ isBlocking = false, onSubmitSuccess }: LeadCaptureModalProps = {}) {
     const location = useLocation();
     const navigate = useNavigate();
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(isBlocking);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [submittedScenario, setSubmittedScenario] = useState<SubmitScenario | null>(null);
@@ -60,26 +64,15 @@ export default function LeadCaptureModal() {
     }, [isSuccess, submittedScenario, submittedVenueName]);
 
     useEffect(() => {
-        if (location.pathname !== "/") return;
-        const handleScroll = () => {
-            if (localStorage.getItem(STORAGE_KEY) === "true") return;
-            const heroSection = document.getElementById("home");
-            if (!heroSection) return;
-            const heroBottom = heroSection.getBoundingClientRect().bottom;
-            if (heroBottom < window.innerHeight) {
-                setIsOpen(true);
-            }
-        };
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        handleScroll();
-        const t = setTimeout(handleScroll, 300);
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-            clearTimeout(t);
-        };
-    }, [location.pathname]);
+        if (isBlocking) {
+            setIsOpen(true);
+            return;
+        }
+        if (location.pathname.startsWith("/admin")) return;
+        setIsOpen(true);
+    }, [isBlocking, location.pathname]);
 
-    if (location.pathname.startsWith("/admin")) return null;
+    if (!isBlocking && location.pathname.startsWith("/admin")) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -112,7 +105,7 @@ export default function LeadCaptureModal() {
                 setIsSubmitting(false);
                 return;
             }
-            await createInquiry({
+            const { accessToken } = await createInquiry({
                 name: name.trim(),
                 phone: getNormalizedPhone10(phone),
                 email: email.trim() || undefined,
@@ -120,6 +113,7 @@ export default function LeadCaptureModal() {
                 venue: resolvedVenue,
                 instagram_id: instagramId.trim() || null,
                 message: message.trim() || "Lead Capture",
+                withAccessToken: true,
             });
             if (venue === NOT_BOOKED_VENUE || !venue.trim()) {
                 setSelectedVenue(null);
@@ -134,8 +128,12 @@ export default function LeadCaptureModal() {
                 setSubmittedScenario("specific_venue");
                 setSubmittedVenueName(resolvedVenue || null);
             }
-            localStorage.setItem(STORAGE_KEY, "true");
             setIsSuccess(true);
+            if (isBlocking) {
+                onSubmitSuccess?.({ accessToken });
+                return;
+            }
+            onSubmitSuccess?.({ accessToken });
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
             toast.error(msg);
@@ -152,9 +150,9 @@ export default function LeadCaptureModal() {
     const selectClass = "flex h-9 w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1";
 
     const handleOpenChange = (open: boolean) => {
+        if (isBlocking) return;
         if (!open && !isSuccess) return;
         if (!open) {
-            localStorage.setItem(STORAGE_KEY, "true");
             setIsOpen(false);
             setIsSuccess(false);
             setSubmittedScenario(null);
@@ -164,7 +162,6 @@ export default function LeadCaptureModal() {
     };
 
     const closeAndNavigate = (path: string, opts?: { state?: { fromLeadCapture?: boolean }; replace?: boolean }) => {
-        localStorage.setItem(STORAGE_KEY, "true");
         setIsOpen(false);
         setIsSuccess(false);
         setSubmittedScenario(null);
@@ -174,7 +171,6 @@ export default function LeadCaptureModal() {
     };
 
     const closeAndScrollToVenues = () => {
-        localStorage.setItem(STORAGE_KEY, "true");
         setIsOpen(false);
         setIsSuccess(false);
         setSubmittedScenario(null);

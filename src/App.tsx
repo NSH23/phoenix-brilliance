@@ -12,7 +12,6 @@ import { AdminProvider } from "./contexts/AdminContext";
 import { SiteConfigProvider } from "./contexts/SiteConfigContext";
 import { LeadCaptureProvider } from "./contexts/LeadCaptureContext";
 import GlobalBackground from "@/components/GlobalBackground";
-import LeadCaptureModal from "@/components/LeadCaptureModal";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 import AdminThemeSync from "./components/admin/AdminThemeSync";
 import AdminPwaManager from "./components/admin/AdminPwaManager";
@@ -42,6 +41,7 @@ function RedirectGalleryEventListingToEvents() {
 
 const publicGalleryHubEnabled = isPublicGalleryHubEnabled();
 
+const SiteAccessGate = lazy(() => import("./components/SiteAccessGate"));
 const Index = lazy(() => import("./pages/Index"));
 const Contact = lazy(() => import("./pages/Contact"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -108,8 +108,9 @@ function AppRoutes() {
     <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Public Routes — image protection + optimized delivery */}
-          <Route element={<PublicSiteLayout />}>
+          {/* Public Routes — OTP access gate, then layout */}
+          <Route element={<SiteAccessGate />}>
+            <Route element={<PublicSiteLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/contact" element={<Contact />} />
             {publicGalleryHubEnabled ? (
@@ -132,6 +133,7 @@ function AppRoutes() {
             <Route path="/collaborations" element={<Collaborations />} />
             <Route path="/collaborations/:partnerId" element={<RedirectLegacyVenueDetail />} />
             <Route path="/services" element={<Navigate to="/#services" replace />} />
+            </Route>
           </Route>
 
           {/* Admin Routes */}
@@ -374,7 +376,6 @@ const App = () => (
               <ScrollToTop />
               <GlobalBackground />
               <div className="global-grain-overlay" aria-hidden />
-              <LeadCaptureModal />
               <AppRoutes />
             </LeadCaptureProvider>
           </BrowserRouter>

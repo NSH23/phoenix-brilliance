@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { createAccessToken } from '@/services/access';
 
 export interface Inquiry {
   id: string;
@@ -14,6 +15,7 @@ export interface Inquiry {
   instagram_id?: string;
   venue?: string;
   is_read?: boolean;
+  access_token?: string | null;
 }
 const INQUIRY_COLUMNS = 'id, name, email, phone, event_type, message, status, notes, created_at, updated_at, instagram_id, venue, is_read';
 
@@ -34,10 +36,24 @@ export function getNormalizedPhone10(phone: string): string {
   return digits.slice(-10);
 }
 
+export type CreateInquiryResult = {
+  accessToken: string | null;
+};
+
 // Create inquiry (public). Email optional: use placeholder no-email-{timestamp}@phoenix.events if blank.
 // Uses INSERT only (no .select()) so anon role does not need SELECT permission — avoids 401 when RLS allows only admins to SELECT.
-export async function createInquiry(inquiry: Omit<Inquiry, 'id' | 'status' | 'notes' | 'created_at' | 'updated_at' | 'is_read'> & { email?: string | null }): Promise<void> {
+// When `withAccessToken` is true (lead-capture gate), a UUID is inserted and a site_access_requests row is created by trigger.
+export async function createInquiry(
+  inquiry: Omit<Inquiry, 'id' | 'status' | 'notes' | 'created_at' | 'updated_at' | 'is_read'> & {
+    email?: string | null;
+    withAccessToken?: boolean;
+    access_token?: string | null;
+  },
+): Promise<CreateInquiryResult> {
   const email = inquiry.email?.trim() || `no-email-${Date.now()}@phoenix.events`;
+  const accessToken =
+    inquiry.access_token ||
+    (inquiry.withAccessToken ? createAccessToken() : null);
   const payload = {
     name: inquiry.name,
     email,
@@ -48,6 +64,7 @@ export async function createInquiry(inquiry: Omit<Inquiry, 'id' | 'status' | 'no
     is_read: false,
     instagram_id: inquiry.instagram_id || null,
     venue: inquiry.venue || null,
+    ...(accessToken ? { access_token: accessToken } : {}),
   };
   const { error } = await supabase
     .from('inquiries')
@@ -60,6 +77,10 @@ export async function createInquiry(inquiry: Omit<Inquiry, 'id' | 'status' | 'no
       : err.message || 'Something went wrong.';
     throw new Error(msg);
   }
+
+  // Access OTP is created by DB trigger on inquiries.access_token.
+  // Admin gets PWA push + dashboard OTP panel (no Railway approve path).
+  return { accessToken };
 }
 
 // Get all inquiries (admin)
@@ -87,11 +108,11 @@ export async function getInquiriesPage(page: number, pageSize: number) {
   return (data || []) as Inquiry[];
 }
 
-/** Lightweight: unread inquiries for admin header notifications (limit 10, minimal fields). Use this instead of getAllInquiries() for faster layout load. */
-export async function getUnreadInquiriesForNotifications(limit = 10): Promise<Inquiry[]> {
+/** Lightweight: unread inquiries for admin header notifications (capped). Use this instead of getAllInquiries() for faster layout load. */
+export async function getUnreadInquiriesForNotifications(limit = 8): Promise<Inquiry[]> {
   const { data, error } = await supabase
     .from('inquiries')
-    .select('id, name, event_type, message, created_at, is_read')
+    .select('id, name, event_type, message, created_at, is_read, access_token')
     .eq('is_read', false)
     .order('created_at', { ascending: false })
     .limit(limit);

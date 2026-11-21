@@ -10,9 +10,11 @@ self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
     let payload = {
       title: 'Phoenix Admin',
-      body: 'New inquiry',
-      url: '/admin/notifications?tab=inquiries',
-      tag: 'inquiry',
+      body: 'New access request',
+      url: '/admin/dashboard',
+      tag: 'access-otp',
+      whatsappUrl: '',
+      actions: true,
     };
     try {
       if (event.data) {
@@ -27,29 +29,51 @@ self.addEventListener('push', (event) => {
       /* ignore parse errors */
     }
 
-    await self.registration.showNotification(payload.title, {
+    const actions = [];
+    if (payload.whatsappUrl) {
+      actions.push({ action: 'send-otp', title: 'Send OTP' });
+    }
+    actions.push({ action: 'open', title: 'Open' });
+
+    await self.registration.showNotification(payload.title || 'Phoenix Admin', {
       body: payload.body,
       icon: '/android-chrome-192x192.png',
       badge: '/android-chrome-192x192.png',
-      tag: payload.tag || 'inquiry',
+      tag: payload.tag || 'access-otp',
       renotify: true,
-      requireInteraction: false,
+      requireInteraction: true,
       vibrate: [200, 100, 200],
       timestamp: Date.now(),
-      data: { url: payload.url || '/admin/notifications?tab=inquiries' },
+      actions: actions.slice(0, 2),
+      data: {
+        url: payload.url || '/admin/dashboard',
+        whatsappUrl: payload.whatsappUrl || '',
+      },
     });
   })());
 });
 
 function resolveAdminUrl(path) {
-  const raw = path || '/admin/notifications?tab=inquiries';
+  const raw = path || '/admin/dashboard';
   if (/^https?:\/\//i.test(raw)) return raw;
   return new URL(raw.startsWith('/') ? raw : `/${raw}`, self.location.origin).href;
 }
 
 self.addEventListener('notificationclick', (event) => {
+  const action = event.action || 'open';
+  const data = event.notification?.data || {};
   event.notification.close();
-  const targetUrl = resolveAdminUrl(event.notification?.data?.url);
+
+  if (action === 'send-otp' && data.whatsappUrl) {
+    event.waitUntil((async () => {
+      if (self.clients.openWindow) {
+        await self.clients.openWindow(data.whatsappUrl);
+      }
+    })());
+    return;
+  }
+
+  const targetUrl = resolveAdminUrl(data.url || '/admin/dashboard');
 
   event.waitUntil((async () => {
     const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });

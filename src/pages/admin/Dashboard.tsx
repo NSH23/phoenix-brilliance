@@ -14,8 +14,10 @@ import {
   MessageSquareQuote,
   Activity,
   Film,
+  ChevronDown,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AccessOtpPanel from '@/components/admin/AccessOtpPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +28,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   getDashboardData,
   getRecentActivity,
@@ -75,23 +78,18 @@ function OverviewCard({
             'admin-overview-card h-full border border-border/80 bg-card shadow-sm transition-all',
             compact ? 'rounded-lg' : 'rounded-xl',
             'hover:border-border hover:shadow-md active:scale-[0.98]',
-            card.highlight && 'ring-1 ring-[hsl(var(--admin-accent)/0.35)]'
+            card.highlight && 'ring-1 ring-[hsl(var(--admin-accent)/0.35)]',
           )}
         >
           <CardContent className={cn('flex flex-col', compact ? 'p-2' : 'p-3')}>
             <div className="mb-1 flex items-center gap-1">
-              <span
-                className={cn(
-                  'admin-stat-icon shrink-0',
-                  compact ? 'h-6 w-6' : 'h-7 w-7'
-                )}
-              >
+              <span className={cn('admin-stat-icon shrink-0', compact ? 'h-6 w-6' : 'h-7 w-7')}>
                 <Icon className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
               </span>
               <span
                 className={cn(
                   'min-w-0 flex-1 truncate font-medium leading-tight text-muted-foreground',
-                  compact ? 'text-[9px]' : 'text-[10px] sm:text-xs'
+                  compact ? 'text-[9px]' : 'text-[10px] sm:text-xs',
                 )}
               >
                 {compact && card.label === 'Media' ? 'Media' : card.label}
@@ -100,7 +98,7 @@ function OverviewCard({
             <p
               className={cn(
                 'font-extrabold tabular-nums leading-none text-foreground',
-                compact ? 'text-base' : 'text-lg sm:text-xl'
+                compact ? 'text-base' : 'text-lg sm:text-xl',
               )}
             >
               {card.value}
@@ -109,7 +107,7 @@ function OverviewCard({
               <p
                 className={cn(
                   'mt-0.5 flex items-center gap-0.5 truncate font-medium text-emerald-600 dark:text-emerald-400',
-                  compact ? 'text-[9px]' : 'text-[10px]'
+                  compact ? 'text-[9px]' : 'text-[10px]',
                 )}
               >
                 <TrendingUp className="h-2.5 w-2.5 shrink-0" aria-hidden />
@@ -123,14 +121,9 @@ function OverviewCard({
   );
 }
 
-function buildOverviewCards(
-  st: DashboardStats,
-  over: SiteOverview
-): OverviewCardData[] {
-  const eventHint =
-    st.events.thisMonth > 0 ? `+${st.events.thisMonth} this month` : undefined;
-  const albumHint =
-    st.albums.thisMonth > 0 ? `+${st.albums.thisMonth} this month` : undefined;
+function buildOverviewCards(st: DashboardStats, over: SiteOverview): OverviewCardData[] {
+  const eventHint = st.events.thisMonth > 0 ? `+${st.events.thisMonth} this month` : undefined;
+  const albumHint = st.albums.thisMonth > 0 ? `+${st.albums.thisMonth} this month` : undefined;
 
   return [
     {
@@ -201,7 +194,12 @@ function buildOverviewCards(
 function ActivityTimeline({ items, className }: { items: RecentActivity[]; className?: string }) {
   if (items.length === 0) {
     return (
-      <div className={cn('flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground', className)}>
+      <div
+        className={cn(
+          'flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground',
+          className,
+        )}
+      >
         <Activity className="h-8 w-8 opacity-25" aria-hidden />
         <p className="text-sm">No recent activity yet.</p>
         <p className="text-xs opacity-80">Updates to events, albums, and content will appear here.</p>
@@ -260,9 +258,7 @@ function InquiryRow({ inquiry }: { inquiry: RecentInquiry }) {
         <span
           className={cn(
             'inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-            inquiry.status === 'new'
-              ? 'admin-status-new'
-              : 'bg-muted text-muted-foreground'
+            inquiry.status === 'new' ? 'admin-status-new' : 'bg-muted text-muted-foreground',
           )}
         >
           {inquiry.status}
@@ -275,6 +271,8 @@ function InquiryRow({ inquiry }: { inquiry: RecentInquiry }) {
 
 export default function AdminDashboard() {
   const [activitySheetOpen, setActivitySheetOpen] = useState(false);
+  const [inquiriesOpen, setInquiriesOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
 
   const dashboardQuery = useQuery({
     queryKey: ['dashboard-data'],
@@ -308,24 +306,13 @@ export default function AdminDashboard() {
   if (dashboardQuery.isPending) {
     return (
       <AdminLayout title="Dashboard" subtitle="Website content at a glance.">
-        <div className="mb-6 grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2 md:grid-cols-4 xl:grid-cols-8">
+        <div className="mb-4 h-40 animate-pulse rounded-2xl bg-muted" />
+        <div className="mb-6 mt-8 grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2 md:grid-cols-4 xl:grid-cols-8">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="rounded-lg border border-border/80 bg-card shadow-sm">
               <CardContent className="p-2">
                 <div className="mb-1 h-2.5 w-10 animate-pulse rounded bg-muted" />
                 <div className="h-5 w-6 animate-pulse rounded bg-muted" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="grid gap-5 lg:grid-cols-2">
-          {[1, 2].map((i) => (
-            <Card key={i} className="rounded-2xl border border-border/80 bg-card shadow-sm">
-              <CardHeader className="border-b border-border/40 py-4">
-                <div className="h-5 w-32 animate-pulse rounded bg-muted" />
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="h-32 animate-pulse rounded bg-muted" />
               </CardContent>
             </Card>
           ))}
@@ -353,11 +340,20 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout title="Dashboard" subtitle="Website content at a glance.">
-      {/* Overview */}
-      <section className="mb-6 sm:mb-8">
+      {/* OTP first — primary admin action on mobile */}
+      <motion.section
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="mb-5 sm:mb-6"
+      >
+        <AccessOtpPanel />
+      </motion.section>
+
+      {/* Overview — lowered slightly below OTP */}
+      <section className="mb-5 mt-1 sm:mb-7 sm:mt-2">
         <p className={cn(adminSectionTitleClass, 'mb-3 px-0.5')}>Overview</p>
         <div className="space-y-1.5 sm:space-y-0">
-          {/* Mobile: 3×2 grid, then remaining cards in one row */}
           <div className="grid grid-cols-3 grid-rows-2 gap-1.5 sm:hidden">
             {overviewCards.slice(0, 6).map((card, index) => (
               <OverviewCard key={card.label} card={card} index={index} compact />
@@ -371,7 +367,6 @@ export default function AdminDashboard() {
             </div>
           ) : null}
 
-          {/* Tablet+ */}
           <div className="hidden grid-cols-4 gap-2 sm:grid xl:grid-cols-8">
             {overviewCards.map((card, index) => (
               <OverviewCard key={card.label} card={card} index={index} />
@@ -380,85 +375,112 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Inquiries + Activity */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08, duration: 0.25 }}
-        >
-          <Card className="admin-panel-card flex h-full flex-col">
-            <CardHeader className="admin-muted-header flex flex-row items-center justify-between gap-2 px-4 py-3.5 sm:px-6 sm:py-4">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-[hsl(var(--admin-accent))]" aria-hidden />
-                <CardTitle className="text-base font-semibold">Recent Inquiries</CardTitle>
-              </div>
-              <Button variant="ghost" size="sm" className="admin-link-accent h-9 shrink-0" asChild>
-                <Link to="/admin/notifications">
-                  View all
-                  <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="flex-1 p-0">
-              <div className="divide-y divide-border/50">
-                {recentInquiries.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-muted-foreground">
-                    <Mail className="h-8 w-8 opacity-25" aria-hidden />
-                    <p className="text-sm">No inquiries yet.</p>
-                  </div>
-                ) : (
-                  recentInquiries.map((inquiry) => (
-                    <InquiryRow key={inquiry.id} inquiry={inquiry} />
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12, duration: 0.25 }}
-        >
-          <Card className="admin-panel-card flex h-full flex-col">
-            <CardHeader className="admin-muted-header flex flex-row items-center justify-between gap-2 px-4 py-3.5 sm:px-6 sm:py-4">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-[hsl(var(--admin-accent))]" aria-hidden />
-                <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
-              </div>
-              <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="admin-link-accent h-9 shrink-0">
-                    View all activity
-                    <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+      {/* Collapsed by default: Recent Inquiries + Recent Activity */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+        <Collapsible open={inquiriesOpen} onOpenChange={setInquiriesOpen}>
+          <Card className="admin-panel-card overflow-hidden">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="admin-muted-header flex w-full items-center justify-between gap-2 px-4 py-3.5 text-left transition-colors hover:bg-muted/30 sm:px-6 sm:py-4"
+              >
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-[hsl(var(--admin-accent))]" aria-hidden />
+                  <span className="text-base font-semibold">Recent Inquiries</span>
+                  {recentInquiries.length > 0 ? (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                      {recentInquiries.length}
+                    </span>
+                  ) : null}
+                </div>
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+                    inquiriesOpen && 'rotate-180',
+                  )}
+                />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t border-border/40">
+                <div className="flex justify-end px-3 pt-2">
+                  <Button variant="ghost" size="sm" className="admin-link-accent h-8 shrink-0" asChild>
+                    <Link to="/admin/notifications">
+                      View all
+                      <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                    </Link>
                   </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
-                  <SheetHeader>
-                    <SheetTitle>Recent activity</SheetTitle>
-                    <SheetDescription>
-                      Latest changes across events, albums, gallery, and testimonials.
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="flex-1 overflow-y-auto px-1 pb-6 pt-2">
-                    {allActivityQuery.isPending ? (
-                      <div className="flex items-center justify-center py-16">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    ) : (
-                      <ActivityTimeline items={allActivityQuery.data ?? []} />
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </CardHeader>
-            <CardContent className="flex-1 px-4 py-5 sm:px-6 sm:py-6">
-              <ActivityTimeline items={recentActivity} />
-            </CardContent>
+                </div>
+                <div className="divide-y divide-border/50">
+                  {recentInquiries.length === 0 ? (
+                    <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-muted-foreground">
+                      <Mail className="h-8 w-8 opacity-25" aria-hidden />
+                      <p className="text-sm">No inquiries yet.</p>
+                    </div>
+                  ) : (
+                    recentInquiries.map((inquiry) => (
+                      <InquiryRow key={inquiry.id} inquiry={inquiry} />
+                    ))
+                  )}
+                </div>
+              </div>
+            </CollapsibleContent>
           </Card>
-        </motion.div>
+        </Collapsible>
+
+        <Collapsible open={activityOpen} onOpenChange={setActivityOpen}>
+          <Card className="admin-panel-card overflow-hidden">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="admin-muted-header flex w-full items-center justify-between gap-2 px-4 py-3.5 text-left transition-colors hover:bg-muted/30 sm:px-6 sm:py-4"
+              >
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-[hsl(var(--admin-accent))]" aria-hidden />
+                  <span className="text-base font-semibold">Recent Activity</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+                    activityOpen && 'rotate-180',
+                  )}
+                />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t border-border/40 px-4 py-4 sm:px-6">
+                <div className="mb-3 flex justify-end">
+                  <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="ghost" size="sm" className="admin-link-accent h-8 shrink-0">
+                        View all activity
+                        <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+                      <SheetHeader>
+                        <SheetTitle>Recent activity</SheetTitle>
+                        <SheetDescription>
+                          Latest changes across events, albums, gallery, and testimonials.
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="flex-1 overflow-y-auto px-1 pb-6 pt-2">
+                        {allActivityQuery.isPending ? (
+                          <div className="flex items-center justify-center py-16">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          </div>
+                        ) : (
+                          <ActivityTimeline items={allActivityQuery.data ?? []} />
+                        )}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+                <ActivityTimeline items={recentActivity} />
+              </div>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       </div>
     </AdminLayout>
   );
