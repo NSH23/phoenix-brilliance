@@ -179,6 +179,16 @@ export async function markInquiryAsRead(id: string) {
   if (error) throw error;
 }
 
+/** Mark every unread inquiry as read (bell panel open). */
+export async function markAllInquiriesRead() {
+  const { error } = await supabase
+    .from('inquiries')
+    .update({ is_read: true })
+    .eq('is_read', false);
+
+  if (error) throw error;
+}
+
 // Delete inquiry
 export async function deleteInquiry(id: string) {
   const { error } = await supabase

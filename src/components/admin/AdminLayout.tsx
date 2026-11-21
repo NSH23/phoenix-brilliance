@@ -15,11 +15,18 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { ADMIN_COMMAND_PALETTE_ITEMS, getAdminWorkspace } from '@/lib/adminMenu';
-import { getUnreadInquiriesForNotifications, getUnreadInquiriesCount, markInquiryAsRead, type Inquiry } from '@/services';
+import {
+  getUnreadInquiriesForNotifications,
+  getUnreadInquiriesCount,
+  markInquiryAsRead,
+  markAllInquiriesRead,
+  type Inquiry,
+} from '@/services';
 import {
   getUnreadWpNotifications,
   getWpUnreadNotificationsCount,
   markWpNotificationRead,
+  markAllWpNotificationsRead,
   type WpNotification,
 } from '@/services/wpAgent';
 import { formatRelativeTime } from '@/lib/formatDate';
@@ -72,6 +79,7 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
   const debouncedFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const toastedInquiryIdsRef = useRef<Set<string>>(new Set());
+  const notificationsPanelOpenRef = useRef(false);
   const [markAllBusy, setMarkAllBusy] = useState(false);
 
   useEffect(() => {
@@ -142,12 +150,19 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
           staleTime: 30_000,
         }),
       ]);
-      // Cap panel lists so the dropdown never grows unbounded.
+      // While the panel is open we've already cleared the badge — don't put it back.
+      if (notificationsPanelOpenRef.current) {
+        setNotifications((list || []).slice(0, 8));
+        setWpNotifications((wpList || []).slice(0, 8));
+        prevCountRef.current = 0;
+        setUnreadCount(0);
+        return;
+      }
       setNotifications((list || []).slice(0, 8));
       setWpNotifications((wpList || []).slice(0, 8));
       const totalUnread = count + wpUnreadTotal;
       prevCountRef.current = totalUnread;
-      setUnreadCount(prev => (prev === totalUnread ? prev : totalUnread));
+      setUnreadCount((prev) => (prev === totalUnread ? prev : totalUnread));
     } catch (error) {
       console.error('Failed to fetch notifications', error);
     }
@@ -200,25 +215,41 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
       });
       return;
     }
-    if (Notification.permission === 'granted') {
-      setNotificationPermission('granted');
-      await syncAdminPushToServer(true);
-      toast.success('Push alerts are enabled and synced.');
+    // Already blocked in browser settings — requestPermission() will not show a prompt again.
+    if (Notification.permission === 'denied') {
+      setNotificationPermission('denied');
+      toast.message('Notifications are blocked', {
+        description:
+          'Open your browser site settings → Notifications → Allow, then reload this page.',
+      });
       return;
     }
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-    if (permission === 'granted') {
-      await syncAdminPushToServer(true);
-      toast.success('Mobile alerts enabled', {
-        description: 'You can receive inquiry alerts even when the admin app is fully closed (after server webhook setup).',
+    if (Notification.permission === 'granted') {
+      setNotificationPermission('granted');
+      await syncAdminPushToServer(false);
+      toast.success('Push alerts are enabled.');
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      if (permission === 'granted') {
+        await syncAdminPushToServer(false);
+        toast.success('Mobile alerts enabled');
+      } else if (permission === 'denied') {
+        toast.message('Notifications blocked', {
+          description: 'Allow notifications in browser settings for this site, then reload.',
+        });
+      }
+    } catch (e) {
+      console.warn('Notification permission request failed', e);
+      toast.message('Could not ask for notification permission', {
+        description: e instanceof Error ? e.message : 'Try again from the live HTTPS admin site / PWA.',
       });
-    } else {
-      toast.error('Notification permission denied.');
     }
   }, [syncAdminPushToServer]);
 
-  // Re-sync push subscription once per session when permission already granted (refresh keys / new install).
+  // Auto re-sync push subscription when permission is already granted (silent).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!getAdminVapidPublicKey()) return;
@@ -231,7 +262,7 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
       const id = requestIdleCallback(run, { timeout: 4000 });
       return () => cancelIdleCallback(id);
     }
-    const t = window.setTimeout(run, 2000);
+    const t = window.setTimeout(run, 1500);
     return () => window.clearTimeout(t);
   }, [syncAdminPushToServer]);
 
@@ -407,31 +438,51 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
     [queryClient]
   );
 
-  const handleMarkAllNotificationsRead = useCallback(async () => {
-    const unreadInquiryIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
-    const unreadWpIds = wpNotifications.filter((n) => !n.is_read).map((n) => n.id);
-    if (unreadInquiryIds.length === 0 && unreadWpIds.length === 0) return;
+  const onNotificationsOpenChange = useCallback(
+    (open: boolean) => {
+      setNotificationsOpen(open);
+      notificationsPanelOpenRef.current = open;
 
-    setMarkAllBusy(true);
-    try {
-      await Promise.all([
-        ...unreadInquiryIds.map((id) => markInquiryAsRead(id)),
-        ...unreadWpIds.map((id) => markWpNotificationRead(id)),
-      ]);
-      setNotifications([]);
-      setWpNotifications([]);
+      if (!open) {
+        setNotifications([]);
+        setWpNotifications([]);
+        // Refresh true unread count after closing (should be 0 if mark-all succeeded).
+        void fetchNotifications();
+        return;
+      }
+
+      // Clear badge immediately so the number disappears as soon as you open.
       prevCountRef.current = 0;
       setUnreadCount(0);
-      void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
-      toast.success('All caught up', { description: 'Notifications marked as read.' });
-    } catch (e) {
-      console.error('Failed to mark all notifications read', e);
-      toast.error('Could not mark all as read');
-      void fetchNotifications();
-    } finally {
-      setMarkAllBusy(false);
-    }
-  }, [notifications, wpNotifications, fetchNotifications, queryClient]);
+
+      void (async () => {
+        try {
+          setMarkAllBusy(true);
+          const [list, wpList] = await Promise.all([
+            getUnreadInquiriesForNotifications(8),
+            getUnreadWpNotifications(8),
+          ]);
+          setNotifications((list || []).slice(0, 8));
+          setWpNotifications((wpList || []).slice(0, 8));
+
+          // Mark ALL unread in DB (not just the 8 shown) so the badge stays clear.
+          await Promise.all([markAllInquiriesRead(), markAllWpNotificationsRead()]);
+          prevCountRef.current = 0;
+          setUnreadCount(0);
+          void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
+        } catch (e) {
+          console.error('Failed to open/mark notifications', e);
+        } finally {
+          setMarkAllBusy(false);
+        }
+      })();
+
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        void syncAdminPushToServer(false);
+      }
+    },
+    [fetchNotifications, queryClient, syncAdminPushToServer],
+  );
 
   const combinedNotifications = useMemo(() => {
     const inquiryItems = notifications.map((n) => {
@@ -473,10 +524,6 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
   };
 
   const pushConfigured = Boolean(getAdminVapidPublicKey());
-
-  const resyncPushSubscription = useCallback(() => {
-    void syncAdminPushToServer(true);
-  }, [syncAdminPushToServer]);
 
   // Cmd+K / Ctrl+K to open search
   useEffect(() => {
@@ -597,7 +644,7 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
 
             <div className="col-start-2 row-start-1 flex shrink-0 items-center justify-end gap-1.5 sm:gap-2 md:col-start-3 md:row-start-1 md:justify-end">
             {/* Notifications */}
-            <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+            <Popover open={notificationsOpen} onOpenChange={onNotificationsOpenChange}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
@@ -615,23 +662,39 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
               <PopoverContent className="w-[calc(100vw-1rem)] max-w-sm p-0 md:w-80 md:mr-4" align="end">
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <h4 className="font-semibold text-sm">Notifications</h4>
-                  {unreadCount > 0 && (
-                    <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium">
-                      {unreadCount} new
-                    </span>
-                  )}
+                  {markAllBusy ? (
+                    <span className="text-[10px] text-muted-foreground">Clearing…</span>
+                  ) : null}
                 </div>
                 <div className="px-4 py-3 border-b border-border bg-muted/20 space-y-2">
                   {!pushConfigured && (
                     <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
-                      Server push is not configured in the frontend yet. Add{' '}
-                      <span className="font-mono">VITE_VAPID_PUBLIC_KEY</span> to your environment and redeploy.
+                      Server push is not configured yet. Add{' '}
+                      <span className="font-mono">VITE_VAPID_PUBLIC_KEY</span> on Vercel, then redeploy.
                     </p>
                   )}
-                  {notificationPermission !== 'granted' ? (
+                  {notificationPermission === 'granted' ? (
+                    <p className="text-xs text-muted-foreground">
+                      Phone alerts are on. This device syncs automatically in the background.
+                    </p>
+                  ) : notificationPermission === 'denied' ? (
                     <>
                       <p className="text-xs text-muted-foreground">
-                        Allow notifications to get inquiry alerts on your phone like WhatsApp/Instagram (works when the admin app is closed, after the Supabase webhook is set up).
+                        Notifications are blocked in browser settings. Allow them for this site, reload, then tap Enable.
+                      </p>
+                      <Button
+                        size="sm"
+                        className="w-full h-8 text-xs"
+                        onClick={requestBrowserNotificationPermission}
+                        disabled={!pushConfigured}
+                      >
+                        Check permission again
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Allow notifications to get inquiry alerts on your phone when the admin app is closed.
                       </p>
                       <Button
                         size="sm"
@@ -642,22 +705,6 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
                         {notificationPermission === 'unsupported'
                           ? 'Not supported on this browser'
                           : 'Enable mobile alerts'}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-xs text-muted-foreground">
-                        This device is registered for push. Use re-sync if you reinstalled the app or cleared site data.
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="w-full h-8 text-xs"
-                        onClick={resyncPushSubscription}
-                        disabled={!pushConfigured}
-                      >
-                        Re-sync this device
                       </Button>
                     </>
                   )}
@@ -709,19 +756,7 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
                     </div>
                   )}
                 </div>
-                <motion.div className="p-2 border-t border-border bg-muted/20 space-y-1">
-                  {unreadCount > 0 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-xs h-8"
-                      disabled={markAllBusy}
-                      onClick={() => void handleMarkAllNotificationsRead()}
-                    >
-                      {markAllBusy ? 'Marking…' : 'Mark all as read'}
-                    </Button>
-                  )}
+                <motion.div className="p-2 border-t border-border bg-muted/20">
                   <Button
                     type="button"
                     variant="ghost"

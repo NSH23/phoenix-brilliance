@@ -32,7 +32,6 @@ function openWhatsAppSendOtp(request: SiteAccessRequest) {
     toast.error('No valid phone number for this request');
     return;
   }
-  // Prefer navigation so mobile PWA / in-app browsers open WhatsApp reliably.
   window.location.href = href;
 }
 
@@ -47,51 +46,72 @@ function AccessRequestRow({
 }) {
   const otpValid = isOtpStillValid(request.otp_expires_at);
   const firstName = (request.visitor_name || 'Guest').trim().split(/\s+/)[0];
+  const canSend = otpValid && Boolean(request.visitor_phone);
 
   return (
     <div className="border-b border-border/50 last:border-b-0">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-muted/40 active:bg-muted/50 sm:p-4"
-      >
-        <div className="admin-avatar-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm">
-          {(request.visitor_name || '?')
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .slice(0, 2)
-            .toUpperCase()}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {request.visitor_name || 'Unknown'}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            OTP {request.otp_code}
-            {request.event_type ? ` · ${request.event_type}` : ''}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <span
+      {/* Compact row: name only + square Send OTP */}
+      <div className="flex items-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          aria-expanded={expanded}
+        >
+          <div className="admin-avatar-chip flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs">
+            {(request.visitor_name || '?')
+              .split(' ')
+              .map((n) => n[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-foreground">
+              {request.visitor_name || 'Unknown'}
+            </p>
+            <p className="truncate text-[11px] text-muted-foreground">
+              {formatRelativeTime(request.created_at)}
+              {expanded ? '' : ' · tap for details'}
+            </p>
+          </div>
+          <ChevronDown
             className={cn(
-              'inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-              request.status === 'pending' && otpValid
-                ? 'admin-status-new'
-                : 'bg-muted text-muted-foreground',
+              'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+              expanded && 'rotate-180',
             )}
-          >
-            {request.status === 'pending' && otpValid ? 'Send OTP' : request.status}
-          </span>
-          <p className="text-[10px] text-muted-foreground">{formatRelativeTime(request.created_at)}</p>
-        </div>
-        <ChevronDown
-          className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', expanded && 'rotate-180')}
-        />
-      </button>
+          />
+        </button>
+
+        <Button
+          type="button"
+          size="icon"
+          variant="default"
+          className="h-10 w-10 shrink-0 rounded-md"
+          disabled={!canSend}
+          title={canSend ? `Send OTP to ${firstName}` : 'Cannot send OTP'}
+          aria-label={`Send OTP to ${firstName}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            openWhatsAppSendOtp(request);
+          }}
+        >
+          <MessageCircle className="h-4 w-4" />
+        </Button>
+      </div>
 
       {expanded ? (
-        <div className="space-y-3 border-t border-border/40 bg-muted/20 px-4 py-3 sm:px-5">
+        <div className="space-y-3 border-t border-border/40 bg-muted/20 px-3 py-3 sm:px-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-border/60 bg-background/80 px-3 py-2">
+            <span className="text-xs text-muted-foreground">OTP</span>
+            <span className="font-mono text-base font-bold tracking-widest text-foreground">
+              {request.otp_code}
+            </span>
+            {!otpValid ? (
+              <span className="text-[10px] font-medium text-amber-600">Expired</span>
+            ) : null}
+          </div>
+
           <div className="grid gap-2 text-sm">
             {request.visitor_phone ? (
               <p className="flex items-center gap-2 text-muted-foreground">
@@ -122,20 +142,10 @@ function AccessRequestRow({
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-background/80 px-3 py-2.5">
-            <span className="text-xs text-muted-foreground">OTP</span>
-            <span className="font-mono text-lg font-bold tracking-widest text-foreground">
-              {request.otp_code}
-            </span>
-            {!otpValid ? (
-              <span className="text-[10px] font-medium text-amber-600">Expired</span>
-            ) : null}
-          </div>
-
           <Button
             type="button"
-            className="h-11 w-full gap-2 text-sm font-semibold"
-            disabled={!otpValid || !request.visitor_phone}
+            className="h-10 w-full gap-2 text-sm font-medium"
+            disabled={!canSend}
             onClick={() => openWhatsAppSendOtp(request)}
           >
             <MessageCircle className="h-4 w-4" />
@@ -162,7 +172,6 @@ export default function AccessOtpPanel() {
 
   const requests = useMemo(() => {
     const list = query.data ?? [];
-    // Prefer pending with valid OTP first
     return [...list].sort((a, b) => {
       const aPending = a.status === 'pending' && isOtpStillValid(a.otp_expires_at) ? 0 : 1;
       const bPending = b.status === 'pending' && isOtpStillValid(b.otp_expires_at) ? 0 : 1;
@@ -224,7 +233,7 @@ export default function AccessOtpPanel() {
             </span>
           ) : null}
         </div>
-        <p className="hidden text-xs text-muted-foreground sm:block">Send code via WhatsApp</p>
+        <p className="hidden text-xs text-muted-foreground sm:block">WhatsApp icon = send code</p>
       </CardHeader>
       <CardContent className="p-0">
         {query.isPending ? (
@@ -235,7 +244,7 @@ export default function AccessOtpPanel() {
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-muted-foreground">
             <KeyRound className="h-8 w-8 opacity-25" aria-hidden />
             <p className="text-sm">No pending access OTPs</p>
-            <p className="text-xs opacity-80">New form submissions will appear here with name + code.</p>
+            <p className="text-xs opacity-80">New form submissions will appear here.</p>
           </div>
         ) : (
           <div className="max-h-[min(28rem,55vh)] overflow-y-auto">
