@@ -83,6 +83,7 @@ Deno.serve(async (req: Request) => {
   const name = rec.name != null ? String(rec.name) : 'Friend';
   const eventTypeVal = rec.event_type != null ? String(rec.event_type) : '';
   const venue = rec.venue != null ? String(rec.venue) : '';
+  const accessToken = rec.access_token != null ? String(rec.access_token) : '';
 
   const payload = {
     name,
@@ -93,6 +94,7 @@ Deno.serve(async (req: Request) => {
     event_type: eventTypeVal,
     venue,
     venue_name: venue,
+    access_token: accessToken,
   };
 
   let waStatus = 0;

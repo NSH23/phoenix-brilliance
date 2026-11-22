@@ -15,6 +15,7 @@ import GlobalBackground from "@/components/GlobalBackground";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 import AdminThemeSync from "./components/admin/AdminThemeSync";
 import AdminPwaManager from "./components/admin/AdminPwaManager";
+import AdminNativeBootstrap from "./components/admin/AdminNativeBootstrap";
 import PublicSiteLayout from "./components/PublicSiteLayout";
 
 // Lazy load all route components for code splitting
@@ -373,6 +374,7 @@ const App = () => (
             <LeadCaptureProvider>
               <AdminThemeSync />
               <AdminPwaManager />
+              <AdminNativeBootstrap />
               <ScrollToTop />
               <GlobalBackground />
               <div className="global-grain-overlay" aria-hidden />

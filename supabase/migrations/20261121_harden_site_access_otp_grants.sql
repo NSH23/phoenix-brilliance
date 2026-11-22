@@ -1,4 +1,4 @@
-﻿-- Trigger function must not be callable as a public RPC.
+-- Trigger function must not be callable as a public RPC.
 revoke all on function public.create_site_access_request_from_inquiry() from public;
 revoke all on function public.create_site_access_request_from_inquiry() from anon, authenticated;
 

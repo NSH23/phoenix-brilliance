@@ -1,12 +1,13 @@
 // @ts-nocheck
 /**
- * Supabase Edge Function: send Web Push to all saved admin subscriptions when a new inquiry is inserted.
+ * Supabase Edge Function: send Web Push + FCM when a new inquiry is inserted.
  * Invoke via Database Webhook (INSERT on public.inquiries) with header:
  *   x-phoenix-webhook-secret: <WEBHOOK_SECRET>
  *
  * Secrets (Dashboard → Edge Functions → Secrets):
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto), WEBHOOK_SECRET,
- *   VAPID_SUBJECT (e.g. mailto:you@domain.com), VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
+ *   VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY,
+ *   FCM_SERVER_KEY (optional — legacy Firebase Cloud Messaging server key for Android APK)
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import webpush from 'npm:web-push@3.6.7';
@@ -37,6 +38,35 @@ function buildWhatsAppOtpUrl(phone: unknown, name: unknown, otp: unknown): strin
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
 
+async function sendFcmLegacy(
+  serverKey: string,
+  token: string,
+  title: string,
+  body: string,
+  data: Record<string, string>,
+): Promise<{ ok: boolean; status: number; bodyText: string }> {
+  const res = await fetch('https://fcm.googleapis.com/fcm/send', {
+    method: 'POST',
+    headers: {
+      Authorization: `key=${serverKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      to: token,
+      priority: 'high',
+      notification: {
+        title,
+        body,
+        sound: 'default',
+        click_action: 'FCM_PLUGIN_ACTIVITY',
+      },
+      data,
+    }),
+  });
+  const bodyText = await res.text();
+  return { ok: res.ok, status: res.status, bodyText };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -65,6 +95,7 @@ Deno.serve(async (req: Request) => {
   }
 
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+  const fcmServerKey = Deno.env.get('FCM_SERVER_KEY') ?? '';
 
   let body: DbWebhookBody;
   try {
@@ -98,7 +129,6 @@ Deno.serve(async (req: Request) => {
   let visitorPhone = rec.phone != null ? String(rec.phone) : '';
 
   if (accessToken) {
-    // Trigger creates site_access_requests in the same transaction; small retry for race.
     for (let attempt = 0; attempt < 4; attempt++) {
       const { data: accessRow } = await admin
         .from('site_access_requests')
@@ -133,6 +163,7 @@ Deno.serve(async (req: Request) => {
         ? `/admin/notifications?tab=inquiries&open=${id}`
         : '/admin/notifications?tab=inquiries';
 
+  const absoluteUrl = `https://phoenixeventsandproduction.com${dashboardUrl}`;
   const whatsappUrl = isAccess ? buildWhatsAppOtpUrl(visitorPhone, name, otpCode) : '';
 
   const payload = JSON.stringify({
@@ -183,9 +214,67 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  console.info('send-inquiry-push: push-result', { total: subscriptions.length, sent, removed });
+  let fcmSent = 0;
+  let fcmRemoved = 0;
+  let fcmSkipped = !fcmServerKey;
 
-  return new Response(JSON.stringify({ ok: true, sent, removed, total: subscriptions.length }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  if (fcmServerKey) {
+    const { data: fcmRows, error: fcmErr } = await admin
+      .from('admin_fcm_devices')
+      .select('id, token');
+
+    if (fcmErr) {
+      console.error('send-inquiry-push: select fcm devices', fcmErr);
+    } else {
+      const devices = fcmRows ?? [];
+      console.info('send-inquiry-push: fcm devices loaded', { total: devices.length });
+      for (const device of devices) {
+        if (!device?.token || !device?.id) continue;
+        try {
+          const result = await sendFcmLegacy(fcmServerKey, device.token, title, bodyText, {
+            url: absoluteUrl,
+            path: dashboardUrl,
+            tag: notificationTopic,
+            whatsappUrl: whatsappUrl || '',
+          });
+          if (result.ok) {
+            fcmSent++;
+          } else if (result.status === 404 || /NotRegistered|InvalidRegistration/i.test(result.bodyText)) {
+            await admin.from('admin_fcm_devices').delete().eq('id', device.id);
+            fcmRemoved++;
+          } else {
+            console.warn('send-inquiry-push: fcm failed', result.status, result.bodyText.slice(0, 200));
+          }
+        } catch (e) {
+          console.warn('send-inquiry-push: fcm exception', e);
+        }
+      }
+    }
+  } else {
+    console.info('send-inquiry-push: FCM_SERVER_KEY not set — Android APK push skipped');
+  }
+
+  console.info('send-inquiry-push: push-result', {
+    webTotal: subscriptions.length,
+    sent,
+    removed,
+    fcmSent,
+    fcmRemoved,
+    fcmSkipped,
   });
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      sent,
+      removed,
+      total: subscriptions.length,
+      fcmSent,
+      fcmRemoved,
+      fcmSkipped,
+    }),
+    {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    },
+  );
 });

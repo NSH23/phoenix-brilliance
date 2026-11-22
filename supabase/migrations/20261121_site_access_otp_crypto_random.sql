@@ -1,4 +1,4 @@
-﻿-- Cryptographically random 6-digit OTP for site access requests.
+-- Cryptographically random 6-digit OTP for site access requests.
 create extension if not exists pgcrypto;
 
 create or replace function public.create_site_access_request_from_inquiry()
