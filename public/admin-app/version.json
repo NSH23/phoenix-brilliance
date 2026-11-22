@@ -1,7 +1,7 @@
 {
-  "versionCode": 3,
-  "versionName": "1.0.2",
-  "apkUrl": "/admin-app/rwi0ed16ov32hbac4z7lnfs85kqmtu9p/phoenix-admin.apk",
-  "releasedAt": "2026-11-22",
-  "notes": "Firebase FCM enabled for closed-app Android notifications"
+    "apkUrl":  "/admin-app/gqfno9wp3umyc4axil71dbv2rhjz8te0/phoenix-admin.apk",
+    "versionCode":  4,
+    "versionName":  "1.0.3",
+    "releasedAt":  "2026-11-22",
+    "notes":  "Native Send OTP button opens WhatsApp from system tray"
 }

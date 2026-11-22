@@ -132,6 +132,14 @@ async function sendFcmHttpV1(
   body: string,
   data: Record<string, string>,
 ): Promise<{ ok: boolean; status: number; bodyText: string }> {
+  // Data-only FCM so our Android PhoenixMessagingService always receives the message
+  // (even when the app is backgrounded/killed) and can render a real "Send OTP" button.
+  const dataPayload: Record<string, string> = {
+    ...data,
+    title,
+    body,
+    channel_id: FCM_CHANNEL_ID,
+  };
   const res = await fetch(
     `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
     {
@@ -143,17 +151,9 @@ async function sendFcmHttpV1(
       body: JSON.stringify({
         message: {
           token: deviceToken,
-          notification: { title, body },
-          data,
+          data: dataPayload,
           android: {
             priority: 'HIGH',
-            notification: {
-              sound: 'default',
-              channel_id: FCM_CHANNEL_ID,
-              click_action: 'FCM_PLUGIN_ACTIVITY',
-              default_vibrate_timings: true,
-              notification_priority: 'PRIORITY_MAX',
-            },
           },
         },
       }),
@@ -335,8 +335,8 @@ Deno.serve(async (req: Request) => {
       kind = 'otp';
       title = `OTP · ${name}`;
       bodyText = phoneLabel
-        ? `${phoneLabel} · Tap Send OTP to open WhatsApp`
-        : `Tap Send OTP to open WhatsApp for ${name.split(/\s+/)[0] || name}`;
+        ? `${phoneLabel} · press Send OTP`
+        : `Press Send OTP for ${name.split(/\s+/)[0] || name}`;
       actions = true;
       whatsappUrl = buildWhatsAppOtpUrl(visitorPhone, name, otpCode);
     } else if (instagramId) {

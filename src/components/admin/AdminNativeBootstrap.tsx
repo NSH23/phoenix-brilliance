@@ -141,8 +141,24 @@ export default function AdminNativeBootstrap() {
           const whatsappUrl = data.whatsappUrl || '';
 
           // OTP: tapping the notification (or Send OTP) opens WhatsApp with the OTP message.
+          // Prefer a real external open — WebView location changes often fail for wa.me.
           if (whatsappUrl && (actionId === 'send-otp' || actionId === '' || data.kind === 'otp')) {
-            window.location.href = whatsappUrl;
+            try {
+              window.open(whatsappUrl, '_system');
+            } catch {
+              /* ignore */
+            }
+            try {
+              const a = document.createElement('a');
+              a.href = whatsappUrl;
+              a.target = '_blank';
+              a.rel = 'noopener';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            } catch {
+              window.location.assign(whatsappUrl);
+            }
             return;
           }
 
