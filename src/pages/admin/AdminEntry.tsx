@@ -13,6 +13,7 @@ import {
   LATEST_APK_PATH,
   isNativeAdminApp,
   resolveAbsoluteAdminUrl,
+  startBrowserApkDownload,
   type RemoteAppVersion,
 } from '@/lib/adminNative';
 
@@ -80,9 +81,14 @@ export default function AdminEntry() {
   }, []);
 
   const apkHref = resolveAbsoluteAdminUrl(version?.apkUrl || LATEST_APK_PATH);
+  const apkFilename = `phoenix-admin-${version?.versionName || 'latest'}.apk`;
   const versionLabel = version
     ? `v${version.versionName} (build ${version.versionCode})`
     : 'latest';
+
+  const beginApkDownload = () => {
+    startBrowserApkDownload(version?.apkUrl || LATEST_APK_PATH, apkFilename);
+  };
 
   // Initial session restore only — do NOT blank the install panel when login() sets isLoading.
   if (!sessionReady && mode === 'choose') {
@@ -141,8 +147,10 @@ export default function AdminEntry() {
           {mode === 'install-ready' ? (
             <div className="space-y-4">
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm">
-                <p className="font-medium text-foreground">Verified — download unlocked</p>
-                <p className="mt-1 text-xs text-muted-foreground">Version {versionLabel}</p>
+                <p className="font-medium text-foreground">Verified — download started</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Version {versionLabel}. If the file did not start, tap Download APK.
+                </p>
               </div>
               <Button asChild className="h-11 w-full gap-2">
                 <a href={apkHref} download={`phoenix-admin-${version?.versionName || 'latest'}.apk`}>
@@ -192,7 +200,8 @@ export default function AdminEntry() {
                       /* ignore */
                     }
                     setMode('install-ready');
-                    toast.success('Verified — download ready');
+                    beginApkDownload();
+                    toast.success('Verified — download started');
                   } finally {
                     setBusy(false);
                   }
@@ -283,7 +292,14 @@ export default function AdminEntry() {
 
           <button
             type="button"
-            onClick={() => setMode(isAuthenticated ? 'install-ready' : 'install-auth')}
+            onClick={() => {
+              if (isAuthenticated) {
+                setMode('install-ready');
+                beginApkDownload();
+                return;
+              }
+              setMode('install-auth');
+            }}
             className="flex items-start gap-4 rounded-xl border border-border/70 bg-background/60 p-4 text-left transition hover:border-primary/40 hover:bg-muted/40"
           >
             <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">

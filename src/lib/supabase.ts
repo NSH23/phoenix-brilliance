@@ -57,6 +57,11 @@ if (import.meta.env.DEV && supabaseAnonKey) {
   }
 }
 
+/** Public project URL and anon key — already shipped in the browser bundle. */
+export function getSupabaseBrowserConfig(): { url: string; anonKey: string } {
+  return { url: supabaseUrl, anonKey: supabaseAnonKey };
+}
+
 // Create and export Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

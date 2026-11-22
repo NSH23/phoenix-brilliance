@@ -102,6 +102,18 @@ function triggerAnchorDownload(absolute: string) {
   a.remove();
 }
 
+/** Start the APK download in this tab. Call from the verify click so the browser still treats it as a user action. */
+export function startBrowserApkDownload(apkUrl: string, filename = 'phoenix-admin.apk') {
+  const absolute = resolveAbsoluteAdminUrl(apkUrl);
+  const a = document.createElement('a');
+  a.href = absolute;
+  a.download = filename;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 /**
  * Start APK update download. Prefers native DownloadManager (status-bar progress),
  * then external browser, then WebView navigation / anchor click.
