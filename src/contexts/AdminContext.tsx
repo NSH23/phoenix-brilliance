@@ -28,7 +28,8 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Start true so /admin does not flash the chooser before session restore finishes.
+  const [isLoading, setIsLoading] = useState(true);
   const loginInFlightRef = useRef(false);
 
   // Load admin user from database with timeout
@@ -106,7 +107,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Never hang the /admin chooser if getSession stalls (offline / bad storage).
+        const session = await Promise.race([
+          supabase.auth.getSession().then((r) => r.data.session),
+          new Promise<null>((resolve) => {
+            window.setTimeout(() => resolve(null), 5000);
+          }),
+        ]);
         await applySessionUser(session?.user ?? null);
       } catch (error) {
         logger.error('Error restoring admin session', error, { component: 'AdminContext', action: 'restoreSession' });

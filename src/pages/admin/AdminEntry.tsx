@@ -9,7 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { APP_VERSION_URL, isNativeAdminApp, type RemoteAppVersion } from '@/lib/adminNative';
+import {
+  APP_VERSION_URL,
+  LATEST_APK_PATH,
+  isNativeAdminApp,
+  resolveAbsoluteAdminUrl,
+  type RemoteAppVersion,
+} from '@/lib/adminNative';
 
 type Mode = 'choose' | 'web' | 'install-auth' | 'install-ready';
 
@@ -28,19 +34,33 @@ export default function AdminEntry() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [version, setVersion] = useState<AppVersionInfo | null>(null);
+  // Only block the chooser on the first session check — never while verifying APK download login.
+  const [sessionReady, setSessionReady] = useState(() => !isLoading);
+
+  useEffect(() => {
+    if (!isLoading) setSessionReady(true);
+  }, [isLoading]);
 
   useEffect(() => {
     if (nativeApp && mode === 'choose') setMode('web');
   }, [nativeApp, mode]);
 
   useEffect(() => {
-    if (isAuthenticated && !isLoading && mode === 'choose') {
+    // Logged-in admins skip the chooser — unless they opened Install Android on purpose.
+    if (isAuthenticated && sessionReady && mode === 'choose') {
       navigate('/admin/dashboard', { replace: true });
     }
-  }, [isAuthenticated, isLoading, mode, navigate]);
+  }, [isAuthenticated, sessionReady, mode, navigate]);
 
   useEffect(() => {
-    void fetch(APP_VERSION_URL, { cache: 'no-store' })
+    // Already signed in + chose Install → unlock download immediately (no second login).
+    if (isAuthenticated && sessionReady && mode === 'install-auth') {
+      setMode('install-ready');
+    }
+  }, [isAuthenticated, sessionReady, mode]);
+
+  useEffect(() => {
+    void fetch(`${APP_VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.apkUrl && data?.versionCode) setVersion(data as AppVersionInfo);
@@ -48,7 +68,13 @@ export default function AdminEntry() {
       .catch(() => {});
   }, []);
 
-  if (isLoading) {
+  const apkHref = resolveAbsoluteAdminUrl(version?.apkUrl || LATEST_APK_PATH);
+  const versionLabel = version
+    ? `v${version.versionName} (build ${version.versionCode})`
+    : 'latest';
+
+  // Initial session restore only — do NOT blank the install panel when login() sets isLoading.
+  if (!sessionReady && mode === 'choose') {
     return (
       <div className="admin-dashboard flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -101,25 +127,22 @@ export default function AdminEntry() {
             </div>
           </div>
 
-          {mode === 'install-ready' && version ? (
+          {mode === 'install-ready' ? (
             <div className="space-y-4">
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm">
                 <p className="font-medium text-foreground">Verified — download unlocked</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Version {version.versionName} (build {version.versionCode})
-                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Version {versionLabel}</p>
               </div>
               <Button asChild className="h-11 w-full gap-2">
-                <a href={version.apkUrl} download={`phoenix-admin-${version.versionName}.apk`}>
+                <a href={apkHref} download={`phoenix-admin-${version?.versionName || 'latest'}.apk`}>
                   <Download className="h-4 w-4" />
                   Download APK
                 </a>
               </Button>
               <p className="text-xs leading-relaxed text-muted-foreground">
                 After install, open <strong>Phoenix Admin</strong>, log in, then allow notifications.
-                Dashboard / website changes appear automatically (live site). When a new Android
-                shell is published, the app shows an <strong>Update available</strong> prompt — tap
-                it to install over the current app (no uninstall).
+                Dashboard changes appear automatically. When a newer Android build is published, the
+                app shows <strong>Update available</strong> — tap it to install over the current app.
               </p>
               <Button
                 type="button"
@@ -150,14 +173,9 @@ export default function AdminEntry() {
                       toast.error(result.message || 'Login failed');
                       return;
                     }
-                    // Confirm still an admin row (login already checks).
                     const { data: sessionData } = await supabase.auth.getSession();
                     if (!sessionData.session) {
                       toast.error('Session missing. Try again.');
-                      return;
-                    }
-                    if (!version?.apkUrl) {
-                      toast.error('APK is not published yet. Ask the developer to upload a build.');
                       return;
                     }
                     setMode('install-ready');
@@ -252,7 +270,7 @@ export default function AdminEntry() {
 
           <button
             type="button"
-            onClick={() => setMode('install-auth')}
+            onClick={() => setMode(isAuthenticated ? 'install-ready' : 'install-auth')}
             className="flex items-start gap-4 rounded-xl border border-border/70 bg-background/60 p-4 text-left transition hover:border-primary/40 hover:bg-muted/40"
           >
             <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -268,11 +286,9 @@ export default function AdminEntry() {
           </button>
         </div>
 
-        {version ? (
-          <p className="mt-6 text-center text-[11px] text-muted-foreground">
-            Latest Android build: v{version.versionName}
-          </p>
-        ) : null}
+        <p className="mt-6 text-center text-[11px] text-muted-foreground">
+          Latest Android build: {version ? `v${version.versionName}` : 'checking…'}
+        </p>
       </div>
     </div>
   );
