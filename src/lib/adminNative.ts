@@ -2,8 +2,21 @@
 
 export function isNativeAdminApp(): boolean {
   if (typeof window === 'undefined') return false;
-  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-  return Boolean(cap?.isNativePlatform?.());
+  const cap = (
+    window as unknown as {
+      Capacitor?: {
+        isNativePlatform?: () => boolean;
+        getPlatform?: () => string;
+      };
+    }
+  ).Capacitor;
+  if (!cap) return false;
+  if (typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) return true;
+  if (typeof cap.getPlatform === 'function') {
+    const platform = cap.getPlatform();
+    return platform === 'android' || platform === 'ios';
+  }
+  return false;
 }
 
 export type RemoteAppVersion = {

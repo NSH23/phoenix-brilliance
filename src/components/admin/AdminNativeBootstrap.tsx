@@ -14,6 +14,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 
 const PERMS_FLAG = 'phoenix_admin_native_perms_v1';
+const FCM_OK_FLAG = 'phoenix_admin_fcm_ok_v1';
 const FCM_CHANNEL_ID = 'phoenix_admin';
 
 /**
@@ -28,12 +29,78 @@ export default function AdminNativeBootstrap() {
   const [update, setUpdate] = useState<RemoteAppVersion | null>(null);
   const [showPerms, setShowPerms] = useState(false);
   const [permBusy, setPermBusy] = useState(false);
+  const [fcmReady, setFcmReady] = useState(() => {
+    try {
+      return localStorage.getItem(FCM_OK_FLAG) === '1';
+    } catch {
+      return false;
+    }
+  });
   const askedRef = useRef(false);
   const listenersReadyRef = useRef(false);
+  const userIdRef = useRef<string | undefined>(user?.id);
   const native = isNativeAdminApp();
 
+  useEffect(() => {
+    userIdRef.current = user?.id;
+  }, [user?.id]);
+
+  const saveFcmToken = useCallback(async (fcmToken: string) => {
+    let userId = userIdRef.current;
+    if (!userId) {
+      const { data } = await supabase.auth.getUser();
+      userId = data.user?.id;
+    }
+    if (!userId || !fcmToken) {
+      toast.message('Could not enable phone alerts', {
+        description: 'You need to be logged in. Open the app, sign in, then try again.',
+      });
+      return false;
+    }
+
+    const { error } = await supabase.from('admin_fcm_devices').upsert(
+      {
+        user_id: userId,
+        token: fcmToken,
+        platform: 'android',
+        app_id: 'com.phoenixevents.admin',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'token' },
+    );
+
+    if (error) {
+      console.warn('Failed to save FCM token', error);
+      toast.message('Could not save phone alerts', {
+        description: error.message || 'Try Allow notifications again after reopening the app.',
+        duration: 6000,
+      });
+      return false;
+    }
+
+    try {
+      localStorage.setItem(FCM_OK_FLAG, '1');
+      localStorage.setItem(PERMS_FLAG, '1');
+    } catch {
+      /* ignore */
+    }
+    setFcmReady(true);
+    toast.success('Phone alerts enabled for this app', {
+      description: 'You will get sounds on the lock screen when the app is closed.',
+      duration: 6000,
+    });
+    return true;
+  }, []);
+
   const registerPush = useCallback(async () => {
-    if (!native || !user?.id) return false;
+    if (!native) {
+      toast.message('Open the Phoenix Admin app', {
+        description: 'Closed-app alerts only work inside the installed Android app, not in Chrome.',
+      });
+      return false;
+    }
+    if (!user?.id) return false;
+
     try {
       const { PushNotifications } = await import('@capacitor/push-notifications');
 
@@ -41,34 +108,24 @@ export default function AdminNativeBootstrap() {
       if (!listenersReadyRef.current) {
         listenersReadyRef.current = true;
 
-        await PushNotifications.addListener('registration', async (token) => {
+        await PushNotifications.addListener('registration', (token) => {
           const fcmToken = token.value;
           if (!fcmToken) return;
-          const { error } = await supabase.from('admin_fcm_devices').upsert(
-            {
-              user_id: user.id,
-              token: fcmToken,
-              platform: 'android',
-              app_id: 'com.phoenixevents.admin',
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'token' },
-          );
-          if (error) {
-            console.warn('Failed to save FCM token', error);
-            toast.message('Could not save phone alerts', {
-              description: error.message || 'Try Allow notifications again after reopening the app.',
-            });
-          } else {
-            toast.success('Phone alerts enabled for this app');
-          }
+          void saveFcmToken(fcmToken);
         });
 
         await PushNotifications.addListener('registrationError', (err) => {
           console.warn('Push registration error', err);
+          try {
+            localStorage.removeItem(FCM_OK_FLAG);
+          } catch {
+            /* ignore */
+          }
+          setFcmReady(false);
           toast.message('Push setup incomplete', {
             description:
-              'Firebase may be missing from this APK build. Rebuild with google-services.json, then reinstall.',
+              'Firebase may be missing from this APK. Rebuild with google-services.json, then reinstall.',
+            duration: 7000,
           });
         });
 
@@ -79,13 +136,9 @@ export default function AdminNativeBootstrap() {
             whatsappUrl?: string;
             action?: string;
           } | undefined;
-          // OTP: optional direct WhatsApp send from tray tap when action is send-otp
           if (data?.action === 'send-otp' && data.whatsappUrl) {
             window.location.href = data.whatsappUrl;
             return;
-          }
-          if (data?.whatsappUrl && data?.path?.includes('otp=')) {
-            // Prefer opening admin OTP panel; user can tap Send OTP there.
           }
           const target = data?.path || data?.url;
           if (target && typeof target === 'string') {
@@ -116,22 +169,31 @@ export default function AdminNativeBootstrap() {
       }
       if (perm.receive !== 'granted') {
         toast.message('Notifications blocked', {
-          description: 'Enable notifications in Android settings for Phoenix Admin.',
+          description:
+            'Android Settings → Apps → Phoenix Admin → Notifications → Allow, then tap Enable phone alerts again.',
+          duration: 8000,
         });
         return false;
       }
 
       await PushNotifications.register();
+      toast.message('Setting up phone alerts…', {
+        description: 'Allow the system prompt if shown. Wait for “Phone alerts enabled”.',
+        duration: 4500,
+      });
       return true;
     } catch (e) {
       console.warn('Native push unavailable', e);
+      toast.message('Phone alerts unavailable', {
+        description:
+          'This build may not include push plugins. Open the installed Phoenix Admin APK (not the browser).',
+        duration: 7000,
+      });
       return false;
     }
-  }, [native, user?.id]);
+  }, [native, user?.id, saveFcmToken]);
 
   const requestStorageHint = useCallback(async () => {
-    // Android photo access is prompted by the system file picker on upload.
-    // Trigger a no-op picker only when the user explicitly allows — here we just remind.
     toast.message('Photos & files', {
       description:
         'Android will ask for photo/folder access the next time you upload images in the dashboard.',
@@ -142,16 +204,9 @@ export default function AdminNativeBootstrap() {
   const handleAllowPermissions = useCallback(async () => {
     setPermBusy(true);
     try {
-      const ok = await registerPush();
+      await registerPush();
       await requestStorageHint();
       setShowPerms(false);
-      if (ok) {
-        try {
-          localStorage.setItem(PERMS_FLAG, '1');
-        } catch {
-          /* ignore */
-        }
-      }
     } finally {
       setPermBusy(false);
     }
@@ -161,7 +216,6 @@ export default function AdminNativeBootstrap() {
     if (!update?.apkUrl) return;
     const absolute = resolveAbsoluteAdminUrl(update.apkUrl);
     try {
-      // Opens system browser / download manager so the APK can install over the existing app.
       window.open(absolute, '_blank');
       toast.message('Downloading update', {
         description: 'Open the downloaded APK and tap Install. You do not need to uninstall first.',
@@ -172,21 +226,22 @@ export default function AdminNativeBootstrap() {
     }
   }, [update]);
 
-  // After login inside the app: show permissions sheet once, or re-register silently.
+  // After login inside the app: show permissions sheet if FCM not confirmed yet.
   useEffect(() => {
     if (!native || !isAuthenticated || !pathname.startsWith('/admin')) return;
     if (askedRef.current) return;
     askedRef.current = true;
 
-    let already = false;
+    let fcmOk = false;
     try {
-      already = localStorage.getItem(PERMS_FLAG) === '1';
+      fcmOk = localStorage.getItem(FCM_OK_FLAG) === '1';
     } catch {
-      already = false;
+      fcmOk = false;
     }
 
     const timer = window.setTimeout(() => {
-      if (already) {
+      if (fcmOk) {
+        setFcmReady(true);
         void registerPush();
       } else {
         setShowPerms(true);
@@ -196,7 +251,7 @@ export default function AdminNativeBootstrap() {
     return () => window.clearTimeout(timer);
   }, [native, isAuthenticated, pathname, registerPush]);
 
-  // Re-check notification permission when returning to the app; re-prompt if denied/not granted.
+  // Re-check notification permission when returning to the app.
   useEffect(() => {
     if (!native || !isAuthenticated) return;
     const onVisible = () => {
@@ -207,10 +262,12 @@ export default function AdminNativeBootstrap() {
           const perm = await PushNotifications.checkPermissions();
           if (perm.receive !== 'granted') {
             try {
+              localStorage.removeItem(FCM_OK_FLAG);
               localStorage.removeItem(PERMS_FLAG);
             } catch {
               /* ignore */
             }
+            setFcmReady(false);
             setShowPerms(true);
           }
         } catch {
@@ -242,9 +299,10 @@ export default function AdminNativeBootstrap() {
       {showPerms ? (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-4 sm:items-center">
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
-            <p className="text-base font-semibold">Allow app permissions</p>
+            <p className="text-base font-semibold">Allow phone notifications</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Phoenix Admin needs these so alerts and media uploads work on your phone.
+              Without this, you only see alerts inside the open app. Closed-app lock-screen alerts need
+              Android permission.
             </p>
             <ul className="mt-4 space-y-3 text-sm">
               <li className="flex gap-3">
@@ -252,7 +310,7 @@ export default function AdminNativeBootstrap() {
                 <span>
                   <span className="font-medium">Notifications</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Inquiries, OTP requests, and WhatsApp alerts while the app is closed (with sound).
+                    After you tap Allow, wait for the green toast: “Phone alerts enabled for this app”.
                   </span>
                 </span>
               </li>
@@ -268,28 +326,49 @@ export default function AdminNativeBootstrap() {
               <li className="flex gap-3">
                 <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>
-                  <span className="font-medium">Secure admin session</span>
+                  <span className="font-medium">Stay logged in</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Same login as the web dashboard. Live updates load automatically.
+                    Same login as the web dashboard. Live site updates load automatically.
                   </span>
                 </span>
               </li>
             </ul>
             <div className="mt-5 flex gap-2">
               <Button className="flex-1" disabled={permBusy} onClick={() => void handleAllowPermissions()}>
-                {permBusy ? 'Requesting…' : 'Allow & continue'}
+                {permBusy ? 'Requesting…' : 'Allow & enable phone alerts'}
               </Button>
               <Button
                 variant="ghost"
                 disabled={permBusy}
                 onClick={() => {
                   setShowPerms(false);
-                  // Do not permanently skip — ask again next session until granted.
                 }}
               >
                 Later
               </Button>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isAuthenticated && !fcmReady && !showPerms ? (
+        <div className="fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-[65] px-3 md:left-auto md:right-4 md:max-w-sm">
+          <div className="rounded-xl border border-amber-500/40 bg-card p-3 shadow-lg">
+            <p className="text-sm font-semibold">Phone alerts not enabled yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              In-app bell works, but closed-app notifications need one tap below. Look for the green
+              “Phone alerts enabled” message after.
+            </p>
+            <Button
+              size="sm"
+              className="mt-3 w-full"
+              disabled={permBusy}
+              onClick={() => {
+                setShowPerms(true);
+              }}
+            >
+              Enable phone alerts
+            </Button>
           </div>
         </div>
       ) : null}
