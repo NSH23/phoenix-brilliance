@@ -1,7 +1,7 @@
 {
-    "apkUrl":  "/admin-app/gqfno9wp3umyc4axil71dbv2rhjz8te0/phoenix-admin.apk",
-    "versionCode":  4,
-    "versionName":  "1.0.3",
+    "apkUrl":  "/admin-app/latest/phoenix-admin.apk",
+    "versionCode":  5,
+    "versionName":  "1.0.4",
     "releasedAt":  "2026-11-22",
-    "notes":  "Native Send OTP button opens WhatsApp from system tray"
+    "notes":  "One-tap in-app updates; install over current app without uninstall"
 }

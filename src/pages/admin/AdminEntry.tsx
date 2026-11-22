@@ -9,18 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { isNativeAdminApp } from '@/lib/adminNative';
+import { APP_VERSION_URL, isNativeAdminApp, type RemoteAppVersion } from '@/lib/adminNative';
 
 type Mode = 'choose' | 'web' | 'install-auth' | 'install-ready';
 
-const APP_VERSION_URL = '/admin-app/version.json';
-
-type AppVersionInfo = {
-  versionCode: number;
-  versionName: string;
-  apkUrl: string;
-  releasedAt?: string;
-};
+type AppVersionInfo = RemoteAppVersion;
 
 export default function AdminEntry() {
   const { isAuthenticated, isLoading, login, logout } = useAdmin();
@@ -123,9 +116,10 @@ export default function AdminEntry() {
                 </a>
               </Button>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                After install, open <strong>Phoenix Admin</strong>, log in again, then allow
-                notifications when asked. The app loads the live dashboard, so website updates appear
-                automatically; a new APK build is only needed for native/app-shell updates.
+                After install, open <strong>Phoenix Admin</strong>, log in, then allow notifications.
+                Dashboard / website changes appear automatically (live site). When a new Android
+                shell is published, the app shows an <strong>Update available</strong> prompt — tap
+                it to install over the current app (no uninstall).
               </p>
               <Button
                 type="button"
@@ -250,8 +244,8 @@ export default function AdminEntry() {
             <span>
               <span className="block text-sm font-semibold">Use on web</span>
               <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                Open the admin dashboard in the browser. After login, you can install the PWA
-                (Add to Home Screen / Install app) for quick access and web push alerts.
+                Open the admin dashboard in the browser. After login you can install the PWA (Add to
+                Home Screen). Website updates apply automatically — no APK needed for web/PWA.
               </span>
             </span>
           </button>

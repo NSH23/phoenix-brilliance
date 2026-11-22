@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import {
   fetchRemoteAppVersion,
   getNativeAppBuild,
+  installApkUpdate,
   isNativeAdminApp,
-  resolveAbsoluteAdminUrl,
   type RemoteAppVersion,
 } from '@/lib/adminNative';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -16,17 +16,19 @@ import { supabase } from '@/lib/supabase';
 const PERMS_FLAG = 'phoenix_admin_native_perms_v1';
 const FCM_OK_FLAG = 'phoenix_admin_fcm_ok_v1';
 const FCM_CHANNEL_ID = 'phoenix_admin';
+const UPDATE_DISMISS_KEY = 'phoenix_admin_update_dismissed_code';
 
 /**
  * Runs only inside the Capacitor Android shell.
  * - After login: permission gate (notifications + storage hint)
  * - Registers FCM token when plugin/Firebase is available
- * - Shows in-app "Update available" when version.json is newer than installed APK
+ * - Shows in-app "Update available" only when version.json is newer than installed APK
  */
 export default function AdminNativeBootstrap() {
   const { pathname } = useLocation();
   const { isAuthenticated, user } = useAdmin();
   const [update, setUpdate] = useState<RemoteAppVersion | null>(null);
+  const [updateBusy, setUpdateBusy] = useState(false);
   const [showPerms, setShowPerms] = useState(false);
   const [permBusy, setPermBusy] = useState(false);
   const [fcmReady, setFcmReady] = useState(() => {
@@ -236,17 +238,52 @@ export default function AdminNativeBootstrap() {
 
   const handleUpdateApp = useCallback(async () => {
     if (!update?.apkUrl) return;
-    const absolute = resolveAbsoluteAdminUrl(update.apkUrl);
+    setUpdateBusy(true);
     try {
-      window.open(absolute, '_blank');
-      toast.message('Downloading update', {
-        description: 'Open the downloaded APK and tap Install. You do not need to uninstall first.',
-        duration: 6000,
+      const result = await installApkUpdate(update.apkUrl);
+      if (result.needsInstallPermission) {
+        toast.message('Allow app installs', {
+          description:
+            'Turn on “Allow from this source”, then tap Update app again. Installs over the current app — no uninstall.',
+          duration: 8000,
+        });
+        return;
+      }
+      toast.message(result.fallbackOpened ? 'Downloading update' : 'Opening installer', {
+        description:
+          'Tap Install on the next screen. This updates your current app — you do not uninstall.',
+        duration: 7000,
       });
-    } catch {
-      window.location.href = absolute;
+    } finally {
+      setUpdateBusy(false);
     }
   }, [update]);
+
+  const checkForAppUpdate = useCallback(async () => {
+    if (!native) return;
+    const remote = await fetchRemoteAppVersion();
+    const local = await getNativeAppBuild();
+    if (!remote || !local) return;
+    if (remote.versionCode > local.versionCode) {
+      let dismissed = 0;
+      try {
+        dismissed = Number(localStorage.getItem(UPDATE_DISMISS_KEY) || 0);
+      } catch {
+        dismissed = 0;
+      }
+      // Show again for every newer build; "Later" only hides the same versionCode.
+      if (dismissed !== remote.versionCode) {
+        setUpdate(remote);
+      }
+    } else {
+      setUpdate(null);
+      try {
+        localStorage.removeItem(UPDATE_DISMISS_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [native]);
 
   // After login inside the app: show permissions sheet if FCM not confirmed yet.
   useEffect(() => {
@@ -301,18 +338,20 @@ export default function AdminNativeBootstrap() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [native, isAuthenticated]);
 
-  // Version check for APK updates
+  // Version check for APK updates — on launch, route change, resume, and periodically.
   useEffect(() => {
     if (!native) return;
-    void (async () => {
-      const remote = await fetchRemoteAppVersion();
-      const local = await getNativeAppBuild();
-      if (!remote || !local) return;
-      if (remote.versionCode > local.versionCode) {
-        setUpdate(remote);
-      }
-    })();
-  }, [native, pathname]);
+    void checkForAppUpdate();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void checkForAppUpdate();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    const interval = window.setInterval(() => void checkForAppUpdate(), 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.clearInterval(interval);
+    };
+  }, [native, pathname, checkForAppUpdate]);
 
   if (!native) return null;
 
@@ -397,17 +436,35 @@ export default function AdminNativeBootstrap() {
 
       {update ? (
         <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-[60] px-3 md:bottom-4 md:left-auto md:right-4 md:max-w-sm">
-          <div className="rounded-xl border border-border bg-card p-3 shadow-lg">
+          <div className="rounded-xl border border-primary/30 bg-card p-3 shadow-lg">
             <p className="text-sm font-semibold">Update available</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Version {update.versionName} is ready. Install over the current app — no uninstall needed.
+              Version {update.versionName} is ready
+              {update.notes ? ` — ${update.notes}` : ''}. Installs over your current app (no uninstall).
             </p>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" className="flex-1 gap-1.5" onClick={() => void handleUpdateApp()}>
+              <Button
+                size="sm"
+                className="flex-1 gap-1.5"
+                disabled={updateBusy}
+                onClick={() => void handleUpdateApp()}
+              >
                 <Download className="h-3.5 w-3.5" />
-                Update app
+                {updateBusy ? 'Preparing…' : 'Update app'}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setUpdate(null)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={updateBusy}
+                onClick={() => {
+                  try {
+                    localStorage.setItem(UPDATE_DISMISS_KEY, String(update.versionCode));
+                  } catch {
+                    /* ignore */
+                  }
+                  setUpdate(null);
+                }}
+              >
                 Later
               </Button>
             </div>

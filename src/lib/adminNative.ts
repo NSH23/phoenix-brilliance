@@ -27,9 +27,14 @@ export type RemoteAppVersion = {
   notes?: string;
 };
 
+/** Stable download path that always points at the newest published APK. */
+export const LATEST_APK_PATH = '/admin-app/latest/phoenix-admin.apk';
+export const APP_VERSION_URL = '/admin-app/version.json';
+
 export async function fetchRemoteAppVersion(): Promise<RemoteAppVersion | null> {
   try {
-    const res = await fetch('/admin-app/version.json', { cache: 'no-store' });
+    const bust = `t=${Date.now()}`;
+    const res = await fetch(`${APP_VERSION_URL}?${bust}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const data = (await res.json()) as RemoteAppVersion;
     if (!data?.versionCode || !data?.apkUrl) return null;
@@ -61,4 +66,52 @@ export function resolveAbsoluteAdminUrl(pathOrUrl: string): string {
       ? window.location.origin
       : 'https://phoenixeventsandproduction.com';
   return `${origin}${pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`}`;
+}
+
+/**
+ * Download + open the system installer for a new APK (overwrites current install).
+ * Falls back to opening the APK URL if the native plugin is not present yet.
+ */
+export async function installApkUpdate(apkUrl: string): Promise<{
+  ok: boolean;
+  needsInstallPermission?: boolean;
+  fallbackOpened?: boolean;
+  error?: string;
+}> {
+  const absolute = resolveAbsoluteAdminUrl(apkUrl);
+  try {
+    type Installer = {
+      installFromUrl: (opts: { url: string }) => Promise<{
+        ok?: boolean;
+        needsInstallPermission?: boolean;
+      }>;
+    };
+    const { registerPlugin } = await import('@capacitor/core');
+    const installer = registerPlugin<Installer>('ApkInstaller');
+    if (installer?.installFromUrl) {
+      const result = await installer.installFromUrl({ url: absolute });
+      if (result?.needsInstallPermission) {
+        return { ok: false, needsInstallPermission: true };
+      }
+      return { ok: true };
+    }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    // Fall through to browser download for older APK shells.
+    try {
+      window.open(absolute, '_blank');
+      return { ok: true, fallbackOpened: true, error: message };
+    } catch {
+      window.location.href = absolute;
+      return { ok: true, fallbackOpened: true, error: message };
+    }
+  }
+
+  try {
+    window.open(absolute, '_blank');
+    return { ok: true, fallbackOpened: true };
+  } catch {
+    window.location.href = absolute;
+    return { ok: true, fallbackOpened: true };
+  }
 }
