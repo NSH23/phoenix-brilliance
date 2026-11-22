@@ -1,7 +1,7 @@
 {
-  "versionCode": 2,
-  "versionName": "1.0.1",
+  "versionCode": 3,
+  "versionName": "1.0.2",
   "apkUrl": "/admin-app/rwi0ed16ov32hbac4z7lnfs85kqmtu9p/phoenix-admin.apk",
   "releasedAt": "2026-11-22",
-  "notes": "Notifications permissions gate, FCM wiring, update prompt, /admin chooser"
+  "notes": "Firebase FCM enabled for closed-app Android notifications"
 }
