@@ -189,12 +189,15 @@ Deno.serve(async (req: Request) => {
 
   const secret = req.headers.get('x-phoenix-webhook-secret') ?? '';
   const expected = Deno.env.get('WEBHOOK_SECRET') ?? '';
+  const internal = Deno.env.get('INTERNAL_PUSH_SECRET') ?? '';
   const authHeader = req.headers.get('authorization') ?? '';
   const serviceKeyEarly = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   const serviceAuthOk =
     Boolean(serviceKeyEarly) &&
     (authHeader === `Bearer ${serviceKeyEarly}` || authHeader === `bearer ${serviceKeyEarly}`);
-  if ((!expected || secret !== expected) && !serviceAuthOk) {
+  const secretOk =
+    (Boolean(expected) && secret === expected) || (Boolean(internal) && secret === internal);
+  if (!secretOk && !serviceAuthOk) {
     return new Response('Unauthorized', { status: 401, headers: corsHeaders });
   }
 
