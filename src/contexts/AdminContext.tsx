@@ -80,29 +80,67 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Manual-signin mode: do not auto-login from persisted sessions.
-  // We only react to explicit login() and sign-out events.
+  // Restore persisted Supabase session so the admin app stays logged in across restarts.
   useEffect(() => {
     let mounted = true;
-    setIsLoading(false);
+    setIsLoading(true);
 
-    // Listen for auth state changes
-    let subscription: { unsubscribe: () => void } | null = null;
-    try {
-      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const applySessionUser = async (authUser: User | null) => {
       if (!mounted) return;
+      if (!authUser) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      const adminUser = await loadAdminUser(authUser);
+      if (!mounted) return;
+      if (adminUser) {
+        setUser(adminUser);
+      } else {
+        // Session exists but not an admin — clear local session.
+        await supabase.auth.signOut({ scope: 'local' });
+        if (mounted) setUser(null);
+      }
+      setIsLoading(false);
+    };
 
-      if (event === 'SIGNED_OUT') {
+    void (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await applySessionUser(session?.user ?? null);
+      } catch (error) {
+        logger.error('Error restoring admin session', error, { component: 'AdminContext', action: 'restoreSession' });
         if (mounted) {
           setUser(null);
           setIsLoading(false);
         }
-        return;
       }
-      void session;
-    });
+    })();
 
-    subscription = authSubscription;
+    let subscription: { unsubscribe: () => void } | null = null;
+    try {
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!mounted) return;
+
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        // Keep UI in sync after login, token refresh, or user update.
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          if (loginInFlightRef.current && event === 'SIGNED_IN') {
+            // login() already loads the admin user — avoid duplicate work.
+            return;
+          }
+          await applySessionUser(session?.user ?? null);
+        }
+      });
+
+      subscription = authSubscription;
     } catch (error) {
       logger.error('Error setting up auth state listener', error, { component: 'AdminContext', action: 'setupAuthListener' });
       if (mounted) {
@@ -236,6 +274,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.auth.signOut({ scope: 'local' });
       setUser(null);
+      try {
+        localStorage.removeItem('phoenix_admin_remember_email');
+        localStorage.removeItem('phoenix_admin_remember_password');
+      } catch {
+        /* ignore */
+      }
     } catch (error) {
       logger.error('Logout error', error, { component: 'AdminContext', action: 'logout' });
     }

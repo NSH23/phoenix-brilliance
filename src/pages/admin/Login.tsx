@@ -25,7 +25,19 @@ export default function AdminLogin() {
   const [verificationEmail, setVerificationEmail] = useState('');
   const [forgotPassword, setForgotPassword] = useState(false);
 
-  // Redirect if already authenticated
+  // Prefill last successful login (app-owned remember, not Google Password Manager).
+  useEffect(() => {
+    try {
+      const savedEmail = localStorage.getItem('phoenix_admin_remember_email') || '';
+      const savedPassword = localStorage.getItem('phoenix_admin_remember_password') || '';
+      if (savedEmail) setEmail(savedEmail);
+      if (savedPassword) setPassword(savedPassword);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Redirect if already authenticated (including restored session)
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/admin/dashboard', { replace: true });
@@ -60,6 +72,12 @@ export default function AdminLogin() {
       const result = await login(email, password);
       
       if (result.success) {
+        try {
+          localStorage.setItem('phoenix_admin_remember_email', email.trim());
+          localStorage.setItem('phoenix_admin_remember_password', password);
+        } catch {
+          /* ignore */
+        }
         toast.success('Welcome back!', {
           description: 'You have successfully logged in.',
         });
