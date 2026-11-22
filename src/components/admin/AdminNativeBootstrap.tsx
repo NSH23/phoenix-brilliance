@@ -8,6 +8,7 @@ import {
   getNativeAppBuild,
   installApkUpdate,
   isNativeAdminApp,
+  resolveAbsoluteAdminUrl,
   type RemoteAppVersion,
 } from '@/lib/adminNative';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -239,20 +240,36 @@ export default function AdminNativeBootstrap() {
   const handleUpdateApp = useCallback(async () => {
     if (!update?.apkUrl) return;
     setUpdateBusy(true);
+    toast.message('Downloading update…', {
+      description: 'Check the Android notification shade for download progress. Install when it finishes — no uninstall needed.',
+      duration: 10000,
+    });
     try {
       const result = await installApkUpdate(update.apkUrl);
       if (result.needsInstallPermission) {
         toast.message('Allow app installs', {
           description:
-            'Turn on “Allow from this source”, then tap Update app again. Installs over the current app — no uninstall.',
-          duration: 8000,
+            'Enable “Allow from this source” for Phoenix Admin, then tap Update app again.',
+          duration: 9000,
         });
         return;
       }
-      toast.message(result.fallbackOpened ? 'Downloading update' : 'Opening installer', {
+      if (result.openedExternal) {
+        toast.message('Download started', {
+          description:
+            'The system browser/downloader should open. When the APK finishes, tap Open/Install.',
+          duration: 9000,
+        });
+        return;
+      }
+      toast.success('Download started', {
         description:
-          'Tap Install on the next screen. This updates your current app — you do not uninstall.',
-        duration: 7000,
+          'Watch the download notification. When it completes, the Install screen opens automatically.',
+        duration: 9000,
+      });
+    } catch (e) {
+      toast.error('Could not start download', {
+        description: e instanceof Error ? e.message : 'Try again, or download from the admin website.',
       });
     } finally {
       setUpdateBusy(false);
@@ -442,31 +459,43 @@ export default function AdminNativeBootstrap() {
               Version {update.versionName} is ready
               {update.notes ? ` — ${update.notes}` : ''}. Installs over your current app (no uninstall).
             </p>
-            <div className="mt-3 flex gap-2">
-              <Button
-                size="sm"
-                className="flex-1 gap-1.5"
-                disabled={updateBusy}
-                onClick={() => void handleUpdateApp()}
+            <div className="mt-3 flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 gap-1.5"
+                  disabled={updateBusy}
+                  onClick={() => void handleUpdateApp()}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {updateBusy ? 'Downloading…' : 'Update app'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={updateBusy}
+                  onClick={() => {
+                    try {
+                      localStorage.setItem(UPDATE_DISMISS_KEY, String(update.versionCode));
+                    } catch {
+                      /* ignore */
+                    }
+                    setUpdate(null);
+                  }}
+                >
+                  Later
+                </Button>
+              </div>
+              <a
+                className="text-center text-[11px] text-primary underline-offset-2 hover:underline"
+                href={resolveAbsoluteAdminUrl(update.apkUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <Download className="h-3.5 w-3.5" />
-                {updateBusy ? 'Preparing…' : 'Update app'}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={updateBusy}
-                onClick={() => {
-                  try {
-                    localStorage.setItem(UPDATE_DISMISS_KEY, String(update.versionCode));
-                  } catch {
-                    /* ignore */
-                  }
-                  setUpdate(null);
-                }}
-              >
-                Later
-              </Button>
+                {updateBusy
+                  ? 'Download in progress — pull down notifications to see it'
+                  : 'If download does not start, tap here'}
+              </a>
             </div>
           </div>
         </div>

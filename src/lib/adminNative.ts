@@ -61,57 +61,97 @@ export async function getNativeAppBuild(): Promise<{ versionCode: number; versio
 /** Turn a site-relative admin-app path into an absolute URL for APK download/install. */
 export function resolveAbsoluteAdminUrl(pathOrUrl: string): string {
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  const origin =
-    typeof window !== 'undefined' && window.location?.origin
-      ? window.location.origin
-      : 'https://phoenixeventsandproduction.com';
-  return `${origin}${pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`}`;
+  // Always use the live production host for APK downloads (WebView origin can be capacitor://).
+  return `https://phoenixeventsandproduction.com${
+    pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`
+  }`;
+}
+
+type ApkInstallerPlugin = {
+  installFromUrl: (opts: { url: string }) => Promise<{
+    ok?: boolean;
+    downloading?: boolean;
+    openedExternal?: boolean;
+    needsInstallPermission?: boolean;
+  }>;
+  openExternal: (opts: { url: string }) => Promise<{ ok?: boolean }>;
+  addListener?: (
+    event: string,
+    cb: (data: { ok?: boolean; error?: string }) => void,
+  ) => Promise<{ remove: () => void }> | { remove: () => void };
+};
+
+async function getApkInstaller(): Promise<ApkInstallerPlugin | null> {
+  try {
+    const { registerPlugin, Capacitor } = await import('@capacitor/core');
+    if (!Capacitor.isNativePlatform()) return null;
+    return registerPlugin<ApkInstallerPlugin>('ApkInstaller');
+  } catch {
+    return null;
+  }
+}
+
+function triggerAnchorDownload(absolute: string) {
+  const a = document.createElement('a');
+  a.href = absolute;
+  a.download = 'phoenix-admin.apk';
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 /**
- * Download + open the system installer for a new APK (overwrites current install).
- * Falls back to opening the APK URL if the native plugin is not present yet.
+ * Start APK update download. Prefers native DownloadManager (status-bar progress),
+ * then external browser, then WebView navigation / anchor click.
  */
 export async function installApkUpdate(apkUrl: string): Promise<{
   ok: boolean;
+  downloading?: boolean;
   needsInstallPermission?: boolean;
-  fallbackOpened?: boolean;
+  openedExternal?: boolean;
   error?: string;
 }> {
   const absolute = resolveAbsoluteAdminUrl(apkUrl);
-  try {
-    type Installer = {
-      installFromUrl: (opts: { url: string }) => Promise<{
-        ok?: boolean;
-        needsInstallPermission?: boolean;
-      }>;
-    };
-    const { registerPlugin } = await import('@capacitor/core');
-    const installer = registerPlugin<Installer>('ApkInstaller');
-    if (installer?.installFromUrl) {
+  const installer = await getApkInstaller();
+
+  if (installer?.installFromUrl) {
+    try {
       const result = await installer.installFromUrl({ url: absolute });
       if (result?.needsInstallPermission) {
         return { ok: false, needsInstallPermission: true };
       }
-      return { ok: true };
-    }
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    // Fall through to browser download for older APK shells.
-    try {
-      window.open(absolute, '_blank');
-      return { ok: true, fallbackOpened: true, error: message };
-    } catch {
-      window.location.href = absolute;
-      return { ok: true, fallbackOpened: true, error: message };
+      if (result?.openedExternal) {
+        return { ok: true, openedExternal: true };
+      }
+      return { ok: true, downloading: Boolean(result?.downloading ?? true) };
+    } catch (e) {
+      // Try openExternal on the same plugin (still native Intent).
+      try {
+        if (installer.openExternal) {
+          await installer.openExternal({ url: absolute });
+          return { ok: true, openedExternal: true };
+        }
+      } catch {
+        /* fall through */
+      }
+      const message = e instanceof Error ? e.message : String(e);
+      triggerAnchorDownload(absolute);
+      try {
+        window.location.assign(absolute);
+      } catch {
+        /* ignore */
+      }
+      return { ok: true, openedExternal: true, error: message };
     }
   }
 
+  triggerAnchorDownload(absolute);
   try {
-    window.open(absolute, '_blank');
-    return { ok: true, fallbackOpened: true };
+    window.location.assign(absolute);
   } catch {
-    window.location.href = absolute;
-    return { ok: true, fallbackOpened: true };
+    /* ignore */
   }
+  return { ok: true, openedExternal: true };
 }
