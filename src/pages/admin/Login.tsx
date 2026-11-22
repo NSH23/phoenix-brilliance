@@ -181,7 +181,7 @@ export default function AdminLogin() {
             )}
           </AnimatePresence>
 
-          <form onSubmit={handleLogin} autoComplete="on" className="space-y-5">
+          <form onSubmit={handleLogin} autoComplete="off" className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
                   <div className="relative">
@@ -189,11 +189,18 @@ export default function AdminLogin() {
                     <Input
                       id="login-email"
                       type="email"
-                      name="username"
-                      autoComplete="username"
+                      name="phoenix-admin-email"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      inputMode="email"
+                      data-1p-ignore
+                      data-lpignore="true"
+                      data-form-type="other"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@phoenix.com"
+                      placeholder="Email"
                       className="pl-10 h-12 rounded-xl"
                       required
                       disabled={isLoading}
@@ -217,11 +224,14 @@ export default function AdminLogin() {
                     <Input
                       id="login-password"
                       type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      autoComplete="current-password"
+                      name="phoenix-admin-password"
+                      autoComplete="new-password"
+                      data-1p-ignore
+                      data-lpignore="true"
+                      data-form-type="other"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Password"
                       className="pl-10 pr-10 h-12 rounded-xl"
                       required={!forgotPassword}
                       disabled={isLoading}

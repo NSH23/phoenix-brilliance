@@ -80,6 +80,7 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const toastedInquiryIdsRef = useRef<Set<string>>(new Set());
   const notificationsPanelOpenRef = useRef(false);
+  const panelHadItemsRef = useRef(false);
   const [markAllBusy, setMarkAllBusy] = useState(false);
 
   useEffect(() => {
@@ -444,14 +445,29 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
       notificationsPanelOpenRef.current = open;
 
       if (!open) {
-        setNotifications([]);
-        setWpNotifications([]);
-        // Refresh true unread count after closing (should be 0 if mark-all succeeded).
-        void fetchNotifications();
+        // After the user has seen the panel, clear unread in DB so the badge stays off.
+        // Do not wipe the list while the panel is open — only after close.
+        void (async () => {
+          try {
+            if (panelHadItemsRef.current) {
+              await Promise.all([markAllInquiriesRead(), markAllWpNotificationsRead()]);
+            }
+          } catch (e) {
+            console.error('Failed to mark notifications after panel close', e);
+          } finally {
+            panelHadItemsRef.current = false;
+            setNotifications([]);
+            setWpNotifications([]);
+            prevCountRef.current = 0;
+            setUnreadCount(0);
+            void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
+            void fetchNotifications();
+          }
+        })();
         return;
       }
 
-      // Clear badge immediately so the number disappears as soon as you open.
+      // Badge number clears when opening; list stays visible while open.
       prevCountRef.current = 0;
       setUnreadCount(0);
 
@@ -462,16 +478,13 @@ export default function AdminLayout({ children, title, subtitle, headerBack, hea
             getUnreadInquiriesForNotifications(8),
             getUnreadWpNotifications(8),
           ]);
-          setNotifications((list || []).slice(0, 8));
-          setWpNotifications((wpList || []).slice(0, 8));
-
-          // Mark ALL unread in DB (not just the 8 shown) so the badge stays clear.
-          await Promise.all([markAllInquiriesRead(), markAllWpNotificationsRead()]);
-          prevCountRef.current = 0;
-          setUnreadCount(0);
-          void queryClient.invalidateQueries({ queryKey: WP_UNREAD_QUERY_KEY });
+          const nextInquiries = (list || []).slice(0, 8);
+          const nextWp = (wpList || []).slice(0, 8);
+          panelHadItemsRef.current = nextInquiries.length > 0 || nextWp.length > 0;
+          setNotifications(nextInquiries);
+          setWpNotifications(nextWp);
         } catch (e) {
-          console.error('Failed to open/mark notifications', e);
+          console.error('Failed to open notifications', e);
         } finally {
           setMarkAllBusy(false);
         }

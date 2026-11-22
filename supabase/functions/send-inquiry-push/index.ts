@@ -1,16 +1,21 @@
 // @ts-nocheck
 /**
- * Supabase Edge Function: send Web Push + FCM when a new inquiry is inserted.
- * Invoke via Database Webhook (INSERT on public.inquiries) with header:
+ * Supabase Edge Function: send Web Push + FCM HTTP v1 for:
+ *   - INSERT on public.inquiries (inquiry / access OTP / Instagram)
+ *   - INSERT on public.wp_notifications (WhatsApp / SLA alerts)
+ * Invoke via Database Webhook with header:
  *   x-phoenix-webhook-secret: <WEBHOOK_SECRET>
  *
  * Secrets (Dashboard → Edge Functions → Secrets):
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto), WEBHOOK_SECRET,
  *   VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY,
- *   FCM_SERVER_KEY (optional — legacy Firebase Cloud Messaging server key for Android APK)
+ *   FCM_SERVICE_ACCOUNT_JSON (Firebase service account private key JSON — HTTP v1)
+ *   Optional fallback: FCM_SERVER_KEY (legacy, usually disabled on new projects)
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import webpush from 'npm:web-push@3.6.7';
+
+const FCM_CHANNEL_ID = 'phoenix_admin';
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +32,13 @@ type DbWebhookBody = {
   new?: Record<string, unknown>;
 };
 
+type ServiceAccount = {
+  project_id: string;
+  client_email: string;
+  private_key: string;
+  token_uri?: string;
+};
+
 function buildWhatsAppOtpUrl(phone: unknown, name: unknown, otp: unknown): string {
   const digits = String(phone ?? '').replace(/\D/g, '');
   if (!digits || !otp) return '';
@@ -36,6 +48,106 @@ function buildWhatsAppOtpUrl(phone: unknown, name: unknown, otp: unknown): strin
   const first = String(name ?? 'there').trim().split(/\s+/)[0] || 'there';
   const message = `Hey ${first}, your Phoenix Events website OTP is: ${otp}. Please don't share it with anyone.`;
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+}
+
+function base64Url(data: Uint8Array | string): string {
+  const bytes =
+    typeof data === 'string' ? new TextEncoder().encode(data) : data;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const b64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+  const raw = atob(b64);
+  const buf = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i);
+  return buf.buffer;
+}
+
+async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claim = base64Url(
+    JSON.stringify({
+      iss: sa.client_email,
+      scope: 'https://www.googleapis.com/auth/firebase.messaging',
+      aud: sa.token_uri || 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600,
+    }),
+  );
+  const unsigned = `${header}.${claim}`;
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(sa.private_key),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(unsigned),
+  );
+  const jwt = `${unsigned}.${base64Url(new Uint8Array(signature))}`;
+
+  const tokenRes = await fetch(sa.token_uri || 'https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+  const tokenJson = await tokenRes.json();
+  if (!tokenRes.ok || !tokenJson.access_token) {
+    throw new Error(`FCM token exchange failed: ${JSON.stringify(tokenJson)}`);
+  }
+  return String(tokenJson.access_token);
+}
+
+async function sendFcmHttpV1(
+  accessToken: string,
+  projectId: string,
+  deviceToken: string,
+  title: string,
+  body: string,
+  data: Record<string, string>,
+): Promise<{ ok: boolean; status: number; bodyText: string }> {
+  const res = await fetch(
+    `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: {
+          token: deviceToken,
+          notification: { title, body },
+          data,
+          android: {
+            priority: 'HIGH',
+            notification: {
+              sound: 'default',
+              channel_id: FCM_CHANNEL_ID,
+              click_action: 'FCM_PLUGIN_ACTIVITY',
+              default_vibrate_timings: true,
+              notification_priority: 'PRIORITY_MAX',
+            },
+          },
+        },
+      }),
+    },
+  );
+  const bodyText = await res.text();
+  return { ok: res.ok, status: res.status, bodyText };
 }
 
 async function sendFcmLegacy(
@@ -77,7 +189,12 @@ Deno.serve(async (req: Request) => {
 
   const secret = req.headers.get('x-phoenix-webhook-secret') ?? '';
   const expected = Deno.env.get('WEBHOOK_SECRET') ?? '';
-  if (!expected || secret !== expected) {
+  const authHeader = req.headers.get('authorization') ?? '';
+  const serviceKeyEarly = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const serviceAuthOk =
+    Boolean(serviceKeyEarly) &&
+    (authHeader === `Bearer ${serviceKeyEarly}` || authHeader === `bearer ${serviceKeyEarly}`);
+  if ((!expected || secret !== expected) && !serviceAuthOk) {
     return new Response('Unauthorized', { status: 401, headers: corsHeaders });
   }
 
@@ -95,7 +212,17 @@ Deno.serve(async (req: Request) => {
   }
 
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+
+  const fcmSaRaw = Deno.env.get('FCM_SERVICE_ACCOUNT_JSON') ?? '';
   const fcmServerKey = Deno.env.get('FCM_SERVER_KEY') ?? '';
+  let serviceAccount: ServiceAccount | null = null;
+  if (fcmSaRaw) {
+    try {
+      serviceAccount = JSON.parse(fcmSaRaw) as ServiceAccount;
+    } catch (e) {
+      console.error('send-inquiry-push: invalid FCM_SERVICE_ACCOUNT_JSON', e);
+    }
+  }
 
   let body: DbWebhookBody;
   try {
@@ -109,7 +236,8 @@ Deno.serve(async (req: Request) => {
   const schema = String(body.schema ?? '');
   console.info('send-inquiry-push: webhook received', { eventType, table, schema });
 
-  if (eventType !== 'INSERT' || table !== 'inquiries' || schema !== 'public') {
+  const allowedTables = new Set(['inquiries', 'wp_notifications']);
+  if (eventType !== 'INSERT' || !allowedTables.has(table) || schema !== 'public') {
     console.info('send-inquiry-push: skipped webhook', { eventType, table, schema });
     return new Response(JSON.stringify({ ok: true, skipped: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -117,54 +245,89 @@ Deno.serve(async (req: Request) => {
   }
 
   const rec = body.record ?? body.new ?? {};
-  const id = String(rec.id ?? '');
-  const name = String(rec.name ?? 'Someone');
-  const inquiryType = rec.event_type != null ? String(rec.event_type) : '';
-  const accessToken = rec.access_token != null ? String(rec.access_token) : '';
-
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  let accessRequestId = '';
-  let otpCode = '';
-  let visitorPhone = rec.phone != null ? String(rec.phone) : '';
+  let title = 'Phoenix Admin';
+  let bodyText = 'New alert';
+  let notificationTopic = 'alert';
+  let dashboardUrl = '/admin/notifications';
+  let whatsappUrl = '';
+  let actions = false;
 
-  if (accessToken) {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const { data: accessRow } = await admin
-        .from('site_access_requests')
-        .select('id, otp_code, visitor_phone, visitor_name')
-        .eq('access_token', accessToken)
-        .maybeSingle();
-      if (accessRow?.id) {
-        accessRequestId = String(accessRow.id);
-        otpCode = String(accessRow.otp_code ?? '');
-        if (accessRow.visitor_phone) visitorPhone = String(accessRow.visitor_phone);
-        break;
+  if (table === 'wp_notifications') {
+    const id = String(rec.id ?? '');
+    const leadName = String(rec.lead_name ?? 'WhatsApp lead');
+    const nType = String(rec.type ?? 'new_lead');
+    const message = String(rec.message ?? '');
+    const leadPhone = rec.lead_phone != null ? String(rec.lead_phone) : '';
+    title =
+      nType === 'sla_reply_due'
+        ? `Reply due · ${leadName}`
+        : `WhatsApp · ${leadName}`;
+    bodyText = (message || `New WhatsApp alert for ${leadName}`).slice(0, 180);
+    notificationTopic = id
+      ? `wp-${id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 28)}`
+      : 'wp-alert';
+    dashboardUrl = `/admin/notifications?tab=wp${
+      leadPhone ? `&leadPhone=${encodeURIComponent(leadPhone)}` : ''
+    }`;
+  } else {
+    const id = String(rec.id ?? '');
+    const name = String(rec.name ?? 'Someone');
+    const inquiryType = rec.event_type != null ? String(rec.event_type) : '';
+    const accessToken = rec.access_token != null ? String(rec.access_token) : '';
+    const instagramId = rec.instagram_id != null ? String(rec.instagram_id).trim() : '';
+
+    let accessRequestId = '';
+    let otpCode = '';
+    let visitorPhone = rec.phone != null ? String(rec.phone) : '';
+
+    if (accessToken) {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const { data: accessRow } = await admin
+          .from('site_access_requests')
+          .select('id, otp_code, visitor_phone, visitor_name')
+          .eq('access_token', accessToken)
+          .maybeSingle();
+        if (accessRow?.id) {
+          accessRequestId = String(accessRow.id);
+          otpCode = String(accessRow.otp_code ?? '');
+          if (accessRow.visitor_phone) visitorPhone = String(accessRow.visitor_phone);
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
       }
-      await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
     }
+
+    const isAccess = Boolean(accessToken);
+    if (isAccess) {
+      title = `OTP · ${name}`;
+      bodyText = `Tap Open, then Send OTP for ${name.split(/\s+/)[0] || name}`;
+      actions = true;
+    } else if (instagramId) {
+      title = inquiryType ? `Instagram · ${inquiryType}` : 'Instagram inquiry';
+      bodyText = `${name}${instagramId ? ` (@${instagramId.replace(/^@/, '')})` : ''}`.slice(0, 180);
+    } else {
+      title = inquiryType ? `New ${inquiryType} inquiry` : 'New inquiry';
+      bodyText = `${name}: Open Phoenix Admin`.slice(0, 180);
+    }
+
+    notificationTopic = id
+      ? `inq-${id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 28)}`
+      : 'inquiry';
+
+    dashboardUrl = accessRequestId
+      ? `/admin/dashboard?otp=${accessRequestId}`
+      : isAccess
+        ? '/admin/dashboard'
+        : id
+          ? `/admin/notifications?tab=inquiries&open=${id}`
+          : '/admin/notifications?tab=inquiries';
+
+    whatsappUrl = isAccess ? buildWhatsAppOtpUrl(visitorPhone, name, otpCode) : '';
   }
 
-  const isAccess = Boolean(accessToken);
-  const title = isAccess ? name : inquiryType ? `New ${inquiryType} inquiry` : 'New inquiry';
-  const bodyText = isAccess
-    ? `New access request — tap to send OTP`
-    : `${name}: Open Phoenix Admin`.slice(0, 180);
-
-  const notificationTopic = id
-    ? `inq-${id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 28)}`
-    : 'inquiry';
-
-  const dashboardUrl = accessRequestId
-    ? `/admin/dashboard?otp=${accessRequestId}`
-    : isAccess
-      ? '/admin/dashboard'
-      : id
-        ? `/admin/notifications?tab=inquiries&open=${id}`
-        : '/admin/notifications?tab=inquiries';
-
   const absoluteUrl = `https://phoenixeventsandproduction.com${dashboardUrl}`;
-  const whatsappUrl = isAccess ? buildWhatsAppOtpUrl(visitorPhone, name, otpCode) : '';
 
   const payload = JSON.stringify({
     title,
@@ -172,6 +335,7 @@ Deno.serve(async (req: Request) => {
     url: dashboardUrl,
     tag: notificationTopic,
     whatsappUrl,
+    actions,
   });
 
   const { data: rows, error } = await admin.from('admin_push_subscriptions').select('id, subscription');
@@ -216,9 +380,18 @@ Deno.serve(async (req: Request) => {
 
   let fcmSent = 0;
   let fcmRemoved = 0;
-  let fcmSkipped = !fcmServerKey;
+  let fcmSkipped = !(serviceAccount || fcmServerKey);
+  let fcmAccessToken = '';
 
-  if (fcmServerKey) {
+  if (serviceAccount?.project_id && serviceAccount?.client_email && serviceAccount?.private_key) {
+    try {
+      fcmAccessToken = await getFcmAccessToken(serviceAccount);
+    } catch (e) {
+      console.error('send-inquiry-push: FCM access token failed', e);
+    }
+  }
+
+  if (fcmAccessToken || fcmServerKey) {
     const { data: fcmRows, error: fcmErr } = await admin
       .from('admin_fcm_devices')
       .select('id, token');
@@ -231,19 +404,36 @@ Deno.serve(async (req: Request) => {
       for (const device of devices) {
         if (!device?.token || !device?.id) continue;
         try {
-          const result = await sendFcmLegacy(fcmServerKey, device.token, title, bodyText, {
+          const dataPayload = {
             url: absoluteUrl,
             path: dashboardUrl,
             tag: notificationTopic,
             whatsappUrl: whatsappUrl || '',
-          });
+            action: whatsappUrl ? 'open-otp' : 'open',
+            title,
+            body: bodyText,
+          };
+          const result = fcmAccessToken && serviceAccount
+            ? await sendFcmHttpV1(
+                fcmAccessToken,
+                serviceAccount.project_id,
+                device.token,
+                title,
+                bodyText,
+                dataPayload,
+              )
+            : await sendFcmLegacy(fcmServerKey, device.token, title, bodyText, dataPayload);
+
           if (result.ok) {
             fcmSent++;
-          } else if (result.status === 404 || /NotRegistered|InvalidRegistration/i.test(result.bodyText)) {
+          } else if (
+            result.status === 404 ||
+            /NotRegistered|InvalidRegistration|UNREGISTERED|NOT_FOUND/i.test(result.bodyText)
+          ) {
             await admin.from('admin_fcm_devices').delete().eq('id', device.id);
             fcmRemoved++;
           } else {
-            console.warn('send-inquiry-push: fcm failed', result.status, result.bodyText.slice(0, 200));
+            console.warn('send-inquiry-push: fcm failed', result.status, result.bodyText.slice(0, 300));
           }
         } catch (e) {
           console.warn('send-inquiry-push: fcm exception', e);
@@ -251,7 +441,9 @@ Deno.serve(async (req: Request) => {
       }
     }
   } else {
-    console.info('send-inquiry-push: FCM_SERVER_KEY not set — Android APK push skipped');
+    console.info(
+      'send-inquiry-push: FCM not configured — set FCM_SERVICE_ACCOUNT_JSON (HTTP v1) for Android APK push',
+    );
   }
 
   console.info('send-inquiry-push: push-result', {
@@ -261,6 +453,7 @@ Deno.serve(async (req: Request) => {
     fcmSent,
     fcmRemoved,
     fcmSkipped,
+    fcmMode: fcmAccessToken ? 'http_v1' : fcmServerKey ? 'legacy' : 'none',
   });
 
   return new Response(
@@ -272,6 +465,7 @@ Deno.serve(async (req: Request) => {
       fcmSent,
       fcmRemoved,
       fcmSkipped,
+      fcmMode: fcmAccessToken ? 'http_v1' : fcmServerKey ? 'legacy' : 'none',
     }),
     {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -7,10 +7,14 @@ import {
   fetchRemoteAppVersion,
   getNativeAppBuild,
   isNativeAdminApp,
+  resolveAbsoluteAdminUrl,
   type RemoteAppVersion,
 } from '@/lib/adminNative';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
+
+const PERMS_FLAG = 'phoenix_admin_native_perms_v1';
+const FCM_CHANNEL_ID = 'phoenix_admin';
 
 /**
  * Runs only inside the Capacitor Android shell.
@@ -25,12 +29,87 @@ export default function AdminNativeBootstrap() {
   const [showPerms, setShowPerms] = useState(false);
   const [permBusy, setPermBusy] = useState(false);
   const askedRef = useRef(false);
+  const listenersReadyRef = useRef(false);
   const native = isNativeAdminApp();
 
   const registerPush = useCallback(async () => {
     if (!native || !user?.id) return false;
     try {
       const { PushNotifications } = await import('@capacitor/push-notifications');
+
+      // Listeners MUST be attached before register() or the token event is missed.
+      if (!listenersReadyRef.current) {
+        listenersReadyRef.current = true;
+
+        await PushNotifications.addListener('registration', async (token) => {
+          const fcmToken = token.value;
+          if (!fcmToken) return;
+          const { error } = await supabase.from('admin_fcm_devices').upsert(
+            {
+              user_id: user.id,
+              token: fcmToken,
+              platform: 'android',
+              app_id: 'com.phoenixevents.admin',
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'token' },
+          );
+          if (error) {
+            console.warn('Failed to save FCM token', error);
+            toast.message('Could not save phone alerts', {
+              description: error.message || 'Try Allow notifications again after reopening the app.',
+            });
+          } else {
+            toast.success('Phone alerts enabled for this app');
+          }
+        });
+
+        await PushNotifications.addListener('registrationError', (err) => {
+          console.warn('Push registration error', err);
+          toast.message('Push setup incomplete', {
+            description:
+              'Firebase may be missing from this APK build. Rebuild with google-services.json, then reinstall.',
+          });
+        });
+
+        await PushNotifications.addListener('pushNotificationActionPerformed', (event) => {
+          const data = event.notification.data as {
+            url?: string;
+            path?: string;
+            whatsappUrl?: string;
+            action?: string;
+          } | undefined;
+          // OTP: optional direct WhatsApp send from tray tap when action is send-otp
+          if (data?.action === 'send-otp' && data.whatsappUrl) {
+            window.location.href = data.whatsappUrl;
+            return;
+          }
+          if (data?.whatsappUrl && data?.path?.includes('otp=')) {
+            // Prefer opening admin OTP panel; user can tap Send OTP there.
+          }
+          const target = data?.path || data?.url;
+          if (target && typeof target === 'string') {
+            window.location.href = target.startsWith('http')
+              ? target
+              : `${window.location.origin}${target.startsWith('/') ? target : `/${target}`}`;
+          }
+        });
+      }
+
+      try {
+        await PushNotifications.createChannel({
+          id: FCM_CHANNEL_ID,
+          name: 'Phoenix Admin',
+          description: 'Inquiries, OTP access, and WhatsApp alerts',
+          importance: 5,
+          visibility: 1,
+          sound: 'default',
+          vibration: true,
+        });
+      } catch (channelErr) {
+        console.warn('createChannel failed', channelErr);
+      }
+
       let perm = await PushNotifications.checkPermissions();
       if (perm.receive !== 'granted') {
         perm = await PushNotifications.requestPermissions();
@@ -43,45 +122,6 @@ export default function AdminNativeBootstrap() {
       }
 
       await PushNotifications.register();
-
-      await PushNotifications.addListener('registration', async (token) => {
-        const fcmToken = token.value;
-        if (!fcmToken) return;
-        const { error } = await supabase.from('admin_fcm_devices').upsert(
-          {
-            user_id: user.id,
-            token: fcmToken,
-            platform: 'android',
-            app_id: 'com.phoenixevents.admin',
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'token' },
-        );
-        if (error) {
-          console.warn('Failed to save FCM token', error);
-        } else {
-          toast.success('Phone alerts enabled for this app');
-        }
-      });
-
-      await PushNotifications.addListener('registrationError', (err) => {
-        console.warn('Push registration error', err);
-        toast.message('Push setup incomplete', {
-          description:
-            'Add google-services.json from Firebase to the Android project, then rebuild the APK.',
-        });
-      });
-
-      await PushNotifications.addListener('pushNotificationActionPerformed', (event) => {
-        const data = event.notification.data as { url?: string; path?: string } | undefined;
-        const target = data?.path || data?.url;
-        if (target && typeof target === 'string') {
-          window.location.href = target.startsWith('http')
-            ? target
-            : `${window.location.origin}${target}`;
-        }
-      });
-
       return true;
     } catch (e) {
       console.warn('Native push unavailable', e);
@@ -89,27 +129,50 @@ export default function AdminNativeBootstrap() {
     }
   }, [native, user?.id]);
 
+  const requestStorageHint = useCallback(async () => {
+    // Android photo access is prompted by the system file picker on upload.
+    // Trigger a no-op picker only when the user explicitly allows — here we just remind.
+    toast.message('Photos & files', {
+      description:
+        'Android will ask for photo/folder access the next time you upload images in the dashboard.',
+      duration: 4500,
+    });
+  }, []);
+
   const handleAllowPermissions = useCallback(async () => {
     setPermBusy(true);
     try {
-      await registerPush();
-      toast.message('Storage access', {
-        description:
-          'When you upload photos from the dashboard, Android will ask for media access as needed.',
-        duration: 4500,
-      });
+      const ok = await registerPush();
+      await requestStorageHint();
       setShowPerms(false);
-      try {
-        localStorage.setItem('phoenix_admin_native_perms_v1', '1');
-      } catch {
-        /* ignore */
+      if (ok) {
+        try {
+          localStorage.setItem(PERMS_FLAG, '1');
+        } catch {
+          /* ignore */
+        }
       }
     } finally {
       setPermBusy(false);
     }
-  }, [registerPush]);
+  }, [registerPush, requestStorageHint]);
 
-  // After login inside the app: show permissions sheet once.
+  const handleUpdateApp = useCallback(async () => {
+    if (!update?.apkUrl) return;
+    const absolute = resolveAbsoluteAdminUrl(update.apkUrl);
+    try {
+      // Opens system browser / download manager so the APK can install over the existing app.
+      window.open(absolute, '_blank');
+      toast.message('Downloading update', {
+        description: 'Open the downloaded APK and tap Install. You do not need to uninstall first.',
+        duration: 6000,
+      });
+    } catch {
+      window.location.href = absolute;
+    }
+  }, [update]);
+
+  // After login inside the app: show permissions sheet once, or re-register silently.
   useEffect(() => {
     if (!native || !isAuthenticated || !pathname.startsWith('/admin')) return;
     if (askedRef.current) return;
@@ -117,7 +180,7 @@ export default function AdminNativeBootstrap() {
 
     let already = false;
     try {
-      already = localStorage.getItem('phoenix_admin_native_perms_v1') === '1';
+      already = localStorage.getItem(PERMS_FLAG) === '1';
     } catch {
       already = false;
     }
@@ -132,6 +195,32 @@ export default function AdminNativeBootstrap() {
 
     return () => window.clearTimeout(timer);
   }, [native, isAuthenticated, pathname, registerPush]);
+
+  // Re-check notification permission when returning to the app; re-prompt if denied/not granted.
+  useEffect(() => {
+    if (!native || !isAuthenticated) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      void (async () => {
+        try {
+          const { PushNotifications } = await import('@capacitor/push-notifications');
+          const perm = await PushNotifications.checkPermissions();
+          if (perm.receive !== 'granted') {
+            try {
+              localStorage.removeItem(PERMS_FLAG);
+            } catch {
+              /* ignore */
+            }
+            setShowPerms(true);
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [native, isAuthenticated]);
 
   // Version check for APK updates
   useEffect(() => {
@@ -163,16 +252,16 @@ export default function AdminNativeBootstrap() {
                 <span>
                   <span className="font-medium">Notifications</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    New inquiries and OTP access requests while the app is closed.
+                    Inquiries, OTP requests, and WhatsApp alerts while the app is closed (with sound).
                   </span>
                 </span>
               </li>
               <li className="flex gap-3">
                 <HardDrive className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>
-                  <span className="font-medium">Photos &amp; storage</span>
+                  <span className="font-medium">Photos &amp; folders</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Asked by Android when you pick images to upload in the dashboard.
+                    Android asks when you pick images to upload in the dashboard.
                   </span>
                 </span>
               </li>
@@ -195,11 +284,7 @@ export default function AdminNativeBootstrap() {
                 disabled={permBusy}
                 onClick={() => {
                   setShowPerms(false);
-                  try {
-                    localStorage.setItem('phoenix_admin_native_perms_v1', '1');
-                  } catch {
-                    /* ignore */
-                  }
+                  // Do not permanently skip — ask again next session until granted.
                 }}
               >
                 Later
@@ -214,14 +299,12 @@ export default function AdminNativeBootstrap() {
           <div className="rounded-xl border border-border bg-card p-3 shadow-lg">
             <p className="text-sm font-semibold">Update available</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Version {update.versionName} is ready. Install to get the latest app shell.
+              Version {update.versionName} is ready. Install over the current app — no uninstall needed.
             </p>
             <div className="mt-3 flex gap-2">
-              <Button asChild size="sm" className="flex-1 gap-1.5">
-                <a href={update.apkUrl} download={`phoenix-admin-${update.versionName}.apk`}>
-                  <Download className="h-3.5 w-3.5" />
-                  Update app
-                </a>
+              <Button size="sm" className="flex-1 gap-1.5" onClick={() => void handleUpdateApp()}>
+                <Download className="h-3.5 w-3.5" />
+                Update app
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setUpdate(null)}>
                 Later

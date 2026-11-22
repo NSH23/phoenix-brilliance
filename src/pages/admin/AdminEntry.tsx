@@ -179,7 +179,13 @@ export default function AdminEntry() {
                 <Input
                   id="install-email"
                   type="email"
-                  autoComplete="username"
+                  name="phoenix-install-email"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  data-1p-ignore
+                  data-lpignore="true"
+                  placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={busy}
@@ -190,7 +196,11 @@ export default function AdminEntry() {
                 <Input
                   id="install-password"
                   type="password"
-                  autoComplete="current-password"
+                  name="phoenix-install-password"
+                  autoComplete="new-password"
+                  data-1p-ignore
+                  data-lpignore="true"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={busy}

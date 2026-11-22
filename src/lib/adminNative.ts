@@ -39,3 +39,13 @@ export async function getNativeAppBuild(): Promise<{ versionCode: number; versio
     return null;
   }
 }
+
+/** Turn a site-relative admin-app path into an absolute URL for APK download/install. */
+export function resolveAbsoluteAdminUrl(pathOrUrl: string): string {
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  const origin =
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'https://phoenixeventsandproduction.com';
+  return `${origin}${pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`}`;
+}
