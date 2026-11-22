@@ -39,12 +39,25 @@ type ServiceAccount = {
   token_uri?: string;
 };
 
-function buildWhatsAppOtpUrl(phone: unknown, name: unknown, otp: unknown): string {
+function normalizePhoneDigits(phone: unknown): string {
+  let digits = String(phone ?? '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10) digits = `91${digits}`;
+  if (digits.startsWith('0') && digits.length === 11) digits = `91${digits.slice(1)}`;
+  return digits;
+}
+
+function formatPhoneDisplay(phone: unknown): string {
   const digits = String(phone ?? '').replace(/\D/g, '');
-  if (!digits || !otp) return '';
-  let normalized = digits;
-  if (normalized.length === 10) normalized = `91${normalized}`;
-  if (normalized.startsWith('0') && normalized.length === 11) normalized = `91${normalized.slice(1)}`;
+  if (!digits) return '';
+  const local = digits.length > 10 ? digits.slice(-10) : digits;
+  if (local.length === 10) return `${local.slice(0, 5)} ${local.slice(5)}`;
+  return local;
+}
+
+function buildWhatsAppOtpUrl(phone: unknown, name: unknown, otp: unknown): string {
+  const normalized = normalizePhoneDigits(phone);
+  if (!normalized || !otp) return '';
   const first = String(name ?? 'there').trim().split(/\s+/)[0] || 'there';
   const message = `Hey ${first}, your Phoenix Events website OTP is: ${otp}. Please don't share it with anyone.`;
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
@@ -256,6 +269,9 @@ Deno.serve(async (req: Request) => {
   let dashboardUrl = '/admin/notifications';
   let whatsappUrl = '';
   let actions = false;
+  let kind = 'alert';
+  let personName = '';
+  let personPhone = '';
 
   if (table === 'wp_notifications') {
     const id = String(rec.id ?? '');
@@ -263,11 +279,19 @@ Deno.serve(async (req: Request) => {
     const nType = String(rec.type ?? 'new_lead');
     const message = String(rec.message ?? '');
     const leadPhone = rec.lead_phone != null ? String(rec.lead_phone) : '';
+    const phoneLabel = formatPhoneDisplay(leadPhone);
+    personName = leadName;
+    personPhone = leadPhone;
+    kind = nType === 'sla_reply_due' ? 'wp_sla' : 'wp_lead';
     title =
       nType === 'sla_reply_due'
         ? `Reply due · ${leadName}`
         : `WhatsApp · ${leadName}`;
-    bodyText = (message || `New WhatsApp alert for ${leadName}`).slice(0, 180);
+    bodyText = (
+      phoneLabel
+        ? `${phoneLabel} · ${message || 'Tap to open chat'}`
+        : message || `New WhatsApp alert for ${leadName}`
+    ).slice(0, 180);
     notificationTopic = id
       ? `wp-${id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 28)}`
       : 'wp-alert';
@@ -303,16 +327,28 @@ Deno.serve(async (req: Request) => {
     }
 
     const isAccess = Boolean(accessToken);
+    personName = name;
+    personPhone = visitorPhone;
+    const phoneLabel = formatPhoneDisplay(visitorPhone);
+
     if (isAccess) {
+      kind = 'otp';
       title = `OTP · ${name}`;
-      bodyText = `Tap Open, then Send OTP for ${name.split(/\s+/)[0] || name}`;
+      bodyText = phoneLabel
+        ? `${phoneLabel} · Tap Send OTP to open WhatsApp`
+        : `Tap Send OTP to open WhatsApp for ${name.split(/\s+/)[0] || name}`;
       actions = true;
+      whatsappUrl = buildWhatsAppOtpUrl(visitorPhone, name, otpCode);
     } else if (instagramId) {
+      kind = 'instagram';
       title = inquiryType ? `Instagram · ${inquiryType}` : 'Instagram inquiry';
-      bodyText = `${name}${instagramId ? ` (@${instagramId.replace(/^@/, '')})` : ''}`.slice(0, 180);
+      bodyText = `${name}${instagramId ? ` · @${instagramId.replace(/^@/, '')}` : ''}${
+        phoneLabel ? ` · ${phoneLabel}` : ''
+      }`.slice(0, 180);
     } else {
+      kind = 'inquiry';
       title = inquiryType ? `New ${inquiryType} inquiry` : 'New inquiry';
-      bodyText = `${name}: Open Phoenix Admin`.slice(0, 180);
+      bodyText = `${name}${phoneLabel ? ` · ${phoneLabel}` : ''} · Tap to open`.slice(0, 180);
     }
 
     notificationTopic = id
@@ -326,8 +362,6 @@ Deno.serve(async (req: Request) => {
         : id
           ? `/admin/notifications?tab=inquiries&open=${id}`
           : '/admin/notifications?tab=inquiries';
-
-    whatsappUrl = isAccess ? buildWhatsAppOtpUrl(visitorPhone, name, otpCode) : '';
   }
 
   const absoluteUrl = `https://phoenixeventsandproduction.com${dashboardUrl}`;
@@ -339,6 +373,9 @@ Deno.serve(async (req: Request) => {
     tag: notificationTopic,
     whatsappUrl,
     actions,
+    kind,
+    name: personName,
+    phone: personPhone,
   });
 
   const { data: rows, error } = await admin.from('admin_push_subscriptions').select('id, subscription');
@@ -412,7 +449,11 @@ Deno.serve(async (req: Request) => {
             path: dashboardUrl,
             tag: notificationTopic,
             whatsappUrl: whatsappUrl || '',
-            action: whatsappUrl ? 'open-otp' : 'open',
+            // Default tap on OTP opens WhatsApp (Send OTP). Other kinds open the admin path.
+            action: whatsappUrl ? 'send-otp' : 'open',
+            kind,
+            name: personName,
+            phone: personPhone,
             title,
             body: bodyText,
           };

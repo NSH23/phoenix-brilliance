@@ -130,17 +130,23 @@ export default function AdminNativeBootstrap() {
         });
 
         await PushNotifications.addListener('pushNotificationActionPerformed', (event) => {
-          const data = event.notification.data as {
+          const data = (event.notification.data || {}) as {
             url?: string;
             path?: string;
             whatsappUrl?: string;
             action?: string;
-          } | undefined;
-          if (data?.action === 'send-otp' && data.whatsappUrl) {
-            window.location.href = data.whatsappUrl;
+            kind?: string;
+          };
+          const actionId = String(event.actionId || data.action || '').toLowerCase();
+          const whatsappUrl = data.whatsappUrl || '';
+
+          // OTP: tapping the notification (or Send OTP) opens WhatsApp with the OTP message.
+          if (whatsappUrl && (actionId === 'send-otp' || actionId === '' || data.kind === 'otp')) {
+            window.location.href = whatsappUrl;
             return;
           }
-          const target = data?.path || data?.url;
+
+          const target = data.path || data.url;
           if (target && typeof target === 'string') {
             window.location.href = target.startsWith('http')
               ? target

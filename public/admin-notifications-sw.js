@@ -15,6 +15,9 @@ self.addEventListener('push', (event) => {
       tag: 'access-otp',
       whatsappUrl: '',
       actions: true,
+      kind: '',
+      name: '',
+      phone: '',
     };
     try {
       if (event.data) {
@@ -32,8 +35,10 @@ self.addEventListener('push', (event) => {
     const actions = [];
     if (payload.whatsappUrl) {
       actions.push({ action: 'send-otp', title: 'Send OTP' });
+      actions.push({ action: 'open', title: 'Open app' });
+    } else {
+      actions.push({ action: 'open', title: 'Open' });
     }
-    actions.push({ action: 'open', title: 'Open' });
 
     await self.registration.showNotification(payload.title || 'Phoenix Admin', {
       body: payload.body,
@@ -41,13 +46,16 @@ self.addEventListener('push', (event) => {
       badge: '/android-chrome-192x192.png',
       tag: payload.tag || 'access-otp',
       renotify: true,
-      requireInteraction: true,
+      requireInteraction: Boolean(payload.whatsappUrl),
       vibrate: [200, 100, 200],
       timestamp: Date.now(),
       actions: actions.slice(0, 2),
       data: {
         url: payload.url || '/admin/dashboard',
         whatsappUrl: payload.whatsappUrl || '',
+        kind: payload.kind || '',
+        name: payload.name || '',
+        phone: payload.phone || '',
       },
     });
   })());
@@ -60,11 +68,13 @@ function resolveAdminUrl(path) {
 }
 
 self.addEventListener('notificationclick', (event) => {
-  const action = event.action || 'open';
+  const action = event.action || '';
   const data = event.notification?.data || {};
   event.notification.close();
 
-  if (action === 'send-otp' && data.whatsappUrl) {
+  const openWhatsApp = Boolean(data.whatsappUrl) && (action === 'send-otp' || action === '' || data.kind === 'otp');
+
+  if (openWhatsApp && action !== 'open') {
     event.waitUntil((async () => {
       if (self.clients.openWindow) {
         await self.clients.openWindow(data.whatsappUrl);
