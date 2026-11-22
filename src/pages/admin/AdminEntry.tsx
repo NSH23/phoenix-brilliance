@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import {
   APP_VERSION_URL,
   LATEST_APK_PATH,
@@ -22,7 +21,7 @@ type Mode = 'choose' | 'web' | 'install-auth' | 'install-ready';
 type AppVersionInfo = RemoteAppVersion;
 
 export default function AdminEntry() {
-  const { isAuthenticated, isLoading, login, logout } = useAdmin();
+  const { isAuthenticated, isLoading, unlockApkDownload, logout } = useAdmin();
   const { logoUrl } = useSiteConfig();
   const navigate = useNavigate();
   const logoSrc = logoUrl || '/logo.png';
@@ -34,6 +33,18 @@ export default function AdminEntry() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [version, setVersion] = useState<AppVersionInfo | null>(null);
+
+  // Prefill remembered admin credentials for faster APK unlock.
+  useEffect(() => {
+    try {
+      const savedEmail = localStorage.getItem('phoenix_admin_remember_email') || '';
+      const savedPassword = localStorage.getItem('phoenix_admin_remember_password') || '';
+      if (savedEmail) setEmail(savedEmail);
+      if (savedPassword) setPassword(savedPassword);
+    } catch {
+      /* ignore */
+    }
+  }, []);
   // Only block the chooser on the first session check — never while verifying APK download login.
   const [sessionReady, setSessionReady] = useState(() => !isLoading);
 
@@ -168,18 +179,20 @@ export default function AdminEntry() {
                   }
                   setBusy(true);
                   try {
-                    const result = await login(email.trim(), password);
+                    // Fast unlock — no full dashboard login extras / no second getSession.
+                    const result = await unlockApkDownload(email.trim(), password);
                     if (!result.success) {
-                      toast.error(result.message || 'Login failed');
+                      toast.error(result.message || 'Verification failed');
                       return;
                     }
-                    const { data: sessionData } = await supabase.auth.getSession();
-                    if (!sessionData.session) {
-                      toast.error('Session missing. Try again.');
-                      return;
+                    try {
+                      localStorage.setItem('phoenix_admin_remember_email', email.trim());
+                      localStorage.setItem('phoenix_admin_remember_password', password);
+                    } catch {
+                      /* ignore */
                     }
                     setMode('install-ready');
-                    toast.success('Verified — you can download the app');
+                    toast.success('Verified — download ready');
                   } finally {
                     setBusy(false);
                   }

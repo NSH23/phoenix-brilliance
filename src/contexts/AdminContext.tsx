@@ -19,6 +19,11 @@ interface AdminContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string; needsVerification?: boolean }>;
+  /** Fast path for APK download unlock — skips avatar/session extras. */
+  unlockApkDownload: (
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   resendVerificationEmail: (email: string) => Promise<{ success: boolean; message?: string }>;
   refreshUser: () => Promise<void>;
@@ -277,6 +282,79 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const unlockApkDownload = async (
+    email: string,
+    password: string,
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        if (
+          error.message.includes('Invalid login credentials') ||
+          error.message.includes('invalid_credentials')
+        ) {
+          return { success: false, message: 'Invalid email or password.' };
+        }
+        return { success: false, message: error.message || 'Verification failed.' };
+      }
+
+      const authUser = data.user;
+      if (!authUser) {
+        return { success: false, message: 'Verification failed. Try again.' };
+      }
+
+      // Lightweight admin check only (no avatar URL work) — keep APK unlock snappy.
+      const adminQuery = supabase
+        .from('admin_users')
+        .select('id, email, name, role')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      const timed = await Promise.race([
+        adminQuery,
+        new Promise<{ data: null; error: { message: string } }>((resolve) => {
+          window.setTimeout(
+            () => resolve({ data: null, error: { message: 'Admin check timed out' } }),
+            2500,
+          );
+        }),
+      ]);
+
+      if (timed.error || !timed.data) {
+        await supabase.auth.signOut({ scope: 'local' });
+        return {
+          success: false,
+          message:
+            timed.error?.message === 'Admin check timed out'
+              ? 'Verification timed out. Check your connection and try again.'
+              : 'You do not have access to download the admin app.',
+        };
+      }
+
+      setUser({
+        id: timed.data.id,
+        email: timed.data.email,
+        name: timed.data.name,
+        role: timed.data.role,
+      });
+
+      // Fill avatar / extras in the background — do not block Download.
+      void loadAdminUser(authUser).then((full) => {
+        if (full) setUser(full);
+      });
+
+      return { success: true };
+    } catch (error: unknown) {
+      logger.error('APK unlock error', error, { component: 'AdminContext', action: 'unlockApkDownload' });
+      const message = error instanceof Error ? error.message : 'Verification failed.';
+      return { success: false, message };
+    }
+  };
+
   const logout = async () => {
     try {
       await supabase.auth.signOut({ scope: 'local' });
@@ -311,6 +389,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         login,
+        unlockApkDownload,
         logout,
         resendVerificationEmail,
         refreshUser,
